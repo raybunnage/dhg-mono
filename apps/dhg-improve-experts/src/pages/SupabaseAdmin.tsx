@@ -342,7 +342,7 @@ $$ LANGUAGE plpgsql;`);
             'google_sources', 
             'google_sync_history',
             'experts',
-            'expert_documents',
+            'google_expert_documents',
             'document_types',
             'function_registry',
             'sql_query_history',
@@ -383,7 +383,7 @@ $$ LANGUAGE plpgsql;`);
             'google_sync_history',
             'google_auth_tokens',
             'experts',
-            'expert_documents',
+            'google_expert_documents',
             'document_types',
             'function_registry',
             'ai_processing_attempts',
@@ -451,7 +451,7 @@ $$ LANGUAGE plpgsql;`);
           'google_sources', 
           'google_sync_history',
           'experts',
-          'expert_documents',
+          'google_expert_documents',
           'document_types',
           'function_registry',
           'prompt_categories', 
@@ -771,7 +771,7 @@ $$ LANGUAGE plpgsql;`);
           { column_name: 'full_name', data_type: 'text', is_nullable: 'YES', column_default: '', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' },
           { column_name: 'created_at', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' }
         ];
-      } else if (tableName === 'expert_documents') {
+      } else if (tableName === 'google_expert_documents') {
         columns = [
           { column_name: 'id', data_type: 'uuid', is_nullable: 'NO', column_default: 'gen_random_uuid()', is_unique: 'YES', foreign_key: '', trigger_name: '', check_constraint: '' },
           { column_name: 'expert_id', data_type: 'uuid', is_nullable: 'YES', column_default: '', is_unique: 'NO', foreign_key: 'experts.id', trigger_name: '', check_constraint: '' },
@@ -1254,7 +1254,7 @@ $$ LANGUAGE plpgsql;`);
               'google_sync_history',
               'google_auth_tokens',
               'experts',
-              'expert_documents',
+              'google_expert_documents',
               'document_types',
               'function_registry',
               'ai_processing_attempts',
@@ -1438,7 +1438,7 @@ $$ LANGUAGE plpgsql;`);
               'google_sync_history',
               'google_auth_tokens',
               'experts',
-              'expert_documents',
+              'google_expert_documents',
               'document_types',
               'function_registry',
               'ai_processing_attempts',

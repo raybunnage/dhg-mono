@@ -1,10 +1,10 @@
 -- Function to get unclassified documents with content
 CREATE OR REPLACE FUNCTION get_unclassified_documents_with_content(entity_type_param TEXT, limit_param INTEGER)
-RETURNS SETOF expert_documents AS $$
+RETURNS SETOF google_expert_documents AS $$
 BEGIN
   RETURN QUERY
   SELECT ed.*
-  FROM expert_documents ed
+  FROM google_expert_documents ed
   WHERE 
     ed.processed_content IS NOT NULL
     AND ed.source_id IS NOT NULL

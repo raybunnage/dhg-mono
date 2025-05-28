@@ -73,7 +73,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     
     // Find corresponding documents in database
     const { data: matchingDocs, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         sources_google!inner(id, name, mime_type)
@@ -90,7 +90,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     if (!matchingDocs || matchingDocs.length === 0) {
       // Try to find files with the extension
       const { data: matchingDocsWithExt } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id, 
           sources_google!inner(id, name, mime_type)
@@ -139,7 +139,7 @@ async function updateDocumentStatus(documentId: string, supabase: any, resume: b
   try {
     // Get the document from the database
     const { data: document, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, content_type, processing_status, sources_google!inner(name)')
       .eq('id', documentId)
       .single();
@@ -180,7 +180,7 @@ async function updateDocumentStatus(documentId: string, supabase: any, resume: b
     
     // Update the document
     const { error: updateError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update(updateData)
       .eq('id', documentId);
     

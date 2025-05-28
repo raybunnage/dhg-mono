@@ -25,7 +25,7 @@ async function analyzeExpertDocuments() {
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // First test the connection
-    const connectionTest = await supabase.from('expert_documents').select('id').limit(1);
+    const connectionTest = await supabase.from('google_expert_documents').select('id').limit(1);
     if (connectionTest.error) {
       throw new Error(`Supabase connection error: ${connectionTest.error.message}`);
     }
@@ -33,7 +33,7 @@ async function analyzeExpertDocuments() {
 
     // Get count of expert_documents with sources_google relation
     const { data: totalCount, error: countError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id', { count: 'exact', head: true })
       .not('google_file_id', 'is', null);
     
@@ -45,7 +45,7 @@ async function analyzeExpertDocuments() {
 
     // Group by processing_skip_reason with direct SQL query since rpc isn't available
     const { data: skipReasonStats, error: statsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         processing_skip_reason,
         count(*)
@@ -77,7 +77,7 @@ async function analyzeExpertDocuments() {
     console.log("===========================================");
     
     const { data: extensionStats, error: extError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         processing_skip_reason,
         sources_google!inner(file_extension),
@@ -127,7 +127,7 @@ async function analyzeExpertDocuments() {
     console.log("======================================================================");
     
     const { data: specificDoc, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         google_file_id,
@@ -161,7 +161,7 @@ async function analyzeExpertDocuments() {
     
     // Let's analyze the logic in classify-pdfs-with-service.ts by checking the query
     const { data: eligibleDocs, error: eligibleError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         google_file_id,
@@ -197,7 +197,7 @@ async function analyzeExpertDocuments() {
     console.log("======================================================================");
     
     const { data: docsWithSkipReason, error: skipError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         google_file_id,
@@ -244,7 +244,7 @@ async function analyzeExpertDocuments() {
     console.log("=====================================");
     
     const { data: statusStats, error: statusError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         document_processing_status,
         count(*)

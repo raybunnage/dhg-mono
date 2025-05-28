@@ -144,7 +144,7 @@ export function ExpertProfileExtractor() {
   const loadDocuments = async () => {
     try {
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           raw_content,
@@ -234,7 +234,7 @@ ${doc.raw_content}`,
     try {
       // Update all remaining documents to show they were part of an aborted batch
       const { error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           processing_status: 'pending',  // Reset to pending
           processing_error: `Part of aborted batch at ${cleanup.abortedAt}. Will retry in next run.`,
@@ -332,7 +332,7 @@ ${doc.raw_content}`,
 
           // Update document status
           const { error: updateError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               processed_content: profile,
               processing_status: 'completed',
@@ -351,7 +351,7 @@ ${doc.raw_content}`,
           if (error instanceof Error && error.name === 'AbortError') {
             // Update document to show processing was aborted
             await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 processing_status: 'aborted',
                 processed_at: new Date().toISOString(),
@@ -369,7 +369,7 @@ ${doc.raw_content}`,
 
           // Update document to mark processing failure
           await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               processing_status: 'failed',
               processed_at: new Date().toISOString(),
@@ -425,7 +425,7 @@ ${doc.raw_content}`,
     
     try {
       const { data: abortedDocs, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .eq('processing_status', 'aborted');
 
@@ -438,7 +438,7 @@ ${doc.raw_content}`,
 
       // Reset their status to pending
       await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           processing_status: 'pending',
           processing_error: null,

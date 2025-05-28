@@ -68,7 +68,7 @@ export class ExpertDocumentService {
       
       // Step 3: Get expert documents
       let expertDocQuery = this.supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id, 
           source_id,

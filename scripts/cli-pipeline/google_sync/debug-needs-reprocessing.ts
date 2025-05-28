@@ -12,7 +12,7 @@ async function debugReprocessingStatus() {
   
   // 1. Find expert documents with needs_reprocessing status
   const { data: docsToReprocess, error: docsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_processing_status')
     .eq('document_processing_status', 'needs_reprocessing')
     .limit(10);

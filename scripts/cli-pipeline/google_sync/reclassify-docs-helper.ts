@@ -36,7 +36,7 @@ export async function markReprocessingDone(documentId: string, sourceId: string)
     
     // First, check the current status of the document to aid in debugging
     const { data: currentDoc, error: checkError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('document_processing_status, processing_status')
       .eq('id', documentId)
       .single();
@@ -51,7 +51,7 @@ export async function markReprocessingDone(documentId: string, sourceId: string)
     
     // Update the expert_document record with document_processing_status = 'reprocessing_done'
     const { error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ // Changed from upsert to update since we know the document exists
         document_processing_status: 'reprocessing_done',
         document_processing_status_updated_at: new Date().toISOString(),
@@ -68,7 +68,7 @@ export async function markReprocessingDone(documentId: string, sourceId: string)
     
     // Verify the update worked
     const { data: updatedDoc, error: verifyError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('document_processing_status')
       .eq('id', documentId)
       .single();
@@ -101,7 +101,7 @@ export async function markNeedsReprocessing(documentId: string, sourceId: string
     
     // Update the expert_document record with document_processing_status = 'needs_reprocessing'
     const { error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({
         document_processing_status: 'needs_reprocessing',
         document_processing_status_updated_at: new Date().toISOString(),
@@ -141,7 +141,7 @@ export async function markSkipProcessing(
     
     // First, check the current status of the document
     const { data: currentDoc, error: checkError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('document_processing_status, processing_status')
       .eq('id', documentId)
       .single();
@@ -156,7 +156,7 @@ export async function markSkipProcessing(
     
     // Update the expert_document record with document_processing_status = 'skip_processing'
     const { error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({
         document_processing_status: 'skip_processing',
         document_processing_status_updated_at: new Date().toISOString(),
@@ -173,7 +173,7 @@ export async function markSkipProcessing(
     
     // Verify the update worked
     const { data: updatedDoc, error: verifyError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('document_processing_status, processing_skip_reason')
       .eq('id', documentId)
       .single();
@@ -206,7 +206,7 @@ export async function checkDocumentSummary(documentId: string): Promise<void> {
     
     // Get the document details
     const { data: document, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, processed_content')
       .eq('id', documentId)
       .single();

@@ -77,7 +77,7 @@ async function checkSourceExtensions() {
     
     console.log('\nChecking expert_documents for these sources...');
     const { data: expertDocs, error: expertDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_processing_status')
       .in('source_id', sourceIds);
       

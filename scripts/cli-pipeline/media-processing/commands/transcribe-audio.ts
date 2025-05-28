@@ -94,7 +94,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
   try {
     // Get the document from the database
     const { data: document, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, processing_status, raw_content, processed_content')
       .eq('id', documentId)
       .single();
@@ -124,7 +124,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     // Update status to processing
     if (!options.dryRun) {
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           processing_status: 'processing' 
         })
@@ -202,7 +202,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       
       // Update status to error so we don't keep trying to process this document
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           processing_status: 'error',
           processing_error: `Audio file not found for ${sourceFilename}`
@@ -245,7 +245,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
       
       // Update status to error
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           processing_status: 'error', 
           processing_error: result.error 
@@ -282,7 +282,7 @@ async function transcribeExpertDocument(documentId: string, supabase: any): Prom
     // Update the document with the transcription and all required fields
     // Store status fields in processed_content since those columns don't exist in the schema
     const { error: saveError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({
         raw_content: result.text,
         processing_status: 'completed',
@@ -400,7 +400,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     // Get documents pending transcription
     // Find docs that have been processed but don't have raw_content yet
     const { data: pendingDocs, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type, raw_content, processing_status')
       .eq('content_type', 'presentation')
       .eq('processing_status', 'processing')
@@ -416,7 +416,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     if (!pendingDocs || pendingDocs.length === 0) {
       // Try to find documents with pending status
       const { data: pendingDocs2, error: queryError2 } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, content_type, raw_content, processing_status')
         .eq('content_type', 'presentation')
         .eq('processing_status', 'pending')

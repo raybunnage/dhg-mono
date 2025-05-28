@@ -255,7 +255,7 @@ reviewPresentationsCommand
             try {
               // Get expert_document for this video file to check content
               const { data: videoDoc } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .select('raw_content, processed_content')
                 .eq('source_id', presentation.video_source_id)
                 .maybeSingle();

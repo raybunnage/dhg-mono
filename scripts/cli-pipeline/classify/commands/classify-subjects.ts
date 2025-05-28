@@ -70,7 +70,7 @@ async function fetchUnclassifiedDocuments(limit: number): Promise<any[]> {
     const { data: classified, error: classifiedError } = await supabase
       .from('table_classifications')
       .select('entity_id')
-      .eq('entity_type', 'expert_documents');
+      .eq('entity_type', 'google_expert_documents');
       
     if (classifiedError) {
       Logger.error(`Error fetching classified documents: ${classifiedError.message}`);
@@ -87,7 +87,7 @@ async function fetchUnclassifiedDocuments(limit: number): Promise<any[]> {
     
     // First get all expert_documents with processed content
     const { data: allDocsWithContent, error: contentError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id')
       .not('processed_content', 'is', null)
       .not('source_id', 'is', null);
@@ -124,7 +124,7 @@ async function fetchUnclassifiedDocuments(limit: number): Promise<any[]> {
       Logger.info(`Fetching batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(maxToProcess/BATCH_SIZE)}...`);
       
       const { data: batchDocs, error: batchError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, processed_content, title')
         .in('id', idsToFetch);
         
@@ -731,7 +731,7 @@ export async function classifySubjectsCommand(options: ClassifySubjectsOptions):
     verbose = false,
     dryRun = false,
     skipClassified = true, // Always skip classified documents with the new approach
-    entityType = 'expert_documents',
+    entityType = 'google_expert_documents',
     concurrency = 3,
     maxRetries = 3,
     retryDelayMs = 1000

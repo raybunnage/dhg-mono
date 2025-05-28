@@ -9,7 +9,7 @@ async function main() {
     
     // Check expert_documents table structure directly with raw SQL
     const { data, error } = await supabase.rpc('get_table_structure', {
-      table_name: 'expert_documents'
+      table_name: 'google_expert_documents'
     });
     
     if (error) {
@@ -19,7 +19,7 @@ async function main() {
       console.log('Trying alternative approach...');
       
       const { data: columns, error: columnsError } = await supabase.rpc('list_columns', {
-        table_name: 'expert_documents'
+        table_name: 'google_expert_documents'
       });
       
       if (columnsError) {
@@ -45,7 +45,7 @@ async function main() {
         console.log(`\nTrying column: ${column}`);
         
         const { data: docs, error: docsError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, title, created_at')
           .eq(column, expertId)
           .limit(5);

@@ -72,7 +72,7 @@ async function confirmDeletion(message: string): Promise<boolean> {
 async function getProcessedFiles(supabase: any): Promise<{ mp4Files: string[]; m4aFiles: string[] }> {
   // Query for successfully processed documents
   let query = supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, raw_content, processing_status, processed_content, last_processed_at')
     .eq('content_type', 'presentation')
     .eq('processing_status', 'completed')

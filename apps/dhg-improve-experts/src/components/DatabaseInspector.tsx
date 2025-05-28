@@ -13,7 +13,7 @@ export default function DatabaseInspector() {
     'google_sync_history',
     'google_auth_tokens',
     'experts',
-    'expert_documents'
+    'google_expert_documents'
   ];
   
   const fetchTableMetadata = async () => {

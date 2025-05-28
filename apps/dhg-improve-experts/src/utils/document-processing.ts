@@ -48,7 +48,7 @@ export async function processUnextractedDocuments(batchSize = 10, skipProcessed 
   try {
     // Double-check we're only getting unprocessed documents
     let query = supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('*')
       .eq('processing_status', 'pending')
       .limit(batchSize)
@@ -121,7 +121,7 @@ export async function processUnextractedDocuments(batchSize = 10, skipProcessed 
           
           // Update document status for skipped files
           await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ 
               processing_status: 'skipped',
               error_message: `File too large: ${sizeMB}MB`
@@ -161,7 +161,7 @@ export async function processUnextractedDocuments(batchSize = 10, skipProcessed 
         
         // Update document with detailed error info
         await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ 
             processing_status: 'failed',
             error_message: errorMessage,
@@ -270,7 +270,7 @@ export async function testSingleDocument(documentId: string): Promise<void> {
 
     // Create expert_documents record
     const { error: insertError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .insert({
         expert_id: doc.expert_id,
         source_id: doc.id,
@@ -319,7 +319,7 @@ export function getCurrentPrompt(): string {
 // Update the processDocumentWithAI function
 async function processDocumentWithAI(documentId: string) {
   const { data: document, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('raw_content')
     .eq('id', documentId)
     .single();
@@ -357,7 +357,7 @@ async function processDocumentWithAI(documentId: string) {
         
         // Update the document with processed content
         await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             processed_content: extractedData,
             processing_status: 'completed',

@@ -239,7 +239,7 @@ async function extractTitle(
     Logger.info(`Updating title for document ${doc.expertDocId} to: "${extractionResult.title}"`);
     
     const { error: titleUpdateError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ title: extractionResult.title })
       .eq('id', doc.expertDocId);
     
@@ -364,7 +364,7 @@ export async function extractTitlesCommand(options: ExtractTitlesOptions): Promi
     
     // Query for expert documents with processed content
     const { data: expertDocs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, processed_content, title')
       .in('source_id', sourceIds)
       .neq('processed_content', null);

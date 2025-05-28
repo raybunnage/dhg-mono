@@ -31,7 +31,7 @@ async function checkMp4Status() {
     
     // Now check which of these MP4 sources have expert documents with needs_reprocessing status
     const { data: mp4DocsNeedingReprocessing, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_processing_status')
       .in('source_id', mp4Sources.map(s => s.id))
       .eq('document_processing_status', 'needs_reprocessing');

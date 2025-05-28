@@ -4,7 +4,7 @@ import { SupabaseClientService } from './packages/shared/services/supabase-clien
 async function main() {
   const supabase = SupabaseClientService.getInstance().getClient();
   const { data, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_type_id, created_at')
     .order('created_at', { ascending: false })
     .limit(5);

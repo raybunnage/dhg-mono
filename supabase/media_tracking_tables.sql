@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS media_sessions (
   app_id TEXT NOT NULL, -- Identifier for the app (e.g., 'audio-app', 'video-app')
   source_id UUID REFERENCES google_sources(id), -- Link to the media file in google_sources
   presentation_id UUID REFERENCES presentations(id), -- Link to presentation if applicable
-  expert_document_id UUID REFERENCES expert_documents(id), -- Link to transcript if applicable
+  expert_document_id UUID REFERENCES google_expert_documents(id), -- Link to transcript if applicable
   media_type TEXT NOT NULL CHECK (media_type IN ('audio', 'video')),
   started_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   completed_at TIMESTAMP WITH TIME ZONE,
@@ -201,7 +201,7 @@ FROM
 LEFT JOIN
   presentations p ON sg.id = p.video_source_id
 LEFT JOIN
-  expert_documents ed ON sg.id = ed.source_id
+  google_expert_documents ed ON sg.id = ed.source_id
 LEFT JOIN
   google_sources_experts sge ON sg.id = sge.source_id
 LEFT JOIN

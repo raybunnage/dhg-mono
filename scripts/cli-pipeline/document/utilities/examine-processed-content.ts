@@ -10,7 +10,7 @@ async function examineProcessedContent() {
   
   // Get documents with processed_content
   const { data, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, document_processing_status, source_id, processed_content')
     .not('processed_content', 'is', null)
     .limit(5);

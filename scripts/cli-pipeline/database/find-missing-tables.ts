@@ -40,7 +40,7 @@ async function findMissingTables() {
   // Check common table names that might be related
   const checkTables = [
     'experts',
-    'expert_documents',
+    'google_expert_documents',
     'documents',
     'document_types',
     'google_sources',

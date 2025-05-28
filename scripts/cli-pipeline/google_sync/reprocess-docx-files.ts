@@ -79,7 +79,7 @@ program
       console.log('\nFinding expert documents with needs_reprocessing status...');
       
       const { data: docsNeedingReprocessing, error: docsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, raw_content')
         .eq('reprocessing_status', 'needs_reprocessing')
         .limit(500); // Get a larger pool than we need
@@ -283,7 +283,7 @@ Return your classification as a complete, valid JSON object with all of these fi
             // Update the expert_document status to mark as reprocessed
             // Note: We are NOT updating the document_type_id in expert_documents
             const { error: updateExpertError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 // Intentionally NOT updating document_type_id
                 reprocessing_status: 'reprocessing_done',
@@ -469,7 +469,7 @@ export async function reprocessDocxFiles(options: {
     
     // STEP 1: Find all expert_documents with needs_reprocessing status
     const { data: docsNeedingReprocessing, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, raw_content')
       .eq('reprocessing_status', 'needs_reprocessing')
       .limit(500);
@@ -593,7 +593,7 @@ Return your classification as a complete, valid JSON object with all of these fi
           
           // Update the expert_document status to mark as reprocessed
           const { error: updateExpertError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               // Intentionally NOT updating document_type_id
               reprocessing_status: 'reprocessing_done',

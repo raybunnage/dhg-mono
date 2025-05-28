@@ -104,7 +104,7 @@ program
       // Check if there's an expert document that needs to be updated as well
       console.log('\nChecking for related expert_documents...');
       const { data: expertDocsData, error: expertDocsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, document_type_id, title')
         .eq('source_id', options.sourceId);
       
@@ -127,7 +127,7 @@ program
         console.log(`Title: ${expertDoc.title || 'No title'}`);
         
         const { error: expertUpdateError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             document_type_id: options.documentTypeId,
             updated_at: new Date().toISOString()

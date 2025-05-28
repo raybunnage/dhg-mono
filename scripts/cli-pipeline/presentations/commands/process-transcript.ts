@@ -57,7 +57,7 @@ async function main() {
     
     // Check for existing expert document
     const { data: existingDoc, error: docCheckError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content')
       .eq('source_id', selectedFile.id)
       .maybeSingle();
@@ -105,7 +105,7 @@ I'd like to emphasize that this research supports a move away from the outdated 
         
         // Update the document with the sample content
         const { error: updateError } = await presentationService.supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ 
             raw_content: sampleTranscript,
             updated_at: new Date().toISOString()
@@ -151,7 +151,7 @@ I'd like to emphasize that this research supports a move away from the outdated 
       `;
       
       const { data: newDoc, error: createError } = await presentationService.supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .insert({
           source_id: selectedFile.id,
           document_type_id: docType.id,
@@ -254,7 +254,7 @@ TRANSCRIPT:
     
     // Get the expert document content
     const { data: expertDoc, error } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('raw_content')
       .eq('id', expertDocId)
       .single();
@@ -313,7 +313,7 @@ TRANSCRIPT:
     
     // Save the processed content directly to the expert document
     const { data, error: updateError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ 
         processed_content: summaryResponse, 
         ai_summary_status: 'completed',

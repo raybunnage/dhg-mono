@@ -81,7 +81,7 @@ async function updateDocumentStatus(documentId: string, supabase: any): Promise<
   try {
     // Get the document from the database
     const { data: document, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, content_type, processing_status, transcription_complete')
       .eq('id', documentId)
       .single();
@@ -127,7 +127,7 @@ async function updateDocumentStatus(documentId: string, supabase: any): Promise<
     
     // Update the document
     const { error: updateError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update(updateData)
       .eq('id', documentId);
     

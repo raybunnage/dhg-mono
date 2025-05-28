@@ -1,10 +1,10 @@
--- Down migration for fixing created_by and updated_by references in expert_documents
+-- Down migration for fixing created_by and updated_by references in google_expert_documents
 -- Created at: 2025-02-27 18:41:55
 
 BEGIN;
 
 -- 1. Add back the created_by and updated_by columns
-ALTER TABLE expert_documents 
+ALTER TABLE google_expert_documents 
   ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(id),
   ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES auth.users(id);
 
@@ -34,12 +34,12 @@ END $$;
 
 -- 3. Recreate the triggers
 CREATE TRIGGER set_created_by_trigger
-  BEFORE INSERT ON expert_documents
+  BEFORE INSERT ON google_expert_documents
   FOR EACH ROW
   EXECUTE FUNCTION set_created_by();
 
 CREATE TRIGGER set_updated_by_trigger
-  BEFORE UPDATE ON expert_documents
+  BEFORE UPDATE ON google_expert_documents
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_by();
 

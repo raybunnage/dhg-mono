@@ -68,7 +68,7 @@ const supabaseClientService = SupabaseClientService.getInstance();
 const supabase = supabaseClientService.getClient();
 
 type SourcesGoogleRow = Database['public']['Tables']['google_sources']['Row'];
-type ExpertDocumentRow = Database['public']['Tables']['expert_documents']['Row'];
+type ExpertDocumentRow = Database['public']['Tables']['google_expert_documents']['Row'];
 
 interface RepairResult {
   folderFound: boolean;
@@ -123,7 +123,7 @@ async function deleteExpertDocuments(sourceIds: string[], isDryRun: boolean): Pr
   
   // Get count of expert documents
   const { count, error: countError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('*', { count: 'exact', head: true })
     .in('source_id', sourceIds);
   
@@ -136,7 +136,7 @@ async function deleteExpertDocuments(sourceIds: string[], isDryRun: boolean): Pr
   
   if (docsToDelete > 0 && !isDryRun) {
     const { error: deleteError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .delete()
       .in('source_id', sourceIds);
     

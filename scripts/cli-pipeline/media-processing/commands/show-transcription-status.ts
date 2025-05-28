@@ -81,7 +81,7 @@ async function getDocumentStatuses(supabase: any): Promise<any[]> {
         id,
         expert_document_id,
         presentations!inner(id, title, filename, created_at),
-        expert_documents!inner(
+        google_expert_documents!inner(
           id,
           processing_status,
           raw_content,

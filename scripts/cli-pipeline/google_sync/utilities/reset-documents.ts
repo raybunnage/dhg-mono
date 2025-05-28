@@ -45,14 +45,14 @@ async function resetDocuments() {
     
     // Check for existing expert document
     const { data: expertDocs } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id')
       .eq('source_id', source.id);
     
     if (expertDocs && expertDocs.length > 0) {
       // Update existing document
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           document_processing_status: 'needs_reprocessing',
           document_processing_status_updated_at: new Date().toISOString()
@@ -72,7 +72,7 @@ async function resetDocuments() {
         '1f71f894-d2f8-415e-80c1-a4d6db4d8b18';  // Json document summary
       
       const { error: insertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .insert({
           source_id: source.id,
           document_type_id: docType,

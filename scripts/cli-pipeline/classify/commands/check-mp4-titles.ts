@@ -101,7 +101,7 @@ export async function checkMp4TitlesCommand(options: CheckMp4TitlesOptions = {})
     
     // Query for expert documents regardless of processed content
     const { data: expertDocs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_type_id, title, processed_content')
       .in('source_id', sourceIds);
       

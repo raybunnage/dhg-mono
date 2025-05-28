@@ -102,7 +102,7 @@ async function pipelineStatusSummary(options: {
       
       try {
         // Fallback query using raw SQL
-        const { data, error } = await supabase.from('expert_documents')
+        const { data, error } = await supabase.from('google_expert_documents')
           .select('pipeline_status, count')
           .eq('count_column', 'pipeline_status_count')
           .limit(100);
@@ -119,7 +119,7 @@ async function pipelineStatusSummary(options: {
         
         // Last resort - get all documents and count manually
         const { data: allDocs, error: docsError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('pipeline_status');
         
         if (docsError) {
@@ -155,7 +155,7 @@ async function pipelineStatusSummary(options: {
     // Get counts by document type - again with fallback
     let typeStatusCounts: TypeStatusCount[] = [];
     try {
-      const { data, error } = await supabase.from('expert_documents')
+      const { data, error } = await supabase.from('google_expert_documents')
         .select('pipeline_status, document_type_id, count')
         .eq('count_column', 'document_type_status_count')
         .limit(500);
@@ -172,7 +172,7 @@ async function pipelineStatusSummary(options: {
       
       // Fallback to get all documents and count manually
       const { data: allDocs, error: docsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('pipeline_status, document_type_id');
       
       if (docsError) {
@@ -228,7 +228,7 @@ async function pipelineStatusSummary(options: {
         
         // Since the get_expert_documents_with_mime_types RPC function may not exist,
         // we'll use a direct SQL query to join expert_documents with sources_google
-        const { data, error } = await supabase.from('expert_documents')
+        const { data, error } = await supabase.from('google_expert_documents')
           .select(`
             id, 
             source_id,
@@ -249,7 +249,7 @@ async function pipelineStatusSummary(options: {
           
           // Fall back to standard query
           const { data: fallbackData, error: fallbackError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select(`
               id, 
               source_id,
@@ -306,7 +306,7 @@ async function pipelineStatusSummary(options: {
       } else {
         // Standard query when mime-type rollup is not needed
         const { data, error } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select(`
             id, 
             source_id,

@@ -516,7 +516,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     if (files.length > 0) {
       const fileIds = files.map(f => f.id);
       const { data: existingExpDocs } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('source_id')
         .in('source_id', fileIds);
       
@@ -838,7 +838,7 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
       // Insert expert_documents records
       if (expertDocsToInsert.length > 0) {
         const { error: insertError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .insert(expertDocsToInsert);
         
         if (insertError) {

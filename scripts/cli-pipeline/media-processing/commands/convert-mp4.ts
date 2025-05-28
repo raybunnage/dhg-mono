@@ -192,7 +192,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
   try {
     // Get the document from the database
     const { data: document, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type, processing_status, processed_content, raw_content')
       .eq('id', documentId)
       .single();
@@ -390,7 +390,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
         
         if (!options.dryRun) {
           const { error: saveError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               processing_status: 'processing',
               processed_content: {
@@ -418,7 +418,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
     // Update status to processing
     if (!options.dryRun) {
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           processing_status: 'processing' 
         })
@@ -442,7 +442,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
       
       // Update status to error
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           processing_status: 'error', 
           processing_error: error 
@@ -465,7 +465,7 @@ async function convertExpertDocument(documentId: string, supabase: any): Promise
     
     // Update the document with the extraction info
     const { error: saveError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({
         processing_status: 'processing',
         processed_content: {
@@ -589,7 +589,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     
     // Get documents pending audio extraction - using processing_status instead of content_extraction_status
     const { data: pendingDocs, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type, processing_status')
       .eq('content_type', 'presentation')
       .eq('processing_status', 'pending')
@@ -605,7 +605,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
     if (!pendingDocs || pendingDocs.length === 0) {
       // Try with documents that don't have raw_content yet (unprocessed)
       const { data: pendingDocs2, error: queryError2 } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, content_type, processing_status')
         .eq('content_type', 'presentation')
         .is('raw_content', null)

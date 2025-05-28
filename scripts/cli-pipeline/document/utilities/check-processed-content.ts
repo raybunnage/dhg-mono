@@ -18,7 +18,7 @@ async function checkProcessedContent() {
   
   for (const docId of docIds) {
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, document_processing_status, source_id, processed_content')
       .eq('id', docId)
       .limit(1);
@@ -76,7 +76,7 @@ async function checkProcessedContent() {
     
     // Get expert document
     const { data: docs, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, document_processing_status, document_type_id, processed_content')
       .eq('source_id', sourceId)
       .limit(1);

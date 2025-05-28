@@ -428,7 +428,7 @@ program
       verbose: options.verbose,
       dryRun: options.dryRun,
       skipClassified: options.skipClassified,
-      entityType: options.table || 'expert_documents',
+      entityType: options.table || 'google_expert_documents',
       concurrency,
       maxRetries,
       retryDelayMs,
@@ -511,7 +511,7 @@ program
       // Fetch document by ID
       if (options.id) {
         const { data: doc, error: docError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('*')
           .eq('id', options.id)
           .single();
@@ -534,7 +534,7 @@ program
           .from('table_classifications')
           .select('*')
           .eq('entity_id', options.id)
-          .eq('entity_type', 'expert_documents');
+          .eq('entity_type', 'google_expert_documents');
           
         if (classErr) {
           Logger.error(`Error fetching classifications: ${classErr.message}`);
@@ -569,7 +569,7 @@ program
       // Fetch document by source ID
       if (options.sourceId) {
         const { data: docs, error: docsError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id')
           .eq('source_id', options.sourceId);
           
@@ -609,7 +609,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
     
     // 1. Check how many expert_documents exist with processed content
     const { data: processedDocs, error: processedError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id')
         .neq('processed_content', null);
         
@@ -640,7 +640,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
       const { data: classifiedDocs, error: classifiedError } = await supabase
         .from('table_classifications')
         .select('entity_id')
-        .eq('entity_type', 'expert_documents');
+        .eq('entity_type', 'google_expert_documents');
         
       if (classifiedError) {
         Logger.error(`Error checking classified documents: ${classifiedError.message}`);
@@ -654,7 +654,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
       
       // 4. Check how many expert_documents have a source_id
       const { data: docsWithSource, error: sourceError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .not('source_id', 'is', null);
         
@@ -682,7 +682,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
         
         // Fetch more details about these documents
         const { data: sampleDocs, error: sampleError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, source_id')
           .in('id', sampleIds);
           
@@ -791,7 +791,7 @@ program
       
       await classifySourceCommand({
         sourceId: options.sourceId,
-        entityType: options.table || 'expert_documents',
+        entityType: options.table || 'google_expert_documents',
         verbose: options.verbose,
         dryRun: options.dryRun,
         maxRetries,

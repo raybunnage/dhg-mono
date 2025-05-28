@@ -788,7 +788,7 @@ async function classifyPowerPointDocuments(
     if (sourceFiles && sourceFiles.length > 0) {
       const sourceIds = sourceFiles.map(file => file.id);
       const { data: expertDocuments, error: expertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .in('source_id', sourceIds);
         
@@ -860,7 +860,7 @@ async function classifyPowerPointDocuments(
         
         // Check for corresponding expert_documents with content
         const { data: expertDocs, error: expertError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, raw_content, processed_content, classification_confidence')
           .eq('source_id', file.id);
           
@@ -1063,7 +1063,7 @@ async function classifyPowerPointDocuments(
           
           // Insert the expert document
           const { error: insertError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .insert(expertDoc)
             .select();
             

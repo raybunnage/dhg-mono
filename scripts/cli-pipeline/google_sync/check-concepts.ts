@@ -32,7 +32,7 @@ program
       
       // First, find the expert document for this source
       const { data: expertDocs, error: expertDocsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, title, classification_confidence, document_type_id')
         .eq('source_id', options.id)
         .limit(1);

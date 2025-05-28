@@ -32,7 +32,7 @@ async function updateProcessedRecords(options: {
     // Find records where processed_content is not null (and valid JSON) and processing_error is null
     // and pipeline_status is not already "processed"
     const { data: recordsToUpdate, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, processed_content, pipeline_status')
       .is('processing_error', null)
       .not('processed_content', 'is', null)
@@ -109,7 +109,7 @@ async function updateProcessedRecords(options: {
 
     // Perform the update
     const { data: updateResult, error: updateError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ pipeline_status: 'processed' })
       .in('id', validRecords.map(r => r.id))
       .select('id');

@@ -133,7 +133,7 @@ async function analyzeFile(filePath: string, verbose: boolean = false): Promise<
       
       if (suggestedCode) {
         result.suggestedFix = suggestedCode;
-        result.fixedCode = fileContent.replace(/\.from\('expert_documents'\)\.insert\(/g, 
+        result.fixedCode = fileContent.replace(/\.from\('google_expert_documents'\)\.insert\(/g, 
           suggestedCode);
       }
     }
@@ -157,7 +157,7 @@ function generateSuggestedFix(content: string, filePath: string): string {
     fix = `
 // Check if record already exists for this source ID
 const { data: existingRecord, error: checkError } = await supabase
-  .from('expert_documents')
+  .from('google_expert_documents')
   .select('id')
   .eq('source_id', sourceId)
   .maybeSingle();
@@ -170,7 +170,7 @@ if (checkError) {
 // Only insert if no record exists for this source ID
 if (!existingRecord) {
   const { data, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .insert({
       // Your insert data here
     });
@@ -190,7 +190,7 @@ always check if a record with the same source_id already exists:
 
 // Check if record already exists for this source ID
 const { data: existingRecord, error: checkError } = await supabase
-  .from('expert_documents')
+  .from('google_expert_documents')
   .select('id')
   .eq('source_id', sourceId)
   .maybeSingle();
@@ -225,7 +225,7 @@ async function findRelevantFiles(): Promise<string[]> {
       try {
         const content = fs.readFileSync(file, 'utf8');
         // Check if file potentially deals with expert_documents table
-        if (content.includes('expert_documents') && 
+        if (content.includes('google_expert_documents') && 
             (content.includes('insert') || content.includes('upsert') || 
              content.includes('INSERT INTO'))) {
           filteredFiles.push(file);
@@ -394,7 +394,7 @@ ${result.originalCode}
       console.log(`
 // Before inserting, check if record already exists
 const { data: existingDoc, error: checkError } = await supabase
-  .from('expert_documents')
+  .from('google_expert_documents')
   .select('id')
   .eq('source_id', sourceId)
   .maybeSingle();
@@ -407,7 +407,7 @@ if (checkError) {
 // Only insert if no record exists
 if (!existingDoc) {
   const { data, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .insert({
       source_id: sourceId,
       // other fields...
@@ -420,7 +420,7 @@ if (!existingDoc) {
 }
 `);
     } else {
-      console.log('✅ All files have proper existence checks for expert_documents!');
+      console.log('✅ All files have proper existence checks for google_expert_documents!');
     }
     
     console.log('\nCheck complete!');

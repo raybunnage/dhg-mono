@@ -193,7 +193,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
         // Check if there are expert_documents records for this file
         // Note: We don't use maybeSingle() since some files might have multiple records
         const { data: expertDocs, error: expertDocError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, source_id')
           .eq('source_id', file.id);
         

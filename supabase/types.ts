@@ -959,7 +959,7 @@ export type Database = {
           },
         ]
       }
-      expert_documents: {
+      google_expert_documents: {
         Row: {
           ai_summary_status:
             | Database["public"]["Enums"]["ai_summary_status_type"]

@@ -74,7 +74,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     // Fetch all expert documents with non-null processed_content
     console.log('\nFetching expert documents with processed content...');
     const { data: expertDocs, error: expertDocsError } = await supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_type_id, processed_content, document_processing_status, processing_skip_reason')
       .not('processed_content', 'is', null);
 
@@ -115,7 +115,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           }
 
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .upsert(updates, { onConflict: 'id' });
 
           if (updateError) {
@@ -156,7 +156,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
         // Get related expert documents
         const { data: confExpertDocs, error: confExpertDocsError } = await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id')
           .in('source_id', confFiles.map(file => file.id));
 
@@ -165,7 +165,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         } else if (confExpertDocs && confExpertDocs.length > 0) {
           // Update expert_documents to Document type
           const { error: updateExpertDocsError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ document_type_id: '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' }) // Document
             .in('id', confExpertDocs.map(doc => doc.id));
 
@@ -212,7 +212,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
       // Get corresponding expert documents
       const { data: specificTypeExpertDocs, error: specificTypeExpertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .in('source_id', specificTypeSources.map(source => source.id));
 
@@ -221,7 +221,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       } else if (specificTypeExpertDocs && specificTypeExpertDocs.length > 0) {
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ document_type_id: '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' }) // json doc summary
             .in('id', specificTypeExpertDocs.map(doc => doc.id));
 
@@ -281,7 +281,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
       // Get corresponding expert documents
       const { data: pdfPptxExpertDocs, error: pdfPptxExpertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .in('source_id', pdfPptxSources.map(source => source.id));
 
@@ -290,7 +290,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       } else if (pdfPptxExpertDocs && pdfPptxExpertDocs.length > 0) {
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ document_type_id: '2f5af574-9053-49b1-908d-c35001ce9680' }) // json pdf summary
             .in('id', pdfPptxExpertDocs.map(doc => doc.id));
 
@@ -319,7 +319,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     } else if (rule1Sources && rule1Sources.length > 0) {
       // Get all expert documents for these sources (regardless of content)
       const { data: rule1ExpertDocs, error: rule1ExpertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .in('source_id', rule1Sources.map(source => source.id));
 
@@ -330,7 +330,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ document_type_id: '1f71f894-d2f8-415e-80c1-a4d6db4d8b18' }) // Document
             .in('id', rule1ExpertDocs.map(doc => doc.id));
 
@@ -364,7 +364,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       console.log(`Found ${jsonExpertSources.length} sources with document_type_id in [${jsonExpertSummarySourceTypes.join(', ')}]`);
       
       const { data: jsonExpertDocs, error: jsonExpertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .in('source_id', jsonExpertSources.map(source => source.id));
         
@@ -375,7 +375,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ document_type_id: '5b1f8963-0946-4e89-884d-30517eebb8a5' }) // Json Expert Summary
             .in('id', jsonExpertDocs.map(doc => doc.id));
 
@@ -402,7 +402,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
       if (!dryRun) {
         const { error: updateError } = await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ document_type_id: '5b1f8963-0946-4e89-884d-30517eebb8a5' }) // Json Expert Summary
           .in('id', titleJsonDocs.map(doc => doc.id));
 
@@ -486,7 +486,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         if (!dryRun) {
           // Use UPSERT to handle the updates efficiently
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .upsert(updates, { onConflict: 'id' });
 
           if (updateError) {
@@ -539,7 +539,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           if (!dryRun) {
             // Use UPSERT to handle the updates efficiently
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .upsert(updates, { onConflict: 'id' });
 
             if (updateError) {
@@ -566,7 +566,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     } else if (folderSources && folderSources.length > 0) {
       // Get expert documents for these folder sources
       const { data: folderDocs, error: folderDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .in('source_id', folderSources.map(source => source.id));
 
@@ -594,7 +594,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           if (!dryRun) {
             // Use UPSERT to handle the updates efficiently
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .upsert(updates, { onConflict: 'id' });
 
             if (updateError) {
@@ -621,7 +621,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     } else if (passwordProtectedSources && passwordProtectedSources.length > 0) {
       // Get expert documents for these sources
       const { data: passwordProtectedDocs, error: passwordProtectedDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .in('source_id', passwordProtectedSources.map(source => source.id));
 
@@ -648,7 +648,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
           if (!dryRun) {
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .upsert(updates, { onConflict: 'id' });
 
             if (updateError) {
@@ -775,7 +775,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Get expert documents for these sources
       const { data: unsupportedDocs, error: unsupportedDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .in('source_id', allUnsupportedSources.map(source => source.id));
 
@@ -822,7 +822,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
 
           if (!dryRun) {
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .upsert(updates, { onConflict: 'id' });
 
             if (updateError) {
@@ -854,7 +854,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Get all expert_documents to check which sources already have entries
       const { data: allExpertDocs, error: allExpertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('source_id')
         .not('source_id', 'is', null);
         
@@ -913,7 +913,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             
             if (!dryRun && newDocEntries.length > 0) {
               const { data, error: insertError } = await supabaseClient
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .insert(newDocEntries)
                 .select('id');
                 
@@ -949,7 +949,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Get all expert documents with their content flags and document types
     const { data: allExpertDocsWithDetails, error: expertDocsDetailsError } = await supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id,
@@ -1051,7 +1051,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     const { data: mismarkedDocs, error: mismarkedDocsError } = 
       unsupportedSourceIds.length > 0 
         ? await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id, source_id')
             .eq('document_processing_status', 'needs_reprocessing')
             .in('source_id', unsupportedSourceIds)
@@ -1080,7 +1080,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         
         if (!dryRun) {
           const { error: updateError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .upsert(updates, { onConflict: 'id' });
             
           if (updateError) {
@@ -1113,7 +1113,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Check which have expert_documents with needs_reprocessing status
       const { data: mp4DocsNeedingReprocessing, error: mp4DocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .in('source_id', mp4Sources.map(s => s.id))
         .eq('document_processing_status', 'needs_reprocessing');
@@ -1139,7 +1139,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           for (let i = 0; i < updates.length; i += batchSize) {
             const batchUpdates = updates.slice(i, i + batchSize);
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .upsert(batchUpdates, { onConflict: 'id' });
               
             if (updateError) {
@@ -1218,7 +1218,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         
         // Get corresponding expert documents
         const { data: folderExpertDocs, error: folderExpertDocsError } = await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id')
           .in('source_id', specificFolders.map(folder => folder.id));
         
@@ -1227,7 +1227,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         } else if (folderExpertDocs && folderExpertDocs.length > 0) {
           // Update expert_documents to match the new document type
           const { error: updateExpertDocsError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ document_type_id: 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd' })
             .in('id', folderExpertDocs.map(doc => doc.id));
           
@@ -1281,7 +1281,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Get all expert_documents with source_id
       const { data: finalDocsCheck, error: finalDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('source_id');
         
       if (finalDocsError) {

@@ -58,7 +58,7 @@ class AudioBrowserService {
               full_name
             )
           ),
-          expert_documents!expert_documents_source_id_fkey(
+          google_expert_documents!expert_documents_source_id_fkey(
             title
           )
         `)
@@ -92,7 +92,7 @@ class AudioBrowserService {
             .select(`
               id,
               name,
-              expert_documents!expert_documents_source_id_fkey(
+              google_expert_documents!expert_documents_source_id_fkey(
                 title
               )
             `)
@@ -147,7 +147,7 @@ class AudioBrowserService {
               full_name
             )
           ),
-          expert_documents!expert_documents_source_id_fkey(
+          google_expert_documents!expert_documents_source_id_fkey(
             title
           )
         `)
@@ -172,7 +172,7 @@ class AudioBrowserService {
           .select(`
             id,
             name,
-            expert_documents!expert_documents_source_id_fkey(
+            google_expert_documents!expert_documents_source_id_fkey(
               title
             )
           `)
@@ -201,7 +201,7 @@ class AudioBrowserService {
   async getTranscript(sourceId: string): Promise<string | null> {
     try {
       const { data, error } = await this.supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, raw_content, processed_content')
         .eq('source_id', sourceId)
         .single();

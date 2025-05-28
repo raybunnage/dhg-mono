@@ -6,7 +6,7 @@ import type { Database } from '../../../../file_types/supabase/types';
 import { toast } from 'react-hot-toast';
 
 type SourcesGoogleRow = Database['public']['Tables']['google_sources']['Row'];
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'];
 type BatchProcessingStatus = Database['public']['Views']['batch_processing_status']['Row'];
 
 interface FileMetadata {

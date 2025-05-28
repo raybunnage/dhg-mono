@@ -334,7 +334,7 @@ Return your classification as a complete, valid JSON object with all of these fi
             };
             
             const { error: updateDocError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 // Keep existing document_type_id in expert_documents if present
                 classification_confidence: classificationResponse.classification_confidence || 0,

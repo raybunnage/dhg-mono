@@ -28,7 +28,7 @@ async function main() {
     
     // Find expert documents with valid transcript content
     const { data: documents, error: docsError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         document_type_id,

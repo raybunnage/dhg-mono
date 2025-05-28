@@ -162,7 +162,7 @@ export default function Write() {
       const sourceIds = folderDocs.map(doc => doc.id);
       
       const { data: expertDocs, error: expertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .in('source_id', sourceIds);
       
@@ -224,7 +224,7 @@ export default function Write() {
     
     try {
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, title, document_type, processed_content')
         .eq('source_id', sourceId)
         .single();

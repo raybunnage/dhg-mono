@@ -33,7 +33,7 @@ const debug = {
 };
 
 // Update type to use Database type
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'];
 
 interface Expert {
   id?: string;
@@ -390,7 +390,7 @@ export async function processDocumentWithAI(documentId: string) {
 
       // Get document with all necessary relations
       const { data: docResult, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           raw_content,
@@ -426,7 +426,7 @@ export async function processDocumentWithAI(documentId: string) {
       // Query document with detailed logging
       debug.log('querying-document', {
         id: documentId,
-        table: 'expert_documents'
+        table: 'google_expert_documents'
       });
 
       // Content validation with type checking
@@ -450,7 +450,7 @@ export async function processDocumentWithAI(documentId: string) {
 
       // Update document status
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           processing_status: 'completed',
           processed_content: {
@@ -475,7 +475,7 @@ export async function processDocumentWithAI(documentId: string) {
 
       // Update error status
       await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           processing_status: 'failed',
           processing_error: processError.message

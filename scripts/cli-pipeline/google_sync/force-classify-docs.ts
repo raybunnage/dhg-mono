@@ -181,7 +181,7 @@ program
             name,
             mime_type,
             drive_id,
-            expert_documents(id, title, document_type_id)
+            google_expert_documents(id, title, document_type_id)
           `)
           .eq('id', options.id)
           .limit(1);
@@ -227,7 +227,7 @@ program
           
           // Fetch the content separately if needed
           const { data: contentData, error: contentError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('raw_content')
             .eq('id', expertDoc.id)
             .limit(1);
@@ -492,7 +492,7 @@ Return your classification as a complete, valid JSON object with all of these fi
                   // Only updating metadata and other fields in the expert_document
 
                   const { data: updateData, error: updateError } = await supabase
-                    .from('expert_documents')
+                    .from('google_expert_documents')
                     .update({
                       // document_type_id is intentionally NOT included here per requirements
                       classification_confidence: confidence,

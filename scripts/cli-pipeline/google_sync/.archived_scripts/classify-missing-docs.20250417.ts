@@ -18,7 +18,7 @@ import { google } from 'googleapis';
 // Define types
 type DocumentType = Database['public']['Tables']['document_types']['Row'];
 type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'];
 
 class DocumentClassifier {
   private supabase: any; // Using any to avoid TypeScript errors
@@ -1628,7 +1628,7 @@ This is generated mock data for testing purposes only.`;
     
     try {
       const { error } = await this.supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .insert(expertDoc);
   
       if (error) {

@@ -8,7 +8,7 @@ async function main() {
     console.log('Fetching expert documents...');
     
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_type_id, created_at')
       .order('created_at', { ascending: false })
       .limit(5);

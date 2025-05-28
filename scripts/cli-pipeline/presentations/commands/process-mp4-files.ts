@@ -124,7 +124,7 @@ processMp4FilesCommand
         // First, get the document to see what we're working with
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data: doc, error: docErr } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, title, document_type_id, source_id, raw_content')
           .eq('id', options.documentId)
           .single();
@@ -301,7 +301,7 @@ async function findExpertDocumentForSource(sourceId: string): Promise<any> {
   const supabase = SupabaseClientService.getInstance().getClient();
   
   const { data, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
     .eq('source_id', sourceId)
     .maybeSingle();
@@ -325,7 +325,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
     console.log(`Fetching expert document from Supabase...`);
     // Get the full expert document including raw_content
     const { data: expertDoc, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
       .eq('id', documentId)
       .single();
@@ -538,7 +538,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       
       console.log(`Sending update to Supabase...`);
       const { data: updatedDoc, error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update(updateData)
         .eq('id', documentId)
         .select();
@@ -558,7 +558,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       // Verify by fetching the document again
       console.log(`Verifying update by fetching updated document...`);
       const { data: verifyDoc, error: verifyError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, title, processed_content')
         .eq('id', documentId)
         .single();
@@ -594,7 +594,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       writeDebugLog(`Updating document ${documentId} status to 'error'`);
       try {
         const { error: updateError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             ai_summary_status: 'error',
             updated_at: new Date().toISOString()

@@ -57,7 +57,7 @@ async function extractSummary(documentId: string, supabase: any): Promise<any> {
   try {
     // Get the document
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content, processed_content, word_count')
       .eq('id', documentId)
       .single();

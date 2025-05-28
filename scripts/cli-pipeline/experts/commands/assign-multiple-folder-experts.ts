@@ -371,7 +371,7 @@ async function getVideoDocumentInfo(mainVideoId: string | null, folderPath?: str
     
     // Now that we have a video ID, get the expert_document
     const { data: documents, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title, raw_content')
       .eq('source_id', videoId);
     

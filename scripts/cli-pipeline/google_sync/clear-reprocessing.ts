@@ -86,7 +86,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
     // Now find expert_documents that need updating
     console.log('\nFinding expert documents with "needs_reprocessing" status...');
     const { data: needsReprocessingDocs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id, 
@@ -204,7 +204,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
             const batch = notSetRecords.slice(start, end);
             
             const { error: updateError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 document_processing_status: 'not_set',
                 document_processing_status_updated_at: new Date().toISOString()
@@ -237,7 +237,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
             const batch = skipRecords.slice(start, end);
             
             const { error: updateError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 document_processing_status: 'skip_processing',
                 document_processing_status_updated_at: new Date().toISOString(),
@@ -270,7 +270,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
     
     // Get the expert_documents with skip_processing status 
     const { data: skipReprocessingDocs, error: skipReprocessingError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id, 
@@ -383,7 +383,7 @@ async function clearReprocessingStatus(options: ClearReprocessingOptions = {}): 
                 const batch = docsToUpdate.slice(start, end);
                 
                 const { error: updateError } = await supabase
-                  .from('expert_documents')
+                  .from('google_expert_documents')
                   .update({
                     document_processing_status: 'not_set',
                     document_processing_status_updated_at: new Date().toISOString()

@@ -257,7 +257,7 @@ async function main() {
       
       // Find corresponding documents in database
       const { data: matchingDocs, error: queryError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id, 
           content_type, 
@@ -284,7 +284,7 @@ async function main() {
       if (!matchingDocs || matchingDocs.length === 0) {
         // Also query to check if the file is marked with error status for skipping
         const { data: skippedDocs } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select(`id, processing_status, processing_error, sources_google!inner(id, name)`)
           .eq('processing_status', 'error')
           .ilike('sources_google.name', `%${file.filename.replace(/\.[^/.]+$/, "")}%`);

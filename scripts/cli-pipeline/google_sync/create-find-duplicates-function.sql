@@ -1,5 +1,5 @@
 -- Function to find duplicate expert documents by source_id
-CREATE OR REPLACE FUNCTION find_duplicate_expert_documents(result_limit integer DEFAULT 50)
+CREATE OR REPLACE FUNCTION find_duplicate_google_expert_documents(result_limit integer DEFAULT 50)
 RETURNS TABLE (
   source_id uuid,
   count bigint
@@ -10,7 +10,7 @@ BEGIN
     ed.source_id,
     COUNT(*) as count
   FROM 
-    expert_documents ed
+    google_expert_documents ed
   WHERE 
     ed.source_id IS NOT NULL
   GROUP BY 

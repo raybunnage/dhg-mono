@@ -79,7 +79,7 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
     
     // Now find the corresponding expert documents
     const { data: expertDocs, error: expertDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, reprocessing_status')
       .in('source_id', foundSourceIds);
     
@@ -143,7 +143,7 @@ async function resetDocumentProcessingStatus(ids: string, options: ResetProcessi
         const batchIds = batch.map(doc => doc.id);
         
         const { data: updateData, error: updateError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             reprocessing_status: 'needs_reprocessing',
             reprocessing_status_updated_at: now

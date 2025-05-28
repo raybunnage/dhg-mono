@@ -10,7 +10,7 @@ BEGIN
     ed.processing_skip_reason,
     COUNT(*) as count
   FROM 
-    expert_documents ed
+    google_expert_documents ed
   WHERE 
     ed.google_file_id IS NOT NULL
   GROUP BY 
@@ -34,7 +34,7 @@ BEGIN
     sg.file_extension,
     COUNT(*) as count
   FROM 
-    expert_documents ed
+    google_expert_documents ed
   JOIN 
     google_sources sg ON ed.google_file_id = sg.file_id
   GROUP BY 

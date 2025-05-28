@@ -135,7 +135,7 @@ async function findUntranscribedFiles() {
   
   // 2. Get files that have been transcribed
   const { data: expertDocs, error: docsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('source_id')
     .not('raw_content', 'is', null);
   

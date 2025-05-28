@@ -426,7 +426,7 @@ async function showExpertDocuments() {
     // Get all expert documents with retry
     const expertDocsResult = await safeQuery(
       () => supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           document_type_id,

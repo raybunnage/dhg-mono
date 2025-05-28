@@ -307,7 +307,7 @@ async function validatePdfClassification(options: ValidationOptions): Promise<an
       if (verbose) console.log(`Processing PDF: ${pdf.name} (${pdf.id})`);
       
       const { data: expertDocsData, error: expertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           document_type_id,

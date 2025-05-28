@@ -78,7 +78,7 @@ export async function listNeedsReprocessing(options: {
 
     // First, get all expert documents that need reprocessing
     const { data: docsNeedingReprocessing, error: docsError } = await supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         document_type_id,

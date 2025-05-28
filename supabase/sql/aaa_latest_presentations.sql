@@ -44,7 +44,7 @@ CREATE TABLE "presentations" (
     video_source_id UUID REFERENCES google_sources(id),              -- Assuming this references a google_sources table
     web_view_link TEXT,
     root_drive_id TEXT,
-    expert_document_id UUID REFERENCES expert_documents(id),
+    expert_document_id UUID REFERENCES google_expert_documents(id),
     expert_id UUID REFERENCES experts(id),
     view_count INTEGER DEFAULT 0,
     duration_seconds INTEGER,
@@ -107,7 +107,7 @@ CREATE TABLE "presentation_assets" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     presentation_id UUID NOT NULL REFERENCES presentations(id) ON DELETE CASCADE,
     asset_source_id UUID REFERENCES google_sources(id),
-    asset_expert_document_id UUID REFERENCES expert_documents(id),
+    asset_expert_document_id UUID REFERENCES google_expert_documents(id),
     asset_role asset_role_enum,
     asset_type asset_type_enum,
     importance_level INTEGER CHECK (importance_level >= 0 AND importance_level <= 10),
@@ -167,7 +167,7 @@ CREATE TRIGGER update_presentation_assets_updated_at
 
 
   CREATE TYPE classified_entity_type AS ENUM (
-    'expert_documents',
+    'google_expert_documents',
     'documentation_files',
     'google_sources',
     'scripts'
@@ -209,7 +209,7 @@ CREATE TRIGGER update_presentation_assets_updated_at
   COMMENT ON TABLE table_classifications IS 'Junction table allowing many-to-many relationships 
   between various entities and subject classifications';
   
--- Create a view that joins table_classifications to expert_documents and related tables
+-- Create a view that joins table_classifications to google_expert_documents and related tables
 CREATE OR REPLACE VIEW document_classifications_view AS
 SELECT 
   sg.name AS file_name,
@@ -219,7 +219,7 @@ SELECT
 FROM 
   table_classifications tc
 JOIN 
-  expert_documents ed ON tc.entity_id = ed.id AND tc.entity_type = 'expert_document'
+  google_expert_documents ed ON tc.entity_id = ed.id AND tc.entity_type = 'expert_document'
 JOIN 
   document_types dt ON ed.document_type_id = dt.id
 JOIN 
@@ -230,8 +230,8 @@ ORDER BY
   sg.filename;
 
 
-the entity_id in table_classifications is id of the  expert_documents table 
-give me sql that returns all the expert_documents that do not have at least one id entry in the table_classifications table and join to the google_sources on the source_id field of expert_documents and make sure you exclude the following mime_types, document_types and all folders
+the entity_id in table_classifications is id of the  google_expert_documents table 
+give me sql that returns all the google_expert_documents that do not have at least one id entry in the table_classifications table and join to the google_sources on the source_id field of google_expert_documents and make sure you exclude the following mime_types, document_types and all folders
 
 -- unsupported folders
 bd903d99-64a1-4297-ba76-1094ab235dac 
@@ -301,7 +301,7 @@ classify-cli write-unclassified-ids
 
   From the google_sources file you can get the id field, and the video_source_id is the id of the mp4 file from google_sources. Also the web_view_link is the web view link of the mp4 file from google_sources, as well as the root_drive_id. If possible provide the duration_seconds field from the size field of the google_sources file.
 
-  Then find the related expert_documents record and you can pull the title from the dedicted field and transfer it to the presentations title field.
+  Then find the related google_expert_documents record and you can pull the title from the dedicted field and transfer it to the presentations title field.
 
   after you have created the presentation record with these basic fields for each mp4 file, 
   use this query   
@@ -317,7 +317,7 @@ for each presentation that has a high_level_folder_source_id with a depth of zer
 find that source id in the google_sources table and that folder which is have a path_depth of 0 and then do a recursive search within each of those folders to find all the files that are in it (you can go to a depth of 6 levels) - if it is a supported file then create a presentation_assets record for it and fill in the the presentation_id of the presentation record you created earlier that has the video and fill in the following fields:
 
 asset_source_id is the source_id of the file in the google_sources table
-asset_expert_document_id is the expert_document_id of the file in the expert_documents table
+asset_expert_document_id is the expert_document_id of the file in the google_expert_documents table
 skip asset_role and asset_type and and importance_level, timestamp_start and timestamp_end at the moment 
 metadata may be used later but leave it alone for now
 
@@ -373,7 +373,7 @@ image/svg+xml
 CREATE TABLE "presentation_assets" (
     presentation_id  -- comes from the presentations table
     asset_source_id UUID REFERENCES google_sources(id),
-    asset_expert_document_id UUID REFERENCES expert_documents(id),
+    asset_expert_document_id UUID REFERENCES google_expert_documents(id),
     asset_role asset_role_enum,
     asset_type asset_type_enum,
     importance_level INTEGER CHECK (importance_level >= 0 AND importance_level <= 10),

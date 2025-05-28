@@ -82,7 +82,7 @@ const GutsDemo: React.FC<GutsDemoProps> = ({ pagePath, appName }) => {
       
       // This will automatically track table usage
       const { data, error } = await trackedSupabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .textSearch('content', query)
         .limit(5);

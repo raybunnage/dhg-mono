@@ -210,7 +210,7 @@ export class PresentationService {
       
       // Get existing summary document
       const { data: summary, error: summaryError } = await this._supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, raw_content, processed_content')
         .eq('expert_id', expertId)
         .eq('document_type_id', docType.id)
@@ -276,7 +276,7 @@ export class PresentationService {
       if (options.existingSummaryId) {
         // Update existing summary
         const { error: updateError } = await this._supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             processed_content: options.summary,
             ai_summary_status: 'completed', // Set the status to completed
@@ -294,7 +294,7 @@ export class PresentationService {
       } else {
         // Create new summary document
         const { data: newDocument, error: insertError } = await this._supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .insert({
             expert_id: options.expertId,
             document_type_id: documentTypeId,
@@ -440,7 +440,7 @@ export class PresentationService {
       
       // Get existing bio document
       const { data: bio, error: bioError } = await this.supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, raw_content, processed_content')
         .eq('expert_id', expertId)
         .eq('document_type_id', docType.id)
@@ -478,7 +478,7 @@ export class PresentationService {
       if (options.existingBioId) {
         // Update existing bio
         const { error: updateError } = await this.supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             processed_content: options.bio,
             updated_at: new Date().toISOString()
@@ -492,7 +492,7 @@ export class PresentationService {
       } else {
         // Create new bio document
         const { error: insertError } = await this.supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .insert({
             expert_id: options.expertId,
             document_type_id: docType.id,
@@ -646,7 +646,7 @@ export class PresentationService {
               asset_type, 
               created_at,
               expert_document_id,
-              expert_documents(
+              google_expert_documents(
                 id, 
                 document_type_id, 
                 raw_content, 
@@ -712,7 +712,7 @@ export class PresentationService {
             for (const asset of assetsWithDocuments) {
               // Get document type name separately
               const { data: docTypeData, error: docTypeError } = await this.supabaseClient
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .select(`
                   document_type_id,
                   document_types(name),
@@ -742,7 +742,7 @@ export class PresentationService {
           // Also get expert documents related to this presentation's expert if available
           if (expertId) {
             const { data: docs, error: docsError } = await this.supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .select(`
                 id, 
                 document_type_id,
@@ -1090,7 +1090,7 @@ export class PresentationService {
       
       // Build the query for expert documents that are not Video Summary Transcripts
       let query = this._supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           document_type_id,
@@ -1493,7 +1493,7 @@ export class PresentationService {
   ): Promise<boolean> {
     try {
       const { error } = await this._supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           ai_summary_status: status,
           updated_at: new Date().toISOString() 
@@ -1531,7 +1531,7 @@ export class PresentationService {
         Logger.info(`Processing batch ${i/batchSize + 1} of ${Math.ceil(expertDocumentIds.length/batchSize)}, size: ${batch.length}`);
         
         const { error } = await this._supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ 
             ai_summary_status: status,
             updated_at: new Date().toISOString() 
@@ -1608,7 +1608,7 @@ export class PresentationService {
         
         try {
           const { data: docsInBatch, error: batchError } = await this._supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id')
             .eq('document_type_id', videoSummaryTypeId)
             .not('raw_content', 'is', null)
@@ -1710,7 +1710,7 @@ export class PresentationService {
         Logger.info(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(sourceIds.length/batchSize)} (${batchSourceIds.length} source IDs)`);
         
         const { data: docsInBatch, error: batchError } = await this._supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id')
           .eq('document_type_id', documentTypeId)
           .eq('processing_status', 'completed')
@@ -1811,7 +1811,7 @@ export class PresentationService {
       // 4. Processing status is 'completed' (lowercase)
       // 5. AI summary status is pending or null
       const { data, error } = await this._supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           document_type_id,
@@ -1834,7 +1834,7 @@ export class PresentationService {
         // Try one more time with a simplified query that doesn't check status
         Logger.info('Trying simplified query without status checks as last resort...');
         const { data: basicData, error: basicError } = await this._supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select(`
             id,
             document_type_id,
@@ -1992,7 +1992,7 @@ export class PresentationService {
           let expertDocuments: any[] = [];
           if (expertId) {
             const { data: docs, error: docsError } = await this.supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .select(`
                 id, 
                 document_type_id,
@@ -2219,7 +2219,7 @@ export class PresentationService {
         
         // Check if the main video needs text extraction (raw_content is null)
         const { data: expertDocuments, error: docsError } = await this._supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, raw_content')
           .eq('source_id', folder.main_video_id);
         
@@ -2364,7 +2364,7 @@ export class PresentationService {
           // Get expert document for the video
           let expertDocumentId = null;
           const { data: videoDocuments, error: videoDocError } = await this._supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id')
             .eq('source_id', folder.main_video_id);
             
@@ -2440,7 +2440,7 @@ export class PresentationService {
               try {
                 // First try to find a bio document
                 const { data: bioDocuments, error: bioError } = await this._supabaseClient
-                  .from('expert_documents')
+                  .from('google_expert_documents')
                   .select('id, document_type_id, expert_id')
                   .eq('expert_id', expertData[0].id)
                   .eq('document_type_id', '4') // Bio type (4 = Bio)
@@ -2454,7 +2454,7 @@ export class PresentationService {
                 } else {
                   // If no bio, try CV or Profile
                   const { data: otherDocs, error: docsError } = await this._supabaseClient
-                    .from('expert_documents')
+                    .from('google_expert_documents')
                     .select('id, document_type_id, expert_id')
                     .eq('expert_id', expertData[0].id)
                     .in('document_type_id', ['21', '22']) // 21 = CV, 22 = Profile
@@ -2467,7 +2467,7 @@ export class PresentationService {
                   } else {
                     // If no appropriate document found, try any expert document
                     const { data: anyDocs, error: anyError } = await this._supabaseClient
-                      .from('expert_documents')
+                      .from('google_expert_documents')
                       .select('id, document_type_id, expert_id')
                       .eq('expert_id', expertData[0].id)
                       .order('created_at', { ascending: false })

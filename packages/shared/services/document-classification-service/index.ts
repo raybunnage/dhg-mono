@@ -253,7 +253,7 @@ export class DocumentClassificationService {
       if (expertDocumentId) {
         // Update existing expert document
         const { error: expertUpdateError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             document_type_id: classification.document_type_id,
             document_processing_status: 'processed',
@@ -302,7 +302,7 @@ export class DocumentClassificationService {
         };
         
         const { error: insertError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .insert(newExpertDoc);
           
         if (insertError) {

@@ -70,7 +70,7 @@ async function purgeOrphanedWithPresentations(options: PurgeOptions = {}): Promi
   // Step 1: Find expert_documents with null source_id
   console.log('\nFinding expert_documents with null source_id...');
   const { data: nullSourceData, error: nullSourceError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, document_type_id, document_processing_status, created_at, updated_at')
     .is('source_id', null)
     .limit(limit);
@@ -108,7 +108,7 @@ async function purgeOrphanedWithPresentations(options: PurgeOptions = {}): Promi
   
   // Get expert_documents with non-null source_id
   const { data: expertDocsData, error: expertDocsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_type_id, document_processing_status, created_at, updated_at')
     .not('source_id', 'is', null)
     .limit(1000); // Get more records since we'll filter them in memory
@@ -208,7 +208,7 @@ async function purgeOrphanedWithPresentations(options: PurgeOptions = {}): Promi
     console.log(`Deleting ${orphanedIds.length} orphaned expert_documents...`);
     
     const { error: deleteDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .delete()
       .in('id', orphanedIds);
       

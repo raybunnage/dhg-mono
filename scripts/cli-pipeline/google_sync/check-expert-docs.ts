@@ -32,7 +32,7 @@ async function checkExpertDocs(
     
     // Query for the most recently created expert documents
     const { data: docs, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id, 

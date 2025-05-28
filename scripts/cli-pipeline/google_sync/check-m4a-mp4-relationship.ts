@@ -44,7 +44,7 @@ async function checkM4aToMp4Relationship() {
         
         // Check if this mp4 has an expert_document with title
         const { data: expertDoc } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, title, source_id')
           .eq('source_id', mp4.id)
           .single();
@@ -61,7 +61,7 @@ async function checkM4aToMp4Relationship() {
     
     // Check if the m4a itself has an expert_document
     const { data: m4aExpertDoc } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title')
       .eq('source_id', m4aFile.id)
       .single();

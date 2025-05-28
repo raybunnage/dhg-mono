@@ -220,7 +220,7 @@ async function main() {
       try {
         // Check for existing expert documents for the main_video_id
         const { data: existingDocuments, error: documentsError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, source_id')
           .in('source_id', presentationMainVideoIds);
 
@@ -343,7 +343,7 @@ async function main() {
         try {
           // Create expert document
           const { data: expertDocument, error: createError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .insert({
               source_id: main_video_id,
               document_type_id: documentTypeId, // Use the document type ID we found or the placeholder

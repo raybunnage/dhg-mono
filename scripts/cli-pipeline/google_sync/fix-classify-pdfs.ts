@@ -30,7 +30,7 @@ async function markProcessed(options: {
   
   // First get the expert documents with needs_reprocessing status
   const { data: docsToProcess, error: docsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_processing_status')
     .eq('document_processing_status', 'needs_reprocessing')
     .limit(limit * 2); // Get more than we need to account for filtering
@@ -91,7 +91,7 @@ async function markProcessed(options: {
     if (!dryRun) {
       // Update the expert document to mark it as processed
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           document_processing_status: 'reprocessing_done',
           document_processing_status_updated_at: new Date().toISOString(),

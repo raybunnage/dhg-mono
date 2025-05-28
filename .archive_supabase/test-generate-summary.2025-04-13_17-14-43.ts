@@ -66,7 +66,7 @@ async function main() {
   
   // Find expert documents of Video Summary Transcript type with raw_content
   const { data: expertDocs, error: expertDocsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select(`
       id, 
       expert_id,
@@ -186,7 +186,7 @@ TRANSCRIPT:
     let existingSummary = null;
     if (summaryDocTypeId) {
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, processed_content')
         .eq('expert_id', doc.expert_id)
         .eq('document_type_id', summaryDocTypeId)

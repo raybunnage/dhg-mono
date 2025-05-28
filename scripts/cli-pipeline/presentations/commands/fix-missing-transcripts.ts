@@ -80,7 +80,7 @@ async function linkTranscriptsToPresentation() {
       }
       
       const { data: existingDoc } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .eq('source_id', source.id)
         .eq('document_type_id', docType.id)
@@ -94,7 +94,7 @@ async function linkTranscriptsToPresentation() {
         
         // Update the content
         await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({
             raw_content: content,
             // Don't set status
@@ -106,7 +106,7 @@ async function linkTranscriptsToPresentation() {
       } else {
         // Create a new expert_document with the transcript content
         const { data: newDoc, error } = await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .insert({
             source_id: source.id,
             document_type_id: docType.id,

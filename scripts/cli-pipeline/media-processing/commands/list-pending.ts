@@ -134,7 +134,7 @@ async function main() {
     
     // Build the query
     let query = supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         content_type, 

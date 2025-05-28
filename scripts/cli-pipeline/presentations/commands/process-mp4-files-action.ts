@@ -383,7 +383,7 @@ async function getNextBatchOfMp4Files(limit: number, force: boolean = false): Pr
   // Now we can use the foreign key relationship properly
   // Let's be explicit about finding documents with sources that are MP4 files
   const { data: docsToProcess, error: docsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select(`
       id,
       title,
@@ -468,7 +468,7 @@ async function findExpertDocumentForSource(sourceId: string): Promise<any> {
   
   // First, check if there's an expert document with raw content for this source
   const { data: docWithContent, error: contentError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
     .eq('source_id', sourceId)
     .not('raw_content', 'is', null)
@@ -481,7 +481,7 @@ async function findExpertDocumentForSource(sourceId: string): Promise<any> {
   
   // If no document with content found, get any document
   const { data, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
     .eq('source_id', sourceId)
     .maybeSingle();
@@ -513,7 +513,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
     
     // Get the full expert document including raw_content
     const { data: expertDoc, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content, processed_content, title, document_type_id, ai_summary_status')
       .eq('id', documentId)
       .single();
@@ -555,7 +555,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       if (expertDoc.ai_summary_status !== 'completed') {
         try {
           const { error: updateError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               ai_summary_status: 'completed',
               updated_at: new Date().toISOString()
@@ -655,7 +655,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       
       // Update the document with the processed content and title
       const { data: updatedDoc, error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           processed_content: formattedJson,
           title: title,
@@ -693,7 +693,7 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       
       // Update document status to error
       await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           ai_summary_status: 'error',
           updated_at: new Date().toISOString()

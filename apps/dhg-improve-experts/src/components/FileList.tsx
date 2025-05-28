@@ -22,7 +22,7 @@ export const FileList = () => {
     const fetchProcessingStatus = async () => {
       // Get all processed documents
       const { data: expertDocs } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('source_id, processed_content')
         .not('processed_content', 'is', null);
 

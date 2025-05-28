@@ -14,7 +14,7 @@ async function checkSkipReprocessingStatus() {
 
     // Get the expert_documents with skip_processing status 
     const { data: skipReprocessingDocs, error: skipReprocessingError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id, 

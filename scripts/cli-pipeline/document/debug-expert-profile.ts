@@ -15,7 +15,7 @@ async function main() {
     
     const tablesCheck = [
       'experts',
-      'expert_documents',
+      'google_expert_documents',
       'documents',
       'google_sources'
     ];
@@ -83,7 +83,7 @@ async function main() {
     const { data: tables, error: tableError } = await supabase
       .from('information_schema.columns')
       .select('column_name')
-      .eq('table_name', 'expert_documents');
+      .eq('table_name', 'google_expert_documents');
     
     if (tableError) {
       console.error('Error fetching table schema:', tableError.message);
@@ -94,7 +94,7 @@ async function main() {
     // Try expert_documents with expert_id
     console.log('Trying to query expert_documents with expert_id field...');
     const { data: docs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title, processing_status, processed_content')
       .eq('expert_id', expertId)
       .limit(5);
@@ -109,7 +109,7 @@ async function main() {
       for (const field of alternateFields) {
         console.log(`Trying field: ${field}`);
         const { data: altDocs, error: altError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, title, processing_status, processed_content')
           .eq(field, expertId)
           .limit(5);

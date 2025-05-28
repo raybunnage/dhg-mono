@@ -254,7 +254,7 @@ async function purgeExpertDocumentDuplicates(options: PurgeOptions = {}): Promis
         
         if (idsToDelete.length > 0) {
           const { error } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .delete()
             .in('id', idsToDelete);
             
@@ -326,7 +326,7 @@ async function purgeOrphanedExpertDocuments(options: PurgeOptions = {}): Promise
   // Step 1: Find expert_documents with null source_id
   console.log('\nFinding expert_documents with null source_id...');
   const { data: nullSourceData, error: nullSourceError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, document_type_id, document_processing_status, created_at, updated_at')
     .is('source_id', null)
     .limit(limit);
@@ -359,7 +359,7 @@ async function purgeOrphanedExpertDocuments(options: PurgeOptions = {}): Promise
         
         if (idsToDelete.length > 0) {
           const { error: deleteError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .delete()
             .in('id', idsToDelete);
             
@@ -403,7 +403,7 @@ async function purgeOrphanedExpertDocuments(options: PurgeOptions = {}): Promise
   
   // Get expert_documents with non-null source_id
   const { data: expertDocsData, error: expertDocsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_type_id, document_processing_status, created_at, updated_at')
     .not('source_id', 'is', null)
     .limit(1000); // Get more records since we'll filter them in memory
@@ -443,7 +443,7 @@ async function purgeOrphanedExpertDocuments(options: PurgeOptions = {}): Promise
       
       if (idsToDelete.length > 0) {
         const { error: deleteError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .delete()
           .in('id', idsToDelete);
           

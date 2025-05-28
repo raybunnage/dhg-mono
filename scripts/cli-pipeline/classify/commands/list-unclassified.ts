@@ -32,7 +32,7 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
     const { data: classified, error: classifiedError } = await supabase
       .from('table_classifications')
       .select('entity_id')
-      .eq('entity_type', 'expert_documents');
+      .eq('entity_type', 'google_expert_documents');
       
     if (classifiedError) {
       Logger.error(`Error fetching classified documents: ${classifiedError.message}`);
@@ -48,7 +48,7 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
     
     // First get all expert_documents with processed content
     const { data: allDocsWithContent, error: contentError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id')
       .not('processed_content', 'is', null)
       .not('source_id', 'is', null);
@@ -85,7 +85,7 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
       Logger.info(`Fetching batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(maxToProcess/BATCH_SIZE)}...`);
       
       const { data: batchDocs, error: batchError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, title')
         .in('id', idsToFetch);
         
@@ -152,7 +152,7 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
       if (verbose && withContent) {
         // We need to fetch the processed content
         const { data: docWithContent, error: docError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('processed_content')
           .eq('id', doc.id)
           .single();

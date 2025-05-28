@@ -695,7 +695,7 @@ async function classifyPdfDocuments(
     
     // First find expert_documents with needs_reprocessing status
     const { data: docsToReprocess, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_processing_status')
       .eq('document_processing_status', 'needs_reprocessing')
       .limit(limit * 2);
@@ -789,7 +789,7 @@ async function classifyPdfDocuments(
       
       // Get all expert documents for these sources, not just those needing reprocessing
       const { data: expertDocuments, error: expertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .in('source_id', sourceIds);
         
@@ -823,7 +823,7 @@ async function classifyPdfDocuments(
     // If no files need processing so far, let's also directly check for files with needs_reprocessing status
     // This is a more direct approach to ensure we don't miss any files
     const { data: directReprocessingDocs, error: directError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_processing_status')
       .eq('document_processing_status', 'needs_reprocessing')
       .limit(limit);
@@ -1005,7 +1005,7 @@ async function classifyPdfDocuments(
                   console.log(`Updating existing document ${doc.id} to reprocessing_done status`);
                   try {
                     await supabase
-                      .from('expert_documents')
+                      .from('google_expert_documents')
                       .update({
                         document_processing_status: 'reprocessing_done',
                         document_processing_status_updated_at: new Date().toISOString()
@@ -1020,7 +1020,7 @@ async function classifyPdfDocuments(
             
             // Insert the minimal document first (always works)
             const { error: minimalError, data: minimalData } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .insert(minimalDoc)
               .select();
               
@@ -1046,7 +1046,7 @@ async function classifyPdfDocuments(
                   };
                   
                   const { error: contentUpdateError } = await supabase
-                    .from('expert_documents')
+                    .from('google_expert_documents')
                     .update({
                       classification_metadata: classificationResult,
                       processed_content: documentSummary  // Set processed_content with proper document summary structure

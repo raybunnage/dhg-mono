@@ -78,7 +78,7 @@ COMMIT;
 
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS expert_documents (
+CREATE TABLE IF NOT EXISTS google_expert_documents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   expert_id uuid REFERENCES experts(id),
   source_id uuid REFERENCES google_sources(id),
@@ -107,48 +107,48 @@ CREATE TABLE IF NOT EXISTS expert_documents (
 );
 
 -- Indexes
-CREATE INDEX idx_expert_documents_expert_id ON expert_documents(expert_id);
-CREATE INDEX idx_expert_documents_source_id ON expert_documents(source_id);
-CREATE INDEX idx_expert_documents_document_type_id ON expert_documents(document_type_id);
-CREATE INDEX idx_expert_documents_topics ON expert_documents USING gin(topics);
-CREATE INDEX idx_expert_documents_processing_status ON expert_documents(processing_status);
+CREATE INDEX idx_google_expert_documents_expert_id ON google_expert_documents(expert_id);
+CREATE INDEX idx_google_expert_documents_source_id ON google_expert_documents(source_id);
+CREATE INDEX idx_google_expert_documents_document_type_id ON google_expert_documents(document_type_id);
+CREATE INDEX idx_google_expert_documents_topics ON google_expert_documents USING gin(topics);
+CREATE INDEX idx_google_expert_documents_processing_status ON google_expert_documents(processing_status);
 
 -- Add RLS policies
-ALTER TABLE expert_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE google_expert_documents ENABLE ROW LEVEL SECURITY;
 
 DO $$ 
 BEGIN
   CREATE POLICY "Allow authenticated users to delete expert documents" 
-    ON expert_documents FOR DELETE TO authenticated
+    ON google_expert_documents FOR DELETE TO authenticated
     USING (true);
 
   CREATE POLICY "Allow authenticated users to insert expert documents" 
-    ON expert_documents FOR INSERT TO authenticated
+    ON google_expert_documents FOR INSERT TO authenticated
     WITH CHECK (true);
 
   CREATE POLICY "Allow authenticated users to update expert documents" 
-    ON expert_documents FOR UPDATE TO authenticated
+    ON google_expert_documents FOR UPDATE TO authenticated
     USING (true)
     WITH CHECK (true);
 
   CREATE POLICY "Allow users to view all expert documents" 
-    ON expert_documents FOR SELECT TO authenticated
+    ON google_expert_documents FOR SELECT TO authenticated
     USING (true);
 END $$;
 
 -- Add triggers for timestamps and user tracking
 CREATE TRIGGER set_updated_at
-  BEFORE UPDATE ON expert_documents
+  BEFORE UPDATE ON google_expert_documents
   FOR EACH ROW
   EXECUTE FUNCTION handle_updated_at();
 
 CREATE TRIGGER set_created_by_trigger
-  BEFORE INSERT ON expert_documents
+  BEFORE INSERT ON google_expert_documents
   FOR EACH ROW
   EXECUTE FUNCTION set_created_by();
 
 CREATE TRIGGER set_updated_by_trigger
-  BEFORE UPDATE ON expert_documents
+  BEFORE UPDATE ON google_expert_documents
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_by();
 
@@ -161,19 +161,19 @@ COMMIT;
 BEGIN;
 
 -- Add version tracking
-ALTER TABLE expert_documents
+ALTER TABLE google_expert_documents
   ADD COLUMN version integer DEFAULT 1,
-  ADD COLUMN previous_version_id uuid REFERENCES expert_documents(id),
+  ADD COLUMN previous_version_id uuid REFERENCES google_expert_documents(id),
   ADD COLUMN is_latest boolean DEFAULT true;
 
 -- Add content classification
-ALTER TABLE expert_documents
+ALTER TABLE google_expert_documents
   ADD COLUMN content_type text,
   ADD COLUMN classification_confidence decimal,
   ADD COLUMN classification_metadata jsonb;
 
 -- Add constraints
-ALTER TABLE expert_documents
+ALTER TABLE google_expert_documents
   ADD CONSTRAINT valid_version CHECK (version > 0),
   ADD CONSTRAINT valid_classification_metadata 
     CHECK (classification_metadata IS NULL OR jsonb_typeof(classification_metadata) = 'object'),
@@ -181,8 +181,8 @@ ALTER TABLE expert_documents
     CHECK (content_type IN ('article', 'research', 'presentation', 'report', 'other'));
 
 -- Add index for version queries
-CREATE INDEX idx_expert_documents_version ON expert_documents(version);
-CREATE INDEX idx_expert_documents_is_latest ON expert_documents(is_latest);
+CREATE INDEX idx_google_expert_documents_version ON google_expert_documents(version);
+CREATE INDEX idx_google_expert_documents_is_latest ON google_expert_documents(is_latest);
 
 COMMIT;
 

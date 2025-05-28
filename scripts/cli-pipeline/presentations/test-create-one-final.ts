@@ -48,7 +48,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
     // Get expert document for the video
     let expertDocumentId = null;
     const { data: videoDocuments, error: videoDocError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id')
       .eq('source_id', folder.main_video_id);
       
@@ -110,7 +110,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
           // Get expert document for this file
           let assetExpertDocumentId = null;
           const { data: fileDocuments, error: fileDocError } = await presentationService.supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id')
             .eq('source_id', file.id);
             

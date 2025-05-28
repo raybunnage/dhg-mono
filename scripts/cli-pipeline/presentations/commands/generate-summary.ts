@@ -167,7 +167,7 @@ generateSummaryCommand
           
           // Get the full expert document including raw_content
           const { data: expertDoc, error } = await presentationService.supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id, raw_content, processed_content')
             .eq('id', videoSummaryDoc.id)
             .single();
@@ -388,7 +388,7 @@ async function processSingleExpertDocument(
   
   // Get the full expert document including raw_content
   const { data: expertDoc, error } = await presentationService.supabaseClient
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, raw_content, processed_content, document_type_id, expert_id')
     .eq('id', expertDocumentId)
     .single();
@@ -418,7 +418,7 @@ async function processSingleExpertDocument(
     Logger.info(`Clearing existing processed_content for document ${expertDocumentId}`);
     
     const { error: clearError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ processed_content: null })
       .eq('id', expertDocumentId);
       
@@ -503,7 +503,7 @@ async function processSingleExpertDocument(
   
   // Save the processed content directly to the expert document
   const { data, error: updateError } = await presentationService.supabaseClient
-    .from('expert_documents')
+    .from('google_expert_documents')
     .update({ 
       processed_content: summary, 
       ai_summary_status: 'completed',
@@ -587,7 +587,7 @@ async function processSinglePresentation(
   
   // Get the full expert document including raw_content
   const { data: expertDoc, error } = await presentationService.supabaseClient
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, raw_content, processed_content')
     .eq('id', videoSummaryDoc.id)
     .single();

@@ -86,7 +86,7 @@ export default async function showRecentExpertDocs(options: CommandOptions): Pro
     
     // Build query
     let query = supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         status,

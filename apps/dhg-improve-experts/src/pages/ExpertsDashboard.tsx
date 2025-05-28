@@ -79,7 +79,7 @@ export default function ExpertsDashboard() {
   const fetchDocuments = async () => {
     try {
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -106,24 +106,24 @@ export default function ExpertsDashboard() {
       
       // Get documents counts
       const { count: totalDocuments } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true });
       
       // Get processed documents count
       const { count: processedDocuments } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true })
         .eq('processing_status', 'completed');
       
       // Get pending documents count
       const { count: pendingDocuments } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true })
         .eq('processing_status', 'pending');
       
       // Get failed documents count
       const { count: failedDocuments } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true })
         .eq('processing_status', 'failed');
       
@@ -198,7 +198,7 @@ export default function ExpertsDashboard() {
     try {
       // First check if there are any documents associated with this expert
       const { count, error: countError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true })
         .eq('expert_id', expert.id);
         
@@ -284,7 +284,7 @@ export default function ExpertsDashboard() {
     
     try {
       const { error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .delete()
         .eq('id', document.id);
         
@@ -317,7 +317,7 @@ export default function ExpertsDashboard() {
       
       // Update document status to processing
       await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ processing_status: 'processing' })
         .eq('id', document.id);
       
@@ -343,7 +343,7 @@ export default function ExpertsDashboard() {
       
       // Update the document with processed content
       const { error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ 
           processed_content: profileJson,
           processing_status: 'completed',
@@ -375,7 +375,7 @@ export default function ExpertsDashboard() {
       // If currently viewing the document, refresh it
       if (selectedDocument && selectedDocument.id === document.id) {
         const { data } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('*')
           .eq('id', document.id)
           .single();
@@ -390,7 +390,7 @@ export default function ExpertsDashboard() {
       
       // Update document status to failed
       await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({ processing_status: 'failed' })
         .eq('id', document.id);
         

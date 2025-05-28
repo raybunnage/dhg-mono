@@ -99,7 +99,7 @@ async function createPresentationsFromExpertDocs(): Promise<void> {
     
     // Step 3: Get expert documents of type "Video Summary Transcript"
     let expertDocQuery = supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id,

@@ -122,7 +122,7 @@ async function main() {
     
     // Query for ready documents
     const { data: documents, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         content_type, 

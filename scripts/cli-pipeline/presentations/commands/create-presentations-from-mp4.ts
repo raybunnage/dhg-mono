@@ -295,7 +295,7 @@ export const createPresentationsFromMp4Command = async (options: {
     const mp4Ids = mp4Files.map(file => file.id);
     
     const { data: expertDocs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         title,

@@ -25,7 +25,7 @@ async function testExpertProcessedContent() {
     
     // Check if this expert has processed documents
     const { data: docs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title, processing_status, processed_content')
       .eq('expert_id', expert.id)
       .eq('processing_status', 'completed')

@@ -51,7 +51,7 @@ async function resetDocumentType() {
     console.log(`\nUpdating expert_document with ID: ${expertDocumentId} to needs_reprocessing`);
     
     const { data: expertData, error: expertError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ 
         document_processing_status: 'needs_reprocessing',
         processing_skip_reason: null,

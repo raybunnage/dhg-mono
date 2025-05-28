@@ -77,7 +77,7 @@ async function generateClassificationRollup(options) {
             subject_classification_id, 
             COUNT(*) as count
           FROM table_classifications
-          WHERE entity_type = 'expert_documents'
+          WHERE entity_type = 'google_expert_documents'
           GROUP BY subject_classification_id
           ORDER BY COUNT(*) DESC
         `

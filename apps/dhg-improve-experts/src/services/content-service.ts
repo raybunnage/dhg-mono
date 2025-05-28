@@ -31,7 +31,7 @@ export class ContentService {
       Logger.debug('Getting document IDs');
       
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .order('id');
       
@@ -61,7 +61,7 @@ export class ContentService {
       
       // Get the document and its source with detailed information
       const { data: doc, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           raw_content,

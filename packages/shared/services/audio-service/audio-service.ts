@@ -111,7 +111,7 @@ export class AudioService {
   async getTranscript(sourceId: string): Promise<string | null> {
     try {
       const { data, error } = await this.supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, raw_content, processed_content')
         .eq('source_id', sourceId)
         .single();

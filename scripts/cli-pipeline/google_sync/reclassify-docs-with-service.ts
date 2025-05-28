@@ -327,7 +327,7 @@ async function processFile(
           }
           
           const { data, error } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('raw_content')
             .eq('id', originalExpertDocId)
             .single();
@@ -482,7 +482,7 @@ async function reclassifyDocuments(
       .from('google_sources')
       .select(`
         *,
-        expert_documents(id, document_processing_status)
+        google_expert_documents(id, document_processing_status)
       `)
       .not('document_type_id', 'is', null)  // Only include documents that have been classified
       .is('is_deleted', false)
@@ -652,7 +652,7 @@ async function reclassifyDocuments(
               }
               
               const { error: updateError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update(updateData)
                 .eq('id', expertDocId);
                 
@@ -684,7 +684,7 @@ async function reclassifyDocuments(
               }
               
               const { error: insertError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .insert(expertDoc);
                 
               if (insertError) {

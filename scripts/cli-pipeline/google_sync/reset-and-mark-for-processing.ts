@@ -109,7 +109,7 @@ async function markPdfsForReprocessing(options: {
     const sourceIds = pdfFiles.map(file => file.id);
     
     const { data: expertDocs, error: expertError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_processing_status')
       .in('source_id', sourceIds);
       
@@ -198,7 +198,7 @@ async function markPdfsForReprocessing(options: {
           if (file.action === 'update' && file.expertDocId) {
             // Update existing expert document
             const { error } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 document_processing_status: 'needs_reprocessing',
                 document_processing_status_updated_at: now
@@ -214,7 +214,7 @@ async function markPdfsForReprocessing(options: {
           } else if (file.action === 'create') {
             // Create new expert document
             const { error } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .insert({
                 id: uuidv4(),
                 source_id: file.id,

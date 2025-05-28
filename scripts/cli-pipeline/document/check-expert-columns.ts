@@ -37,7 +37,7 @@ async function main() {
     // Try a direct approach to get data from expert_documents with a raw SQL query
     console.log('\nAttempting direct SQL query to examine expert_documents structure');
     const { data: sqlResult, error: sqlError } = await supabase.rpc('exec_sql', {
-      sql_query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'expert_documents'"
+      sql_query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'google_expert_documents'"
     });
     
     if (sqlError) {

@@ -163,7 +163,7 @@ export async function checkReprocessingStatus(options: {
       // Debugging: For the first batch, also do a direct query to see if any have needs_reprocessing status
       if (i === 0) {
         const { data: directCheck, error: directCheckError } = await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, source_id, reprocessing_status')
           .eq('reprocessing_status', 'needs_reprocessing')
           .limit(5);
@@ -182,7 +182,7 @@ export async function checkReprocessingStatus(options: {
       }
       
       const { data: expertDocs, error: expertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, document_type_id, reprocessing_status, processing_skip_reason')
         .in('source_id', sourceIds);
       
@@ -424,7 +424,7 @@ export async function checkReprocessingStatus(options: {
           console.log('Searching for documents that need reprocessing...');
           
           const { data: directDocs, error: directError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id, source_id, document_type_id, reprocessing_status')
             .eq('reprocessing_status', 'needs_reprocessing')
             .limit(options.limit || 10);

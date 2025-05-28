@@ -163,12 +163,12 @@ export function ClassifyDocument() {
         .eq('content_extracted', false);
       
       const { count: pendingAiCount } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true })
         .eq('processing_status', 'pending');
       
       const { count: completedCount } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*', { count: 'exact', head: true })
         .eq('processing_status', 'completed');
       
@@ -444,7 +444,7 @@ export function ClassifyDocument() {
       
       // Get expert documents stats
       const { data: expertDocs, error: expertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           processing_status,
@@ -1432,7 +1432,7 @@ export function ClassifyDocument() {
 
       // Check which docs already exist in expert_documents
       const { data: existingDocs, error: existingError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('source_id');
       
       if (existingError) throw existingError;
@@ -1493,7 +1493,7 @@ export function ClassifyDocument() {
 
           // Insert the record
           const { error: insertError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .insert(insertData);
 
           if (insertError) throw insertError;
@@ -1527,7 +1527,7 @@ export function ClassifyDocument() {
     try {
       // Get unprocessed presentation announcements
       const { data: presentations, error: presentationsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           raw_content,
@@ -1601,7 +1601,7 @@ Use this exact structure, with empty arrays [] for missing information:
           
           // Update the document
           const { error: updateError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               processing_status: 'completed',
               processed_content: {

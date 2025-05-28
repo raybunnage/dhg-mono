@@ -64,17 +64,17 @@ FROM
 WHERE 
     tablename = 'document_types';
 
--- Compare with expert_documents table
+-- Compare with google_expert_documents table
 SELECT 
     relname AS table_name,
     relrowsecurity AS rls_enabled
 FROM 
     pg_class
 WHERE 
-    relname = 'expert_documents' AND
+    relname = 'google_expert_documents' AND
     relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
 
--- Get RLS policies for expert_documents
+-- Get RLS policies for google_expert_documents
 SELECT 
     schemaname,
     tablename,
@@ -87,4 +87,4 @@ SELECT
 FROM 
     pg_policies 
 WHERE 
-    tablename = 'expert_documents'; 
+    tablename = 'google_expert_documents'; 

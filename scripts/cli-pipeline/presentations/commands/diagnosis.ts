@@ -22,7 +22,7 @@ async function diagnose() {
     // Get the document
     console.log(`Fetching document with ID: ${DOCUMENT_ID}`);
     const { data: document, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content, title, processed_content')
       .eq('id', DOCUMENT_ID)
       .single();

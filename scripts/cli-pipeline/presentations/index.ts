@@ -699,7 +699,7 @@ program
       
       // Find documents with missing AI summary status
       const { data: missingStatusDocs, error: countError } = await presentationService.supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, document_type_id, expert_id, ai_summary_status, source_id')
         .eq('document_type_id', videoSummaryTypeId)
         .not('raw_content', 'is', null)
@@ -715,7 +715,7 @@ program
       
       // Count documents with completed AI summaries in this folder
       const { data: completedDocs, error: completedError } = await presentationService.supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .eq('document_type_id', videoSummaryTypeId)
         .eq('ai_summary_status', 'completed')
@@ -729,7 +729,7 @@ program
       
       // Count documents with pending AI summaries in this folder
       const { data: pendingDocs, error: pendingError } = await presentationService.supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id')
         .eq('document_type_id', videoSummaryTypeId)
         .eq('ai_summary_status', 'pending')
@@ -953,7 +953,7 @@ program
       
       // Query for expert documents with non-null ai_summary_status
       const { data, error } = await presentationService.supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           document_type_id,
@@ -1399,7 +1399,7 @@ program
           
           // Check for existing expert document
           const { data: existingDoc, error: docCheckError } = await SupabaseClientService.getInstance().getClient()
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id')
             .eq('source_id', source.id)
             .eq('document_type_id', docTypeId)
@@ -1426,7 +1426,7 @@ program
             };
             
             const { data: newDoc, error: newDocError } = await SupabaseClientService.getInstance().getClient()
-              .from('expert_documents')
+              .from('google_expert_documents')
               .insert(newExpertDoc)
               .select();
             

@@ -302,7 +302,7 @@ async function fixExpertDocumentsWithFolderTypes(options: FixBadFoldersOptions =
   
   // Get expert_documents with folder document types
   const { data: expertDocsWithFolderTypes, error: expertDocsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, document_type_id, source_id')
     .in('document_type_id', EXPERT_DOCS_FOLDER_IDS)
     .limit(options.limit || 1000);
@@ -366,7 +366,7 @@ async function fixExpertDocumentsWithFolderTypes(options: FixBadFoldersOptions =
       const now = new Date().toISOString();
       
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           document_type_id: sourceData.document_type_id,
           document_processing_status: 'needs_reprocessing',

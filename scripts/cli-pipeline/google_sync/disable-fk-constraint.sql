@@ -14,11 +14,11 @@ BEGIN
   EXECUTE 'SET session.force_constraint_checks = "off"';
   
   -- Update expert_document with the document_type_id field directly
-  EXECUTE 'UPDATE expert_documents SET document_type_id = $1, updated_at = NOW() WHERE id = $2'
+  EXECUTE 'UPDATE google_expert_documents SET document_type_id = $1, updated_at = NOW() WHERE id = $2'
     USING p_document_type_id, p_expert_doc_id;
   
   -- Update the other fields
-  EXECUTE 'UPDATE expert_documents SET ' || 
+  EXECUTE 'UPDATE google_expert_documents SET ' || 
     (SELECT string_agg(key || ' = $1->' || quote_literal(key), ', ') 
      FROM jsonb_object_keys(p_fields) AS key) ||
     ' WHERE id = $2'
@@ -41,14 +41,14 @@ BEGIN
   ) RETURNS void AS $$
   BEGIN
     -- Directly update the field without checking constraints
-    EXECUTE 'ALTER TABLE expert_documents DISABLE TRIGGER ALL';
+    EXECUTE 'ALTER TABLE google_expert_documents DISABLE TRIGGER ALL';
     
-    UPDATE expert_documents 
+    UPDATE google_expert_documents 
     SET document_type_id = p_document_type_id,
         updated_at = NOW()
     WHERE id = p_expert_doc_id;
     
-    EXECUTE 'ALTER TABLE expert_documents ENABLE TRIGGER ALL';
+    EXECUTE 'ALTER TABLE google_expert_documents ENABLE TRIGGER ALL';
   END;
   $$ LANGUAGE plpgsql SECURITY DEFINER;
   $BODY$;

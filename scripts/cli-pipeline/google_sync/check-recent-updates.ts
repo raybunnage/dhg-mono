@@ -80,7 +80,7 @@ async function checkRecentUpdates(
     const fileIds = files.map(f => f.id);
     
     const { data: expertDocs, error: expertError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         source_id, 

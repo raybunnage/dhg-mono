@@ -39,7 +39,7 @@ async function fixSpecificDocument() {
     
     // Update the document
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ 
         processing_skip_reason: null,
         document_processing_status_updated_at: new Date().toISOString()

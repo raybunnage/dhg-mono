@@ -25,7 +25,7 @@ async function analyzeUnprocessedFiles() {
 
   // Get all expert_documents source_ids
   const { data: expertDocs, error: expertError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('source_id');
 
   if (expertError) {
@@ -114,7 +114,7 @@ async function analyzeUnprocessedFiles() {
     .eq('is_deleted', false);
 
   const { count: totalExpertDocs } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('*', { count: 'exact', head: true });
 
   console.log(`Total sources_google records (DHG root): ${totalSourcesGoogle || 0}`);

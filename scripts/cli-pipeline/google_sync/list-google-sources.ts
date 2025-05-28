@@ -160,7 +160,7 @@ async function listGoogleSources(options: {
       console.log(`Fetching expert documents batch ${i/batchSize + 1} of ${Math.ceil(sourceIds.length/batchSize)}...`);
       
       const { data: batchExpertDocs, error: batchError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, document_type_id, raw_content, processed_content, reprocessing_status')
         .in('source_id', batchIds);
       

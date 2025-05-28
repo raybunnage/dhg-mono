@@ -351,7 +351,7 @@ export async function createPresentationAssetsCommand(options: {
             
             // Lookup expert document for this file source
             const { data: expertDocuments, error: docError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .select('id, document_type_id')
               .eq('source_id', file.id);
               
@@ -371,7 +371,7 @@ export async function createPresentationAssetsCommand(options: {
             // lookup the expert document for the presentation's expert_document_id
             if (file.id === presentation.video_source_id) {
               const { data: videoDocuments, error: videoDocError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .select('id, document_type_id')
                 .eq('source_id', presentation.video_source_id);
                 

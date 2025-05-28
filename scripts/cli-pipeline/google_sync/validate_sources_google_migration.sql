@@ -73,7 +73,7 @@ WHERE root_drive_id = '1uCAx4DmubXkzHtYo8d9Aw4MD-NlZ7sGc';
 
 -- 12. Check expert_document relationship integrity
 SELECT COUNT(*) AS broken_relationships
-FROM expert_documents ed
+FROM google_expert_documents ed
 LEFT JOIN google_sources_new sg ON ed.source_id = sg.id
 WHERE sg.id IS NULL AND ed.source_id IS NOT NULL;
 

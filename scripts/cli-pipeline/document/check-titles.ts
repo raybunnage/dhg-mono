@@ -4,7 +4,7 @@ async function checkTitles() {
   try {
     const supabase = SupabaseClientService.getInstance().getClient();
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title, source_id')
       .in('id', ['75444efc-6e4c-48ec-ad16-e6cebe9921f9', '1eae97b4-7804-43a2-a265-e887f619855c']);
     

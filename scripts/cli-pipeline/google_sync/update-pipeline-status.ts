@@ -42,7 +42,7 @@ async function updatePipelineStatus(options: {
     
     // Query for documents with the specified status
     const { data: documentsToUpdate, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         pipeline_status, 
@@ -122,7 +122,7 @@ async function updatePipelineStatus(options: {
     
     // Update the pipeline_status
     const { error: updateError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ 
         pipeline_status: toStatus,
         processing_error: null // Clear any previous processing errors

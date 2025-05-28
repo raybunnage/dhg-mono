@@ -101,7 +101,7 @@ TRANSCRIPT:
     
     // Get the expert document
     const { data: expertDoc, error } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content, processed_content, document_type_id')
       .eq('id', documentId)
       .single();
@@ -130,7 +130,7 @@ TRANSCRIPT:
     console.log(`Clearing existing processed_content for document ${documentId}`);
     
     const { error: clearError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ processed_content: null })
       .eq('id', documentId);
       
@@ -191,7 +191,7 @@ TRANSCRIPT:
     
     // Save the processed content directly to the expert document
     const { data, error: updateError } = await presentationService.supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ 
         processed_content: summaryResponse, 
         ai_summary_status: 'completed',

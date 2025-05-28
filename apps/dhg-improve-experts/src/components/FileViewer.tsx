@@ -12,7 +12,7 @@ import '@/styles/globals.css';  // Make sure this is imported
 
 type Json = Database['public']['Tables']['google_sources']['Row']['metadata'];
 
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'] & {
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'] & {
   id: string;
   processed_content?: string | Record<string, any>;
   batchStatus?: {
@@ -327,7 +327,7 @@ export function FileViewer({ file }: FileViewerProps) {
         if (file.expertDocument?.processing_status === 'completed') {
           console.log('Fetching processed content for completed document...');
           const { data: expertDoc, error: expertError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('processed_content')
             .eq('source_id', file.id)  // Use source_id instead of id
             .single();

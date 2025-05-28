@@ -7,7 +7,7 @@
 
 
     SELECT dt.document_type, COUNT(*) as count
-  FROM expert_documents ed
+  FROM google_expert_documents ed
   JOIN document_types dt ON ed.document_type_id = dt.id
   WHERE ed.document_type_id IS NOT NULL 
   GROUP BY dt.document_type
@@ -15,7 +15,7 @@
 
 
     SELECT dts.document_type as sg_doc_type, sg.name, ed.*  
-  FROM expert_documents ed
+  FROM google_expert_documents ed
   JOIN document_types dt ON ed.document_type_id = dt.id
   join google_sources sg on ed.source_id = sg.id
   join document_types dts on sg.document_type_id = dts.id
@@ -24,7 +24,7 @@
 '5e61bfbc-39ef-4380-80c0-592017b39b71', '5eb89387-854c-4754-baf8-3632ac286d92') and raw_content is not null
  ;
 
-select processing_skip_reason, d.* from expert_documents d where processing_skip_reason is not null
+select processing_skip_reason, d.* from google_expert_documents d where processing_skip_reason is not null
 
 
 
@@ -74,11 +74,11 @@ where  sg.mime_type = 'application/vnd.google-apps.folder' order by path_depth
 
 select * from google_sources where name = 'RCW_academic_CV_CU.pdf'
 
-select * from expert_documents where source_id ='960c9984-adb4-4e2d-8dee-5b347f569f7b'
+select * from google_expert_documents where source_id ='960c9984-adb4-4e2d-8dee-5b347f569f7b'
 
 select * from google_sources where id = 'fe943b28-fe21-4086-a9a5-1ebee71caabd'
 
-ALTER TABLE expert_documents
+ALTER TABLE google_expert_documents
   DROP COLUMN IF EXISTS ai_analysis,
   DROP COLUMN IF EXISTS ai_processing_details,
   DROP COLUMN IF EXISTS error_message,
@@ -102,8 +102,8 @@ DROP VIEW IF EXISTS batch_processing_status;
 CREATE TABLE presentations_backup_20250423 AS 
 SELECT * FROM presentations;
 
-CREATE TABLE expert_documents_backup_20250423 AS 
-SELECT * FROM expert_documents;
+CREATE TABLE google_expert_documents_backup_20250423 AS 
+SELECT * FROM google_expert_documents;
 
 
 -- Create the enum type for document processing status
@@ -113,17 +113,17 @@ CREATE TYPE document_processing_status AS ENUM (
     'skip_processing',       -- Document should be skipped (unsupported type, password protected, etc)
     'not_set'               -- Initial state
 );
--- Add the new columns to expert_documents
-ALTER TABLE expert_documents 
+-- Add the new columns to google_expert_documents
+ALTER TABLE google_expert_documents 
     ADD COLUMN IF NOT EXISTS document_processing_status document_processing_status DEFAULT 'not_set',
     
-    ALTER TABLE expert_documents 
+    ALTER TABLE google_expert_documents 
     ADD COLUMN IF NOT EXISTS document_processing_status_updated_at timestamp with time zone DEFAULT now(),
     ADD COLUMN IF NOT EXISTS processing_skip_reason text;
 
 -- Create index for efficient querying
-CREATE INDEX IF NOT EXISTS idx_expert_documents_processing_status 
-    ON expert_documents(document_processing_status);
+CREATE INDEX IF NOT EXISTS idx_google_expert_documents_processing_status 
+    ON google_expert_documents(document_processing_status);
 
 -- Create function to auto-update timestamp when status changes
 CREATE OR REPLACE FUNCTION update_document_processing_status_timestamp()
@@ -138,7 +138,7 @@ $$ LANGUAGE plpgsql;
 
 -- Create trigger to call the function
 CREATE TRIGGER trigger_document_update_document_processing_status_timestamp
-    BEFORE UPDATE ON expert_documents
+    BEFORE UPDATE ON google_expert_documents
     FOR EACH ROW
     EXECUTE FUNCTION update_document_processing_status_timestamp();
 
@@ -149,7 +149,7 @@ WITH column_stats AS (
     SELECT 
         COUNT(*) as total_rows,
         GREATEST(COUNT(*), 1) as safe_count
-    FROM expert_documents
+    FROM google_expert_documents
 )
 SELECT 
     column_name,
@@ -178,10 +178,10 @@ SELECT
             string_agg(DISTINCT fields.value, ', ' ORDER BY fields.value)
         ELSE 'Multiple values'
     END as sample_values
-FROM expert_documents
-CROSS JOIN LATERAL jsonb_each_text(to_jsonb(expert_documents)) AS fields(column_name, value)
+FROM google_expert_documents
+CROSS JOIN LATERAL jsonb_each_text(to_jsonb(google_expert_documents)) AS fields(column_name, value)
 JOIN information_schema.columns c ON 
-    c.table_name = 'expert_documents' AND 
+    c.table_name = 'google_expert_documents' AND 
     c.column_name = fields.column_name AND
     c.table_schema = 'public'
 GROUP BY column_name, data_type
@@ -228,7 +228,7 @@ select s.id,  s.mime_type, s.name from google_sources s where s.document_type_id
 where s.mime_type in ('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 and s.document_type_id is null
 
-select count(*) from expert_documents
+select count(*) from google_expert_documents
 
 
  ('application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain','application/vnd.google-apps.document')
@@ -243,7 +243,7 @@ SET document_type_id = 'ba1d7662-0168-4756-a2ea-6d964fd02ba8'
 WHERE mime_type = 'video/mp4' 
 RETURNING id, name, mime_type, document_type_id;
 
-select * from expert_documents where source_id = '49d0238f-4cbc-44d7-8c36-d2bb99515ba1'
+select * from google_expert_documents where source_id = '49d0238f-4cbc-44d7-8c36-d2bb99515ba1'
 
 select id, document_type from document_types where document_type like '%unk%'
 
@@ -776,7 +776,7 @@ DO $$
     SELECT 
         COUNT(*) as total_rows,
         GREATEST(COUNT(*), 1) as safe_count
-    FROM expert_documents
+    FROM google_expert_documents
 )
 SELECT 
     c.column_name,
@@ -805,10 +805,10 @@ SELECT
             string_agg(DISTINCT fields.value, ', ' ORDER BY fields.value)
         ELSE 'Multiple values'
     END as sample_values
-FROM expert_documents
-CROSS JOIN LATERAL jsonb_each_text(to_jsonb(expert_documents)) AS fields(column_name, value)
+FROM google_expert_documents
+CROSS JOIN LATERAL jsonb_each_text(to_jsonb(google_expert_documents)) AS fields(column_name, value)
 JOIN information_schema.columns c ON 
-    c.table_name = 'expert_documents' AND 
+    c.table_name = 'google_expert_documents' AND 
     c.column_name = fields.column_name AND
     c.table_schema = 'public'
 GROUP BY c.column_name, c.data_type

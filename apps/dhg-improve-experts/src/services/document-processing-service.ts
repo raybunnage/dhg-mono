@@ -118,7 +118,7 @@ export class DocumentProcessingService {
       
       // Find documents that need processing
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .in('processing_status', ['pending', 'failed'])
         .order('created_at', { ascending: false })

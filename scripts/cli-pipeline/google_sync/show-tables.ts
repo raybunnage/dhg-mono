@@ -29,11 +29,11 @@ async function showTables(): Promise<void> {
     }
     
     // Show expert_documents columns if it exists
-    if (tables.includes('expert_documents')) {
+    if (tables.includes('google_expert_documents')) {
       console.log('\nFetching columns for expert_documents table:');
       
       const { data: columns, error: columnsError } = await supabase
-        .rpc('get_columns', { table_name: 'expert_documents' });
+        .rpc('get_columns', { table_name: 'google_expert_documents' });
         
       if (columnsError) {
         console.error(`Error fetching columns: ${columnsError.message}`);

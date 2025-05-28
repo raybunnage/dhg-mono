@@ -424,7 +424,7 @@ async function insertSpecificFile(driveService: GoogleDriveService, fileId: stri
       
       // Insert the expert_documents record
       const { error: expertDocError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .insert(expertDocData);
         
       if (expertDocError) {
@@ -1098,7 +1098,7 @@ async function syncFiles(
               
               // Insert the expert_documents records
               const { error: expertDocError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .insert(expertDocsToInsert);
                 
               if (expertDocError) {

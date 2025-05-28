@@ -54,7 +54,7 @@ async getEnhancedProfile(expertId: string): Promise<EnhancedExpertProfile | null
     
     // Get the latest processed document with enhanced profile information
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('*')
       .eq('expert_id', expertId)
       .eq('processing_status', 'completed')

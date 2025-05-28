@@ -37,7 +37,7 @@ async function runHealthCheck() {
     const tables = [
       'google_sources',
       'experts',
-      'expert_documents',
+      'google_expert_documents',
       'document_types',
       'presentations',
       'prompts'

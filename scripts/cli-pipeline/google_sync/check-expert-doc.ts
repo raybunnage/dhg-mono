@@ -15,7 +15,7 @@ async function checkLatestExpertDocument() {
     
     // Query the most recent expert_document - simple version
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, created_at, updated_at, raw_content, document_type_id')
       .order('created_at', { ascending: false })
       .limit(1);
@@ -54,7 +54,7 @@ async function checkLatestExpertDocument() {
     
     // Fetch all columns to check processed_content
     const { data: fullData, error: fullError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('*')
       .eq('id', doc.id)
       .single();

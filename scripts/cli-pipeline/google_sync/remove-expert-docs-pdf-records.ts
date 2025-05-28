@@ -17,7 +17,7 @@ import { Database } from '../../../supabase/types';
 
 // Define types from the Supabase types file
 type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'];
 
 // Create the program
 const program = new Command();
@@ -79,7 +79,7 @@ program
       
       const sourceIds = pdfFiles.map(file => file.id);
       const { data: expertDocs, error: expertsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .in('source_id', sourceIds);
 
@@ -135,7 +135,7 @@ program
           
           try {
             const { data, error } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .delete()
               .in('id', batchIds)
               .select('id');

@@ -351,7 +351,7 @@ export class DocumentTypeService {
       
       // Check for references in expert_documents
       const { count: expertDocsCount, error: expertDocsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id', { count: 'exact', head: true })
         .eq('document_type_id', id);
       

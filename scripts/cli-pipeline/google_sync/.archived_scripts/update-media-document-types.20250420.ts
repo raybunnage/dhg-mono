@@ -164,7 +164,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           // Get corresponding expert_documents records
           const sourceIds = presentationSources.map(source => source.id);
           const { data: expertDocs, error: expertDocsError } = await supabaseClient
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id, source_id')
             .in('source_id', sourceIds);
           
@@ -177,7 +177,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             if (expertDocs.length > 0) {
               const expertDocIds = expertDocs.map(doc => doc.id);
               const { error: updateError } = await supabaseClient
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ document_type_id: '5b1f8963-0946-4e89-884d-30517eebb8a5' }) // Json Expert Summary
                 .in('id', expertDocIds);
               
@@ -204,7 +204,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Get count of expert documents with processed content
     const { data: expertDocsWithContent, error: expertDocsContentError } = await supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id')
       .not('processed_content', 'is', null);
     
@@ -231,7 +231,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
     
     // Now get the expert documents with content for actual processing
     const { data: expertDocs, error: expertDocsError } = await supabaseClient
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_type_id, processed_content, metadata')
       .not('processed_content', 'is', null);
 
@@ -245,7 +245,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         if (typeof doc.processed_content === 'string' && doc.processed_content.trim().startsWith('{"title')) {
           if (!dryRun) {
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({ document_type_id: '5b1f8963-0946-4e89-884d-30517eebb8a5' }) // Json Expert Summary
               .eq('id', doc.id);
               
@@ -279,7 +279,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
           
           if (!dryRun) {
             const { error: updateError } = await supabaseClient
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({ metadata })
               .eq('id', doc.id);
               
@@ -317,7 +317,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             
             if (!dryRun) {
               const { error: updateError } = await supabaseClient
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ metadata })
                 .eq('id', doc.id);
                 
@@ -346,7 +346,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
         
         // Get expert documents for folders
         const { data: folderDocs, error: folderDocsError } = await supabaseClient
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, metadata')
           .in('source_id', Array.from(folderSourceIds));
           
@@ -363,7 +363,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
             
             if (!dryRun) {
               const { error: updateError } = await supabaseClient
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ metadata })
                 .eq('id', doc.id);
                 
@@ -379,7 +379,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       // First, fix the 36 records with incorrect document_type_id
       console.log('\nFixing expert_documents with incorrect document_type_id...');
       const { data: incorrectDocs, error: incorrectDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, document_type_id')
         .eq('document_type_id', 'dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd');
       
@@ -424,7 +424,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
                   console.log(`[DRY RUN] Would update expert_document ${doc.id} from dd6a2cea-c74a-4c6d-8d30-eb20d2c70ddd to ${newDocTypeId} for source ${source.id} (${source.name})`);
                 } else {
                   const { error: updateError } = await supabaseClient
-                    .from('expert_documents')
+                    .from('google_expert_documents')
                     .update({ document_type_id: newDocTypeId })
                     .eq('id', doc.id);
                     
@@ -458,7 +458,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
       
       // Now specifically find expert_documents associated with these m4a sources
       const { data: m4aExpertDocs, error: m4aExpertDocsError } = await supabaseClient
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, document_type_id, processed_content')
         .in('source_id', Array.from(m4aSourceIds));
         
@@ -602,7 +602,7 @@ async function updateMediaDocumentTypes(options: { dryRun?: boolean, batchSize?:
                       }
                     } else {
                       const { error: updateError } = await supabaseClient
-                        .from('expert_documents')
+                        .from('google_expert_documents')
                         .update({ document_type_id: newDocTypeId })
                         .eq('id', doc.id);
                         

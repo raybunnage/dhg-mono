@@ -14,7 +14,7 @@ async function directReclassify() {
   // Find expert documents that need reprocessing
   console.log('Finding documents with needs_reprocessing status...');
   const { data: docs, error } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_type_id, document_processing_status')
     .eq('document_processing_status', 'needs_reprocessing')
     .limit(5);
@@ -74,7 +74,7 @@ async function directReclassify() {
       try {
         // Mark as completed directly since the PDF processor is failing
         const { error: updateError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ 
             document_processing_status: 'reprocessing_done',
             document_processing_status_updated_at: new Date().toISOString()

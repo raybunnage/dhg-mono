@@ -140,7 +140,7 @@ async function buildFolderHierarchy(rootDriveId: string): Promise<FolderItem | n
   // Get expert documents for all items
   const itemIds = allItems.map(item => item.id);
   const { data: expertDocs } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id')
     .in('source_id', itemIds);
   

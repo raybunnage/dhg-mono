@@ -31,7 +31,7 @@ program
       
       // Query for documents with raw_content not null
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, title, source_id, raw_content, document_type_id')
         .not('raw_content', 'is', null)
         .order('updated_at', { ascending: false })

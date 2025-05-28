@@ -37,7 +37,7 @@ async function fixMp4ProcessingStatus() {
     
     // Find expert documents for those sources that need reprocessing
     const { data: mp4DocsNeedingReprocessing, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id')
       .in('source_id', mp4SourceIds)
       .eq('document_processing_status', 'needs_reprocessing');
@@ -88,7 +88,7 @@ async function fixMp4ProcessingStatus() {
       }));
       
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .upsert(batchUpdateData, { onConflict: 'id' });
         
       if (updateError) {

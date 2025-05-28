@@ -116,7 +116,7 @@ export async function transferExpertMetadata({
 
       // Step 3: Get the expert_document associated with this source
       const { data: documents, error: documentsError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, processed_content, title')
         .eq('source_id', latestSource.id)
         .order('updated_at', { ascending: false })

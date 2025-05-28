@@ -171,7 +171,7 @@ export class ExpertService {
       Logger.debug(`Getting documents for expert${expertId ? ` ID: ${expertId}` : 's'}`);
       
       let query = supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .order('created_at', { ascending: false });
         
@@ -246,7 +246,7 @@ export class ExpertService {
       Logger.debug(`Getting expert document by ID: ${id}`);
       
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('*')
         .eq('id', id)
         .single();
@@ -268,7 +268,7 @@ export class ExpertService {
       Logger.debug(`Updating expert document ID: ${id}`);
       
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
@@ -294,7 +294,7 @@ export class ExpertService {
       Logger.debug(`Deleting expert document ID: ${id}`);
       
       const { error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .delete()
         .eq('id', id);
         
@@ -323,7 +323,7 @@ export class ExpertService {
       };
       
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .insert(documentData)
         .select()
         .single();

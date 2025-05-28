@@ -186,7 +186,7 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
     // Check which files already have expert_documents
     const sourceIds = pendingFiles.map(f => f.id);
     const { data: existingExpDocs } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('source_id')
       .in('source_id', sourceIds);
     
@@ -303,7 +303,7 @@ async function processNewFiles(rootDriveId?: string): Promise<ProcessResult> {
       // Insert expert_documents records
       if (expertDocsToInsert.length > 0) {
         const { data: insertedRecords, error: insertError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .insert(expertDocsToInsert)
           .select('id, source_id, created_at');
         
@@ -344,7 +344,7 @@ async function displayRecentExpertDocuments(rootDriveId?: string) {
   try {
     // Query for recent expert_documents
     let query = supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         created_at,
@@ -508,7 +508,7 @@ async function displayNewExpertDocumentsTable(expertDocuments: Array<{id: string
     const sourceIds = expertDocuments.map(ed => ed.source_id);
     
     const { data: records, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         source_id,

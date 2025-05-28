@@ -99,7 +99,7 @@ async function getTranscribableDocuments(supabase: any, limit: number): Promise<
           expert_document_id,
           metadata,
           presentations!inner(id, title, filename),
-          expert_documents!inner(
+          google_expert_documents!inner(
             id, 
             processing_status, 
             raw_content, 

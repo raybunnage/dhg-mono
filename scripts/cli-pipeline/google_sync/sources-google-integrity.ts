@@ -158,7 +158,7 @@ async function checkFilesWithFolderTypes(options: IntegrityCheckOptions = {}) {
       let processingStatus = 'none'.padEnd(18);
       try {
         const { data: docStatus } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('document_processing_status')
           .eq('source_id', record.id)
           .limit(1);
@@ -297,7 +297,7 @@ async function checkFoldersWithNonFolderTypes(options: IntegrityCheckOptions = {
       let processingStatus = 'none'.padEnd(18);
       try {
         const { data: docStatus } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('document_processing_status')
           .eq('source_id', record.id)
           .limit(1);
@@ -499,7 +499,7 @@ async function checkFileExtensionConsistency(options: IntegrityCheckOptions = {}
       let processingStatus = 'none'.padEnd(18);
       try {
         const { data: docStatus } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('document_processing_status')
           .eq('source_id', record.id)
           .limit(1);
@@ -701,7 +701,7 @@ async function checkMimeTypeConsistency(options: IntegrityCheckOptions = {}) {
       let processingStatus = 'none'.padEnd(18);
       try {
         const { data: docStatus } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('document_processing_status')
           .eq('source_id', record.id)
           .limit(1);
@@ -942,7 +942,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
         
         // First, find the corresponding expert_documents records for these sources_google entries
         const { data: expertDocuments, error: expertDocsError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, source_id')
           .in('source_id', batchIds);
           
@@ -960,7 +960,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
         
         // Update the expert_documents records
         const { error: updateError, count: batchUpdated } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ 
             document_processing_status: 'needs_reprocessing',
             document_processing_status_updated_at: now
@@ -1008,7 +1008,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
         let processingStatus = 'none'.padEnd(18);
         try {
           const { data: docStatus } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('document_processing_status')
             .eq('source_id', record.id)
             .limit(1);
@@ -1055,7 +1055,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
         let processingStatus = 'none'.padEnd(18);
         try {
           const { data: docStatus } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('document_processing_status')
             .eq('source_id', record.id)
             .limit(1);
@@ -1102,7 +1102,7 @@ async function checkFileExtensionTypeMatching(options: IntegrityCheckOptions = {
         let processingStatus = 'none'.padEnd(18);
         try {
           const { data: docStatus } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('document_processing_status')
             .eq('source_id', record.id)
             .limit(1);

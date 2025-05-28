@@ -176,7 +176,7 @@ async function processBatch(supabase: any, limit: number): Promise<{ success: nu
   try {
     // Get documents ready for processing
     const { data: pendingDocs, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type, content_extraction_status, transcription_status')
       .eq('content_type', 'presentation')
       .order('created_at', { ascending: true })

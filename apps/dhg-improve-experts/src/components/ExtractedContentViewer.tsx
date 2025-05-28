@@ -29,7 +29,7 @@ export const ExtractedContentViewer = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           raw_content,

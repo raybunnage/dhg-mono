@@ -184,7 +184,7 @@ export function SourceButtons() {
           .eq('content_extracted', false)
           .not('id', 'in', 
             supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .select('source_id')
           );
 
@@ -498,7 +498,7 @@ export function SourceButtons() {
     try {
       // 1. Get first unprocessed document that needs content
       const { data: doc, error: fetchError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           raw_content,
@@ -542,7 +542,7 @@ export function SourceButtons() {
 
       // 3. Update expert_documents with content
       const { error: updateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           raw_content: content,
           updated_at: new Date().toISOString()

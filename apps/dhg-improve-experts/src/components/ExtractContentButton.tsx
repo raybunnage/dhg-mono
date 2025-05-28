@@ -28,7 +28,7 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
     try {
       // First get the list of expert_documents that need content
       const { data: docs, error } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           source:sources_google!expert_documents_source_id_fkey (
@@ -308,7 +308,7 @@ export function ExtractContentButton({ onSuccess, onError }: ExtractContentButto
 
       // Update expert_documents with raw text
       const { error: docUpdateError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .update({
           raw_content: cleanedContent,  // This can be plain text
           processing_status: 'pending',

@@ -21,7 +21,7 @@ async function directProcess() {
     // 1. Get the expert document directly from the database
     console.log('Fetching expert document from database...');
     const { data: expertDoc, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content, title, document_type_id, source_id')
       .eq('id', documentId)
       .single();
@@ -164,7 +164,7 @@ ${expertDoc.raw_content}
     console.log(`Updating processed_content with JSON data (${JSON.stringify(jsonResult, null, 2).length} bytes)`);
     
     const { data: updatedDoc, error: updateError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .update({ 
         processed_content: JSON.stringify(jsonResult, null, 2),
         title: jsonResult.title,

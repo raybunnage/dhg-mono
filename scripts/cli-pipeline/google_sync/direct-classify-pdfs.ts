@@ -47,7 +47,7 @@ async function directClassifyPdfs(options: {
   console.log('Searching for PDF files marked as needs_reprocessing...');
   
   const { data: expertDocs, error: docsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_processing_status')
     .eq('document_processing_status', 'needs_reprocessing')
     .limit(limit * 2); // Get more than needed to account for filtering
@@ -367,7 +367,7 @@ async function directClassifyPdfs(options: {
           };
           
           const { error: contentUpdateError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               classification_metadata: classificationResult,
               processed_content: documentSummary,

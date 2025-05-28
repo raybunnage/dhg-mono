@@ -50,7 +50,7 @@ export const FileTreeItem = ({ file, level = 0, showOnlyDocs = false }: FileTree
   useEffect(() => {
     const checkProcessingStatus = async () => {
       const { data } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('processed_content')
         .eq('source_id', file.id)
         .single();

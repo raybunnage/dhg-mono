@@ -52,7 +52,7 @@ export function SupabasePage() {
     'google_sync_history',
     'google_auth_tokens',
     'experts',
-    'expert_documents',
+    'google_expert_documents',
     'prompt_categories',
     'prompt_relationships',
     'prompt_usage',
@@ -292,7 +292,7 @@ export function SupabasePage() {
         'google_sync_history', 
         'google_auth_tokens',
         'experts',
-        'expert_documents',
+        'google_expert_documents',
         'document_types',
         'function_registry',
         'prompt_categories',
@@ -453,7 +453,7 @@ export function SupabasePage() {
       // Instead, we'll create a mock foreign key data structure
       const mockForeignKeys = [
         {
-          table_name: 'expert_documents',
+          table_name: 'google_expert_documents',
           column_name: 'expert_id',
           foreign_table_name: 'experts',
           foreign_column_name: 'id'

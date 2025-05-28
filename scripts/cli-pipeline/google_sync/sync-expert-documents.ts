@@ -59,7 +59,7 @@ async function processSourcesForSync(sources: any[], options: SyncExpertDocument
     }
     
     const { data: insertedRecord, error: insertError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .insert({
         id: uuidv4(),
         source_id: source.id,
@@ -135,7 +135,7 @@ async function syncExpertDocuments(options: SyncExpertDocumentsOptions): Promise
     
     // Get all source_ids with expert_documents
     const { data: existingDocs, error: existingDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('source_id');
       
     if (existingDocsError) {

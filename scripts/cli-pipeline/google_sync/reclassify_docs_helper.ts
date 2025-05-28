@@ -20,7 +20,7 @@ export async function markReprocessingDone(documentId: string, sourceId: string)
     
     // Update the expert_document record with document_processing_status = 'reprocessing_done'
     const { error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .upsert({
         id: documentId,
         source_id: sourceId, // Required for upsert operation

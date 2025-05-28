@@ -85,7 +85,7 @@ async function deleteOrphanedRecords(options: DeleteOptions): Promise<void> {
     const orphanedIds = result.orphanedRecords.map(doc => doc.id);
     
     const { error: deleteDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .delete()
       .in('id', orphanedIds);
       

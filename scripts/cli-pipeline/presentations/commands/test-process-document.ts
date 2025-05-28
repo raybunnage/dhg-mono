@@ -42,7 +42,7 @@ testProcessDocumentCommand
       
       // Get the document with raw content
       const { data: document, error: docError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, raw_content, title, processed_content')
         .eq('id', documentId)
         .single();
@@ -135,7 +135,7 @@ testProcessDocumentCommand
         if (options.save) {
           Logger.info('Saving results to database...');
           const { data: updatedDoc, error: updateError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               processed_content: formattedJson,
               title: title,

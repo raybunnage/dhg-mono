@@ -80,7 +80,7 @@ async function findDuplicateExpertDocuments(options: DuplicateReportOptions = {}
   
   // Use a workaround by fetching all expert_documents and grouping in memory
   const { data: allExpertDocs, error: fetchError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('source_id')
     .not('source_id', 'is', null);
     
@@ -150,7 +150,7 @@ async function findDuplicateExpertDocuments(options: DuplicateReportOptions = {}
     
     // Get all expert_documents for this source
     const { data: documents, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_type_id, document_processing_status')
       .eq('source_id', sourceId)
       .order('created_at', { ascending: false });

@@ -100,7 +100,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     
     // 5. Get MP4 files that have expert documents of the specified type
     const { data: mp4WithExpertDocs, error: expertsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         source_id,

@@ -84,7 +84,7 @@ async function processFile(
     
     // Find the expert_document with content
     const { data: expertDocsData, error: expertDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, raw_content')
       .eq('source_id', sourceId)
       .eq('reprocessing_status', 'needs_reprocessing')
@@ -269,7 +269,7 @@ async function classifyMissingDocuments(
     // First, we'll try to find unclassified files (null document_type_id)
     let query = supabase
       .from('google_sources')
-      .select('*, expert_documents(id, reprocessing_status)')
+      .select('*, google_expert_documents(id, reprocessing_status)')
       .is('is_deleted', false);
     
     // We'll use two separate queries and combine the results:
@@ -283,7 +283,7 @@ async function classifyMissingDocuments(
     // 2. Find source files related to expert_documents needing reprocessing
     // First, get the list of expert_documents with needs_reprocessing status
     const { data: expertDocsNeedingReprocessing, error: expertDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('source_id')
       .eq('reprocessing_status', 'needs_reprocessing');
       
@@ -491,7 +491,7 @@ async function classifyMissingDocuments(
           // Check if this file already has an expert_document entry that needs reprocessing
           // We need to query directly since we don't have the joined data anymore
           const { data: expertDocs, error: expertDocsError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('*')
             .eq('source_id', file.id)
             .eq('reprocessing_status', 'needs_reprocessing')
@@ -511,7 +511,7 @@ async function classifyMissingDocuments(
             
             // Update only status fields to mark reprocessing complete
             const { error: updateExpertDocError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 // document_type_id: intentionally NOT updated
                 classification_confidence: classificationResult.classification_confidence || 0.75,

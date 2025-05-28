@@ -159,7 +159,7 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
     // Find documents with processed content in expert_documents
     Logger.info('Finding expert documents with processed content...');
     let expertDocsQuery = supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title, source_id, document_type_id, processed_content')
       .not('processed_content', 'is', null);
     
@@ -231,7 +231,7 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
     const { data: classifiedDocs, error: classifiedError } = await supabase
       .from('table_classifications')
       .select('entity_id')
-      .eq('entity_type', 'expert_documents')
+      .eq('entity_type', 'google_expert_documents')
       .in('entity_id', docIds);
     
     if (classifiedError) {
@@ -353,7 +353,7 @@ async function processDocument(
 ): Promise<DocumentProcessResult> {
   const { dryRun, verbose, maxRetries, retryDelayMs } = options;
   const supabase = SupabaseClientService.getInstance().getClient();
-  const entityType = 'expert_documents';
+  const entityType = 'google_expert_documents';
   
   try {
     if (!doc.processed_content) {

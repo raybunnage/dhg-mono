@@ -131,7 +131,7 @@ async function findDocumentsToTranscribe(supabase: any, limit: number): Promise<
   try {
     // First, check for documents marked as pending or processing
     const { data: pendingDocs, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type, raw_content, processing_status')
       .eq('content_type', 'presentation')
       .in('processing_status', ['pending', 'processing']) // Check both statuses
@@ -153,7 +153,7 @@ async function findDocumentsToTranscribe(supabase: any, limit: number): Promise<
     // regardless of processing_status (may have been incorrectly set)
     Logger.info('No pending documents found, checking for any unprocessed documents...');
     const { data: unprocessedDocs, error: unprocessedError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type, raw_content, processing_status')
       .eq('content_type', 'presentation')
       .is('raw_content', null)
@@ -280,7 +280,7 @@ async function main() {
     for (const docId of documentIds) {
       // Get the document source info
       const { data: document, error: docError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .eq('id', docId)
         .single();
@@ -324,7 +324,7 @@ async function main() {
           
           // Update document status to error
           const { error: updateError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({ 
               processing_status: 'error',
               processing_error: `Audio file not found for ${sourceFilename}`

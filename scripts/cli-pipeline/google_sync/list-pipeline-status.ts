@@ -172,7 +172,7 @@ async function listPipelineStatus(options: {
       
       // Build the query to get all expert documents for these sources
       let expertQuery = supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, document_type_id, raw_content, processed_content, pipeline_status, classification_metadata')
         .in('source_id', batchIds);
       

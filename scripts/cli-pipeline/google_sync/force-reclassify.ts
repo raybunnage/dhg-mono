@@ -50,7 +50,7 @@ export async function forceReclassifyDocument(
     
     // 2. Get the expert document
     const { data: document, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('*')
       .eq('id', documentId)
       .single();
@@ -195,7 +195,7 @@ export async function forceReclassifyDocument(
             
             // Update the document with skip status
             await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({
                 document_processing_status: 'skip_processing',
                 document_processing_status_updated_at: new Date().toISOString(),
@@ -233,7 +233,7 @@ export async function forceReclassifyDocument(
           
           // Update the document with skip status
           await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .update({
               document_processing_status: 'skip_processing',
               document_processing_status_updated_at: new Date().toISOString(),
@@ -497,7 +497,7 @@ Based on the filename and any context, please help classify this document approp
         
         // Update the database
         const { error: updateError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update(updateData)
           .eq('id', documentId);
           

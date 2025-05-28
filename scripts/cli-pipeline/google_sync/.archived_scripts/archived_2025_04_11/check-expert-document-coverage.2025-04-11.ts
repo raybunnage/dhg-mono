@@ -133,7 +133,7 @@ async function checkExpertDocumentCoverage(): Promise<void> {
     const mp4FileIds = mp4FilesInFolder.map(file => file.id);
     
     const { data: expertDocuments, error: expertDocError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id, 
         document_type_id, 

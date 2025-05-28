@@ -13,7 +13,7 @@ async function testQuery(): Promise<void> {
     console.log('Testing query on expert_documents...');
     
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('*')
       .limit(1);
       

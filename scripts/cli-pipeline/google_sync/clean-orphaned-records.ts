@@ -43,7 +43,7 @@ async function cleanOrphanedRecords(options: CleanOptions): Promise<void> {
   
   // Get all expert_documents
   const { data: expertDocs, error: docsError } = await supabase
-    .from('expert_documents')
+    .from('google_expert_documents')
     .select('id, source_id, document_type_id, document_processing_status, created_at');
     
   if (docsError) {
@@ -123,7 +123,7 @@ async function cleanOrphanedRecords(options: CleanOptions): Promise<void> {
     console.log(`Deleting ${orphanedIds.length} orphaned expert_documents...`);
     
     const { error: deleteDocsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .delete()
       .in('id', orphanedIds);
       

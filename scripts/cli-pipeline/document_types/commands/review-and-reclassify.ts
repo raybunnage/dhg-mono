@@ -136,7 +136,7 @@ async function reviewAndReclassify(options: ReviewAndReclassifyOptions): Promise
       
       // Get the expert_document for this source
       const { data: expertDocs, error: expertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, title, raw_content')
         .eq('source_id', document.id)
         .limit(1);

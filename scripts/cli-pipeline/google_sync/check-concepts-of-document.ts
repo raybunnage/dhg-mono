@@ -31,7 +31,7 @@ async function checkConcepts() {
     
     // Get expert_document record
     const { data: expertDoc, error: expertError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, title, reprocessing_status, classification_confidence, classification_reasoning, key_insights')
       .eq('source_id', sourceId)
       .limit(1);

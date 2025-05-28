@@ -8,7 +8,7 @@ async function checkAvailableTables() {
   // Check for common tables
   const commonTables = [
     'experts',
-    'expert_documents', 
+    'google_expert_documents', 
     'document_types',
     'google_sources',
     'scripts',

@@ -59,7 +59,7 @@ async function identifyOrphanedRecords(options: IdentifyOptions): Promise<void> 
     // Step 2: Get expert_documents
     console.log('Fetching expert_documents...');
     const { data: expertDocs, error: docsError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, document_type_id, document_processing_status, created_at');
       
     if (docsError) {

@@ -113,7 +113,7 @@ async function processUnprocessed(options: {
       console.log(`Finding unprocessed files with mime type: ${currentMimeType}...`);
       
       const { data: unprocessedFiles, error: unprocessedFilesError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           source_id,
@@ -177,7 +177,7 @@ async function processUnprocessed(options: {
         console.log(`Updating status to extraction_in_progress...`);
         
         const { error: updateStatusError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .update({ pipeline_status: 'extraction_in_progress' })
           .eq('id', expertDocId);
           
@@ -286,7 +286,7 @@ async function processUnprocessed(options: {
               console.log(`Updating expert document with extracted content...`);
               
               const { error: updateContentError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ 
                   raw_content: extractedContent,
                   pipeline_status: 'needs_classification',
@@ -298,7 +298,7 @@ async function processUnprocessed(options: {
                 console.error(`Error updating content: ${updateContentError.message}`);
                 
                 const { error: updateFailStatusError } = await supabase
-                  .from('expert_documents')
+                  .from('google_expert_documents')
                   .update({ 
                     pipeline_status: 'extraction_failed',
                     processing_error: `Error updating content: ${updateContentError.message}`
@@ -316,7 +316,7 @@ async function processUnprocessed(options: {
               console.error(`Error: Extracted content is insufficient (${result.value?.length || 0} characters)`);
               
               const { error: updateFailStatusError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ 
                   pipeline_status: 'extraction_failed',
                   processing_error: `Insufficient content extracted from document (${result.value?.length || 0} characters)`
@@ -331,7 +331,7 @@ async function processUnprocessed(options: {
             console.error(`Error processing DOCX file: ${docxError instanceof Error ? docxError.message : String(docxError)}`);
             
             const { error: updateFailStatusError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({ 
                 pipeline_status: 'extraction_failed',
                 processing_error: `DOCX processing error: ${docxError instanceof Error ? docxError.message : String(docxError)}`
@@ -528,7 +528,7 @@ async function processUnprocessed(options: {
 
               // 6.3 Update expert_documents with classification results
               const { error: updateExpertDocError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ 
                   document_type_id: pdfExpertDocumentTypeId, // Fixed document_type_id for PDF classifier
                   classification_metadata: classificationResult,
@@ -543,7 +543,7 @@ async function processUnprocessed(options: {
                 
                 // Update status to extraction_failed
                 const { error: updateFailStatusError } = await supabase
-                  .from('expert_documents')
+                  .from('google_expert_documents')
                   .update({ 
                     pipeline_status: 'extraction_failed',
                     processing_error: `Error updating expert document: ${updateExpertDocError.message}`
@@ -560,7 +560,7 @@ async function processUnprocessed(options: {
               
               // Update the status to extraction_failed
               const { error: updateFailStatusError } = await supabase
-                .from('expert_documents')
+                .from('google_expert_documents')
                 .update({ 
                   pipeline_status: 'extraction_failed',
                   processing_error: `Claude API error: ${claudeError instanceof Error ? claudeError.message : String(claudeError)}`
@@ -586,7 +586,7 @@ async function processUnprocessed(options: {
             
             // Update status to extraction_failed
             const { error: updateFailStatusError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({ 
                 pipeline_status: 'extraction_failed',
                 processing_error: `Error processing PDF: ${pdfError instanceof Error ? pdfError.message : String(pdfError)}`
@@ -603,7 +603,7 @@ async function processUnprocessed(options: {
         try {
           if (file && file.id) {
             const { error: updateError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({ 
                 pipeline_status: 'extraction_failed',
                 processing_error: `General processing error: ${error instanceof Error ? error.message : String(error)}`

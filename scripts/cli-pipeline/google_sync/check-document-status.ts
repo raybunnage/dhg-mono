@@ -35,7 +35,7 @@ async function checkDocumentStatus() {
     
     // Get document status
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select(`
         id,
         document_processing_status,
@@ -111,7 +111,7 @@ async function checkDocumentStatus() {
               name,
               mime_type,
               document_type_id,
-              expert_documents:expert_documents(document_processing_status, processing_skip_reason)
+              expert_documents:google_expert_documents(document_processing_status, processing_skip_reason)
             `)
             .eq('mime_type', 'application/pdf')
             .is('document_type_id', null)

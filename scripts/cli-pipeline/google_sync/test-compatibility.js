@@ -306,7 +306,7 @@ async function checkExpertReferences(supabase) {
       sql: `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
-          WHERE table_name = 'expert_documents'
+          WHERE table_name = 'google_expert_documents'
         ) AS exists
       `
     });

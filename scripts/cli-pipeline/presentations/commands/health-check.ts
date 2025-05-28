@@ -114,7 +114,7 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           let expertDocsError;
           try {
             const response = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .select('*', { count: 'exact', head: true });
               
             if (response.error) {

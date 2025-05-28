@@ -38,7 +38,7 @@ function sleep(ms: number): Promise<void> {
 export async function classifySourceCommand(options: ClassifySourceOptions): Promise<void> {
   const {
     sourceId,
-    entityType = 'expert_documents',
+    entityType = 'google_expert_documents',
     verbose = false,
     dryRun = false,
     maxRetries = 3,
@@ -56,12 +56,12 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
 
     // 1. If we're classifying an expert_document, we need to fetch it first
     let expertDocument: any;
-    if (entityType === 'expert_documents') {
+    if (entityType === 'google_expert_documents') {
       // Check if this is an expert_document ID or a sources_google ID
       
       // Try to get the expert_document directly
       const { data: doc, error: docError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id, processed_content, title')
         .eq('id', sourceId)
         .single();
@@ -71,7 +71,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
         Logger.info(`ID ${sourceId} not found directly as expert_document, checking as source ID...`);
         
         const { data: docBySource, error: sourceError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, source_id, processed_content, title')
           .eq('source_id', sourceId)
           .single();

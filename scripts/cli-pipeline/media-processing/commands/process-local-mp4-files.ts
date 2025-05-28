@@ -181,7 +181,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
     // Then find expert documents linked to those sources
     const sourceIds = matchingSources.map(source => source.id);
     const { data: matchingDocs, error: queryError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, content_type')
       .eq('content_type', 'presentation')
       .in('source_id', sourceIds);
@@ -209,7 +209,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
       // Find documents linked to these sources
       const sourceIdsWithExt = matchingSourcesWithExt.map(source => source.id);
       const { data: matchingDocsWithExt } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, source_id')
         .eq('content_type', 'presentation')
         .in('source_id', sourceIdsWithExt);
@@ -253,7 +253,7 @@ async function findDocumentIdFromFilename(filename: string, supabase: any): Prom
 async function checkExpertDocument(supabase: any, sourceId: string): Promise<string | null> {
   try {
     const { data, error } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, source_id, raw_content')
       .eq('source_id', sourceId);
 
@@ -341,7 +341,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
     
     // Step 2: Now check if an expert_document exists for this source
     const { data: docData, error: docError } = await supabase
-      .from('expert_documents')
+      .from('google_expert_documents')
       .select('id, content_type')
       .eq('source_id', sourceId);
     
@@ -360,7 +360,7 @@ async function registerMp4File(supabase: any, fileInfo: MP4FileInfo): Promise<st
       
       // Insert the expert document directly
       const { data: newDoc, error: insertError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .insert({
           source_id: sourceId,
           content_type: 'presentation',
@@ -639,7 +639,7 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
       if (fileInfo.documentId) {
         try {
           const { data: docStatus, error: statusError } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('id, processing_status')
             .eq('id', fileInfo.documentId)
             .single();
@@ -648,7 +648,7 @@ async function processMP4Files(): Promise<MP4FileInfo[]> {
             Logger.info(`Setting processing status to pending for document ${fileInfo.documentId}`);
             
             const { error: updateError } = await supabase
-              .from('expert_documents')
+              .from('google_expert_documents')
               .update({ 
                 processing_status: 'pending',
                 raw_content: null, // Clear any existing content to force reprocessing

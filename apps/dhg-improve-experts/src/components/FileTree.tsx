@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FileTreeItem } from './FileTreeItem';
 import type { Database } from '../../../../supabase/types';
 
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'];
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'];
 type SourcesGoogle = Database['public']['Tables']['google_sources']['Row'];
 type BatchProcessingStatus = Database['public']['Views']['batch_processing_status']['Row'];
 type Json = Database['public']['Tables']['google_sources']['Row']['metadata'];

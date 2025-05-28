@@ -41,7 +41,7 @@ async function checkRawContent() {
       
       // Check for expert_documents with this source ID
       const { data: expertDocs } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select('id, document_type_id, status, created_at, updated_at')
         .eq('source_id', presentation.main_video_id);
       
@@ -55,7 +55,7 @@ async function checkRawContent() {
           
           // Check if this doc has raw_content
           const { data, error } = await supabase
-            .from('expert_documents')
+            .from('google_expert_documents')
             .select('raw_content')
             .eq('id', doc.id)
             .single();

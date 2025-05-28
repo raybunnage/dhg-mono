@@ -5,7 +5,7 @@ DROP TRIGGER IF EXISTS validate_google_sources_users ON public.google_sources;
 
 -- Drop functions that reference these columns
 DROP FUNCTION IF EXISTS public.validate_user_references;
-DROP FUNCTION IF EXISTS public.fix_expert_documents_nulls;
+DROP FUNCTION IF EXISTS public.fix_google_expert_documents_nulls;
 DROP FUNCTION IF EXISTS public.admin_fix_audio_processing_configs;
 DROP FUNCTION IF EXISTS public.transfer_temp_experts_to_experts;
 

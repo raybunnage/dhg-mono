@@ -188,7 +188,7 @@ type SourceGoogle = Database['public']['Tables']['google_sources']['Row'] & {
   document_type?: { document_type: string; mime_type: string | null } | null;
 };
 
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'] & {
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'] & {
   processed_content: any;
   title: string | null;
   document_type?: { document_type: string } | null;
@@ -1370,7 +1370,7 @@ export function Home() {
       
       // If no bio in experts table, try to fetch an expert document with the bio document_type_id
       const { data: bioDocuments, error: bioError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           processed_content,
@@ -1443,7 +1443,7 @@ export function Home() {
         const sourceId = expertAssets[0].source_id;
         
         const { data: anyDocument, error: anyError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, processed_content')
           .eq('source_id', sourceId)
           .limit(1);

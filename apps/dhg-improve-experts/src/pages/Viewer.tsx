@@ -28,7 +28,7 @@ function Viewer() {
           .from('google_sources')
           .select(`
             *,
-            expert_documents(id, processing_status, processed_content, batch_id, error_message, 
+            google_expert_documents(id, processing_status, processed_content, batch_id, error_message, 
                             queued_at, processing_started_at, processing_completed_at, 
                             processing_error, retry_count)
           `)
