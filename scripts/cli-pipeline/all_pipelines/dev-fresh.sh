@@ -16,7 +16,8 @@ fi
 
 APP_NAME=$1
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MONOREPO_ROOT="$(dirname "$SCRIPT_DIR")"
+# Navigate up three levels: all_pipelines -> cli-pipeline -> scripts -> root
+MONOREPO_ROOT="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
 APP_PATH="$MONOREPO_ROOT/apps/$APP_NAME"
 
 if [ ! -d "$APP_PATH" ]; then

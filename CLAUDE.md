@@ -120,6 +120,29 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
    - This is the single source of truth for all table structures and relationships
 
+   **Database Table Naming Convention**:
+   When creating new tables, follow the established prefix pattern:
+   - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
+   - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
+   - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
+   - `learn_` - Learning platform features (e.g., learn_courses, learn_progress)
+   - `media_` - Media & presentations (e.g., media_thumbnails, media_transcripts)
+   - `doc_` - Document management (e.g., doc_versions, doc_comments)
+   - `expert_` - Expert system (e.g., expert_ratings, expert_specialties)
+   - `email_` - Email system (e.g., email_templates, email_logs)
+   - `command_` - Command & analytics (e.g., command_aliases, command_logs)
+   - `filter_` - User filtering & preferences (e.g., filter_rules, filter_history)
+   - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
+   - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
+   - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
+   
+   **Examples**: 
+   - New authentication feature → `auth_password_resets`
+   - New AI feature → `ai_embeddings`
+   - New learning feature → `learn_quiz_results`
+   
+   Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
+
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
    - Check for hardcoded secrets before submitting any code

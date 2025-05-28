@@ -46,6 +46,7 @@ print_help() {
   echo "  profile update           Update user profile"
   echo "  test                     Test authentication service"
   echo "  verify-migration         Verify email allowlist migration"
+  echo "  sync-auth-ids            Sync auth_user_id fields in auth_allowed_emails"
   echo "  help                     Show this help message"
   echo ""
   echo "Options:"
@@ -191,6 +192,14 @@ cmd_verify_migration() {
   track_command "verify-migration" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/verify-email-allowlist-migration.ts"
 }
 
+# Sync auth user IDs command
+cmd_sync_auth_ids() {
+  echo "🔄 DHG Authentication - Sync Auth User IDs"
+  echo ""
+  
+  track_command "sync-auth-ids" "cd $PROJECT_ROOT && npx ts-node $SCRIPT_DIR/commands/sync-auth-user-ids.ts"
+}
+
 # Parse command line arguments
 COMMAND=""
 API_KEY=""
@@ -211,7 +220,7 @@ while [[ $# -gt 0 ]]; do
       PASSWORD="$2"
       shift 2
       ;;
-    login|logout|whoami|profile|test|verify-migration|help)
+    login|logout|whoami|profile|test|verify-migration|sync-auth-ids|help)
       COMMAND="$1"
       shift
       ;;
@@ -272,6 +281,9 @@ case $COMMAND in
     ;;
   verify-migration)
     cmd_verify_migration
+    ;;
+  sync-auth-ids)
+    cmd_sync_auth_ids
     ;;
   help|"")
     print_help

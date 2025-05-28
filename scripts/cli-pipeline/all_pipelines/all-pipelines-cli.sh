@@ -111,6 +111,21 @@ quick_restart() {
   track_command "quick-restart" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/cli.ts quick-restart $@"
 }
 
+# Command handler for clear-all-caches (shell version)
+clear_all_caches() {
+  track_command "clear-all-caches" "$SCRIPT_DIR/clear-all-caches.sh $@"
+}
+
+# Command handler for clear-app-cache
+clear_app_cache() {
+  track_command "clear-app-cache" "$SCRIPT_DIR/clear-app-cache.sh $@"
+}
+
+# Command handler for dev-fresh
+dev_fresh() {
+  track_command "dev-fresh" "$SCRIPT_DIR/dev-fresh.sh $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -129,7 +144,10 @@ show_help() {
   echo "  * classification-rollup     Generate a rollup report of subject classifications (8 uses)"
   echo ""
   echo "CACHE MANAGEMENT:"
-  echo "  * clear-cache               Clear all caches when dev environment gets stuck (NEW)"
+  echo "  * clear-cache               Clear caches via TypeScript (limited functionality)"
+  echo "  * clear-all-caches          Clear ALL caches comprehensively (Vite, dist, build, etc.)"
+  echo "  * clear-app-cache <app>     Clear cache for a specific app (e.g., dhg-audio)"
+  echo "  * dev-fresh <app>           Clear cache and start fresh dev server for an app"
   echo "    quick-restart             Quick restart - kills Vite and clears Vite cache only"
   echo ""
   echo "SYSTEM:"
@@ -174,7 +192,16 @@ show_help() {
   echo "  ./all-pipelines-cli.sh classification-rollup"
   echo ""
   echo "CACHE MANAGEMENT:"
-  echo "  # Clear all caches when things get stuck"
+  echo "  # Clear all caches across the entire monorepo"
+  echo "  ./all-pipelines-cli.sh clear-all-caches"
+  echo ""
+  echo "  # Clear cache for a specific app"
+  echo "  ./all-pipelines-cli.sh clear-app-cache dhg-audio"
+  echo ""
+  echo "  # Clear cache and start fresh dev server"
+  echo "  ./all-pipelines-cli.sh dev-fresh dhg-hub"
+  echo ""
+  echo "  # Clear caches via TypeScript (limited)"
   echo "  ./all-pipelines-cli.sh clear-cache"
   echo ""
   echo "  # Clear all caches with verbose output"
@@ -203,6 +230,15 @@ case "$1" in
     ;;
   "quick-restart")
     quick_restart "${@:2}"
+    ;;
+  "clear-all-caches")
+    clear_all_caches "${@:2}"
+    ;;
+  "clear-app-cache")
+    clear_app_cache "${@:2}"
+    ;;
+  "dev-fresh")
+    dev_fresh "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

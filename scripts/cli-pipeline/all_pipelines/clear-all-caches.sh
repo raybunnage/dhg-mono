@@ -1,89 +1,134 @@
 #!/bin/bash
 
-# Complete cache clearing script for DHG monorepo
+# Clear All Caches Script - Ensures you see the latest code changes
+# This script clears all possible caches that might prevent seeing code updates
 
-echo "🧹 Starting complete cache cleanup..."
+echo "🧹 Clearing all caches to ensure latest code changes are visible..."
 
-# Kill all running processes
-echo "⏹️  Killing all Node.js processes..."
-pkill -f "node" 2>/dev/null || true
-pkill -f "vite" 2>/dev/null || true
-pkill -f "tsx" 2>/dev/null || true
-pkill -f "ts-node" 2>/dev/null || true
-sleep 2
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Navigate up three levels: all_pipelines -> cli-pipeline -> scripts -> root
+MONOREPO_ROOT="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
 
-# Clear Vite caches
-echo "🗑️  Clearing Vite caches..."
-find . -name ".vite" -type d -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
-find . -path "*/node_modules/.vite" -type d -exec rm -rf {} + 2>/dev/null || true
+# Function to clear caches for a specific app
+clear_app_caches() {
+    local app_path=$1
+    local app_name=$(basename "$app_path")
+    
+    echo ""
+    echo "📦 Clearing caches for $app_name..."
+    
+    if [ -d "$app_path" ]; then
+        # Kill any running vite processes for this app
+        local port_file="$app_path/.vite-port"
+        if [ -f "$port_file" ]; then
+            local port=$(cat "$port_file" 2>/dev/null)
+            if [ ! -z "$port" ]; then
+                echo "   Killing processes on port $port..."
+                lsof -ti:$port | xargs kill -9 2>/dev/null || true
+            fi
+        fi
+        
+        # Clear Vite cache
+        if [ -d "$app_path/node_modules/.vite" ]; then
+            echo "   Removing Vite cache..."
+            rm -rf "$app_path/node_modules/.vite"
+        fi
+        
+        # Clear dist/build directories
+        if [ -d "$app_path/dist" ]; then
+            echo "   Removing dist directory..."
+            rm -rf "$app_path/dist"
+        fi
+        
+        if [ -d "$app_path/build" ]; then
+            echo "   Removing build directory..."
+            rm -rf "$app_path/build"
+        fi
+        
+        # Clear any .cache directories
+        find "$app_path" -name ".cache" -type d -exec rm -rf {} + 2>/dev/null || true
+        
+        # Clear TypeScript build info
+        find "$app_path" -name "*.tsbuildinfo" -type f -delete 2>/dev/null || true
+        
+        # Clear any temp directories
+        find "$app_path" -name "temp" -type d -exec rm -rf {} + 2>/dev/null || true
+        find "$app_path" -name "tmp" -type d -exec rm -rf {} + 2>/dev/null || true
+        
+        echo "   ✅ Caches cleared for $app_name"
+    fi
+}
 
-# Clear dist folders
-echo "📦 Clearing dist folders..."
-find . -name "dist" -type d -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+# Function to kill all node processes
+kill_all_node_processes() {
+    echo ""
+    echo "🔪 Killing all Node.js processes..."
+    
+    # Kill all node processes
+    pkill -f node 2>/dev/null || true
+    pkill -f "npm" 2>/dev/null || true
+    pkill -f "pnpm" 2>/dev/null || true
+    pkill -f "vite" 2>/dev/null || true
+    
+    # Kill processes on common development ports
+    for port in 3000 3001 4000 5000 5173 5174 5175 5176 5177 5178 5179 5180 5181 5182 5183 5184 5185 5186 5187 5188 5189 5190 5191 5192 5193 5194 5195; do
+        lsof -ti:$port | xargs kill -9 2>/dev/null || true
+    done
+    
+    echo "   ✅ All Node.js processes killed"
+}
 
-# Clear build folders
-echo "🏗️  Clearing build folders..."
-find . -name "build" -type d -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+# Function to clear pnpm cache
+clear_pnpm_cache() {
+    echo ""
+    echo "📦 Clearing pnpm cache..."
+    pnpm store prune 2>/dev/null || true
+    echo "   ✅ pnpm cache cleared"
+}
 
-# Clear .cache folders
-echo "💾 Clearing .cache folders..."
-find . -name ".cache" -type d -exec rm -rf {} + 2>/dev/null || true
+# Function to clear browser caches (for Chrome/Chromium)
+suggest_browser_cache_clear() {
+    echo ""
+    echo "🌐 Browser Cache:"
+    echo "   To ensure you see the latest changes in your browser:"
+    echo "   1. Open Developer Tools (F12 or Cmd+Option+I)"
+    echo "   2. Right-click the refresh button"
+    echo "   3. Select 'Empty Cache and Hard Reload'"
+    echo "   OR"
+    echo "   Use Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux) for hard refresh"
+}
 
-# Clear parcel cache
-echo "📦 Clearing parcel cache..."
-find . -name ".parcel-cache" -type d -exec rm -rf {} + 2>/dev/null || true
+# Main execution
+cd "$MONOREPO_ROOT"
 
-# Clear turbo cache
-echo "🚀 Clearing turbo cache..."
-rm -rf .turbo 2>/dev/null || true
-find . -name ".turbo" -type d -exec rm -rf {} + 2>/dev/null || true
+# Kill all node processes first
+kill_all_node_processes
 
-# Clear pnpm store
-echo "📦 Clearing pnpm store..."
-pnpm store prune 2>/dev/null || true
-
-# Clear TypeScript build info
-echo "📘 Clearing TypeScript build info..."
-find . -name "*.tsbuildinfo" -type f -exec rm -f {} + 2>/dev/null || true
-
-# Clear temp folders
-echo "🗑️  Clearing temp folders..."
-find . -name "temp" -type d -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
-find . -name "tmp" -type d -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
-
-# Clear specific app caches
-echo "🎯 Clearing app-specific caches..."
-rm -rf apps/*/node_modules/.cache 2>/dev/null || true
-rm -rf packages/*/node_modules/.cache 2>/dev/null || true
-
-# Clear next.js cache if exists
-echo "▲ Clearing Next.js cache..."
-find . -name ".next" -type d -exec rm -rf {} + 2>/dev/null || true
-
-# Clear rollup cache
-echo "🎯 Clearing rollup cache..."
-find . -name ".rollup.cache" -type d -exec rm -rf {} + 2>/dev/null || true
-
-# Clear browser cache hint
+# Clear caches for all apps
 echo ""
-echo "🌐 Browser Cache Clearing:"
-echo "   1. Open Chrome DevTools (F12)"
-echo "   2. Right-click the Refresh button"
-echo "   3. Select 'Empty Cache and Hard Reload'"
-echo "   OR"
-echo "   - Mac: Cmd+Shift+R"
-echo "   - Windows/Linux: Ctrl+Shift+R"
-echo ""
-echo "   Alternative: Use Incognito/Private mode"
-echo ""
+echo "🔍 Finding and clearing caches for all apps..."
+for app in apps/*; do
+    if [ -d "$app" ]; then
+        clear_app_caches "$app"
+    fi
+done
 
-echo "✅ Cache cleanup complete!"
+# Clear pnpm cache
+clear_pnpm_cache
+
+# Clear any global Vite caches
 echo ""
-echo "📝 Next steps:"
-echo "   1. Run: pnpm install"
-echo "   2. Start your dev server"
-echo "   3. Clear browser cache (see above)"
+echo "🌍 Clearing global caches..."
+rm -rf ~/.vite 2>/dev/null || true
+rm -rf ~/.cache/vite 2>/dev/null || true
+
+# Suggest browser cache clearing
+suggest_browser_cache_clear
+
 echo ""
-echo "🔥 For nuclear option (complete reinstall):"
-echo "   rm -rf node_modules && rm -rf apps/*/node_modules && rm -rf packages/*/node_modules"
-echo "   Then: pnpm install"
+echo "✨ All caches cleared! Your next 'pnpm dev' will show the latest code changes."
+echo ""
+echo "💡 Pro tip: Run this script whenever you suspect caching issues:"
+echo "   ./scripts/cli-pipeline/all_pipelines/clear-all-caches.sh"
+echo ""

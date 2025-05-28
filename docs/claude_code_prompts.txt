@@ -12,6 +12,365 @@
 
 
 
+more database cleaniup
+database backiups
+auth_audit_log - integration
+new fields in allowed_emails
+upgrading dhg-hub to do lightweight authentication
+making a video viewer 
+refactoring the sync commands into pieces
+
+Excellent forward-thinking question! For web-scraped expert information, I recommend adding new tables rather than overloading existing ones.
+  This maintains clean data provenance and allows for temporal tracking.
+
+  Complete Architecture with Web Intelligence:
+
+  1. Core Identity System (Unchanged)
+
+  allowed_emails (Universal User Identity)
+  ├── id (UUID) - Primary key used everywhere
+  ├── email - Unique, links to auth.users
+  ├── name
+  ├── auth_user_id - Cached Supabase ID
+  ├── auth_status - 'none', 'invited', 'active'
+  └── metadata - Tracks invitations, last login, etc.
+
+  2. Profile System (Unchanged)
+
+  user_profiles_v2 (User-Provided Data)
+  ├── id → allowed_emails.id
+  ├── Professional background (self-reported)
+  ├── Learning preferences
+  ├── Bio information
+  ├── expert_id → experts.id (if applicable)
+  └── All user-volunteered information
+
+  3. Expert Knowledge System (Enhanced)
+
+  experts (Master Expert Record)
+  ├── id
+  ├── expert_name
+  ├── primary_email - For matching to allowed_emails
+  ├── credentials - Basic, stable credentials
+  ├── metadata - Core professional info
+  └── web_monitoring_enabled BOOLEAN DEFAULT false
+
+  sources_google_experts (Document Links)
+  └── Links experts to their documents
+
+  expert_web_profiles (NEW - Web Intelligence)
+  ├── id
+  ├── expert_id → experts.id
+  ├── source_type - 'google_scholar', 'pubmed', 'linkedin', 'twitter', 'institutional', 'news'
+  ├── source_url
+  ├── source_identifier - ORCID, Google Scholar ID, etc.
+  ├── profile_data JSONB - Structured data from source
+  ├── last_fetched TIMESTAMPTZ
+  ├── fetch_frequency - 'daily', 'weekly', 'monthly'
+  ├── is_verified BOOLEAN
+  └── created_at, updated_at
+
+  expert_web_updates (NEW - Temporal Updates)
+  ├── id
+  ├── expert_id → experts.id
+  ├── update_type - 'publication', 'position_change', 'award', 'media_mention', 'presentation'
+  ├── source_url
+  ├── title
+  ├── summary
+  ├── full_content JSONB
+  ├── relevance_score FLOAT - AI-determined importance
+  ├── detected_date - When the event happened
+  ├── fetched_date - When we found it
+  └── processed BOOLEAN DEFAULT false
+
+  4. Aggregated Expert View
+
+  CREATE VIEW expert_current_view AS
+  SELECT
+    e.id,
+    e.expert_name,
+    e.credentials,
+
+    -- Latest position from web profiles
+    (ewp.profile_data->>'current_position')::TEXT as current_position_web,
+
+    -- Recent publications count
+    COUNT(DISTINCT ewu.id) FILTER (WHERE
+      ewu.update_type = 'publication'
+      AND ewu.detected_date > CURRENT_DATE - INTERVAL '1 year'
+    ) as recent_publications,
+
+    -- User-provided info (if they're also a user)
+    up.profession as self_reported_profession,
+    up.current_organization as self_reported_org,
+
+    -- Latest update
+    MAX(ewu.detected_date) as last_activity_date
+
+  FROM experts e
+  LEFT JOIN expert_web_profiles ewp ON e.id = ewp.expert_id
+    AND ewp.source_type = 'institutional'
+  LEFT JOIN expert_web_updates ewu ON e.id = ewu.expert_id
+  LEFT JOIN user_profiles_v2 up ON e.id = up.expert_id
+  GROUP BY e.id, e.expert_name, e.credentials, ewp.profile_data, up.profession, up.current_organization;
+
+  Implementation Example:
+
+  -- Example: Web scraping service populates data
+  INSERT INTO expert_web_profiles (
+    expert_id,
+    source_type,
+    source_url,
+    source_identifier,
+    profile_data,
+    last_fetched
+  ) VALUES (
+    (SELECT id FROM experts WHERE expert_name = 'Tor Wager'),
+    'google_scholar',
+    'https://scholar.google.com/citations?user=XXXXX',
+    'XXXXX', -- Google Scholar ID
+    '{
+      "name": "Tor D. Wager",
+      "affiliation": "Dartmouth College",
+      "email_verified": "tor.d.wager@dartmouth.edu",
+      "interests": ["Neuroimaging", "Pain", "Emotion", "Placebo"],
+      "citations": {"all": 55000, "last_5_years": 25000},
+      "h_index": 95,
+      "i10_index": 245
+    }'::JSONB,
+    NOW()
+  );
+
+  -- Recent publication detected
+  INSERT INTO expert_web_updates (
+    expert_id,
+    update_type,
+    source_url,
+    title,
+    summary,
+    relevance_score,
+    detected_date
+  ) VALUES (
+    (SELECT id FROM experts WHERE expert_name = 'Tor Wager'),
+    'publication',
+    'https://doi.org/10.1038/s41593-024-xxxxx',
+    'Brain signatures of placebo analgesia revealed by machine learning',
+    'New research identifies neural markers that predict placebo response...',
+    0.95,
+    '2024-01-15'
+  );
+
+  Key Design Principles:
+
+  1. Separation of Sources:
+    - experts - Core identity and document-derived info
+    - user_profiles_v2 - Self-reported user data
+    - expert_web_profiles - Web-sourced profiles
+    - expert_web_updates - Time-series web intelligence
+  2. Data Provenance:
+    - Always know where information came from
+    - Track when it was fetched
+    - Maintain history of changes
+  3. Flexible Aggregation:
+    - Views combine multiple sources
+    - Applications choose which data to trust/display
+    - Can show "According to Google Scholar..." vs "Self-reported..."
+  4. Monitoring Control:
+    - web_monitoring_enabled flag on experts table
+    - fetch_frequency per source
+    - Only monitor "worthy" experts as you mentioned
+
+  Benefits:
+
+  1. Clean Architecture: Each table has a single responsibility
+  2. Temporal Intelligence: Track how experts evolve over time
+  3. Source Attribution: Know where each piece of info came from
+  4. Scalable: Can add new web sources without schema changes
+  5. Privacy Conscious: Separate self-reported from public data
+
+  Future Features This Enables:
+
+  - "Expert Updates" feed showing recent publications/achievements
+  - Relevance scoring for content recommendation
+  - Automatic expert discovery from web mentions
+  - Trend analysis of research topics
+  - Network analysis of collaborations
+
+  This architecture gives you a robust foundation for both current needs and future web intelligence features!
+
+
+
+
+
+
+
+
+sync                         Sync files from Google Drive to the database with intelligent file categorization (legacy - use sync-all)
+    sync-files                   NEW: Fast core sync only - just file existence (< 30s typical)
+    process-new-files-enhanced   NEW: Process new files with detailed hierarchical report (create expert_documents)
+    update-metadata              NEW: Update metadata for existing files (size, thumbnails, renames)
+    verify-deletions             NEW: Verify deleted files and optionally restore those that still exist
+  * health-check                 Check the health of Google Drive API connection
+
+
+Based on my analysis, here's my vision for a consolidated and robust Google sync command set:
+
+  Proposed Google Sync Command Structure
+
+  1. Core Sync Operations (Keep these as-is, they're solid)
+
+  sync-all                    # Complete pipeline (recommended)
+  sync-files                  # Fast file existence check only
+  process-new-files-enhanced  # Process new files with hierarchical report
+  update-metadata            # Update file metadata
+  verify-deletions           # Verify and restore deleted files
+  health-check               # Check Google Drive API connection
+
+  2. Document Classification (Consolidate to 3 commands)
+
+  classify-documents         # Universal classifier that handles all file types
+    --types pdf,docx,pptx    # Specify file types
+    --limit 10               # Limit number of files
+    --force                  # Force reclassification
+
+  classify-media            # Specifically for audio/video files
+    --update-expert-docs    # Also create expert documents
+
+  validate-classifications  # Check classification quality
+    --type pdf              # Check specific file type
+    --report                # Generate detailed report
+
+  3. Listing & Reporting (Consolidate to 4 commands)
+
+  list                      # Universal listing command with options
+    --status unprocessed    # Filter by pipeline status
+    --type pdf              # Filter by file type
+    --recent 7d             # Recently updated files
+    --format table|json|csv # Output format
+
+  report                    # Generate various reports
+    --type pipeline-status  # Pipeline status summary
+    --type expert-docs      # Expert documents report
+    --type duplicates       # Duplicate files report
+    --type missing-docs     # Files missing expert documents
+
+  search                    # Find specific files/folders
+    --name "pattern"        # Search by name
+    --path "folder/path"    # Search by path
+    --drive-id "id"         # Get current drive ID
+
+  4. Maintenance & Repair (Consolidate to 3 commands)
+
+  fix                       # Universal fix command
+    --orphaned-docs         # Clean orphaned expert documents
+    --bad-folders           # Fix folder document types
+    --duplicates            # Remove duplicate records
+    --reprocessing-status   # Clear reprocessing flags
+
+  check                     # Universal check command
+    --integrity             # Check data integrity
+    --duplicates            # Check for duplicates
+    --reprocessing          # Check reprocessing status
+
+  mark-for-reprocessing     # Mark files for reprocessing
+    --type pdf              # Mark specific file types
+    --ids uuid1,uuid2       # Mark specific files
+
+  5. Archive These Commands (Too specific or redundant)
+
+  - All the individual classify-* commands (replace with universal classifier)
+  - All the check-* commands (replace with universal check)
+  - All the fix-* commands (replace with universal fix)
+  - All the list-* variants (replace with universal list)
+  - Legacy sync command
+  - Filter-related commands (move to drive-filter pipeline)
+  - One-off utility scripts
+
+  Implementation Plan:
+
+  1. Create wrapper commands that intelligently route to existing functionality
+  2. Archive old commands but keep the underlying functions
+  3. Add clear deprecation messages to old commands pointing to new ones
+  4. Update help text to show only the new consolidated commands
+  5. Create a migration guide documenting the mapping from old to new commands
+
+  Example New Command Structure:
+
+  # Instead of:
+  ./google-sync-cli.sh classify-pdfs --limit 10
+  ./google-sync-cli.sh classify-powerpoints --limit 10
+  ./google-sync-cli.sh classify-docs-service --limit 10
+
+  # Use:
+  ./google-sync-cli.sh classify-documents --types pdf,pptx,docx --limit 10
+
+  # Instead of:
+  ./google-sync-cli.sh check-duplicates
+  ./google-sync-cli.sh sources-google-integrity
+  ./google-sync-cli.sh check-reprocessing-status
+
+  # Use:
+  ./google-sync-cli.sh check --integrity --duplicates --reprocessing
+
+  This would reduce the command count from 92 to approximately 15-20 core commands while maintaining all functionality through options and flags.
+
+
+
+
+
+
+
+Summary
+
+  I've created a comprehensive Database Relationships Map at /docs/technical-specs/database-relationships-map.md that:
+
+  Key Features:
+
+  1. Quick Reference Section - Highlights the most important relationships, especially those involving renamed tables:
+    - All source_id fields still point to google_sources (formerly sources_google)
+    - All expert_id fields still point to expert_profiles (formerly experts)
+    - All user_id fields point to auth_allowed_emails
+  2. Complete FK Mapping - Organized by domain prefix:
+    - Shows every foreign key relationship
+    - Includes the actual FK constraint names
+    - Notes which fields weren't renamed despite table changes
+  3. Special Sections:
+    - Polymorphic Relationships - Documents how learn_document_classifications.entity_id works
+    - Views and Their Relationships - Shows what views expose
+    - Key Insights - Explains why field names were preserved
+  4. Visual Indicators:
+    - ⚠️ warnings for fields that might seem confusing (like source_id pointing to google_sources)
+    - Clear arrows (→) showing relationships
+    - Domain emojis for easy scanning
+
+  The document confirms your decision to keep field names unchanged was correct - it shows how this approach maintained backwards compatibility while still
+  achieving better table organization through prefixes.
+
+
+Summary
+
+  I've successfully moved the cache clearing scripts from the root scripts folder to the proper location under scripts/cli-pipeline/all_pipelines/ and integrated
+  them into the all-pipelines CLI. Here's what was done:
+
+  1. Moved scripts:
+    - clear-all-caches.sh - Clears all caches comprehensively across the monorepo
+    - clear-app-cache.sh - Clears cache for a specific app
+    - dev-fresh.sh - Clears cache and starts fresh dev server for an app
+  2. Updated paths: Modified the MONOREPO_ROOT calculation in each script to account for the new location (3 levels deep instead of 1)
+  3. Integrated into CLI:
+    - Added command handlers for each script
+    - Updated the help text to include the new commands
+    - Added examples for using each command
+    - Integrated with the command tracking system
+  4. Made scripts executable: Set proper permissions on all moved scripts
+  5. Tested: Verified the scripts work correctly from their new location
+
+  You can now use these commands through the all-pipelines CLI:
+  ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh clear-all-caches
+  ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh clear-app-cache dhg-audio
+  ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh dev-fresh dhg-hub
+
+
    - media_sessions → learn_media_sessions
   - media_playback_events → learn_media_playback_events
   - media_topic_segments → learn_media_topic_segments
@@ -475,14 +834,6 @@ So NO folders have video assignments yet. This confirms that the process-new-fil
 
 
 
-more database cleaniup
-database backiups
-auth_audit_log - integration
-new fields in allowed_emails
-upgrading dhg-hub to do lightweight authentication
-making a video viewer 
-refactoring the sync commands into pieces
-
 
  ./scripts/cli-pipeline/google_sync/google-sync-cli.sh assign-main-video-id \
     --folder-id "1cKEcvA1Y3EwFGrR-wSWsyfkiTmp3uClg" \
@@ -724,186 +1075,6 @@ Ah, that's a Claude Code interface feature from Anthropic! The # shortcut is lik
     "metadata": {}
   }
 ]
-
-
-Excellent forward-thinking question! For web-scraped expert information, I recommend adding new tables rather than overloading existing ones.
-  This maintains clean data provenance and allows for temporal tracking.
-
-  Complete Architecture with Web Intelligence:
-
-  1. Core Identity System (Unchanged)
-
-  allowed_emails (Universal User Identity)
-  ├── id (UUID) - Primary key used everywhere
-  ├── email - Unique, links to auth.users
-  ├── name
-  ├── auth_user_id - Cached Supabase ID
-  ├── auth_status - 'none', 'invited', 'active'
-  └── metadata - Tracks invitations, last login, etc.
-
-  2. Profile System (Unchanged)
-
-  user_profiles_v2 (User-Provided Data)
-  ├── id → allowed_emails.id
-  ├── Professional background (self-reported)
-  ├── Learning preferences
-  ├── Bio information
-  ├── expert_id → experts.id (if applicable)
-  └── All user-volunteered information
-
-  3. Expert Knowledge System (Enhanced)
-
-  experts (Master Expert Record)
-  ├── id
-  ├── expert_name
-  ├── primary_email - For matching to allowed_emails
-  ├── credentials - Basic, stable credentials
-  ├── metadata - Core professional info
-  └── web_monitoring_enabled BOOLEAN DEFAULT false
-
-  sources_google_experts (Document Links)
-  └── Links experts to their documents
-
-  expert_web_profiles (NEW - Web Intelligence)
-  ├── id
-  ├── expert_id → experts.id
-  ├── source_type - 'google_scholar', 'pubmed', 'linkedin', 'twitter', 'institutional', 'news'
-  ├── source_url
-  ├── source_identifier - ORCID, Google Scholar ID, etc.
-  ├── profile_data JSONB - Structured data from source
-  ├── last_fetched TIMESTAMPTZ
-  ├── fetch_frequency - 'daily', 'weekly', 'monthly'
-  ├── is_verified BOOLEAN
-  └── created_at, updated_at
-
-  expert_web_updates (NEW - Temporal Updates)
-  ├── id
-  ├── expert_id → experts.id
-  ├── update_type - 'publication', 'position_change', 'award', 'media_mention', 'presentation'
-  ├── source_url
-  ├── title
-  ├── summary
-  ├── full_content JSONB
-  ├── relevance_score FLOAT - AI-determined importance
-  ├── detected_date - When the event happened
-  ├── fetched_date - When we found it
-  └── processed BOOLEAN DEFAULT false
-
-  4. Aggregated Expert View
-
-  CREATE VIEW expert_current_view AS
-  SELECT
-    e.id,
-    e.expert_name,
-    e.credentials,
-
-    -- Latest position from web profiles
-    (ewp.profile_data->>'current_position')::TEXT as current_position_web,
-
-    -- Recent publications count
-    COUNT(DISTINCT ewu.id) FILTER (WHERE
-      ewu.update_type = 'publication'
-      AND ewu.detected_date > CURRENT_DATE - INTERVAL '1 year'
-    ) as recent_publications,
-
-    -- User-provided info (if they're also a user)
-    up.profession as self_reported_profession,
-    up.current_organization as self_reported_org,
-
-    -- Latest update
-    MAX(ewu.detected_date) as last_activity_date
-
-  FROM experts e
-  LEFT JOIN expert_web_profiles ewp ON e.id = ewp.expert_id
-    AND ewp.source_type = 'institutional'
-  LEFT JOIN expert_web_updates ewu ON e.id = ewu.expert_id
-  LEFT JOIN user_profiles_v2 up ON e.id = up.expert_id
-  GROUP BY e.id, e.expert_name, e.credentials, ewp.profile_data, up.profession, up.current_organization;
-
-  Implementation Example:
-
-  -- Example: Web scraping service populates data
-  INSERT INTO expert_web_profiles (
-    expert_id,
-    source_type,
-    source_url,
-    source_identifier,
-    profile_data,
-    last_fetched
-  ) VALUES (
-    (SELECT id FROM experts WHERE expert_name = 'Tor Wager'),
-    'google_scholar',
-    'https://scholar.google.com/citations?user=XXXXX',
-    'XXXXX', -- Google Scholar ID
-    '{
-      "name": "Tor D. Wager",
-      "affiliation": "Dartmouth College",
-      "email_verified": "tor.d.wager@dartmouth.edu",
-      "interests": ["Neuroimaging", "Pain", "Emotion", "Placebo"],
-      "citations": {"all": 55000, "last_5_years": 25000},
-      "h_index": 95,
-      "i10_index": 245
-    }'::JSONB,
-    NOW()
-  );
-
-  -- Recent publication detected
-  INSERT INTO expert_web_updates (
-    expert_id,
-    update_type,
-    source_url,
-    title,
-    summary,
-    relevance_score,
-    detected_date
-  ) VALUES (
-    (SELECT id FROM experts WHERE expert_name = 'Tor Wager'),
-    'publication',
-    'https://doi.org/10.1038/s41593-024-xxxxx',
-    'Brain signatures of placebo analgesia revealed by machine learning',
-    'New research identifies neural markers that predict placebo response...',
-    0.95,
-    '2024-01-15'
-  );
-
-  Key Design Principles:
-
-  1. Separation of Sources:
-    - experts - Core identity and document-derived info
-    - user_profiles_v2 - Self-reported user data
-    - expert_web_profiles - Web-sourced profiles
-    - expert_web_updates - Time-series web intelligence
-  2. Data Provenance:
-    - Always know where information came from
-    - Track when it was fetched
-    - Maintain history of changes
-  3. Flexible Aggregation:
-    - Views combine multiple sources
-    - Applications choose which data to trust/display
-    - Can show "According to Google Scholar..." vs "Self-reported..."
-  4. Monitoring Control:
-    - web_monitoring_enabled flag on experts table
-    - fetch_frequency per source
-    - Only monitor "worthy" experts as you mentioned
-
-  Benefits:
-
-  1. Clean Architecture: Each table has a single responsibility
-  2. Temporal Intelligence: Track how experts evolve over time
-  3. Source Attribution: Know where each piece of info came from
-  4. Scalable: Can add new web sources without schema changes
-  5. Privacy Conscious: Separate self-reported from public data
-
-  Future Features This Enables:
-
-  - "Expert Updates" feed showing recent publications/achievements
-  - Relevance scoring for content recommendation
-  - Automatic expert discovery from web mentions
-  - Trend analysis of research topics
-  - Network analysis of collaborations
-
-  This architecture gives you a robust foundation for both current needs and future web intelligence features!
-
 
 
 
