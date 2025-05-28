@@ -370,7 +370,7 @@ export class PromptOutputTemplateService {
         .select(`
           id,
           priority,
-          prompt_output_templates (
+          ai_prompt_output_templates (
             id,
             name,
             description,
@@ -392,18 +392,29 @@ export class PromptOutputTemplateService {
       }
       
       // Transform the result to the expected format
-      return data.map(item => ({
-        id: item.prompt_output_templates.id,
-        name: item.prompt_output_templates.name,
-        description: item.prompt_output_templates.description,
-        template: item.prompt_output_templates.template,
-        created_at: item.prompt_output_templates.created_at,
-        updated_at: item.prompt_output_templates.updated_at,
-        association: {
-          id: item.id,
-          priority: item.priority
+      return data.map(item => {
+        // Handle the case where ai_prompt_output_templates might be an array or object
+        const templateData = Array.isArray(item.ai_prompt_output_templates) 
+          ? item.ai_prompt_output_templates[0] 
+          : item.ai_prompt_output_templates;
+          
+        if (!templateData) {
+          return null;
         }
-      }));
+        
+        return {
+          id: templateData.id,
+          name: templateData.name,
+          description: templateData.description,
+          template: templateData.template,
+          created_at: templateData.created_at,
+          updated_at: templateData.updated_at,
+          association: {
+            id: item.id,
+            priority: item.priority
+          }
+        };
+      }).filter(item => item !== null) as TemplateWithAssociation[];
     } catch (error) {
       Logger.error(`Error in getTemplatesForPrompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw error;

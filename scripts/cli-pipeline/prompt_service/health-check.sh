@@ -14,7 +14,9 @@ echo "==========================================" >> "$LOG_FILE"
 
 # Load environment variables
 if [ -f "$ROOT_DIR/.env.development" ]; then
+  set -a  # automatically export all variables
   source "$ROOT_DIR/.env.development"
+  set +a  # turn off automatic export
 fi
 
 echo "Running Prompt Service CLI Pipeline health check..."
@@ -46,14 +48,14 @@ check_supabase() {
         // Create a client directly
         const supabase = createClient(supabaseUrl, supabaseKey);
         
-        // Test prompts table - this should be safe and avoid column name issues
+        // Test ai_prompts table - this should be safe and avoid column name issues
         const { data, error } = await supabase
-          .from('prompts')
+          .from('ai_prompts')
           .select('id')
           .limit(1);
           
         if (error) {
-          throw new Error('Failed to query prompts table: ' + error.message);
+          throw new Error('Failed to query ai_prompts table: ' + error.message);
         }
         
         console.log('✅ Supabase connection successful');
@@ -91,7 +93,7 @@ check_claude_api() {
   
   # Use the SupabaseClientService to test the connection
   CLAUDE_TEST_RESULT=$(cd "$ROOT_DIR" && npx ts-node -e "
-    const { claudeService } = require('./packages/shared/services/claude-service');
+    const { claudeService } = require('./packages/shared/services/claude-service/claude-service');
     async function testClaudeApi() {
       try {
         const response = await claudeService.sendPrompt('Hello, are you working?');
