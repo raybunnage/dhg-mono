@@ -36,7 +36,7 @@ async function runTests() {
     const supabase = supabaseClientService.getClient();
     
     const { data: before, error: beforeError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .select('id')
       .order('created_at', { ascending: false })
       .limit(5);
@@ -45,7 +45,7 @@ async function runTests() {
       throw new Error(`Failed to fetch data: ${beforeError.message}`);
     }
     
-    console.log(`Most recent sources_google_experts entries (${before?.length || 0} shown):`);
+    console.log(`Most recent google_sources_experts entries (${before?.length || 0} shown):`);
     before?.forEach((entry, index) => {
       console.log(`${index + 1}. ID: ${entry.id}`);
     });

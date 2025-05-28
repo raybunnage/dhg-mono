@@ -363,11 +363,11 @@ Return your classification as a complete, valid JSON object with all of these fi
               };
             }
             
-            // If the document has concepts, save them to the document_concepts table
+            // If the document has concepts, save them to the doc_concepts table
             if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
               // First delete any existing concepts
               const { error: deleteConceptsError } = await supabase
-                .from('document_concepts')
+                .from('doc_concepts')
                 .delete()
                 .eq('document_id', expertDoc.id);
               
@@ -385,13 +385,13 @@ Return your classification as a complete, valid JSON object with all of these fi
               }));
               
               const { error: insertConceptsError } = await supabase
-                .from('document_concepts')
+                .from('doc_concepts')
                 .insert(conceptRecords);
               
               if (insertConceptsError) {
                 console.error(`❌ Error inserting concepts: ${insertConceptsError.message}`);
               } else if (verbose) {
-                console.log(`✅ Saved ${conceptRecords.length} concepts to document_concepts table`);
+                console.log(`✅ Saved ${conceptRecords.length} concepts to doc_concepts table`);
               }
             }
             

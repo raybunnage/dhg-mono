@@ -150,7 +150,7 @@ TRANSCRIPT:
     
     // Find presentation associated with this source
     const { data: presentation, error: presentationError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title, main_video_id')
       .eq('main_video_id', sourceId)
       .single();

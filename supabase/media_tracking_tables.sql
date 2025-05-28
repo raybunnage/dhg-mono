@@ -203,7 +203,7 @@ LEFT JOIN
 LEFT JOIN
   expert_documents ed ON sg.id = ed.source_id
 LEFT JOIN
-  sources_google_experts sge ON sg.id = sge.source_id
+  google_sources_experts sge ON sg.id = sge.source_id
 LEFT JOIN
   experts e ON sge.expert_id = e.id
 LEFT JOIN
@@ -243,7 +243,7 @@ JOIN
 LEFT JOIN
   presentations p ON ms.presentation_id = p.id
 LEFT JOIN
-  sources_google_experts sge ON sg.id = sge.source_id AND sge.is_primary = true
+  google_sources_experts sge ON sg.id = sge.source_id AND sge.is_primary = true
 LEFT JOIN
   experts e ON sge.expert_id = e.id
 ORDER BY

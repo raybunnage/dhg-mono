@@ -353,7 +353,7 @@ async function checkExpertReferences(supabase) {
             console.log(`- Document found in sources_google: ${documentData[0].name}`);
             
             // Note about expert_id now being in a separate table
-            console.log('- Expert association now handled through sources_google_experts table')
+            console.log('- Expert association now handled through google_sources_experts table')
           } else {
             console.log('- ✗ Document not found in sources_google');
           }

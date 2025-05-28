@@ -490,9 +490,9 @@ export async function reportMainVideoIds(
       
       // Look up expert information for this source (folder)
       try {
-        // First check sources_google_experts for this source
+        // First check google_sources_experts for this source
         const { data: sourceExperts, error: sourceExpertsError } = await supabase
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .select('expert_id')
           .eq('source_id', folder.id);
           

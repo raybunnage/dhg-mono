@@ -124,13 +124,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "prompt_relationships_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "documentation_files_missing_doc_ids"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "prompt_relationships_prompt_id_fkey"
             columns: ["prompt_id"]
             isOneToOne: false
@@ -655,6 +648,84 @@ export type Database = {
         }
         Relationships: []
       }
+      doc_files: {
+        Row: {
+          ai_assessment: Json | null
+          ai_generated_tags: string[] | null
+          assessment_created_at: string | null
+          assessment_date: string | null
+          assessment_model: string | null
+          assessment_quality_score: number | null
+          assessment_updated_at: string | null
+          assessment_version: number | null
+          created_at: string | null
+          document_type_id: string | null
+          file_hash: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          language: string | null
+          last_indexed_at: string | null
+          last_modified_at: string | null
+          manual_tags: string[] | null
+          metadata: Json | null
+          status_recommendation: string | null
+          summary: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          assessment_created_at?: string | null
+          assessment_date?: string | null
+          assessment_model?: string | null
+          assessment_quality_score?: number | null
+          assessment_updated_at?: string | null
+          assessment_version?: number | null
+          created_at?: string | null
+          document_type_id?: string | null
+          file_hash?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id: string
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          status_recommendation?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          assessment_created_at?: string | null
+          assessment_date?: string | null
+          assessment_model?: string | null
+          assessment_quality_score?: number | null
+          assessment_updated_at?: string | null
+          assessment_version?: number | null
+          created_at?: string | null
+          document_type_id?: string | null
+          file_hash?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          status_recommendation?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       document_concepts: {
         Row: {
           concept: string
@@ -762,259 +833,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
-      }
-      documentation_files: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string | null
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string | null
-          file_size: number | null
-          id: string
-          language: string | null
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json | null
-          status_recommendation: string | null
-          summary: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id: string
-          language?: string | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          status_recommendation?: string | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          language?: string | null
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          status_recommendation?: string | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      documentation_files_missing_doc_ids: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string | null
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string
-          id: string
-          is_deleted: boolean | null
-          last_indexed_at: string
-          last_modified_at: string
-          manual_tags: string[] | null
-          metadata: Json | null
-          summary: string | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path: string
-          id?: string
-          is_deleted?: boolean | null
-          last_indexed_at: string
-          last_modified_at: string
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          summary?: string | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string | null
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string
-          id?: string
-          is_deleted?: boolean | null
-          last_indexed_at?: string
-          last_modified_at?: string
-          manual_tags?: string[] | null
-          metadata?: Json | null
-          summary?: string | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_documentation_files_type"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_classifications_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_documentation_files_type"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      documentation_processing_queue: {
-        Row: {
-          attempts: number
-          created_at: string | null
-          error_message: string | null
-          file_id: string
-          id: string
-          last_attempt_at: string | null
-          priority: number
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          attempts?: number
-          created_at?: string | null
-          error_message?: string | null
-          file_id: string
-          id?: string
-          last_attempt_at?: string | null
-          priority?: number
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          attempts?: number
-          created_at?: string | null
-          error_message?: string | null
-          file_id?: string
-          id?: string
-          last_attempt_at?: string | null
-          priority?: number
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "documentation_processing_queue_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "documentation_files_missing_doc_ids"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      documentation_sections: {
-        Row: {
-          anchor_id: string
-          created_at: string | null
-          file_id: string
-          heading: string
-          id: string
-          level: number
-          position: number
-          summary: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          anchor_id: string
-          created_at?: string | null
-          file_id: string
-          heading: string
-          id?: string
-          level: number
-          position: number
-          summary?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          anchor_id?: string
-          created_at?: string | null
-          file_id?: string
-          heading?: string
-          id?: string
-          level?: number
-          position?: number
-          summary?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "documentation_sections_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "documentation_files_missing_doc_ids"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       email_addresses: {
         Row: {
@@ -1239,15 +1057,15 @@ export type Database = {
             foreignKeyName: "expert_documents_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
+            referencedRelation: "google_sources"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "expert_documents_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
           },
         ]
       }
@@ -1340,6 +1158,407 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+        }
+        Relationships: []
+      }
+      google_sources: {
+        Row: {
+          created_at: string | null
+          document_type_id: string | null
+          drive_id: string | null
+          file_signature: string | null
+          id: string
+          is_deleted: boolean | null
+          is_root: boolean | null
+          last_indexed: string | null
+          main_video_id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          modified_at: string | null
+          name: string | null
+          parent_folder_id: string | null
+          path: string | null
+          path_array: string[] | null
+          path_depth: number | null
+          root_drive_id: string | null
+          size: number | null
+          thumbnail_link: string | null
+          updated_at: string | null
+          web_view_link: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          file_signature?: string | null
+          id: string
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type_id?: string | null
+          drive_id?: string | null
+          file_signature?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_root?: boolean | null
+          last_indexed?: string | null
+          main_video_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          modified_at?: string | null
+          name?: string | null
+          parent_folder_id?: string | null
+          path?: string | null
+          path_array?: string[] | null
+          path_depth?: number | null
+          root_drive_id?: string | null
+          size?: number | null
+          thumbnail_link?: string | null
+          updated_at?: string | null
+          web_view_link?: string | null
+        }
+        Relationships: []
+      }
+      google_sources_experts: {
+        Row: {
+          created_at: string | null
+          expert_id: string
+          id: string
+          is_primary: boolean | null
+          role_description: string | null
+          source_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expert_id: string
+          id?: string
+          is_primary?: boolean | null
+          role_description?: string | null
+          source_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expert_id?: string
+          id?: string
+          is_primary?: boolean | null
+          role_description?: string | null
+          source_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sources_google_experts_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "expert_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sources_google_experts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "google_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sources_google_experts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
+      google_sync_history: {
+        Row: {
+          completed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          files_added: number | null
+          files_error: number | null
+          files_processed: number | null
+          files_skipped: number | null
+          files_total: number | null
+          files_updated: number | null
+          folder_id: string
+          folder_name: string
+          id: string
+          status: string
+          timestamp: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          files_added?: number | null
+          files_error?: number | null
+          files_processed?: number | null
+          files_skipped?: number | null
+          files_total?: number | null
+          files_updated?: number | null
+          folder_id: string
+          folder_name?: string
+          id?: string
+          status?: string
+          timestamp?: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          files_added?: number | null
+          files_error?: number | null
+          files_processed?: number | null
+          files_skipped?: number | null
+          files_total?: number | null
+          files_updated?: number | null
+          folder_id?: string
+          folder_name?: string
+          id?: string
+          status?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      google_sync_statistics: {
+        Row: {
+          created_at: string | null
+          folder_id: string | null
+          folder_name: string | null
+          google_drive_count: number | null
+          google_drive_documents: number | null
+          google_drive_folders: number | null
+          id: string
+          local_files: number | null
+          local_only_files: number | null
+          matching_files: number | null
+          mp4_files: number | null
+          mp4_total_size: string | null
+          new_files: number | null
+          total_google_drive_items: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          folder_id?: string | null
+          folder_name?: string | null
+          google_drive_count?: number | null
+          google_drive_documents?: number | null
+          google_drive_folders?: number | null
+          id?: string
+          local_files?: number | null
+          local_only_files?: number | null
+          matching_files?: number | null
+          mp4_files?: number | null
+          mp4_total_size?: string | null
+          new_files?: number | null
+          total_google_drive_items?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          folder_id?: string | null
+          folder_name?: string | null
+          google_drive_count?: number | null
+          google_drive_documents?: number | null
+          google_drive_folders?: number | null
+          id?: string
+          local_files?: number | null
+          local_only_files?: number | null
+          matching_files?: number | null
+          mp4_files?: number | null
+          mp4_total_size?: string | null
+          new_files?: number | null
+          total_google_drive_items?: number | null
+        }
+        Relationships: []
+      }
+      learn_media_bookmarks: {
+        Row: {
+          bookmark_type: string | null
+          created_at: string | null
+          id: string
+          media_id: string
+          note: string | null
+          tags: string[] | null
+          timestamp_seconds: number
+          user_id: string | null
+        }
+        Insert: {
+          bookmark_type?: string | null
+          created_at?: string | null
+          id?: string
+          media_id: string
+          note?: string | null
+          tags?: string[] | null
+          timestamp_seconds: number
+          user_id?: string | null
+        }
+        Update: {
+          bookmark_type?: string | null
+          created_at?: string | null
+          id?: string
+          media_id?: string
+          note?: string | null
+          tags?: string[] | null
+          timestamp_seconds?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_media_playback_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          session_id: string | null
+          timestamp_seconds: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          session_id?: string | null
+          timestamp_seconds: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          session_id?: string | null
+          timestamp_seconds?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_playback_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "learn_media_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_playback_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_media_sessions: {
+        Row: {
+          completion_percentage: number | null
+          created_at: string | null
+          device_type: string | null
+          id: string
+          media_id: string | null
+          session_end: string | null
+          session_start: string | null
+          session_type: string | null
+          total_duration_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          media_id?: string | null
+          session_end?: string | null
+          session_start?: string | null
+          session_type?: string | null
+          total_duration_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          media_id?: string | null
+          session_end?: string | null
+          session_start?: string | null
+          session_type?: string | null
+          total_duration_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_media_topic_segments: {
+        Row: {
+          ai_summary: string | null
+          created_at: string | null
+          difficulty_level: string | null
+          end_time_seconds: number
+          id: string
+          key_concepts: string[] | null
+          media_id: string
+          segment_title: string | null
+          start_time_seconds: number
+          topic_id: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          end_time_seconds: number
+          id?: string
+          key_concepts?: string[] | null
+          media_id: string
+          segment_title?: string | null
+          start_time_seconds: number
+          topic_id?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          end_time_seconds?: number
+          id?: string
+          key_concepts?: string[] | null
+          media_id?: string
+          segment_title?: string | null
+          start_time_seconds?: number
+          topic_id?: string | null
         }
         Relationships: []
       }
@@ -1531,179 +1750,7 @@ export type Database = {
           },
         ]
       }
-      media_bookmarks: {
-        Row: {
-          bookmark_type: string | null
-          created_at: string | null
-          id: string
-          media_id: string
-          note: string | null
-          tags: string[] | null
-          timestamp_seconds: number
-          user_id: string | null
-        }
-        Insert: {
-          bookmark_type?: string | null
-          created_at?: string | null
-          id?: string
-          media_id: string
-          note?: string | null
-          tags?: string[] | null
-          timestamp_seconds: number
-          user_id?: string | null
-        }
-        Update: {
-          bookmark_type?: string | null
-          created_at?: string | null
-          id?: string
-          media_id?: string
-          note?: string | null
-          tags?: string[] | null
-          timestamp_seconds?: number
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "media_bookmarks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "auth_allowed_emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      media_playback_events: {
-        Row: {
-          created_at: string | null
-          event_data: Json | null
-          event_type: string
-          id: string
-          session_id: string | null
-          timestamp_seconds: number
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          event_data?: Json | null
-          event_type: string
-          id?: string
-          session_id?: string | null
-          timestamp_seconds: number
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          event_data?: Json | null
-          event_type?: string
-          id?: string
-          session_id?: string | null
-          timestamp_seconds?: number
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "media_playback_events_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "media_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "media_playback_events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "auth_allowed_emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      media_sessions: {
-        Row: {
-          completion_percentage: number | null
-          created_at: string | null
-          device_type: string | null
-          id: string
-          media_id: string | null
-          session_end: string | null
-          session_start: string | null
-          session_type: string | null
-          total_duration_seconds: number | null
-          user_id: string | null
-        }
-        Insert: {
-          completion_percentage?: number | null
-          created_at?: string | null
-          device_type?: string | null
-          id?: string
-          media_id?: string | null
-          session_end?: string | null
-          session_start?: string | null
-          session_type?: string | null
-          total_duration_seconds?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          completion_percentage?: number | null
-          created_at?: string | null
-          device_type?: string | null
-          id?: string
-          media_id?: string | null
-          session_end?: string | null
-          session_start?: string | null
-          session_type?: string | null
-          total_duration_seconds?: number | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "media_sessions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "auth_allowed_emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      media_topic_segments: {
-        Row: {
-          ai_summary: string | null
-          created_at: string | null
-          difficulty_level: string | null
-          end_time_seconds: number
-          id: string
-          key_concepts: string[] | null
-          media_id: string
-          segment_title: string | null
-          start_time_seconds: number
-          topic_id: string | null
-        }
-        Insert: {
-          ai_summary?: string | null
-          created_at?: string | null
-          difficulty_level?: string | null
-          end_time_seconds: number
-          id?: string
-          key_concepts?: string[] | null
-          media_id: string
-          segment_title?: string | null
-          start_time_seconds: number
-          topic_id?: string | null
-        }
-        Update: {
-          ai_summary?: string | null
-          created_at?: string | null
-          difficulty_level?: string | null
-          end_time_seconds?: number
-          id?: string
-          key_concepts?: string[] | null
-          media_id?: string
-          segment_title?: string | null
-          start_time_seconds?: number
-          topic_id?: string | null
-        }
-        Relationships: []
-      }
-      presentation_assets: {
+      media_presentation_assets: {
         Row: {
           asset_expert_document_id: string | null
           asset_role: Database["public"]["Enums"]["asset_role_enum"] | null
@@ -1768,15 +1815,15 @@ export type Database = {
             foreignKeyName: "presentation_assets_asset_source_id_fkey"
             columns: ["asset_source_id"]
             isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
+            referencedRelation: "google_sources"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "presentation_assets_asset_source_id_fkey"
             columns: ["asset_source_id"]
             isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
           },
           {
             foreignKeyName: "presentation_assets_presentation_id_fkey"
@@ -1789,12 +1836,12 @@ export type Database = {
             foreignKeyName: "presentation_assets_presentation_id_fkey"
             columns: ["presentation_id"]
             isOneToOne: false
-            referencedRelation: "presentations"
+            referencedRelation: "media_presentations"
             referencedColumns: ["id"]
           },
         ]
       }
-      presentations: {
+      media_presentations: {
         Row: {
           created_at: string | null
           duration_seconds: number | null
@@ -1853,14 +1900,21 @@ export type Database = {
             foreignKeyName: "presentations_high_level_folder_source_id_fkey"
             columns: ["high_level_folder_source_id"]
             isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
+            referencedRelation: "google_sources"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "presentations_high_level_folder_source_id_fkey"
             columns: ["high_level_folder_source_id"]
             isOneToOne: false
-            referencedRelation: "sources_google"
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "presentations_video_source_id_fkey"
+            columns: ["video_source_id"]
+            isOneToOne: false
+            referencedRelation: "google_sources"
             referencedColumns: ["id"]
           },
           {
@@ -1869,13 +1923,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "media_content_view"
             referencedColumns: ["source_id"]
-          },
-          {
-            foreignKeyName: "presentations_video_source_id_fkey"
-            columns: ["video_source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -1971,235 +2018,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      sources_google: {
-        Row: {
-          created_at: string | null
-          document_type_id: string | null
-          drive_id: string | null
-          file_signature: string | null
-          id: string
-          is_deleted: boolean | null
-          is_root: boolean | null
-          last_indexed: string | null
-          main_video_id: string | null
-          metadata: Json | null
-          mime_type: string | null
-          modified_at: string | null
-          name: string | null
-          parent_folder_id: string | null
-          path: string | null
-          path_array: string[] | null
-          path_depth: number | null
-          root_drive_id: string | null
-          size: number | null
-          thumbnail_link: string | null
-          updated_at: string | null
-          web_view_link: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          document_type_id?: string | null
-          drive_id?: string | null
-          file_signature?: string | null
-          id: string
-          is_deleted?: boolean | null
-          is_root?: boolean | null
-          last_indexed?: string | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          mime_type?: string | null
-          modified_at?: string | null
-          name?: string | null
-          parent_folder_id?: string | null
-          path?: string | null
-          path_array?: string[] | null
-          path_depth?: number | null
-          root_drive_id?: string | null
-          size?: number | null
-          thumbnail_link?: string | null
-          updated_at?: string | null
-          web_view_link?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          document_type_id?: string | null
-          drive_id?: string | null
-          file_signature?: string | null
-          id?: string
-          is_deleted?: boolean | null
-          is_root?: boolean | null
-          last_indexed?: string | null
-          main_video_id?: string | null
-          metadata?: Json | null
-          mime_type?: string | null
-          modified_at?: string | null
-          name?: string | null
-          parent_folder_id?: string | null
-          path?: string | null
-          path_array?: string[] | null
-          path_depth?: number | null
-          root_drive_id?: string | null
-          size?: number | null
-          thumbnail_link?: string | null
-          updated_at?: string | null
-          web_view_link?: string | null
-        }
-        Relationships: []
-      }
-      sources_google_experts: {
-        Row: {
-          created_at: string | null
-          expert_id: string
-          id: string
-          is_primary: boolean | null
-          role_description: string | null
-          source_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          expert_id: string
-          id?: string
-          is_primary?: boolean | null
-          role_description?: string | null
-          source_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          expert_id?: string
-          id?: string
-          is_primary?: boolean | null
-          role_description?: string | null
-          source_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sources_google_experts_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "expert_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sources_google_experts_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["source_id"]
-          },
-          {
-            foreignKeyName: "sources_google_experts_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "sources_google"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sync_history: {
-        Row: {
-          completed_at: string | null
-          duration_ms: number | null
-          error_message: string | null
-          files_added: number | null
-          files_error: number | null
-          files_processed: number | null
-          files_skipped: number | null
-          files_total: number | null
-          files_updated: number | null
-          folder_id: string
-          folder_name: string
-          id: string
-          status: string
-          timestamp: string
-        }
-        Insert: {
-          completed_at?: string | null
-          duration_ms?: number | null
-          error_message?: string | null
-          files_added?: number | null
-          files_error?: number | null
-          files_processed?: number | null
-          files_skipped?: number | null
-          files_total?: number | null
-          files_updated?: number | null
-          folder_id: string
-          folder_name?: string
-          id?: string
-          status?: string
-          timestamp?: string
-        }
-        Update: {
-          completed_at?: string | null
-          duration_ms?: number | null
-          error_message?: string | null
-          files_added?: number | null
-          files_error?: number | null
-          files_processed?: number | null
-          files_skipped?: number | null
-          files_total?: number | null
-          files_updated?: number | null
-          folder_id?: string
-          folder_name?: string
-          id?: string
-          status?: string
-          timestamp?: string
-        }
-        Relationships: []
-      }
-      sync_statistics: {
-        Row: {
-          created_at: string | null
-          folder_id: string | null
-          folder_name: string | null
-          google_drive_count: number | null
-          google_drive_documents: number | null
-          google_drive_folders: number | null
-          id: string
-          local_files: number | null
-          local_only_files: number | null
-          matching_files: number | null
-          mp4_files: number | null
-          mp4_total_size: string | null
-          new_files: number | null
-          total_google_drive_items: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          folder_id?: string | null
-          folder_name?: string | null
-          google_drive_count?: number | null
-          google_drive_documents?: number | null
-          google_drive_folders?: number | null
-          id?: string
-          local_files?: number | null
-          local_only_files?: number | null
-          matching_files?: number | null
-          mp4_files?: number | null
-          mp4_total_size?: string | null
-          new_files?: number | null
-          total_google_drive_items?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          folder_id?: string | null
-          folder_name?: string | null
-          google_drive_count?: number | null
-          google_drive_documents?: number | null
-          google_drive_folders?: number | null
-          id?: string
-          local_files?: number | null
-          local_only_files?: number | null
-          matching_files?: number | null
-          mp4_files?: number | null
-          mp4_total_size?: string | null
-          new_files?: number | null
-          total_google_drive_items?: number | null
-        }
-        Relationships: []
       }
       sys_mime_types: {
         Row: {
@@ -2593,19 +2411,6 @@ export type Database = {
           backup_reason: string
           created_at: string
           created_by: string
-        }[]
-      }
-      get_cli_command_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          pipeline_name: string
-          command_name: string
-          total_executions: number
-          successful_executions: number
-          failed_executions: number
-          running_executions: number
-          avg_duration_ms: number
-          last_execution: string
         }[]
       }
       get_command_history: {

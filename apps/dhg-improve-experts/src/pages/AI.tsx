@@ -313,7 +313,7 @@ const AI: React.FC = () => {
       
       // Modified to remove the is_deleted filter which was removed from the table
       const { data, error } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .order('last_modified_at', { ascending: false });
         
@@ -328,7 +328,7 @@ const AI: React.FC = () => {
           
           // Retry the query after successful authentication
           const { data: retryData, error: retryError } = await supabase
-            .from('documentation_files')
+            .from('doc_files')
             .select('*')
             .order('last_modified_at', { ascending: false });
             

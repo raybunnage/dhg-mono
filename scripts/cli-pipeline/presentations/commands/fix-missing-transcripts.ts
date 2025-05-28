@@ -14,7 +14,7 @@ async function linkTranscriptsToPresentation() {
   
   // Get list of presentations with missing content from missing_content.md
   const { data: presentations } = await supabaseClient
-    .from('presentations')
+    .from('media_presentations')
     .select('id, title, main_video_id')
     .in('id', [
       '9927be5c-2606-4b8b-9061-911d013473bd',  // Gervitz.3.24.21
@@ -129,7 +129,7 @@ async function linkTranscriptsToPresentation() {
       
       // Check if presentation_asset exists
       const { data: existingAsset } = await supabaseClient
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('id')
         .eq('presentation_id', presentation.id)
         .eq('asset_type', 'transcript')
@@ -140,7 +140,7 @@ async function linkTranscriptsToPresentation() {
         
         // Update it to point to our expert_document
         await supabaseClient
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .update({
             expert_document_id: expertDocId,
             updated_at: new Date().toISOString()
@@ -151,7 +151,7 @@ async function linkTranscriptsToPresentation() {
       } else {
         // Create a new presentation_asset
         const { data: newAsset, error } = await supabaseClient
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .insert({
             presentation_id: presentation.id,
             asset_type: 'transcript',

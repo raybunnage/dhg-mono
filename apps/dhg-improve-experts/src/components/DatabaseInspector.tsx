@@ -10,7 +10,7 @@ export default function DatabaseInspector() {
   
   const commonTables = [
     'sources_google',
-    'sync_history',
+    'google_sync_history',
     'google_auth_tokens',
     'experts',
     'expert_documents'

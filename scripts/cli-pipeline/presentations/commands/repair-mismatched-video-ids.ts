@@ -50,7 +50,7 @@ const command = new Command('repair-mismatched-video-ids')
       process.stdout.write("Fetching presentations with high_level_folder_source_id...\n");
       
       let presQuery = supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id, title, video_source_id, high_level_folder_source_id, root_drive_id')
         .not('high_level_folder_source_id', 'is', null);
       

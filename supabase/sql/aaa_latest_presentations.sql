@@ -307,7 +307,7 @@ classify-cli write-unclassified-ids
   use this query   
 "select id, path_depth, main_video_id, name from sources_google where path_depth = 0 and document_type_id = 'bd903d99-64a1-4297-ba76-1094ab235dac'"
 
-when the main_video_id in this query matches the id of the sources_google mp4 you know you have the right high_level_folder_source_id  and you can set that wih this field in presentations table with this source_id field.   Now you can use this folder id as it is the source_id in the sources_google_experts table and you can return the associated expert_id field and set it in the presetnations.  Thus you should be able to get all the fields for the presentations table except the view count which we'll  work out later. 
+when the main_video_id in this query matches the id of the sources_google mp4 you know you have the right high_level_folder_source_id  and you can set that wih this field in presentations table with this source_id field.   Now you can use this folder id as it is the source_id in the google_sources_experts table and you can return the associated expert_id field and set it in the presetnations.  Thus you should be able to get all the fields for the presentations table except the view count which we'll  work out later. 
 
 
 

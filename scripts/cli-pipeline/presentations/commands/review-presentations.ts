@@ -116,7 +116,7 @@ reviewPresentationsCommand
       let totalCount = 0;
       if (!options.presentationId) {
         let countQuery = supabase
-          .from('presentations')
+          .from('media_presentations')
           .select('id', { count: 'exact', head: true });
           
         if (options.folderId) {
@@ -124,7 +124,7 @@ reviewPresentationsCommand
         }
         
         if (options.expertId) {
-          // This is simplified - would need to join through sources_google_experts
+          // This is simplified - would need to join through google_sources_experts
           countQuery = countQuery.eq('expert_id', options.expertId);
         }
         
@@ -148,7 +148,7 @@ reviewPresentationsCommand
         
         // Build the query for this batch of presentations
         let query = supabase
-          .from('presentations')
+          .from('media_presentations')
           .select(`
             id,
             title,
@@ -304,7 +304,7 @@ reviewPresentationsCommand
             while (retryCount < maxRetries && !success) {
               try {
                 let expertsQuery = supabase
-                  .from('sources_google_experts')
+                  .from('google_sources_experts')
                   .select(`
                     expert_id,
                     experts(
@@ -386,7 +386,7 @@ reviewPresentationsCommand
               if (options.fastMode) {
                 // In fast mode, only get basic asset info without raw_content checks
                 const queryPromise = supabase
-                  .from('presentation_assets')
+                  .from('media_presentation_assets')
                   .select(`
                     id,
                     asset_type,
@@ -419,7 +419,7 @@ reviewPresentationsCommand
               } else {
                 // Full query in normal mode
                 const queryPromise = supabase
-                  .from('presentation_assets')
+                  .from('media_presentation_assets')
                   .select(`
                     id,
                     asset_type,

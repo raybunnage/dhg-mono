@@ -18,7 +18,7 @@ async function main() {
     process.stdout.write("Fetching presentations with high_level_folder_source_id...\n");
     
     const { data: presentations, error: presError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title, video_source_id, high_level_folder_source_id')
       .not('high_level_folder_source_id', 'is', null)
       .limit(100);

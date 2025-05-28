@@ -3,17 +3,17 @@ import { SupabaseClientService } from '../../../../packages/shared/services/supa
 import { getActiveFilterProfile } from '../get-active-filter-profile';
 
 /**
- * Create presentation_assets for presentations with a high_level_folder_source_id
+ * Create media_presentation_assets for media_presentations with a high_level_folder_source_id
  * 
  * For each presentation, recursively search for files in its high_level_folder,
- * filter out unsupported file types, and create presentation_assets for supported files.
+ * filter out unsupported file types, and create media_presentation_assets for supported files.
  */
 export async function createPresentationAssetsCommand(options: {
   presentationId?: string;
   dryRun: boolean;
   limit?: number;
   depth?: number;
-  skipExisting?: boolean; // New parameter to skip presentations with existing assets
+  skipExisting?: boolean; // New parameter to skip media_presentations with existing assets
 }): Promise<{
   success: boolean;
   count?: number;
@@ -25,7 +25,7 @@ export async function createPresentationAssetsCommand(options: {
     // Default skipExisting to true if not provided
     const skipExisting = options.skipExisting !== false;
     
-    Logger.info(`Starting create-presentation-assets command ${options.dryRun ? "(dry run)" : ""} ${skipExisting ? "(skipping presentations with existing assets)" : ""}`);
+    Logger.info(`Starting create-presentation-assets command ${options.dryRun ? "(dry run)" : ""} ${skipExisting ? "(skipping media_presentations with existing assets)" : ""}`);
     
     const supabase = SupabaseClientService.getInstance().getClient();
     
@@ -38,14 +38,14 @@ export async function createPresentationAssetsCommand(options: {
       rootDriveIdFilter = activeFilter.rootDriveId;
     }
     
-    // Get presentations with high_level_folder_source_id
+    // Get media_presentations with high_level_folder_source_id
     let query = supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title, high_level_folder_source_id, video_source_id, expert_document_id, root_drive_id')
       .not('high_level_folder_source_id', 'is', null)
       .order('created_at', { ascending: false });
     
-    // Apply root_drive_id filter to presentations if active
+    // Apply root_drive_id filter to media_presentations if active
     if (rootDriveIdFilter) {
       query = query.eq('root_drive_id', rootDriveIdFilter);
     }
@@ -63,23 +63,23 @@ export async function createPresentationAssetsCommand(options: {
     const { data: presentations, error } = await query;
     
     if (error) {
-      Logger.error('Error fetching presentations with high_level_folder_source_id:', error);
+      Logger.error('Error fetching media_presentations with high_level_folder_source_id:', error);
       return {
         success: false, 
-        message: `Error fetching presentations: ${error.message}`
+        message: `Error fetching media_presentations: ${error.message}`
       };
     }
     
     if (!presentations || presentations.length === 0) {
-      Logger.info('No presentations found with high_level_folder_source_id');
+      Logger.info('No media_presentations found with high_level_folder_source_id');
       return {
         success: true, 
         count: 0, 
-        message: 'No presentations found with high_level_folder_source_id'
+        message: 'No media_presentations found with high_level_folder_source_id'
       };
     }
     
-    Logger.info(`Found ${presentations.length} presentations with high_level_folder_source_id`);
+    Logger.info(`Found ${presentations.length} media_presentations with high_level_folder_source_id`);
     
     // Get the list of unsupported document type IDs
     const unsupportedDocTypeIds = [
@@ -145,7 +145,7 @@ export async function createPresentationAssetsCommand(options: {
         // Check if the presentation already has assets and skip if needed
         if (skipExisting) {
           const { data, error: countError, count } = await supabase
-            .from('presentation_assets')
+            .from('media_presentation_assets')
             .select('id', { count: 'exact', head: true })
             .eq('presentation_id', presentation.id);
           
@@ -311,9 +311,9 @@ export async function createPresentationAssetsCommand(options: {
         
         Logger.info(`Found ${supportedFiles.length} supported files after filtering`);
         
-        // Check which files already have presentation_assets
+        // Check which files already have media_presentation_assets
         const { data: existingAssets, error: assetsError } = await supabase
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .select('asset_source_id')
           .eq('presentation_id', presentation.id);
         
@@ -325,7 +325,7 @@ export async function createPresentationAssetsCommand(options: {
         
         const existingAssetSourceIds = existingAssets ? existingAssets.map(a => a.asset_source_id) : [];
         
-        // Filter out files that already have presentation_assets
+        // Filter out files that already have media_presentation_assets
         // Also filter out any files that match the presentation's video_source_id
         const filesToProcess = supportedFiles.filter(file => 
           !existingAssetSourceIds.includes(file.id) && 
@@ -337,12 +337,12 @@ export async function createPresentationAssetsCommand(options: {
           Logger.info(`Skipping main video file (${presentation.video_source_id}) as it's already linked to the presentation`);
         }
         
-        Logger.info(`${filesToProcess.length} files need presentation_assets created`);
+        Logger.info(`${filesToProcess.length} files need media_presentation_assets created`);
         
         let createdForPresentation = 0;
         let failedForPresentation = 0;
         
-        // Create presentation_assets for each file
+        // Create media_presentation_assets for each file
         for (const file of filesToProcess) {
           try {
             // Get the expert_document_id if available
@@ -382,7 +382,7 @@ export async function createPresentationAssetsCommand(options: {
                 // Update the presentation's expert_document_id
                 Logger.info(`Setting presentation expert_document_id to ${expertDocumentId} for video ${presentation.video_source_id}`);
                 const { error: updateError } = await supabase
-                  .from('presentations')
+                  .from('media_presentations')
                   .update({ expert_document_id: expertDocumentId })
                   .eq('id', presentation.id);
                   
@@ -433,9 +433,9 @@ export async function createPresentationAssetsCommand(options: {
               continue;
             }
             
-            // Create the presentation_asset with proper type and role
+            // Create the media_presentation_asset with proper type and role
             const { data: newAsset, error: createError } = await supabase
-              .from('presentation_assets')
+              .from('media_presentation_assets')
               .insert({
                 presentation_id: presentation.id,
                 asset_source_id: file.id,

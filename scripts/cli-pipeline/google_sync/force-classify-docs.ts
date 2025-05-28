@@ -426,9 +426,9 @@ Return your classification as a complete, valid JSON object with all of these fi
                     }
                   }
                   
-                  // Show what would be added to document_concepts table
+                  // Show what would be added to doc_concepts table
                   if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
-                    console.log('\n🔍 DRY RUN: Would save the following concepts to document_concepts table:');
+                    console.log('\n🔍 DRY RUN: Would save the following concepts to doc_concepts table:');
                     classificationResponse.concepts.forEach((concept, index) => {
                       console.log(`  ${index+1}. ${concept.name} (weight: ${concept.weight})`);
                     });
@@ -517,13 +517,13 @@ Return your classification as a complete, valid JSON object with all of these fi
                     console.log(`- Classification reasoning added: ${(classificationResponse.classification_reasoning || '').substring(0, 50)}...`);
                     console.log(`- Processing status updated to: reprocessing_done`);
                     
-                    // Now save concepts to document_concepts table
+                    // Now save concepts to doc_concepts table
                     if (classificationResponse.concepts && classificationResponse.concepts.length > 0) {
-                      console.log('\nSaving concepts to document_concepts table...');
+                      console.log('\nSaving concepts to doc_concepts table...');
                       
                       // First, delete any existing concepts for this document to avoid duplicates
                       const { error: deleteError } = await supabase
-                        .from('document_concepts')
+                        .from('doc_concepts')
                         .delete()
                         .eq('document_id', expertDoc.id);
                         
@@ -543,14 +543,14 @@ Return your classification as a complete, valid JSON object with all of these fi
                       
                       // Insert all concepts
                       const { data: conceptsData, error: conceptsError } = await supabase
-                        .from('document_concepts')
+                        .from('doc_concepts')
                         .insert(conceptRecords)
                         .select();
                         
                       if (conceptsError) {
                         console.error('❌ Error saving concepts:', conceptsError.message);
                       } else {
-                        console.log(`✅ Successfully saved ${conceptRecords.length} concepts to document_concepts table`);
+                        console.log(`✅ Successfully saved ${conceptRecords.length} concepts to doc_concepts table`);
                         console.log('Concept details:');
                         classificationResponse.concepts.forEach((concept, index) => {
                           console.log(`  ${index+1}. ${concept.name} (weight: ${concept.weight})`);

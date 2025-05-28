@@ -136,7 +136,7 @@ export class PresentationService {
     try {
       // Get the presentation
       const { data: presentation, error } = await this._supabaseClient
-        .from('presentations')
+        .from('media_presentations')
         .select('id, title, expert_id')
         .eq('id', presentationId)
         .single();
@@ -148,7 +148,7 @@ export class PresentationService {
       
       // Get the transcript asset
       const { data: assets, error: assetsError } = await this.supabaseClient
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('file_path')
         .eq('presentation_id', presentationId)
         .eq('asset_type', 'transcript');
@@ -313,7 +313,7 @@ export class PresentationService {
         
         // Associate summary with presentation in presentation_assets
         const { error: assetError } = await this._supabaseClient
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .insert({
             presentation_id: options.presentationId,
             asset_type: 'summary',
@@ -371,7 +371,7 @@ export class PresentationService {
     try {
       // Get presentations by the expert
       let presentationsQuery = this.supabaseClient
-        .from('presentations')
+        .from('media_presentations')
         .select('id')
         .eq('expert_id', expertId);
       
@@ -392,7 +392,7 @@ export class PresentationService {
       // Get transcript for the presentation
       const selectedPresentationId = presentations[0].id;
       const { data: assets, error: assetsError } = await this.supabaseClient
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('file_path')
         .eq('presentation_id', selectedPresentationId)
         .eq('asset_type', 'transcript');
@@ -532,7 +532,7 @@ export class PresentationService {
       
       // Get presentations with filters
       let query = this.supabaseClient
-        .from('presentations')
+        .from('media_presentations')
         .select(`
           id,
           title,
@@ -572,9 +572,9 @@ export class PresentationService {
       // Filter by expert_id if requested
       let filteredPresentations = presentations;
       if (options.expertId) {
-        // Get presentations that are associated with the specified expert through sources_google_experts
+        // Get presentations that are associated with the specified expert through google_sources_experts
         const { data: sourcesWithExpert, error: sourcesError } = await this.supabaseClient
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .select('source_id')
           .eq('expert_id', options.expertId);
         
@@ -640,7 +640,7 @@ export class PresentationService {
         filteredPresentations.map(async (presentation: any) => {
           // Get presentation assets with linked expert_documents
           let { data: assets, error: assetsError } = await this.supabaseClient
-            .from('presentation_assets')
+            .from('media_presentation_assets')
             .select(`
               id, 
               asset_type, 
@@ -671,7 +671,7 @@ export class PresentationService {
           if (presentation.video_source_id) {
             // Get all experts associated with this source
             const { data: sourceExperts, error: sourceError } = await this.supabaseClient
-              .from('sources_google_experts')
+              .from('google_sources_experts')
               .select(`
                 expert_id, 
                 experts(id, expert_name, full_name)
@@ -784,7 +784,7 @@ export class PresentationService {
             if (!hasTranscriptAsset) {
               // Create a new presentation_asset record
               const { data: newAsset, error: assetError } = await this.supabaseClient
-                .from('presentation_assets')
+                .from('media_presentation_assets')
                 .insert({
                   presentation_id: presentation.id,
                   asset_type: 'transcript',
@@ -805,7 +805,7 @@ export class PresentationService {
                 
                 // Refresh assets
                 const { data: refreshedAssets } = await this.supabaseClient
-                  .from('presentation_assets')
+                  .from('media_presentation_assets')
                   .select('id, asset_type, created_at')
                   .eq('presentation_id', presentation.id);
                   
@@ -1208,7 +1208,7 @@ export class PresentationService {
         // For each video, check if there's a presentation
         for (const videoSource of videoSources) {
           const { data: presentations, error: presError } = await this._supabaseClient
-            .from('presentations')
+            .from('media_presentations')
             .select('id, title')
             .eq('video_source_id', videoSource.id);
           
@@ -1218,7 +1218,7 @@ export class PresentationService {
           
           // Check if a presentation asset already exists for this document
           const { data: existingAssets, error: assetError } = await this._supabaseClient
-            .from('presentation_assets')
+            .from('media_presentation_assets')
             .select('id')
             .eq('presentation_id', presentations[0].id)
             .eq('expert_document_id', doc.id);
@@ -1275,7 +1275,7 @@ export class PresentationService {
     try {
       // Check if asset already exists
       const { data: existingAsset, error: checkError } = await this._supabaseClient
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('id')
         .eq('presentation_id', options.presentationId)
         .eq('expert_document_id', options.expertDocumentId);
@@ -1292,7 +1292,7 @@ export class PresentationService {
       
       // Create the presentation asset
       const { error: insertError } = await this._supabaseClient
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .insert({
           presentation_id: options.presentationId,
           expert_document_id: options.expertDocumentId,
@@ -1321,7 +1321,7 @@ export class PresentationService {
     
     // Get all presentations
     const { data: presentations, error: presError } = await this._supabaseClient
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title, video_source_id');
     
     if (presError || !presentations || presentations.length === 0) {
@@ -1412,7 +1412,7 @@ export class PresentationService {
     
     // Check if a presentation asset already exists
     const { data: existingAssets, error: assetError } = await this._supabaseClient
-      .from('presentation_assets')
+      .from('media_presentation_assets')
       .select('id')
       .eq('presentation_id', bestMatch.id)
       .eq('expert_document_id', doc.id);
@@ -1890,7 +1890,7 @@ export class PresentationService {
       
       // Get presentations with filters
       let query = this.supabaseClient
-        .from('presentations')
+        .from('media_presentations')
         .select(`
           id,
           title,
@@ -1922,9 +1922,9 @@ export class PresentationService {
       // Filter by expert_id if requested
       let filteredPresentations = presentations;
       if (options.expertId) {
-        // Get presentations that are associated with the specified expert through sources_google_experts
+        // Get presentations that are associated with the specified expert through google_sources_experts
         const { data: sourcesWithExpert, error: sourcesError } = await this.supabaseClient
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .select('source_id')
           .eq('expert_id', options.expertId);
         
@@ -1967,7 +1967,7 @@ export class PresentationService {
           
           if (presentation.video_source_id) {
             const { data: source, error: sourceError } = await this.supabaseClient
-              .from('sources_google_experts')
+              .from('google_sources_experts')
               .select('expert_id')
               .eq('source_id', presentation.video_source_id)
               .single();
@@ -2136,7 +2136,7 @@ export class PresentationService {
       for (const folder of topLevelFolders) {
         // Check if there's a presentation for this folder
         const { data: presentations, error: presError } = await this._supabaseClient
-          .from('presentations')
+          .from('media_presentations')
           .select('id, title')
           .eq('high_level_folder_source_id', folder.id);
         
@@ -2498,7 +2498,7 @@ export class PresentationService {
           } else {
             // Actually create the presentation
             const { data: insertedPresentation, error: insertError } = await this._supabaseClient
-              .from('presentations')
+              .from('media_presentations')
               .insert(newPresentation)
               .select();
             

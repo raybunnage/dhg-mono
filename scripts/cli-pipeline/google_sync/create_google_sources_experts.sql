@@ -1,4 +1,4 @@
--- Create sources_google_experts table for managing expert associations
+-- Create google_sources_experts table for managing expert associations
 
 -- First create an ENUM type for expert roles
 CREATE TYPE expert_role_type AS ENUM (
@@ -17,7 +17,7 @@ CREATE TYPE expert_role_type AS ENUM (
 );
 
 -- Create the table with the role field
-CREATE TABLE IF NOT EXISTS sources_google_experts (
+CREATE TABLE IF NOT EXISTS google_sources_experts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source_id UUID NOT NULL REFERENCES sources_google(id),
   expert_id UUID NOT NULL REFERENCES experts(id),
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS sources_google_experts (
 );
 
 -- Add indexes for faster lookups
-CREATE INDEX IF NOT EXISTS idx_sources_google_experts_source_id ON sources_google_experts(source_id);
-CREATE INDEX IF NOT EXISTS idx_sources_google_experts_expert_id ON sources_google_experts(expert_id);
+CREATE INDEX IF NOT EXISTS idx_google_sources_experts_source_id ON google_sources_experts(source_id);
+CREATE INDEX IF NOT EXISTS idx_google_sources_experts_expert_id ON google_sources_experts(expert_id);
 
 -- Create a function to copy existing expert_id relationships
 CREATE OR REPLACE FUNCTION migrate_expert_ids() RETURNS void AS $$
@@ -53,8 +53,8 @@ BEGIN
     FROM sources_google_deprecated
     WHERE expert_id IS NOT NULL
   LOOP
-    -- Insert into sources_google_experts
-    INSERT INTO sources_google_experts (
+    -- Insert into google_sources_experts
+    INSERT INTO google_sources_experts (
       source_id, 
       expert_id, 
       is_primary, 
@@ -78,5 +78,5 @@ $$ LANGUAGE plpgsql;
 -- Help text explaining the migration
 COMMENT ON FUNCTION migrate_expert_ids() IS 
 'This function migrates expert associations from the sources_google.expert_id field 
-to the new sources_google_experts table. Run this function after setting up both tables 
+to the new google_sources_experts table. Run this function after setting up both tables 
 and ensuring sources_google_deprecated still exists.';

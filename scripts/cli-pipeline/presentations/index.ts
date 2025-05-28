@@ -1290,7 +1290,7 @@ program
       
       // Check if any of these sources already have presentations
       const { data: existingPresentations, error: presentationsError } = await SupabaseClientService.getInstance().getClient()
-        .from('presentations')
+        .from('media_presentations')
         .select('id, title, main_video_id')
         .in('main_video_id', sourceIds);
       
@@ -1364,7 +1364,7 @@ program
           };
           
           const { data: presentationData, error: presError } = await SupabaseClientService.getInstance().getClient()
-            .from('presentations')
+            .from('media_presentations')
             .insert(newPresentation)
             .select();
           
@@ -1452,7 +1452,7 @@ program
           };
           
           const { data: assetData, error: assetError } = await SupabaseClientService.getInstance().getClient()
-            .from('presentation_assets')
+            .from('media_presentation_assets')
             .insert(newAsset)
             .select();
           

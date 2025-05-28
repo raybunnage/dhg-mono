@@ -84,7 +84,7 @@ async function listGoogleSources(options: {
       
       if (expert) {
         const { data: expertSources, error: sourcesError } = await supabase
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .select('source_id')
           .eq('expert_id', expert.id);
         

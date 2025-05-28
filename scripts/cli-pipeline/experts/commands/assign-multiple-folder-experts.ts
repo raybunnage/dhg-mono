@@ -415,7 +415,7 @@ async function getFolderExpertsWithRelationships(folderId: string): Promise<{ ex
   const supabase = supabaseClientService.getClient();
   
   const { data, error } = await supabase
-    .from('sources_google_experts')
+    .from('google_sources_experts')
     .select(`
       id,
       is_primary,
@@ -534,7 +534,7 @@ async function deleteExpertFromFolder(options: {
     if (verbose) loggerUtil.info(`Verifying relationship ID: ${relationshipId}`);
     
     const { data: relationshipData, error: relationshipError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .select(`
         id,
         source_id,
@@ -581,7 +581,7 @@ async function deleteExpertFromFolder(options: {
     }
     
     const { error: deleteError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .delete()
       .eq('id', relationshipId);
     
@@ -654,7 +654,7 @@ async function assignExpertToFolder(options: {
     // Step 3: Check if this relationship already exists
     if (verbose) loggerUtil.info(`Checking for existing relationship between folder and expert...`);
     const { data: existingLink, error: linkError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .select('id')
       .eq('source_id', folderId)
       .eq('expert_id', expertId);
@@ -670,7 +670,7 @@ async function assignExpertToFolder(options: {
       if (!dryRun) {
         // Update the existing link
         const { error: updateError } = await supabase
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .update({
             is_primary: isPrimary,
             updated_at: new Date().toISOString()
@@ -699,7 +699,7 @@ async function assignExpertToFolder(options: {
     
     // Insert the record
     const { data: insertData, error: insertError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .insert({
         source_id: folderId,
         expert_id: expertId,

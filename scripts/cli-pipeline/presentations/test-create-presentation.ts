@@ -36,7 +36,7 @@ async function main() {
       
       // Verify creation by querying the database
       const { data: verifyPresentation } = await presentationService.supabaseClient
-        .from('presentations')
+        .from('media_presentations')
         .select('id, title, expert_id, high_level_folder_source_id')
         .eq('id', result.created[0].presentation.id)
         .single();
@@ -45,7 +45,7 @@ async function main() {
       
       // Check for assets
       const { data: assets } = await presentationService.supabaseClient
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('id, asset_type, asset_role, source_id')
         .eq('presentation_id', result.created[0].presentation.id);
       

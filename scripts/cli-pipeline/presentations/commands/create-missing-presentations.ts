@@ -25,7 +25,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
     
     // First check if a presentation already exists for this folder
     const { data: existingPresentations, error: existingError } = await presentationService.supabaseClient
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title')
       .eq('high_level_folder_source_id', folderId)
       .limit(1);
@@ -95,7 +95,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
     
     // Insert the presentation
     const { data: insertedPresentation, error: insertError } = await presentationService.supabaseClient
-      .from('presentations')
+      .from('media_presentations')
       .insert(newPresentation)
       .select();
     
@@ -182,7 +182,7 @@ async function createPresentationForFolder(folderData: any, presentationService:
           };
           
           const { error: assetError } = await presentationService.supabaseClient
-            .from('presentation_assets')
+            .from('media_presentation_assets')
             .insert(newAsset);
           
           if (assetError) {
@@ -261,7 +261,7 @@ const command = new Command('create-missing-presentations')
         if (options.dryRun) {
           // Check if presentation exists
           const { data: existingPres, error: existingError } = await presentationService.supabaseClient
-            .from('presentations')
+            .from('media_presentations')
             .select('id')
             .eq('high_level_folder_source_id', folder.id)
             .limit(1);

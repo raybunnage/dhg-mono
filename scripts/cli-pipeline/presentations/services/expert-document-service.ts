@@ -142,7 +142,7 @@ export class ExpertDocumentService {
       
       // Step 5: Get existing presentations
       const { data: existingPresentations, error: presentationError } = await this.supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id, title, main_video_id')
         .not('main_video_id', 'is', null);
       
@@ -272,7 +272,7 @@ export class ExpertDocumentService {
         
         // Insert the presentation
         const { data: presentationData, error: presentationError } = await this.supabase
-          .from('presentations')
+          .from('media_presentations')
           .insert(newPresentation)
           .select();
         
@@ -301,7 +301,7 @@ export class ExpertDocumentService {
         };
         
         const { data: assetData, error: assetError } = await this.supabase
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .insert(newAsset)
           .select();
         

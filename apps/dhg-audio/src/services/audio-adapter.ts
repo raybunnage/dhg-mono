@@ -64,8 +64,8 @@ export class AudioAdapter {
   private static formatAudioFile(file: any): AudioFile {
     // Extract expert info if available
     let expert = null;
-    if (file.sources_google_experts && file.sources_google_experts.length > 0) {
-      const expertEntry = file.sources_google_experts[0];
+    if (file.google_sources_experts && file.google_sources_experts.length > 0) {
+      const expertEntry = file.google_sources_experts[0];
       if (expertEntry.experts) {
         expert = {
           id: expertEntry.expert_id,

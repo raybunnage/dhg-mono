@@ -445,7 +445,7 @@ WHERE table_name = 'document_types'
 ORDER BY ordinal_position;
 
 
-CREATE TABLE sources_google_experts (
+CREATE TABLE google_sources_experts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_id UUID NOT NULL REFERENCES sources_google(id),
     expert_id UUID NOT NULL REFERENCES experts(id),
@@ -456,10 +456,10 @@ CREATE TABLE sources_google_experts (
 );
 
 -- Add index for faster lookups
-CREATE INDEX idx_sources_google_experts_source_id ON
-sources_google_experts(source_id);
-CREATE INDEX idx_sources_google_experts_expert_id ON
-sources_google_experts(expert_id);
+CREATE INDEX idx_google_sources_experts_source_id ON
+google_sources_experts(source_id);
+CREATE INDEX idx_google_sources_experts_expert_id ON
+google_sources_experts(expert_id);
 
 
   ALTER TABLE sources_google 

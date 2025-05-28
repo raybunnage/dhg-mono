@@ -139,7 +139,7 @@ const SupabaseAdmin: React.FC<SupabaseManagerProps> = ({ initialTab = "overview"
       },
       {
         id: 2,
-        name: '20250226000001_create_sync_history_table',
+        name: '20250226000001_create_google_sync_history_table',
         executed_at: new Date(Date.now() - 86400000).toISOString(),
         success: true,
         sql_content: '-- Created sync history table'
@@ -340,7 +340,7 @@ $$ LANGUAGE plpgsql;`);
           // Last resort - use a smaller list of common tables
           tablesFound = [
             'sources_google', 
-            'sync_history',
+            'google_sync_history',
             'experts',
             'expert_documents',
             'document_types',
@@ -380,7 +380,7 @@ $$ LANGUAGE plpgsql;`);
           console.log("Schema query failed, using fallback approach");
           const fallbackTables = [
             'sources_google', 
-            'sync_history',
+            'google_sync_history',
             'google_auth_tokens',
             'experts',
             'expert_documents',
@@ -399,7 +399,7 @@ $$ LANGUAGE plpgsql;`);
             'command_categories',
             'command_history',
             'command_patterns',
-            'documentation_files',
+            'doc_files',
             'documentation_processing_queue',
             'documentation_relations',
             'documentation_sections',
@@ -436,8 +436,8 @@ $$ LANGUAGE plpgsql;`);
             'sql_query_history',
             'sql_query_tags',
             'sql_users',
-            'sync_history_backup',
-            'sync_statistics',
+            'google_sync_history_backup',
+            'google_sync_statistics',
             'temp_sources',
             'transcription_feedback',
             'user_annotations'
@@ -449,7 +449,7 @@ $$ LANGUAGE plpgsql;`);
         // Final fallback
         tablesFound = [
           'sources_google', 
-          'sync_history',
+          'google_sync_history',
           'experts',
           'expert_documents',
           'document_types',
@@ -778,7 +778,7 @@ $$ LANGUAGE plpgsql;`);
           { column_name: 'source_id', data_type: 'uuid', is_nullable: 'NO', column_default: '', is_unique: 'NO', foreign_key: 'sources_google.id', trigger_name: '', check_constraint: '' },
           { column_name: 'created_at', data_type: 'timestamp with time zone', is_nullable: 'NO', column_default: 'now()', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' }
         ];
-      } else if (tableName === 'sync_history') {
+      } else if (tableName === 'google_sync_history') {
         columns = [
           { column_name: 'id', data_type: 'uuid', is_nullable: 'NO', column_default: 'gen_random_uuid()', is_unique: 'YES', foreign_key: '', trigger_name: '', check_constraint: '' },
           { column_name: 'folder_id', data_type: 'text', is_nullable: 'NO', column_default: '', is_unique: 'NO', foreign_key: '', trigger_name: '', check_constraint: '' },
@@ -1251,7 +1251,7 @@ $$ LANGUAGE plpgsql;`);
             // Extract all tables from the types.ts definition
             const tableNames = [
               'sources_google', 
-              'sync_history',
+              'google_sync_history',
               'google_auth_tokens',
               'experts',
               'expert_documents',
@@ -1270,7 +1270,7 @@ $$ LANGUAGE plpgsql;`);
               'command_categories',
               'command_history',
               'command_patterns',
-              'documentation_files',
+              'doc_files',
               'documentation_processing_queue',
               'documentation_relations',
               'documentation_sections',
@@ -1300,8 +1300,8 @@ $$ LANGUAGE plpgsql;`);
               'sources',
               'sources_google_backup',
               'speaker_profiles',
-              'sync_history_backup',
-              'sync_statistics',
+              'google_sync_history_backup',
+              'google_sync_statistics',
               'temp_sources',
               'transcription_feedback',
               'user_annotations'
@@ -1435,7 +1435,7 @@ $$ LANGUAGE plpgsql;`);
             // Extract all tables from the types.ts definition
             const tableNames = [
               'sources_google', 
-              'sync_history',
+              'google_sync_history',
               'google_auth_tokens',
               'experts',
               'expert_documents',
@@ -1454,7 +1454,7 @@ $$ LANGUAGE plpgsql;`);
               'command_categories',
               'command_history',
               'command_patterns',
-              'documentation_files',
+              'doc_files',
               'documentation_processing_queue',
               'documentation_relations',
               'documentation_sections',
@@ -1484,8 +1484,8 @@ $$ LANGUAGE plpgsql;`);
               'sources',
               'sources_google_backup',
               'speaker_profiles',
-              'sync_history_backup',
-              'sync_statistics',
+              'google_sync_history_backup',
+              'google_sync_statistics',
               'temp_sources',
               'transcription_feedback',
               'user_annotations'

@@ -135,7 +135,7 @@ const command = new Command('check-video-consistency')
         
         // Find corresponding presentation
         const { data: presentations, error: presError } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .select(`
             id,
             video_source_id,

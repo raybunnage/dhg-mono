@@ -137,7 +137,7 @@ export const findDuplicateFolderNamesCommand = async (options: {
       for (const folder of folderInfo) {
         // Get presentation associated with this folder
         const { data: presentations, error: presentationsError } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .select('id, title, video_source_id')
           .eq('high_level_folder_source_id', folder.id)
           .maybeSingle();

@@ -1,11 +1,11 @@
 /**
  * sync-markdown-files.ts
  * 
- * CLI pipeline script to synchronize markdown files in the repository with the documentation_files table.
+ * CLI pipeline script to synchronize markdown files in the repository with the doc_files table.
  * 
  * Purpose:
  * - Scan the repository for markdown files
- * - Compare against documentation_files table
+ * - Compare against doc_files table
  * - Add new files to the table with is_deleted = FALSE
  * - Mark missing files as is_deleted = TRUE
  * - Update metadata for all files
@@ -13,7 +13,7 @@
  * 
  * Requirements:
  * - Exclude files in file_types, backup, archive, or external tools folders
- * - Update metadata fields in the documentation_files table
+ * - Update metadata fields in the doc_files table
  * - Use file services from the CLI package
  */
 
@@ -98,7 +98,7 @@ async function updateFilePaths(repoRoot: string) {
   try {
     // Get all documentation files
     const { data: dbFiles, error } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('id, file_path');
     
     if (error) {
@@ -125,7 +125,7 @@ async function updateFilePaths(repoRoot: string) {
         
         // Update the file path in the database
         const { error: updateError } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .update({
             file_path: fullPath,
             updated_at: now,
@@ -149,15 +149,15 @@ async function updateFilePaths(repoRoot: string) {
 }
 
 /**
- * Verify the state of the documentation_files table
+ * Verify the state of the doc_files table
  */
 async function verifyDocumentationFilesState() {
-  Logger.info('Verifying documentation_files table state...');
+  Logger.info('Verifying doc_files table state...');
   
   try {
     // Get count of all files
     const { count: totalCount, error: countError } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('*', { count: 'exact', head: true });
     
     if (countError) {
@@ -167,7 +167,7 @@ async function verifyDocumentationFilesState() {
     
     // Get count of non-deleted files
     const { count: activeCount, error: activeError } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('*', { count: 'exact', head: true })
       .eq('is_deleted', false);
     
@@ -178,7 +178,7 @@ async function verifyDocumentationFilesState() {
     
     // Get count of deleted files
     const { count: deletedCount, error: deletedError } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('*', { count: 'exact', head: true })
       .eq('is_deleted', true);
     
@@ -189,7 +189,7 @@ async function verifyDocumentationFilesState() {
     
     // Fetch sample of non-deleted files
     const { data: activeSample, error: sampleError } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('id, file_path, is_deleted')
       .eq('is_deleted', false)
       .limit(5);
@@ -200,7 +200,7 @@ async function verifyDocumentationFilesState() {
     
     // Fetch sample of deleted files
     const { data: deletedSample, error: deletedSampleError } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('id, file_path, is_deleted')
       .eq('is_deleted', true)
       .limit(5);
@@ -245,11 +245,11 @@ async function verifyDocumentationFilesState() {
  */
 async function checkTableSchema() {
   try {
-    Logger.info('Checking documentation_files table schema...');
+    Logger.info('Checking doc_files table schema...');
     
     // Just fetch metadata from a sample record to understand the schema
     const { data, error } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('*')
       .limit(1);
     
@@ -258,7 +258,7 @@ async function checkTableSchema() {
       
       // Alternate approach - get a single record to inspect structure
       const { data: sampleRecord, error: sampleError } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .limit(1);
         
@@ -301,7 +301,7 @@ async function forceUndeleteAll() {
       const now = new Date().toISOString();
       
       const { data: updateData, error: updateError } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .update({ 
           is_deleted: false,
           last_modified_at: now,
@@ -373,7 +373,7 @@ async function syncMarkdownFiles() {
     // 4. Get all documentation files from the database
     Logger.info('Fetching documentation files from database...');
     const { data: dbFiles, error } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('id, file_path, title, file_hash, metadata, is_deleted');
     
     if (error) {
@@ -417,7 +417,7 @@ async function syncMarkdownFiles() {
         if (!dbFile) {
           // New file - add to database
           await supabase
-            .from('documentation_files')
+            .from('doc_files')
             .insert({
               file_path: filePath,
               title,
@@ -439,7 +439,7 @@ async function syncMarkdownFiles() {
         } else if (dbFile.file_hash !== hash || dbFile.is_deleted) {
           // File exists but has changed or was marked as deleted
           await supabase
-            .from('documentation_files')
+            .from('doc_files')
             .update({
               title,
               file_hash: hash,
@@ -473,7 +473,7 @@ async function syncMarkdownFiles() {
       if (!foundFilePaths.has(dbFile.file_path) && !dbFile.is_deleted) {
         try {
           await supabase
-            .from('documentation_files')
+            .from('doc_files')
             .update({
               is_deleted: true,
               updated_at: now
@@ -487,7 +487,7 @@ async function syncMarkdownFiles() {
       }
     }
     
-    // 7. Verify the state of the documentation_files table
+    // 7. Verify the state of the doc_files table
     await verifyDocumentationFilesState();
     
     // 8. Log statistics
@@ -700,7 +700,7 @@ async function addNewFile(file: MarkdownFile) {
   Logger.debug(`Insert data:`, insertData);
   
   const { data, error } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .insert(insertData)
     .select();
   
@@ -723,7 +723,7 @@ async function updateExistingFile(id: string, file: MarkdownFile) {
   // This separate update focuses solely on the is_deleted flag
   Logger.debug(`First ensuring is_deleted = FALSE for file ${file.file_path}`);
   const { data: deleteUpdate, error: deleteError } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .update({
       is_deleted: false
     })
@@ -741,7 +741,7 @@ async function updateExistingFile(id: string, file: MarkdownFile) {
   
   // Then continue with the full update
   const { data, error } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .update({
       file_path: file.file_path,
       title: file.title,
@@ -773,7 +773,7 @@ async function restoreFile(id: string, file: MarkdownFile) {
   // This separate update focuses solely on the is_deleted flag
   Logger.debug(`First ensuring is_deleted = FALSE for file ${file.file_path}`);
   const { data: deleteUpdate, error: deleteError } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .update({
       is_deleted: false
     })
@@ -802,7 +802,7 @@ async function restoreFile(id: string, file: MarkdownFile) {
   Logger.debug(`Restore data for ${file.file_path}:`, updateData);
   
   const { data, error } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .update(updateData)
     .eq('id', id)
     .select();
@@ -851,7 +851,7 @@ async function undeleteAllDocumentation() {
   try {
     // Get ALL documentation files
     const { data: allDocs, error: fetchError } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('id, file_path, is_deleted');
     
     if (fetchError) {
@@ -895,7 +895,7 @@ async function undeleteAllDocumentation() {
       Logger.debug(`Processing batch ${i/batchSize + 1}, size: ${batch.length}`);
       
       const { data, error } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .update({
           is_deleted: false,
           last_modified_at: now,
@@ -926,7 +926,7 @@ async function undeleteKnownDocuments() {
   
   // Get all docs marked as deleted
   const { data: deletedDocs, error: fetchError } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .select('id, file_path')
     .eq('is_deleted', true);
   
@@ -968,7 +968,7 @@ async function undeleteKnownDocuments() {
         
         // First update to just set is_deleted explicitly
         const { data, error } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .update({ 
             is_deleted: false,
             last_modified_at: now,
@@ -1000,7 +1000,7 @@ async function checkFileStatus(id: string): Promise<{ is_deleted: boolean; file_
     Logger.debug(`Checking current status for file ID ${id}`);
     
     const { data, error } = await supabase
-      .from('documentation_files')
+      .from('doc_files')
       .select('file_path, is_deleted')
       .eq('id', id)
       .single();
@@ -1026,7 +1026,7 @@ async function markFileAsDeleted(id: string) {
   
   // Get the current file information before marking as deleted (for logging)
   const { data: fileData, error: fetchError } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .select('file_path, is_deleted')
     .eq('id', id)
     .single();
@@ -1046,7 +1046,7 @@ async function markFileAsDeleted(id: string) {
   
   // Update the file to set is_deleted = TRUE
   const { data, error } = await supabase
-    .from('documentation_files')
+    .from('doc_files')
     .update(updateData)
     .eq('id', id)
     .select();

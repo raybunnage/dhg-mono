@@ -32,7 +32,7 @@ async function backupPresentationsTable() {
     
     // Create backup using RPC call
     const { data, error } = await supabase.rpc('create_table_backup', {
-      source_table: 'presentations',
+      source_table: 'media_presentations',
       destination_table: backupTableName
     });
     
@@ -42,7 +42,7 @@ async function backupPresentationsTable() {
       
       // Try direct SQL method if RPC fails
       const { error: sqlError } = await supabase.rpc('execute_sql', {
-        sql_query: `CREATE TABLE ${backupTableName} AS SELECT * FROM presentations;`
+        sql_query: `CREATE TABLE ${backupTableName} AS SELECT * FROM media_presentations;`
       });
       
       if (sqlError) {
@@ -72,7 +72,7 @@ async function main() {
     
     // Create backup for safety if not in dry run mode
     if (!dryRun) {
-      console.log("Creating backup of presentations table...");
+      console.log("Creating backup of media_presentations table...");
       const backupSuccess = await backupPresentationsTable();
       
       if (!backupSuccess) {
@@ -93,7 +93,7 @@ async function main() {
     console.log("Fetching presentations with high_level_folder_source_id...");
     
     const { data: presentations, error: presError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title, video_source_id, high_level_folder_source_id')
       .not('high_level_folder_source_id', 'is', null)
       .limit(100);
@@ -246,7 +246,7 @@ async function main() {
         
         // Update the presentation
         const { data, error } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .update({ video_source_id: mismatch.folderMainVideoId })
           .eq('id', mismatch.presentationId)
           .select('id, title');

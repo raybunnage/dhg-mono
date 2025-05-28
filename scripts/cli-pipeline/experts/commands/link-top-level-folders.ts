@@ -103,7 +103,7 @@ export async function linkTopLevelFolders(options: LinkTopLevelFoldersOptions): 
     for (const folder of folders) {
       // Check if this folder already has an expert association
       const { data: existingLinks, error: linksError } = await supabase
-        .from('sources_google_experts')
+        .from('google_sources_experts')
         .select(`
           id,
           expert_id,

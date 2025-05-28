@@ -61,7 +61,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
         // If no folder is selected yet and we have sync history, select the most recently synced folder
         if (!selectedFolderId) {
           const { data: syncHistory } = await supabase
-            .from('sync_history')
+            .from('google_sync_history')
             .select('folder_id, folder_name')
             .order('timestamp', { ascending: false })
             .limit(1);
@@ -89,7 +89,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       
       // Get the most recent sync for the selected folder
       const syncQuery = supabase
-        .from('sync_history')
+        .from('google_sync_history')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(1);
@@ -110,7 +110,7 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
       let statData = null;
       try {
         const statQuery = supabase
-          .from('sync_statistics')
+          .from('google_sync_statistics')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(1);
@@ -335,15 +335,15 @@ export function LastSyncSummary({ refreshKey }: LastSyncSummaryProps) {
             console.log('Current syncStats:', syncStats);
             console.log('Selected folder ID:', selectedFolderId);
             
-            // Safely check sync_history - this table should always exist
+            // Safely check google_sync_history - this table should always exist
             supabase
-              .from('sync_history')
+              .from('google_sync_history')
               .select('*')
               .order('timestamp', { ascending: false })
               .limit(1)
               .then(({ data, error }) => {
                 if (!error && data) {
-                  console.log('Latest sync_history record:', data);
+                  console.log('Latest google_sync_history record:', data);
                 }
               })
               .catch(() => {});

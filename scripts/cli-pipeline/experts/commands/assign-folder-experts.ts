@@ -238,7 +238,7 @@ async function getHighLevelFoldersNeedingExperts(): Promise<MinimalFolder[]> {
       path,
       path_depth,
       document_type_id,
-      sources_google_experts!left(id)
+      google_sources_experts!left(id)
     `)
     .eq('document_type_id', 'bd903d99-64a1-4297-ba76-1094ab235dac')
     .eq('path_depth', 0)
@@ -252,7 +252,7 @@ async function getHighLevelFoldersNeedingExperts(): Promise<MinimalFolder[]> {
   
   // Filter out folders that already have experts assigned
   return folders
-    .filter(folder => folder.sources_google_experts.length === 0)
+    .filter(folder => folder.google_sources_experts.length === 0)
     .map(folder => ({
       id: folder.id,
       name: folder.name,
@@ -344,7 +344,7 @@ async function assignExpertToFolder(options: {
     // Step 3: Check if this relationship already exists
     if (verbose) loggerUtil.info(`Checking for existing relationship between folder and expert...`);
     const { data: existingLink, error: linkError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .select('id')
       .eq('source_id', folderId)
       .eq('expert_id', expertId);
@@ -360,7 +360,7 @@ async function assignExpertToFolder(options: {
       if (!dryRun) {
         // Update the existing link
         const { error: updateError } = await supabase
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .update({
             is_primary: isPrimary,
             updated_at: new Date().toISOString()
@@ -389,7 +389,7 @@ async function assignExpertToFolder(options: {
     
     // Insert the record
     const { data: insertData, error: insertError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .insert({
         source_id: folderId,
         expert_id: expertId,

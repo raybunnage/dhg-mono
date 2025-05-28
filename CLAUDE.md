@@ -1,5 +1,39 @@
 # Claude Code Instructions (v1.03)
 
+## ⚠️ CRITICAL: Database Tables Have Been Renamed
+
+Many database tables have undergone a major renaming effort. When troubleshooting issues with missing tables or outdated code references, consult the `sys_table_migrations` table or use the reference below:
+
+| Old Table Name | New Table Name | Purpose |
+|----------------|----------------|---------|
+| experts | expert_profiles | Expert information storage |
+| sources_google | google_sources | Google Drive file metadata |
+| sync_history | google_sync_history | Google Drive sync tracking |
+| sync_statistics | google_sync_statistics | Sync operation statistics |
+| scripts | scripts_registry | Script management registry |
+| cli_command_tracking | command_tracking | CLI command usage tracking |
+| processing_batches | batch_processing | Batch processing operations |
+| prompts | ai_prompts | AI prompt storage |
+| prompt_categories | ai_prompt_categories | Prompt categorization |
+| prompt_output_templates | ai_prompt_output_templates | Prompt output templates |
+| prompt_relationships | ai_prompt_relationships | Prompt relationships |
+| prompt_template_associations | ai_prompt_template_associations | Template associations |
+| allowed_emails | auth_allowed_emails | Authentication email allowlist |
+| cli_auth_tokens | auth_cli_tokens | CLI authentication tokens |
+| user_profiles_v2 | auth_user_profiles | User profile information |
+| emails | email_messages | Email message storage |
+| mime_types | sys_mime_types | System MIME type registry |
+| citation_expert_aliases | expert_citation_aliases | Expert citation aliases |
+| user_filter_profiles | filter_user_profiless | User filter profiles |
+| user_filter_profile_drives | filter_user_profile_drives | User drive filters |
+| learning_topics | learn_topics | Learning topic definitions |
+| user_subject_interests | learn_user_interests | User learning interests |
+| user_content_scores | learn_user_scores | User content scores |
+| user_learning_analytics | learn_user_analytics | Learning analytics data |
+| subject_classifications | learn_subject_classifications | Subject classifications |
+
+**Note**: This is a temporary reference while code is being updated. Always check `supabase/types.ts` for the current schema.
+
 ⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
 - **NEVER implement workarounds without explicit permission**
 - If you encounter an issue or error, STOP and explain the problem clearly

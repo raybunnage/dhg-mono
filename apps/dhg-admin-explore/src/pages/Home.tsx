@@ -588,14 +588,14 @@ export function Home() {
           }
         }
       
-        // Fetch expert information separately for each presentation using sources_google_experts
+        // Fetch expert information separately for each presentation using google_sources_experts
         const presentationsWithExperts = await Promise.all(
           (filteredPresentationsData || []).map(async (presentation: Presentation) => {
             if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
           const { data: expertsData, error: expertsError } = await supabase
-            .from('sources_google_experts')
+            .from('google_sources_experts')
             .select(`
               expert_id,
               is_primary,

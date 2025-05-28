@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 /**
- * Create sources_google_experts Table Script
+ * Create google_sources_experts Table Script
  * 
- * This script creates the sources_google_experts table to replace the expert_id field
+ * This script creates the google_sources_experts table to replace the expert_id field
  * in sources_google with a proper many-to-many relationship.
  */
 
@@ -17,14 +17,14 @@ dotenv.config();
 
 async function main() {
   try {
-    Logger.info('Setting up sources_google_experts table...');
+    Logger.info('Setting up google_sources_experts table...');
     
     // Create Supabase client
     const supabaseClientService = SupabaseClientService.getInstance();
     const supabase = supabaseClientService.getClient();
     
     // Read the SQL file
-    const sqlFilePath = path.join(__dirname, 'create_sources_google_experts.sql');
+    const sqlFilePath = path.join(__dirname, 'create_google_sources_experts.sql');
     
     if (!fs.existsSync(sqlFilePath)) {
       throw new Error(`SQL file not found: ${sqlFilePath}`);
@@ -86,7 +86,7 @@ async function main() {
     
     // Check if the table was created successfully
     const { data: checkTable, error: checkError } = await supabase.rpc('execute_sql', {
-      sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sources_google_experts')"
+      sql: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'google_sources_experts')"
     });
     
     if (checkError) {
@@ -115,7 +115,7 @@ async function main() {
           
           // Count migrated records
           const { data: countData, error: countError } = await supabase.rpc('execute_sql', {
-            sql: "SELECT COUNT(*) FROM sources_google_experts"
+            sql: "SELECT COUNT(*) FROM google_sources_experts"
           });
           
           if (countError) {

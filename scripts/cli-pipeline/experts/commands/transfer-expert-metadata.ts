@@ -65,10 +65,10 @@ export async function transferExpertMetadata({
         console.log(`\nProcessing expert: ${expert.expert_name} (${expert.id})`);
       }
 
-      // Step 2: Find the latest sources_google associated with this expert via sources_google_experts
+      // Step 2: Find the latest sources_google associated with this expert via google_sources_experts
       // First get all sources
       const { data: expertSources, error: sourcesError } = await supabase
-        .from('sources_google_experts')
+        .from('google_sources_experts')
         .select(`
           source_id,
           sources_google!inner(

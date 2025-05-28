@@ -93,7 +93,7 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           let presentationCount = 0;
           try {
             const response = await supabase
-              .from('presentations')
+              .from('media_presentations')
               .select('*', { count: 'exact', head: true });
             
             if (response.error) {
@@ -132,7 +132,7 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
           let assetsError;
           try {
             const response = await supabase
-              .from('presentation_assets')
+              .from('media_presentation_assets')
               .select('*', { count: 'exact', head: true });
               
             if (response.error) {

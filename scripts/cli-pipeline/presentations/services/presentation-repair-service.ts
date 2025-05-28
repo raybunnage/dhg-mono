@@ -25,7 +25,7 @@ export class PresentationRepairService {
    */
   async findPresentationsToRepairDirect(): Promise<any[]> {
     try {
-      const { data, error } = await this.supabase.from('presentations').select(`
+      const { data, error } = await this.supabase.from('media_presentations').select(`
         id,
         title,
         filename,
@@ -123,7 +123,7 @@ export class PresentationRepairService {
         }
 
         const { data, error } = await this.supabase
-          .from('presentations')
+          .from('media_presentations')
           .update({ main_video_id: videoAsset.source_id })
           .eq('id', presentation.id)
           .select('id, title, main_video_id');
@@ -233,7 +233,7 @@ export class PresentationRepairService {
         }
         
         const { data, error } = await this.supabase
-          .from('presentations')
+          .from('media_presentations')
           .update({ 
             main_video_id: videoAsset.source_id,
             updated_at: new Date().toISOString()

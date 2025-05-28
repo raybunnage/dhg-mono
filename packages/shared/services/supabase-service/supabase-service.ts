@@ -316,7 +316,7 @@ export class SupabaseService {
       Logger.debug(`Getting document file by ID: ${id}`);
       
       const { data, error } = await this.client
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .eq('id', id)
         .single();
@@ -341,7 +341,7 @@ export class SupabaseService {
       Logger.debug(`Getting ${limit} recent document files`);
       
       const { data, error } = await this.client
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .order('updated_at', { ascending: false })
         .limit(limit);
@@ -366,7 +366,7 @@ export class SupabaseService {
       Logger.debug(`Getting ${limit} untyped document files`);
       
       const { data, error } = await this.client
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .is('document_type_id', null)
         .order('updated_at', { ascending: false })

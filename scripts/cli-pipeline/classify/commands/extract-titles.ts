@@ -319,7 +319,7 @@ export async function extractTitlesCommand(options: ExtractTitlesOptions): Promi
       
       // Get sources for this expert
       const { data: expertSources, error: sourcesError } = await supabase
-        .from('sources_google_experts')
+        .from('google_sources_experts')
         .select('source_id')
         .eq('expert_id', expertData.id);
       

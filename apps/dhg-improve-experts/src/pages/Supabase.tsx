@@ -49,7 +49,7 @@ export function SupabasePage() {
   // CLAUDE-TAG: Supabase.tsx - This is the right file to modify for the Supabase tab
   const commonTables = [
     'sources_google',
-    'sync_history',
+    'google_sync_history',
     'google_auth_tokens',
     'experts',
     'expert_documents',
@@ -57,7 +57,7 @@ export function SupabasePage() {
     'prompt_relationships',
     'prompt_usage',
     'prompts',
-    'documentation_files',
+    'doc_files',
     'document_types'
   ]
   
@@ -289,7 +289,7 @@ export function SupabasePage() {
       const essentialTables = [
         // Just query the most important tables rather than all possible tables
         'sources_google',
-        'sync_history', 
+        'google_sync_history', 
         'google_auth_tokens',
         'experts',
         'expert_documents',
@@ -299,7 +299,7 @@ export function SupabasePage() {
         'prompt_relationships',
         'prompt_usage',
         'prompts',
-        'documentation_files'
+        'doc_files'
       ];
       
       console.log(`Querying ${essentialTables.length} essential tables...`);

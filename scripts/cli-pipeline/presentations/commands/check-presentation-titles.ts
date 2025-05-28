@@ -17,7 +17,7 @@ export async function checkPresentationTitlesCommand(options: {
     const supabase = SupabaseClientService.getInstance().getClient();
     
     // Execute the SQL query
-    const { data, error } = await supabase.from('presentations').select(`
+    const { data, error } = await supabase.from('media_presentations').select(`
       id, 
       title,
       expert_document_id,

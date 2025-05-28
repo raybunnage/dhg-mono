@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { Database } from '@/integrations/supabase/types';
 
 // Type for documentation files
-type DocumentationFile = Database['public']['Tables']['documentation_files']['Row'];
+type DocumentationFile = Database['public']['Tables']['doc_files']['Row'];
 
 // Type for document types
 type DocumentType = Database['public']['Tables']['document_types']['Row'];
@@ -73,7 +73,7 @@ function Docs() {
       
       // Simple query since we no longer have is_deleted column - files in the DB are all valid
       let query = supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*', { count: 'exact' });
       
       // Apply filter for files with or without summaries
@@ -354,7 +354,7 @@ function Docs() {
       const supabase = getSupabaseClient();
       
       let query = supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*');
       
       // Apply filter for files with or without summaries
@@ -481,7 +481,7 @@ function Docs() {
       const supabase = getSupabaseClient();
       
       const { data, error } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .eq('file_path', filePath)
         .maybeSingle();
@@ -594,7 +594,7 @@ function Docs() {
         const supabase = getSupabaseClient();
         
         const { error: updateError } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .update({
             file_path: result.newPath,
             updated_at: new Date().toISOString()
@@ -668,7 +668,7 @@ function Docs() {
       if (!byPath && file.id) {
         // Delete the file from the database by ID
         const { error: deleteError, data } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .delete()
           .eq('id', file.id);
         
@@ -681,7 +681,7 @@ function Docs() {
         // Delete the file from the database by file_path
         // No need to get supabase client again, it's already initialized above
         const { error: deleteError, data } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .delete()
           .eq('file_path', file.file_path);
         
@@ -736,7 +736,7 @@ function Docs() {
       
       // Fetch the current metadata
       const { data, error } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('metadata')
         .eq('id', fileId)
         .single();
@@ -776,7 +776,7 @@ function Docs() {
         const supabase = getSupabaseClient();
         
         const { error } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .update({ 
             document_type_id: selectedDocumentType,
             // Only use columns that exist in the database schema
@@ -806,7 +806,7 @@ function Docs() {
             // We already have supabase from the try block above
             // or from getExistingMetadata which initializes it
             const { error } = await supabase
-              .from('documentation_files')
+              .from('doc_files')
               .update({ 
                 document_type_id: selectedDocumentType,
                 summary: null,
@@ -1146,7 +1146,7 @@ function Docs() {
         const supabase = getSupabaseClient();
         
         const { data, error } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(500);

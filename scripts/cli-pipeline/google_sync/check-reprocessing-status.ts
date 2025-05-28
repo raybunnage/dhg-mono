@@ -116,14 +116,14 @@ export async function checkReprocessingStatus(options: {
       if (expertError) {
         console.error(`Error fetching expert: ${expertError.message}`);
       } else if (expertData) {
-        // Get sources_google_experts with this expert_id
+        // Get google_sources_experts with this expert_id
         const { data: sourceExperts, error: sourceExpertsError } = await supabaseClient
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .select('source_id')
           .eq('expert_id', expertData.id);
         
         if (sourceExpertsError) {
-          console.error(`Error fetching sources_google_experts: ${sourceExpertsError.message}`);
+          console.error(`Error fetching google_sources_experts: ${sourceExpertsError.message}`);
         } else if (sourceExperts && sourceExperts.length > 0) {
           // Filter sources by these IDs
           query = query.in('id', sourceExperts.map(se => se.source_id));

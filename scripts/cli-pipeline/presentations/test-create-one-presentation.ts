@@ -55,7 +55,7 @@ const command = new Command('create-one-presentation')
         
         // Verify creation by querying the database
         const { data: verifyPresentation, error: verifyError } = await presentationService.supabaseClient
-          .from('presentations')
+          .from('media_presentations')
           .select('id, title, high_level_folder_source_id, video_source_id')
           .eq('id', result.created[0].presentation.id)
           .single();
@@ -68,7 +68,7 @@ const command = new Command('create-one-presentation')
         
         // Check for assets - Note: Fix column names to match schema
         const { data: assets, error: assetsError } = await presentationService.supabaseClient
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .select('id, asset_type, asset_role, asset_source_id')
           .eq('presentation_id', result.created[0].presentation.id);
         

@@ -11,28 +11,29 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 
 
 ### 2. Document Management System - `doc_` . TRICKIER
-- `doc_types` (from `document_types`)
-- `doc_type_aliases` (from `document_type_aliases`)
-- `doc_concepts` (from `document_concepts`)
-- `doc_files` (from `documentation_files`)
-- `doc_files_missing_ids` (from `documentation_files_missing_doc_ids`)
-- `doc_processing_queue` (from `documentation_processing_queue`)
-- `doc_sections` (from `documentation_sections`)
+- `doc_concepts` (from `document_concepts`) FIGURE OUT
+
+- `doc_types` (from `document_types`) DONE
+- `doc_type_aliases` (from `document_type_aliases`) KEEP
+- `doc_files` (from `doc_files`) DONE
+
+- `doc_files_missing_ids` (from `documentation_files_missing_doc_ids`) ARCHIVED
+- `doc_processing_queue` (from `documentation_processing_queue`) . REMOVED
+- `doc_sections` (from `documentation_sections`) . REMOVED  R
 
 ### 4. Google Drive Integration - `google_` . . TRICKIER
-- `google_sources` (from `sources_google`)
-- `google_sources_experts` (from `sources_google_experts`)
-- `google_sync_history` (from `sync_history`)
-- `google_sync_statistics` (from `sync_statistics`)
-- `google_sources_legacy` (from `sources`)
+- `google_sources` (from `sources_google`)                TODO
+- `google_sources_experts` (from `sources_google_experts`)  DONE
+- `google_sync_history` (from `sync_history`)                  DONE
+- `google_sync_statistics` (from `sync_statistics`)              DONE
 
-### 6. Media & Presentations - `media_` .  TRICKIER 
+### 6. Media & Presentations - `media_` .  DONE 
 - `media_presentations` (from `presentations`)
 - `media_presentation_assets` (from `presentation_assets`)
-- `media_sessions` (from `media_sessions`)
-- `media_playback_events` (from `media_playback_events`)
-- `media_topic_segments` (from `media_topic_segments`)
-- `media_bookmarks` (from `media_bookmarks`)
+- `learn_media_sessions` (from `media_sessions`)
+- `learn_media_playback_events` (from `media_playback_events`)
+- `learn_media_topic_segments` (from `media_topic_segments`)
+- `learn_media_bookmarks` (from `media_bookmarks`)
 
 
 ### 3. Expert System - `expert_` . DONE

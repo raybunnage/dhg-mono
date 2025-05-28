@@ -154,11 +154,11 @@ export class DocumentService {
       
       // Try a simple query to verify connection
       const { data, error } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('count(*)', { count: 'exact', head: true });
       
       if (error) {
-        this.log(LogLevel.ERROR, 'Failed to connect to documentation_files table', error);
+        this.log(LogLevel.ERROR, 'Failed to connect to doc_files table', error);
         return false;
       }
       
@@ -192,7 +192,7 @@ export class DocumentService {
     try {
       // First, get all files from the database with their hashes
       const { data: dbFiles, error: fetchError } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('id, file_path, file_hash, file_size');
       
       if (fetchError) {
@@ -252,7 +252,7 @@ export class DocumentService {
               if (newHash !== file.file_hash) {
                 // Hash changed, update record with new hash and metadata
                 const { error } = await this.supabase
-                  .from('documentation_files')
+                  .from('doc_files')
                   .update({
                     file_hash: newHash,
                     file_size: fileSize,
@@ -271,7 +271,7 @@ export class DocumentService {
               } else if (!file.file_size) {
                 // Ensure metadata is standardized
                 const { error } = await this.supabase
-                  .from('documentation_files')
+                  .from('doc_files')
                   .update({
                     file_size: fileSize,
                     last_modified_at: mtime
@@ -297,7 +297,7 @@ export class DocumentService {
             
             // Hard delete from the database
             const { error } = await this.supabase
-              .from('documentation_files')
+              .from('doc_files')
               .delete()
               .eq('id', file.id);
             
@@ -350,7 +350,7 @@ export class DocumentService {
     try {
       // First, get all existing file paths from the database
       const { data: existingFiles, error: fetchError } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('file_path');
       
       if (fetchError) {
@@ -434,7 +434,7 @@ export class DocumentService {
             
             // Add new file to the database
             const { error: insertError } = await this.supabase
-              .from('documentation_files')
+              .from('doc_files')
               .insert({
                 id: fileId,
                 file_path: file.path,
@@ -553,7 +553,7 @@ export class DocumentService {
     try {
       // Query for files without a document type
       const { data, error } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('id, file_path, title, language, created_at, updated_at')
         .is('document_type_id', null)
         .order('updated_at', { ascending: false })
@@ -603,7 +603,7 @@ export class DocumentService {
     
     try {
       const { data, error } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select(`
           id, 
           file_path, 

@@ -10,11 +10,60 @@
     --folder-id "1cKEcvA1Y3EwFGrR-wSWsyfkiTmp3uClg" \
     --video-id "88d99fa3-b901-407c-8e77-079770d33fe3"
 
+
+
+   - media_sessions → learn_media_sessions
+  - media_playback_events → learn_media_playback_events
+  - media_topic_segments → learn_media_topic_segments
+  - media_bookmarks → learn_media_bookmarks
+
+
  Archive/Remove: 
  
  to drop function_relationships, sql_query_history, app_pages and asset_types
  
  sys_function_relationships, sys_sql_query_history, sys_domains, sys_app_pages, sys_asset_types - No active
+
+
+
+
+  I have successfully updated all references from the experts table to expert_profiles throughout the codebase:
+
+  Files Updated:
+
+  Apps:
+
+  1. dhg-hub: Updated 2 references in Home.tsx
+  2. dhg-admin-explore: Updated 2 references in Home.tsx
+  3. dhg-improve-experts: Updated 14 files including:
+    - Services: expert-service.ts (5), api.ts (1), markdownFileService.ts (1)
+    - Components: ExpertMetadataModal.tsx (1), GutsDemo.tsx (1)
+    - Pages: ExpertsDashboard.tsx (5), App.tsx (1)
+    - Other files: debug-expert-profiles.tsx/ts, fix-enhanced-profile.tsx, check-expert-data.ts, process-expert-document.ts
+  4. dhg-hub-lovable: Updated 4 references across ExpertForm.tsx (2), api.ts (1), Experts.tsx (1)
+
+  CLI Scripts:
+
+  - experts pipeline: Updated all command files (add-expert, list-experts, assign-expert, etc.)
+  - google_sync: Updated 4 files
+  - document: Updated 3 files
+  - classify: Updated 4 files
+  - presentations: Updated presentation-service.ts (3)
+
+  Other Updates:
+
+  - Updated backup-config.json to use expert_profiles instead of experts
+  - Created migration documentation file explaining the table rename
+
+  Key Notes:
+
+  1. The table has already been renamed in the database to expert_profiles
+  2. All .from('experts') references have been updated to .from('expert_profiles')
+  3. Foreign key relationships (like expert_documents.expert_id) automatically follow the table rename in PostgreSQL
+  4. The changes compile correctly (TypeScript errors shown are unrelated to our changes)
+
+  All references to the experts table have been successfully updated to expert_profiles!
+
 
 Summary
 

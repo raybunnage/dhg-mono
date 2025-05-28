@@ -13,7 +13,7 @@ export const DebugSyncHistory: React.FC = () => {
       console.log('DebugSyncHistory: Fetching data...');
       // Get sync history
       const { data: historyData, error: historyError } = await supabase
-        .from('sync_history')
+        .from('google_sync_history')
         .select('*')
         .order('timestamp', { ascending: false });
         
@@ -68,7 +68,7 @@ export const DebugSyncHistory: React.FC = () => {
       <div className="mb-4">
         <h4 className="font-medium">Sync History Table: {syncHistory.length} records</h4>
         {syncHistory.length === 0 ? (
-          <div className="text-red-600">No records found in sync_history table!</div>
+          <div className="text-red-600">No records found in google_sync_history table!</div>
         ) : (
           <div className="max-h-60 overflow-y-auto bg-white p-2 rounded text-xs">
             <table className="min-w-full divide-y divide-gray-200">

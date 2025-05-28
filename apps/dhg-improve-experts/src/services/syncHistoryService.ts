@@ -20,7 +20,7 @@ export async function createTestSyncHistoryEntry() {
     };
     
     const { data, error } = await supabase
-      .from('sync_history')
+      .from('google_sync_history')
       .insert(testEntry)
       .select();
       
@@ -50,10 +50,10 @@ export async function storeLatestSyncResult(result: any) {
     localStorage.setItem('latest_sync_result', JSON.stringify(resultWithTimestamp));
     
     // Instead of trying to store in a non-existent sync_results table,
-    // we'll update the corresponding sync_history record if there's a syncId
+    // we'll update the corresponding google_sync_history record if there's a syncId
     if (result.syncId) {
       const { error } = await supabase
-        .from('sync_history')
+        .from('google_sync_history')
         .update({
           files_processed: result.synced?.added || 0, // Using the correct field name files_processed
           files_total: (result.synced?.added || 0) + (result.synced?.errors || 0),
@@ -100,7 +100,7 @@ export function getLatestSyncResult() {
 export async function deleteSyncHistoryRecord(id: string) {
   try {
     const { error } = await supabase
-      .from('sync_history')
+      .from('google_sync_history')
       .delete()
       .eq('id', id);
       

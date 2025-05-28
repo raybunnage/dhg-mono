@@ -34,9 +34,9 @@ ALTER TABLE IF EXISTS public.prompts_backup_2025_05_02 SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.scripts_backup_20250216 SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.sources_google_backup_2025_04_08 SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.sources_google_backup_2025_05_02 SET SCHEMA backup;
-ALTER TABLE IF EXISTS public.sources_google_experts_backup_2025_05_02 SET SCHEMA backup;
+ALTER TABLE IF EXISTS public.google_sources_experts_backup_2025_05_02 SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.subject_classifications_backup_2025_05_02 SET SCHEMA backup;
-ALTER TABLE IF EXISTS public.sync_history_backup SET SCHEMA backup;
+ALTER TABLE IF EXISTS public.google_sync_history_backup SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.table_classifications_backup_2025_05_02 SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.user_profiles_v2 SET SCHEMA backup;
 ALTER TABLE IF EXISTS public.view_backups SET SCHEMA backup;
@@ -74,9 +74,9 @@ VALUES
     ('scripts', 'scripts_backup_20250216', '2025-02-16'::timestamptz, 73, 'Pre-migration backup'),
     ('sources_google', 'sources_google_backup_2025_04_08', '2025-04-08'::timestamptz, 1025, 'Pre-migration backup'),
     ('sources_google', 'sources_google_backup_2025_05_02', '2025-05-02'::timestamptz, 845, 'Pre-migration backup'),
-    ('sources_google_experts', 'sources_google_experts_backup_2025_05_02', '2025-05-02'::timestamptz, 831, 'Pre-migration backup'),
+    ('google_sources_experts', 'google_sources_experts_backup_2025_05_02', '2025-05-02'::timestamptz, 831, 'Pre-migration backup'),
     ('subject_classifications', 'subject_classifications_backup_2025_05_02', '2025-05-02'::timestamptz, 34, 'Pre-migration backup'),
-    ('sync_history', 'sync_history_backup', NOW(), 17, 'Pre-migration backup'),
+    ('google_sync_history', 'google_sync_history_backup', NOW(), 17, 'Pre-migration backup'),
     ('table_classifications', 'table_classifications_backup_2025_05_02', '2025-05-02'::timestamptz, 5482, 'Pre-migration backup'),
     ('user_profiles', 'user_profiles_v2', NOW(), 2, 'Version 2 migration'),
     ('views', 'view_backups', NOW(), 1, 'View definitions backup');

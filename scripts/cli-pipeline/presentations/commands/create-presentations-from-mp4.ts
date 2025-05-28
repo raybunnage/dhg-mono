@@ -97,7 +97,7 @@ export const createPresentationsFromMp4Command = async (options: {
       
       // Get presentations with missing high_level_folder_source_id
       const { data: presentationsWithoutFolder, error: missingFolderError } = await supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id, video_source_id, title')
         .is('high_level_folder_source_id', null)
         .limit(limit);
@@ -203,7 +203,7 @@ export const createPresentationsFromMp4Command = async (options: {
       for (let i = 0; i < updates.length; i += batchSize) {
         const batch = updates.slice(i, i + batchSize);
         const { data, error } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .upsert(batch)
           .select('id');
           
@@ -233,7 +233,7 @@ export const createPresentationsFromMp4Command = async (options: {
     
     // First, get all existing presentations to exclude
     const { data: existingPresentations, error: presError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('video_source_id')
       .not('video_source_id', 'is', null);
       
@@ -377,8 +377,8 @@ export const createPresentationsFromMp4Command = async (options: {
       }
     }
     
-    // 4. Get expert information from sources_google_experts
-    // Pre-fetch all sources_google_experts records for the high-level folders
+    // 4. Get expert information from google_sources_experts
+    // Pre-fetch all google_sources_experts records for the high-level folders
     // Combine both mapping methods to get a complete list of folder IDs
     const highLevelFolderIds = Array.from(new Set([
       ...Object.values(folderMap),
@@ -386,7 +386,7 @@ export const createPresentationsFromMp4Command = async (options: {
     ]));
     
     const { data: expertsData, error: expertsError } = await supabase
-      .from('sources_google_experts')
+      .from('google_sources_experts')
       .select(`
         source_id,
         expert_id,
@@ -560,7 +560,7 @@ export const createPresentationsFromMp4Command = async (options: {
         const batch = presentationsToCreate.slice(i, i + batchSize);
         
         const { data, error } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .insert(batch)
           .select('id');
           
@@ -589,7 +589,7 @@ export const createPresentationsFromMp4Command = async (options: {
     if (fixMissingFolders) {
       // Get presentations with missing high_level_folder_source_id
       const { data: presentationsWithoutFolder, error: missingFolderError } = await supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id, video_source_id, title')
         .is('high_level_folder_source_id', null)
         .limit(limit);
@@ -695,7 +695,7 @@ export const createPresentationsFromMp4Command = async (options: {
       for (let i = 0; i < updates.length; i += batchSize) {
         const batch = updates.slice(i, i + batchSize);
         const { data, error } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .upsert(batch)
           .select('id');
           

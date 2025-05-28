@@ -7,7 +7,7 @@ FROM sources_google;
 
 -- 2. Find the most recent sync operation and its details
 SELECT * 
-FROM sync_history
+FROM google_sync_history
 ORDER BY timestamp DESC
 LIMIT 5;
 
@@ -167,4 +167,4 @@ ORDER BY depth;
 
 -- 12. Clean up unwanted files if necessary (UNCOMMENT ONLY IF NEEDED)
 -- DELETE FROM sources_google WHERE created_at > '2025-03-01 00:00:00' AND parent_folder_id = 'YOUR_FOLDER_ID';
--- DELETE FROM sync_history WHERE timestamp > '2025-03-01 00:00:00';
+-- DELETE FROM google_sync_history WHERE timestamp > '2025-03-01 00:00:00';

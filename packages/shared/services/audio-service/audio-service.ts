@@ -38,7 +38,7 @@ export class AudioService {
           mime_type,
           path,
           metadata,
-          sources_google_experts(
+          google_sources_experts(
             expert_id,
             experts:expert_id(
               expert_name,
@@ -80,7 +80,7 @@ export class AudioService {
           mime_type,
           path,
           metadata,
-          sources_google_experts(
+          google_sources_experts(
             expert_id,
             experts:expert_id(
               expert_name,

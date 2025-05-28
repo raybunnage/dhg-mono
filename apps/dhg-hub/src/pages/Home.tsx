@@ -164,7 +164,7 @@ const extractDriveId = (url: string | null): string | null => {
 };
 
 // Define key types
-type Presentation = Database['public']['Tables']['presentations']['Row'] & {
+type Presentation = Database['public']['Tables']['media_presentations']['Row'] & {
   title?: string | null;
   expert_document?: ExpertDocument | null;
   video_source?: SourceGoogle | null;
@@ -179,7 +179,7 @@ type Presentation = Database['public']['Tables']['presentations']['Row'] & {
   created_at?: string | null;
 };
 
-type PresentationAsset = Database['public']['Tables']['presentation_assets']['Row'] & {
+type PresentationAsset = Database['public']['Tables']['media_presentation_assets']['Row'] & {
   source_file?: SourceGoogle | null;
   expert_document?: ExpertDocument | null;
 };
@@ -348,7 +348,7 @@ export function Home() {
       try {
         // Fetch presentations with their video sources and expert documents
         let query = supabase
-          .from('presentations')
+          .from('media_presentations')
           .select(`
             id, 
             video_source_id,
@@ -383,7 +383,7 @@ export function Home() {
         
         // DEBUG: Let's check total presentations before filtering
         const { count: totalBeforeFilter, error: countError } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .select('id', { count: 'exact', head: true })
           .not('video_source_id', 'is', null);
         
@@ -487,14 +487,14 @@ export function Home() {
           }
         }
       
-        // Fetch expert information separately for each presentation using sources_google_experts
+        // Fetch expert information separately for each presentation using google_sources_experts
         const presentationsWithExperts = await Promise.all(
           (filteredPresentationsData || []).map(async (presentation: Presentation) => {
             if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
           const { data: expertsData, error: expertsError } = await supabase
-            .from('sources_google_experts')
+            .from('google_sources_experts')
             .select(`
               expert_id,
               is_primary,
@@ -585,7 +585,7 @@ export function Home() {
         setLoading(true);
         // Fetch assets for the selected presentation
         const { data: assetsData, error: assetsError } = await supabase
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .select(`
             id, 
             asset_type,
@@ -1395,9 +1395,9 @@ export function Home() {
       
       // Find if any of the bio documents is associated with this expert
       if (bioDocuments && bioDocuments.length > 0) {
-        // Get presentation_assets for the current expert to find matching source_ids
+        // Get media_presentation_assets for the current expert to find matching source_ids
         const { data: expertAssets, error: assetsError } = await supabase
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .select('source_id')
           .eq('expert_id', expertId);
           
@@ -1435,7 +1435,7 @@ export function Home() {
       
       // If no specific bio documents found, try to get any document associated with this expert
       const { data: expertAssets, error: assetsError } = await supabase
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('source_id')
         .eq('expert_id', expertId);
           

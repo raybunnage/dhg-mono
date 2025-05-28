@@ -51,7 +51,7 @@ class AudioBrowserService {
           path,
           metadata,
           parent_folder_id,
-          sources_google_experts(
+          google_sources_experts(
             expert_id,
             experts:expert_id(
               expert_name,
@@ -140,7 +140,7 @@ class AudioBrowserService {
           path,
           metadata,
           parent_folder_id,
-          sources_google_experts(
+          google_sources_experts(
             expert_id,
             experts:expert_id(
               expert_name,

@@ -24,7 +24,7 @@ async function main() {
     
     // Check if this folder has a presentation
     const { data: presentations, error: presentationError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('*')
       .eq('high_level_folder_source_id', folderId);
     

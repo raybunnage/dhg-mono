@@ -288,7 +288,7 @@ export class DocumentClassificationService {
     try {
       this.logDebug('Fetching the newest document...');
       const { data: newestDocuments, error: fetchError } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('id, file_path, title, document_type_id')
         .order('created_at', { ascending: false })
         .limit(1);
@@ -659,7 +659,7 @@ export class DocumentClassificationService {
       let documentInfo: DocumentInfo | null = null;
       try {
         const { data, error } = await this.supabase
-          .from('documentation_files')
+          .from('doc_files')
           .select('id, file_path, title, document_type_id')
           .eq('file_path', documentPath)
           .single();
@@ -1240,7 +1240,7 @@ export class DocumentClassificationService {
       this.logDebug('Updating document type', { documentId, documentTypeId });
       
       const { error } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .update({
           document_type_id: documentTypeId,
           updated_at: new Date().toISOString()
@@ -1310,7 +1310,7 @@ export class DocumentClassificationService {
       this.logDebug('Finding documents without type assignments', { limit });
       
       const { data, error } = await this.supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('id, file_path, title, document_type_id')
         .is('document_type_id', null)
         .eq('is_deleted', false)

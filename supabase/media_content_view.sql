@@ -30,7 +30,7 @@ LEFT JOIN
 LEFT JOIN
   expert_documents ed ON sg.id = ed.source_id
 LEFT JOIN
-  sources_google_experts sge ON sg.id = sge.source_id
+  google_sources_experts sge ON sg.id = sge.source_id
 LEFT JOIN
   experts e ON sge.expert_id = e.id
 LEFT JOIN

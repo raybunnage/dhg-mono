@@ -72,7 +72,7 @@ program
       
       // Now get the concepts for this document
       const { data: concepts, error: conceptsError } = await supabase
-        .from('document_concepts')
+        .from('doc_concepts')
         .select('*')
         .eq('document_id', expertDoc.id)
         .order('weight', { ascending: false });

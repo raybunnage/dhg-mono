@@ -1,8 +1,6 @@
 import { Command } from 'commander';
 import { databaseService } from '../../../../packages/shared/services/database-service';
 import { commandTrackingService } from '../../../../packages/shared/services/tracking-service/command-tracking-service';
-import chalk from 'chalk';
-import Table from 'cli-table3';
 
 const program = new Command();
 
@@ -16,14 +14,13 @@ program
   .action(async (options) => {
     const trackingId = await commandTrackingService.startTracking('database', 'table-records');
     try {
-      // Notify user we're starting
-      process.stdout.write("Starting table records query...\n");
+      console.log("=== Database Table Records ===");
+      console.log("Fetching all tables...");
       
       // Get all tables with record counts 
       const tables = await databaseService.getTablesWithRecordCounts();
       
-      // Immediately notify that we got results to ensure something is displayed
-      process.stdout.write(`Retrieved information about ${tables.length} tables.\n`);
+      console.log(`Retrieved information about ${tables.length} tables.\n`);
       
       // Filter tables based on options
       let filteredTables = tables;
@@ -53,41 +50,18 @@ program
         });
       }
       
-      // Create a table for display
-      const table = new Table({
-        head: [
-          chalk.cyan('Table Name'), 
-          chalk.cyan('Record Count')
-        ],
-        colWidths: [40, 15]
-      });
+      // Print header
+      console.log("TABLE NAME                                    | RECORD COUNT");
+      console.log("--------------------------------------------------------");
       
-      // Add table data
+      // Print each table
       filteredTables.forEach(tableInfo => {
-        table.push([
-          tableInfo.tableName,
-          tableInfo.count === -1 ? chalk.red('ERROR') : tableInfo.count.toString()
-        ]);
+        const count = tableInfo.count === -1 ? "ERROR" : tableInfo.count.toString();
+        console.log(`${tableInfo.tableName.padEnd(45)} | ${count}`);
       });
       
-      // Print the table directly without any fancy stuff - just raw strings
-      // This guarantees it's visible even if other methods are failing
-      process.stdout.write('\n');
-      process.stdout.write('========= DATABASE TABLES =========' + '\n');
-      process.stdout.write('Table Name                               | Record Count' + '\n');
-      process.stdout.write('-------------------------------------------------------' + '\n');
-      
-      filteredTables.forEach(tableInfo => {
-        process.stdout.write(
-          tableInfo.tableName.padEnd(40) + 
-          '| ' + 
-          (tableInfo.count === -1 ? 'ERROR' : tableInfo.count.toString()) + 
-          '\n'
-        );
-      });
-      
-      process.stdout.write('-------------------------------------------------------' + '\n');
-      process.stdout.write(`Total tables: ${filteredTables.length}\n`);
+      console.log("--------------------------------------------------------");
+      console.log(`Total tables: ${filteredTables.length}`);
       
       // Calculate statistics
       const totalRecords = filteredTables.reduce((sum, table) => {
@@ -104,7 +78,7 @@ program
         summary: `Listed ${filteredTables.length} tables with record counts`
       });
     } catch (error) {
-      console.error(chalk.red('Error listing tables:'), error);
+      console.error('Error listing tables:', error);
       
       await commandTrackingService.failTracking(
         trackingId,
@@ -114,5 +88,10 @@ program
       process.exit(1);
     }
   });
+
+// Parse command line arguments if this is the main module
+if (require.main === module) {
+  program.parse(process.argv);
+}
 
 export default program;

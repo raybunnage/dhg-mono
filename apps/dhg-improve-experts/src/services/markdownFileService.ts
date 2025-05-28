@@ -1489,7 +1489,7 @@ Documentation for auditing expert profiles and data.`
   /**
    * Synchronize documentation files with the database - enhanced version
    * This version directly searches for all markdown files regardless of report content
-   * and populates all documentation tables: documentation_files, documentation_sections,
+   * and populates all documentation tables: doc_files, documentation_sections,
    * documentation_relations, and documentation_processing_queue
    * 
    * Also handles soft deletion of files that no longer exist on disk
@@ -1498,16 +1498,16 @@ Documentation for auditing expert profiles and data.`
     try {
       console.log('Starting enhanced syncDocumentationFiles with direct file search...');
       
-      // First, check if the documentation_files table exists/is accessible
+      // First, check if the doc_files table exists/is accessible
       try {
-        // Direct check on the documentation_files table
+        // Direct check on the doc_files table
         const { error: tableCheckError } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .select('id')
           .limit(1);
         
         if (tableCheckError) {
-          console.error('Error accessing documentation_files table:', tableCheckError);
+          console.error('Error accessing doc_files table:', tableCheckError);
           
           // If table doesn't exist, try to create it using the create_documentation_tables.sql script
           if (tableCheckError.code === '42P01') {  // PostgreSQL code for undefined_table
@@ -1520,13 +1520,13 @@ Documentation for auditing expert profiles and data.`
           };
         }
         
-        console.log('Successfully connected to documentation_files table');
+        console.log('Successfully connected to doc_files table');
         
         // Check if is_deleted column exists
         try {
           // Try a query that uses is_deleted to see if the column exists
           const { error: columnCheckError } = await supabase
-            .from('documentation_files')
+            .from('doc_files')
             .select('id')
             .eq('is_deleted', false)
             .limit(1);
@@ -2142,7 +2142,7 @@ Documentation for auditing expert profiles and data.`
         deletedPaths: [] as string[] // Track paths of soft-deleted files
       };
       
-      // Process each file - focusing only on the documentation_files table
+      // Process each file - focusing only on the doc_files table
       for (const file of markdownFiles) {
         try {
           // Get file content - make sure to handle missing files gracefully
@@ -2172,7 +2172,7 @@ Documentation for auditing expert profiles and data.`
           
           // Check if file exists in database
           const { data: existingFile } = await supabase
-            .from('documentation_files')
+            .from('doc_files')
             .select('id, file_hash, last_modified_at')
             .eq('file_path', file.path)
             .maybeSingle();
@@ -2193,7 +2193,7 @@ Documentation for auditing expert profiles and data.`
               
               // Update file record with minimal fields
               const { error: updateError } = await supabase
-                .from('documentation_files')
+                .from('doc_files')
                 .update({
                   title: fileData.title,
                   summary: summary, // Simple summary for now
@@ -2228,7 +2228,7 @@ Documentation for auditing expert profiles and data.`
             // Insert new file record
             const newFileId = uuidv4();
             const { error: insertError } = await supabase
-              .from('documentation_files')
+              .from('doc_files')
               .insert({
                 id: newFileId,
                 file_path: file.path,
@@ -2272,7 +2272,7 @@ Documentation for auditing expert profiles and data.`
         
         // Get all file paths from the database that aren't already marked as deleted
         const { data: existingFiles, error: getError } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .select('id, file_path')
           .eq('is_deleted', false);
         
@@ -2295,7 +2295,7 @@ Documentation for auditing expert profiles and data.`
             
             // Mark files as deleted (soft delete)
             const { error: updateError } = await supabase
-              .from('documentation_files')
+              .from('doc_files')
               .update({
                 is_deleted: true,
                 updated_at: new Date().toISOString()
@@ -2501,7 +2501,7 @@ Documentation for auditing expert profiles and data.`
       
       // Get all file IDs from the database
       const { data: dbFiles, error: filesError } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('id, file_path');
       
       if (filesError) {
@@ -2753,7 +2753,7 @@ Documentation for auditing expert profiles and data.`
     try {
       // Get the file data
       const { data: fileData, error: fileError } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .eq('id', queueItem.file_id)
         .maybeSingle();
@@ -2789,7 +2789,7 @@ Documentation for auditing expert profiles and data.`
       
       // Update the file with enhanced data
       await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .update({
           summary,
           ai_generated_tags: tags,
@@ -2938,7 +2938,7 @@ Documentation for auditing expert profiles and data.`
     try {
       // Get all file paths for potential relationship matching
       const { data: allFiles, error: filesError } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('id, file_path, title');
       
       if (filesError || !allFiles) {
@@ -3074,9 +3074,9 @@ Documentation for auditing expert profiles and data.`
     try {
       console.log(`Searching for: "${query}"`);
       
-      // Search in the documentation_files table
+      // Search in the doc_files table
       const { data, error } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select(`
           id,
           file_path,

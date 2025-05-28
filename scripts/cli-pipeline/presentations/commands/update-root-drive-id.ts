@@ -23,7 +23,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
     
     // First, count records with null or empty root_drive_id
     const { count: nullCount, error: countError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id', { count: 'exact', head: true })
       .or('root_drive_id.is.null,root_drive_id.eq.');
     
@@ -36,7 +36,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
     
     // Then count total records
     const { count: totalCount, error: totalCountError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id', { count: 'exact', head: true });
     
     if (totalCountError) {
@@ -50,7 +50,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
     if (isDryRun) {
       // Get a sample of records with null root_drive_id
       const { data: sampleRecords, error: sampleError } = await supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id, title, main_video_id, root_drive_id')
         .or('root_drive_id.is.null,root_drive_id.eq.')
         .limit(10);
@@ -88,7 +88,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`,
         },
         body: JSON.stringify({
-          query: `UPDATE presentations SET root_drive_id = '${rootDriveId}' WHERE root_drive_id IS NULL OR root_drive_id = '';`
+          query: `UPDATE media_presentations SET root_drive_id = '${rootDriveId}' WHERE root_drive_id IS NULL OR root_drive_id = '';`
         })
       });
       
@@ -101,7 +101,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
       
       // Count updated records
       const { count, error: countError } = await supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id', { count: 'exact' })
         .eq('root_drive_id', rootDriveId);
         
@@ -123,7 +123,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
       
       // First get all records with null root_drive_id
       const { data: recordsToUpdate, error: fetchError } = await supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id')
         .or('root_drive_id.is.null,root_drive_id.eq.');
         
@@ -146,7 +146,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
       for (const record of recordsToUpdate) {
         try {
           const { error: updateError } = await supabase
-            .from('presentations')
+            .from('media_presentations')
             .update({ root_drive_id: rootDriveId })
             .eq('id', record.id);
             
@@ -182,7 +182,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
         CREATE OR REPLACE FUNCTION temp_update_presentations_root_drive_id()
         RETURNS void AS $$
         BEGIN
-          UPDATE presentations
+          UPDATE media_presentations
           SET root_drive_id = '${rootDriveId}'
           WHERE root_drive_id IS NULL OR root_drive_id = '';
         END;
@@ -220,7 +220,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
       
       // Get updated count
       const { count, error: countError } = await supabase
-        .from('presentations')
+        .from('media_presentations')
         .select('id', { count: 'exact' })
         .eq('root_drive_id', rootDriveId);
         
@@ -237,7 +237,7 @@ export async function updateRootDriveIdCommand(options: UpdateRootDriveIdOptions
     
     // Verify all records now have the correct root_drive_id
     const { count: remainingNullCount, error: verifyError } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id', { count: 'exact', head: true })
       .or('root_drive_id.is.null,root_drive_id.eq.');
     

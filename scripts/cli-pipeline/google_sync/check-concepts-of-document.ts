@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /**
- * Script to check if concepts were properly saved to document_concepts table
+ * Script to check if concepts were properly saved to doc_concepts table
  */
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
@@ -53,9 +53,9 @@ async function checkConcepts() {
     console.log('Classification Confidence:', expertDoc[0].classification_confidence);
     console.log('Key Insights:', expertDoc[0].key_insights);
     
-    // Get document_concepts records
+    // Get doc_concepts records
     const { data: concepts, error: conceptsError } = await supabase
-      .from('document_concepts')
+      .from('doc_concepts')
       .select('id, concept, weight')
       .eq('document_id', expertDoc[0].id)
       .order('weight', { ascending: false });
@@ -65,9 +65,9 @@ async function checkConcepts() {
       return;
     }
     
-    console.log('\nDocument Concepts from document_concepts table:');
+    console.log('\nDocument Concepts from doc_concepts table:');
     if (!concepts || concepts.length === 0) {
-      console.log('No concepts found in document_concepts table for this document');
+      console.log('No concepts found in doc_concepts table for this document');
     } else {
       console.log(`Found ${concepts.length} concepts:`);
       concepts.forEach((concept, index) => {

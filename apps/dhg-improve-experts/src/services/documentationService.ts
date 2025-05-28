@@ -336,7 +336,7 @@ export class DocumentationService {
         
         // Find the target document
         const { data, error } = await supabase
-          .from('documentation_files')
+          .from('doc_files')
           .select('id')
           .eq('file_path', normalizedPath)
           .maybeSingle();
@@ -420,7 +420,7 @@ export class DocumentationService {
     try {
       // Get document metadata
       const { data: fileData, error: fileError } = await supabase
-        .from('documentation_files')
+        .from('doc_files')
         .select('*')
         .eq('id', documentId)
         .single();

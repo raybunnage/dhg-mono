@@ -38,7 +38,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
     const supabase = supabaseClientService.getClient();
     
     // Step 1: Find high-level folders with document_type_id = bd903d99-64a1-4297-ba76-1094ab235dac
-    // that have experts assigned through the sources_google_experts junction table
+    // that have experts assigned through the google_sources_experts junction table
     loggerUtil.info('Finding high-level folders with experts assigned...');
     
     let folderQuery = supabase
@@ -50,7 +50,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
         path_depth,
         drive_id,
         document_type_id,
-        sources_google_experts!inner(
+        google_sources_experts!inner(
           id,
           expert_id,
           is_primary,
@@ -99,7 +99,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
       const folderName = folder.name;
       
       // Get expert info - we'll use the primary expert or first one if no primary
-      const expertLinks = folder.sources_google_experts;
+      const expertLinks = folder.google_sources_experts;
       const primaryExpertLink = expertLinks.find(link => link.is_primary) || expertLinks[0];
       const expertId = primaryExpertLink.expert_id;
       const expert = primaryExpertLink.experts as any;
@@ -209,16 +209,16 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
           loggerUtil.info(`File "${file.name}" has ${expertDocs.length} expert_documents records`);
         }
         
-        // Check if the file is already linked to this expert through sources_google_experts
+        // Check if the file is already linked to this expert through google_sources_experts
         const { data: existingLink, error: linkError } = await supabase
-          .from('sources_google_experts')
+          .from('google_sources_experts')
           .select('id')
           .eq('source_id', file.id)
           .eq('expert_id', expertId)
           .maybeSingle();
         
         if (linkError) {
-          loggerUtil.error(`Error checking sources_google_experts for file ${file.name}: ${linkError.message}`);
+          loggerUtil.error(`Error checking google_sources_experts for file ${file.name}: ${linkError.message}`);
           folderFilesError++;
           totalFilesError++;
           continue;
@@ -231,7 +231,7 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
           continue;
         }
         
-        // If not linked yet, create the sources_google_experts entry
+        // If not linked yet, create the google_sources_experts entry
         if (dryRun) {
           if (verbose) {
             loggerUtil.info(`[DRY RUN] Would create expert link for file "${file.name}" to expert ${expertName}`);
@@ -239,9 +239,9 @@ export async function propagateExpertIds(options: PropagateExpertIdsOptions): Pr
           folderFilesUpdated++;
           totalFilesUpdated++;
         } else {
-          // Create the link in sources_google_experts
+          // Create the link in google_sources_experts
           const { error: insertError } = await supabase
-            .from('sources_google_experts')
+            .from('google_sources_experts')
             .insert({
               source_id: file.id,
               expert_id: expertId,

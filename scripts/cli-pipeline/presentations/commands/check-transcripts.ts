@@ -20,7 +20,7 @@ async function checkRawContent() {
     
     // Get presentations from missing list
     const { data: presentations } = await supabase
-      .from('presentations')
+      .from('media_presentations')
       .select('id, title, main_video_id')
       .in('id', [
         '9927be5c-2606-4b8b-9061-911d013473bd',  // Gervitz.3.24.21
@@ -74,7 +74,7 @@ async function checkRawContent() {
       
       // Check presentation_assets
       const { data: assets } = await supabase
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('id, asset_type, expert_document_id')
         .eq('presentation_id', presentation.id);
       

@@ -132,12 +132,12 @@ function Sync() {
       );
     }
     
-    // Check if the sync_statistics table has the required structure
+    // Check if the google_sync_statistics table has the required structure
     const checkAndUpdateSyncStatisticsTable = async () => {
       try {
         // Try to fetch one record to check if table exists
         const { data, error } = await supabase
-          .from('sync_statistics')
+          .from('google_sync_statistics')
           .select('*')
           .limit(1)
           .maybeSingle();
@@ -1131,7 +1131,7 @@ function Sync() {
     }
   };
 
-  // Debug function to check sync_statistics table structure
+  // Debug function to check google_sync_statistics table structure
   const checkSyncStatisticsStructure = async (): Promise<boolean> => {
     try {
       console.log('===== CHECKING SYNC_STATISTICS TABLE STRUCTURE =====');
@@ -1140,20 +1140,20 @@ function Sync() {
       try {
         // Try direct SQL query to check if table exists
         const { data: testData, error: testError } = await supabase
-          .from('sync_statistics')
+          .from('google_sync_statistics')
           .select('id')
           .limit(1);
             
         if (testError) {
           // If error is about relation not existing, the table doesn't exist
-          if (testError.code === '42P01' || testError.message?.includes('relation "sync_statistics" does not exist')) {
-            console.log('sync_statistics table does not exist');
+          if (testError.code === '42P01' || testError.message?.includes('relation "google_sync_statistics" does not exist')) {
+            console.log('google_sync_statistics table does not exist');
             return false;
           } else {
             console.error('Error checking if table exists:', testError);
           }
         } else {
-          console.log('sync_statistics table exists (select test successful)');
+          console.log('google_sync_statistics table exists (select test successful)');
           return true;
         }
       } catch (checkErr) {
@@ -1167,31 +1167,31 @@ function Sync() {
       // Check most recent entry as final verification
       try {
         const { data: recentData, error: recentError } = await supabase
-          .from('sync_statistics')
+          .from('google_sync_statistics')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(1);
           
         if (recentError) {
           // If error is about relation not existing, the table doesn't exist
-          if (recentError.code === '42P01' || recentError.message?.includes('relation "sync_statistics" does not exist')) {
-            console.log('sync_statistics table does not exist (confirmed by select)');
+          if (recentError.code === '42P01' || recentError.message?.includes('relation "google_sync_statistics" does not exist')) {
+            console.log('google_sync_statistics table does not exist (confirmed by select)');
             return false;
           }
           
           console.error('Error checking recent records:', recentError);
           // Continue but don't confirm table exists
         } else {
-          console.log('Most recent sync_statistics record:', recentData);
+          console.log('Most recent google_sync_statistics record:', recentData);
           return true; // Table exists since we could query it
         }
       } catch (err) {
-        console.error('Error fetching recent sync_statistics:', err);
+        console.error('Error fetching recent google_sync_statistics:', err);
       }
       
       // If we get here without a definitive answer, default to assuming the table exists
       // to allow the insert operation to try
-      console.log('Unable to definitively determine if sync_statistics table exists, assuming it does');
+      console.log('Unable to definitively determine if google_sync_statistics table exists, assuming it does');
       return true;
       
     } catch (e) {
