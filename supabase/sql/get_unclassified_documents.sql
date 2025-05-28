@@ -10,7 +10,7 @@ BEGIN
     AND ed.source_id IS NOT NULL
     AND NOT EXISTS (
       SELECT 1 
-      FROM table_classifications tc 
+      FROM learn_document_classifications tc 
       WHERE tc.entity_id = ed.id 
       AND tc.entity_type = entity_type_param
     )

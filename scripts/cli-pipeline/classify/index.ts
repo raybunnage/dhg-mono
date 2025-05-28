@@ -531,7 +531,7 @@ program
         
         // Check for classifications
         const { data: classifications, error: classErr } = await supabase
-          .from('table_classifications')
+          .from('learn_document_classifications')
           .select('*')
           .eq('entity_id', options.id)
           .eq('entity_type', 'google_expert_documents');
@@ -638,7 +638,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
       
       // 3. Check how many documents have been classified
       const { data: classifiedDocs, error: classifiedError } = await supabase
-        .from('table_classifications')
+        .from('learn_document_classifications')
         .select('entity_id')
         .eq('entity_type', 'google_expert_documents');
         
@@ -650,7 +650,7 @@ program.commands.find((cmd: any) => cmd.name() === 'debug-classification-status'
       // Count unique entity_ids
       const uniqueEntityIds = new Set((classifiedDocs || []).map((doc: {entity_id: string}) => doc.entity_id));
       Logger.info(`Total unique expert_documents with classifications: ${uniqueEntityIds.size}`);
-      Logger.info(`Total classification entries in table_classifications: ${classifiedDocs?.length || 0}`);
+      Logger.info(`Total classification entries in learn_document_classifications: ${classifiedDocs?.length || 0}`);
       
       // 4. Check how many expert_documents have a source_id
       const { data: docsWithSource, error: sourceError } = await supabase

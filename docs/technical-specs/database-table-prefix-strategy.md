@@ -39,7 +39,7 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 ### 3. Expert System - `expert_` . DONE
 - `expert_profiles` (from `experts`) DONE
 - `expert_documents` (from `expert_documents`)  DONE
-- `expert_citation_aliases` (from `citation_expert_aliases`) . DONE
+- `expert_profile_aliases` (from `citation_expert_aliases`) . DONE
 
 ### 8. Command & Analytics - `cmd_`   DONE
 - `cmd_tracking` (from `cli_command_tracking`)   leave as is
@@ -78,7 +78,7 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 
 ### 11. Processing & Batch Operations - `batch_` . PARTWAY DONE
 - `batch_processing` (from `processing_batches`) . DONE 
-- `batch_table_classifications` (from `table_classifications`) NEED TO THINK IT THROUGH
+- `learn_document_classifications` (from `table_classifications`) DONE
 
 
 ### 7. Script Management - `script_` DONE

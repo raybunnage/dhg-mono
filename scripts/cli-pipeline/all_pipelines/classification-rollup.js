@@ -3,7 +3,7 @@
  * Classification Rollup Report
  *
  * Generates reports of subject classifications applied to different types of content:
- * 1. All expert documents in table_classifications
+ * 1. All expert documents in learn_document_classifications
  * 2. Video files specifically from presentations (MP4 files with video_source_id)
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -76,7 +76,7 @@ async function generateClassificationRollup(options) {
           SELECT 
             subject_classification_id, 
             COUNT(*) as count
-          FROM table_classifications
+          FROM learn_document_classifications
           WHERE entity_type = 'google_expert_documents'
           GROUP BY subject_classification_id
           ORDER BY COUNT(*) DESC
@@ -118,7 +118,7 @@ async function generateClassificationRollup(options) {
             SELECT 
               subject_classification_id, 
               COUNT(*) as count
-            FROM table_classifications
+            FROM learn_document_classifications
             WHERE entity_type = 'google_sources'
             AND entity_id IN (${sourceIdsString})
             GROUP BY subject_classification_id

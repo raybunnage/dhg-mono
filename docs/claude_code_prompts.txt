@@ -18,6 +18,45 @@
   - media_bookmarks → learn_media_bookmarks
 
 
+
+ Summary of document_concepts and learn_document_classifications usage:
+
+  1. document_concepts (should be doc_concepts)
+
+  - Purpose: Stores extracted concepts/keywords from documents with their weights
+  - Structure:
+    - concept: The extracted concept/keyword
+    - weight: Numerical weight/importance of the concept
+    - document_id: Links to google_expert_documents table
+    - metadata: Additional JSON metadata about the concept
+  - Usage:
+    - Used to store AI-extracted concepts from documents after processing
+    - Scripts in google_sync pipeline use it to check if concepts were properly saved
+    - Allows querying documents by their key concepts with weighted relevance
+
+  2. learn_document_classifications
+
+  - Purpose: Generic classification system that links various entities to subject classifications
+  - Structure:
+    - entity_id: ID of the entity being classified
+    - entity_type: Enum specifying what type of entity (supports: expert_documents, documentation_files, google_sources, scripts)
+    - subject_classification_id: Links to learn_subject_classifications table
+    - notes: Additional notes about the classification
+  - Usage:
+    - Used by the classification pipeline to track which documents/sources have been classified
+    - Prevents duplicate classification by checking if entity already exists
+    - Allows multiple subject classifications per entity
+    - Used in views like media_content_view to join subject information with media files
+
+  Issues Found:
+
+  1. document_concepts not renamed: While the code references doc_concepts, the types.ts file still has document_concepts
+  2. Foreign key needs update: The foreign key document_concepts_document_id_fkey still references expert_documents instead of google_expert_documents
+  3. Enum needs update: The classified_entity_type enum still has expert_documents instead of google_expert_documents
+
+  These tables are part of the document processing and classification system where documents are analyzed for concepts and classified into learning subjects.
+
+
  Archive/Remove: 
  
  to drop function_relationships, sql_query_history, app_pages and asset_types
@@ -3958,7 +3997,7 @@ So I need to turn the "Home" page into a dashboard that does the following.     
 │   presentation_assets                                                                                                                                   │
 │   sources_google                                                                                                                                        │
 │   expert_documents                                                                                                                                      │
-│   table_classifications                                                                                                                                 │
+│   learn_document_classifications                                                                                                                        │
 │   subject_classifications                                                                                                                               │
 │   experts                                                                                                                                               │
 │                                                                                                                                                         │
@@ -4247,7 +4286,7 @@ Now I understand the relationship! The parent-child relationship is stored using
   classified_docs AS (
     -- Documents that already have at least one classification
     SELECT DISTINCT entity_id
-    FROM table_classifications
+    FROM learn_document_classifications
     WHERE entity_type = 'expert_documents'
   )
 

@@ -68,7 +68,7 @@ async function fetchUnclassifiedDocuments(limit: number): Promise<any[]> {
     // 1. Get the list of entity_ids that have already been classified
     Logger.info('Fetching classified document IDs...');
     const { data: classified, error: classifiedError } = await supabase
-      .from('table_classifications')
+      .from('learn_document_classifications')
       .select('entity_id')
       .eq('entity_type', 'google_expert_documents');
       
@@ -387,7 +387,7 @@ async function processDocument(
     
     // First check if this specific document has classifications
     const { data: anyExistingClassifications, error: checkAnyError } = await supabase
-      .from('table_classifications')
+      .from('learn_document_classifications')
       .select('id')
       .eq('entity_id', doc.id)
       .eq('entity_type', entityType)
@@ -404,7 +404,7 @@ async function processDocument(
     
     // Next check if the SOURCE file has any classifications
     const { data: sourceClassifications, error: sourceClassError } = await supabase
-      .from('table_classifications')
+      .from('learn_document_classifications')
       .select('id')
       .eq('entity_id', sourceId)
       .eq('entity_type', 'google_sources')
@@ -439,9 +439,9 @@ async function processDocument(
     
     // First classify the expert_document
     for (const subjectId of classificationResult.subject_ids) {
-      // Create a record in the table_classifications table
+      // Create a record in the learn_document_classifications table
       const { error: insertError } = await supabase
-        .from('table_classifications')
+        .from('learn_document_classifications')
         .insert({
           id: uuidv4(),
           entity_id: doc.id,
@@ -460,9 +460,9 @@ async function processDocument(
     // Then also classify the source file in sources_google
     // This ensures we don't try to reclassify the same file multiple times
     for (const subjectId of classificationResult.subject_ids) {
-      // Create a record in the table_classifications table
+      // Create a record in the learn_document_classifications table
       const { error: insertSourceError } = await supabase
-        .from('table_classifications')
+        .from('learn_document_classifications')
         .insert({
           id: uuidv4(),
           entity_id: sourceId,

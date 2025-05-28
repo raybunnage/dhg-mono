@@ -195,7 +195,7 @@ type ExpertDocument = Database['public']['Tables']['google_expert_documents']['R
 };
 
 type SubjectClassification = Database['public']['Tables']['learn_subject_classifications']['Row'];
-type TableClassification = Database['public']['Tables']['table_classifications']['Row'];
+type TableClassification = Database['public']['Tables']['learn_document_classifications']['Row'];
 
 export function Home() {
   // State variables
@@ -644,7 +644,7 @@ export function Home() {
         
         // Fetch classifications for these videos
         const { data: classificationData, error: classificationError } = await supabase
-          .from('table_classifications')
+          .from('learn_document_classifications')
           .select(`
             entity_id,
             subject_classification_id

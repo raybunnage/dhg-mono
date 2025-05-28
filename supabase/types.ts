@@ -726,51 +726,6 @@ export type Database = {
         }
         Relationships: []
       }
-      document_concepts: {
-        Row: {
-          concept: string
-          created_at: string | null
-          document_id: string
-          id: string
-          metadata: Json | null
-          updated_at: string | null
-          weight: number | null
-        }
-        Insert: {
-          concept: string
-          created_at?: string | null
-          document_id: string
-          id?: string
-          metadata?: Json | null
-          updated_at?: string | null
-          weight?: number | null
-        }
-        Update: {
-          concept?: string
-          created_at?: string | null
-          document_id?: string
-          id?: string
-          metadata?: Json | null
-          updated_at?: string | null
-          weight?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_concepts_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "expert_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_concepts_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "media_content_view"
-            referencedColumns: ["expert_document_id"]
-          },
-        ]
-      }
       document_type_aliases: {
         Row: {
           alias_name: string
@@ -930,7 +885,7 @@ export type Database = {
         }
         Relationships: []
       }
-      expert_citation_aliases: {
+      expert_profile_aliases: {
         Row: {
           alias_name: string
           expert_id: number | null
@@ -958,6 +913,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      expert_profiles: {
+        Row: {
+          created_at: string
+          expert_name: string
+          full_name: string | null
+          id: string
+          is_in_core_group: boolean
+          metadata: Json | null
+          mnemonic: string | null
+          starting_ref_id: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expert_name: string
+          full_name?: string | null
+          id?: string
+          is_in_core_group?: boolean
+          metadata?: Json | null
+          mnemonic?: string | null
+          starting_ref_id?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expert_name?: string
+          full_name?: string | null
+          id?: string
+          is_in_core_group?: boolean
+          metadata?: Json | null
+          mnemonic?: string | null
+          starting_ref_id?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      filter_user_profile_drives: {
+        Row: {
+          id: string
+          include_children: boolean | null
+          profile_id: string | null
+          root_drive_id: string
+        }
+        Insert: {
+          id?: string
+          include_children?: boolean | null
+          profile_id?: string | null
+          root_drive_id: string
+        }
+        Update: {
+          id?: string
+          include_children?: boolean | null
+          profile_id?: string | null
+          root_drive_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "filter_user_profiless"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      filter_user_profiless: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
       }
       google_expert_documents: {
         Row: {
@@ -1068,98 +1115,6 @@ export type Database = {
             referencedColumns: ["source_id"]
           },
         ]
-      }
-      expert_profiles: {
-        Row: {
-          created_at: string
-          expert_name: string
-          full_name: string | null
-          id: string
-          is_in_core_group: boolean
-          metadata: Json | null
-          mnemonic: string | null
-          starting_ref_id: number | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          expert_name: string
-          full_name?: string | null
-          id?: string
-          is_in_core_group?: boolean
-          metadata?: Json | null
-          mnemonic?: string | null
-          starting_ref_id?: number | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          expert_name?: string
-          full_name?: string | null
-          id?: string
-          is_in_core_group?: boolean
-          metadata?: Json | null
-          mnemonic?: string | null
-          starting_ref_id?: number | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      filter_user_profile_drives: {
-        Row: {
-          id: string
-          include_children: boolean | null
-          profile_id: string | null
-          root_drive_id: string
-        }
-        Insert: {
-          id?: string
-          include_children?: boolean | null
-          profile_id?: string | null
-          root_drive_id: string
-        }
-        Update: {
-          id?: string
-          include_children?: boolean | null
-          profile_id?: string | null
-          root_drive_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "filter_user_profiless"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      filter_user_profiless: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-        }
-        Relationships: []
       }
       google_sources: {
         Row: {
@@ -1389,6 +1344,89 @@ export type Database = {
           total_google_drive_items?: number | null
         }
         Relationships: []
+      }
+      learn_document_classifications: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["classified_entity_type"]
+          id: string
+          notes: string | null
+          subject_classification_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["classified_entity_type"]
+          id?: string
+          notes?: string | null
+          subject_classification_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["classified_entity_type"]
+          id?: string
+          notes?: string | null
+          subject_classification_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_subject_classification"
+            columns: ["subject_classification_id"]
+            isOneToOne: false
+            referencedRelation: "learn_subject_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_document_concepts: {
+        Row: {
+          concept: string
+          created_at: string | null
+          document_id: string
+          id: string
+          metadata: Json | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          concept: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          concept?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_concepts_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "google_expert_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_concepts_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["expert_document_id"]
+          },
+        ]
       }
       learn_media_bookmarks: {
         Row: {
@@ -1801,7 +1839,7 @@ export type Database = {
             foreignKeyName: "presentation_assets_asset_expert_document_id_fkey"
             columns: ["asset_expert_document_id"]
             isOneToOne: false
-            referencedRelation: "expert_documents"
+            referencedRelation: "google_expert_documents"
             referencedColumns: ["id"]
           },
           {
@@ -1886,7 +1924,7 @@ export type Database = {
             foreignKeyName: "presentations_expert_document_id_fkey"
             columns: ["expert_document_id"]
             isOneToOne: false
-            referencedRelation: "expert_documents"
+            referencedRelation: "google_expert_documents"
             referencedColumns: ["id"]
           },
           {
@@ -2096,44 +2134,6 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
-      }
-      table_classifications: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          entity_id: string
-          entity_type: Database["public"]["Enums"]["classified_entity_type"]
-          id: string
-          notes: string | null
-          subject_classification_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          entity_id: string
-          entity_type: Database["public"]["Enums"]["classified_entity_type"]
-          id?: string
-          notes?: string | null
-          subject_classification_id: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          entity_id?: string
-          entity_type?: Database["public"]["Enums"]["classified_entity_type"]
-          id?: string
-          notes?: string | null
-          subject_classification_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_subject_classification"
-            columns: ["subject_classification_id"]
-            isOneToOne: false
-            referencedRelation: "learn_subject_classifications"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {
@@ -2783,7 +2783,7 @@ export type Database = {
       classified_entity_type:
         | "expert_documents"
         | "documentation_files"
-        | "google_sources"
+        | "sources_google"
         | "scripts"
       document_classifier: "pdf" | "powerpoint" | "docx" | "expert"
       document_processing_status:
@@ -3006,7 +3006,7 @@ export const Constants = {
       classified_entity_type: [
         "expert_documents",
         "documentation_files",
-        "google_sources",
+        "sources_google",
         "scripts",
       ],
       document_classifier: ["pdf", "powerpoint", "docx", "expert"],

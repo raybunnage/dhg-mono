@@ -74,7 +74,7 @@ SELECT source_id FROM user_filter_profile_drives WHERE profile_id = $profileId
 - `experts`: Information about presentation experts
 - `sources_google_experts`: Junction table linking sources to experts
 - `subject_classifications`: Subject categories/topics
-- `table_classifications`: Maps entities to subject classifications
+- `learn_document_classifications`: Maps entities to subject classifications
 
 **Key Queries**:
 ```sql

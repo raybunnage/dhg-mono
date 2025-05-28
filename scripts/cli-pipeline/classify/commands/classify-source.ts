@@ -116,7 +116,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
     // 3. Check if this document or source already has classifications
     // Check if this document has classifications - use count instead of selecting records to reduce memory usage
     const { count: docCount, error: docClassError } = await supabase
-      .from('table_classifications')
+      .from('learn_document_classifications')
       .select('id', { count: 'exact', head: true })
       .eq('entity_id', expertDocument.id)
       .eq('entity_type', entityType);
@@ -128,7 +128,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
     
     // Check if the source has classifications - use count instead of selecting records
     const { count: sourceCount, error: sourceClassError } = await supabase
-      .from('table_classifications')
+      .from('learn_document_classifications')
       .select('id', { count: 'exact', head: true })
       .eq('entity_id', expertDocument.source_id)
       .eq('entity_type', 'google_sources');
@@ -154,7 +154,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
       if (hasDocClassifications) {
         Logger.info(`Deleting existing document classifications for ID: ${expertDocument.id}`);
         const { error: deleteDocError } = await supabase
-          .from('table_classifications')
+          .from('learn_document_classifications')
           .delete()
           .eq('entity_id', expertDocument.id)
           .eq('entity_type', entityType);
@@ -168,7 +168,7 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
       if (hasSourceClassifications) {
         Logger.info(`Deleting existing source classifications for ID: ${expertDocument.source_id}`);
         const { error: deleteSourceError } = await supabase
-          .from('table_classifications')
+          .from('learn_document_classifications')
           .delete()
           .eq('entity_id', expertDocument.source_id)
           .eq('entity_type', 'google_sources');
@@ -472,9 +472,9 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
     // 8. Store the classifications - first for the document
     let insertedCount = 0;
     for (const subjectId of classificationResult.subject_ids) {
-      // Create a record in the table_classifications table
+      // Create a record in the learn_document_classifications table
       const { error: insertError } = await supabase
-        .from('table_classifications')
+        .from('learn_document_classifications')
         .insert({
           id: uuidv4(),
           entity_id: expertDocument.id,
@@ -493,9 +493,9 @@ export async function classifySourceCommand(options: ClassifySourceOptions): Pro
     // 9. Then also classify the source file in sources_google
     // This ensures we don't try to reclassify the same file multiple times
     for (const subjectId of classificationResult.subject_ids) {
-      // Create a record in the table_classifications table
+      // Create a record in the learn_document_classifications table
       const { error: insertSourceError } = await supabase
-        .from('table_classifications')
+        .from('learn_document_classifications')
         .insert({
           id: uuidv4(),
           entity_id: expertDocument.source_id,

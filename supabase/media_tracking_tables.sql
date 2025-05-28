@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS media_topic_segments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   source_id UUID REFERENCES google_sources(id) NOT NULL,
   topic_id UUID REFERENCES learn_topics(id) NOT NULL,
-  expert_id UUID REFERENCES experts(id), -- Link to expert discussing topic (if applicable)
+  expert_id UUID REFERENCES expert_profiles(id), -- Link to expert discussing topic (if applicable)
   start_position REAL NOT NULL, -- Start timestamp in seconds
   end_position REAL NOT NULL, -- End timestamp in seconds
   relevance_score REAL DEFAULT 1.0, -- AI-determined relevance (0.0-1.0)
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS learn_user_interests (
 -- Expert Preferences - Tracks user preferences for specific experts
 CREATE TABLE IF NOT EXISTS expert_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  expert_id UUID REFERENCES experts(id) NOT NULL,
+  expert_id UUID REFERENCES expert_profiles(id) NOT NULL,
   preference_level INTEGER CHECK (preference_level BETWEEN 1 AND 5), -- 1-5 rating
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
@@ -205,9 +205,9 @@ LEFT JOIN
 LEFT JOIN
   google_sources_experts sge ON sg.id = sge.source_id
 LEFT JOIN
-  experts e ON sge.expert_id = e.id
+  expert_profiles e ON sge.expert_id = e.id
 LEFT JOIN
-  table_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'google_sources'
+  learn_document_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'google_sources'
 LEFT JOIN
   learn_subject_classifications sc ON sc.id = tc.subject_classification_id
 WHERE
@@ -245,6 +245,6 @@ LEFT JOIN
 LEFT JOIN
   google_sources_experts sge ON sg.id = sge.source_id AND sge.is_primary = true
 LEFT JOIN
-  experts e ON sge.expert_id = e.id
+  expert_profiles e ON sge.expert_id = e.id
 ORDER BY
   ms.updated_at DESC;

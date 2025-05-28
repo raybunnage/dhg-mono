@@ -2,7 +2,7 @@
  * List Unclassified Documents Command
  * 
  * Lists expert_documents with processed content that still need classification
- * by finding documents whose IDs are not in the table_classifications table.
+ * by finding documents whose IDs are not in the learn_document_classifications table.
  */
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../../packages/shared/utils/logger';
@@ -30,7 +30,7 @@ export async function listUnclassifiedCommand(options: ListUnclassifiedOptions):
     // 1. Get the list of entity_ids that have already been classified
     Logger.info('Fetching classified document IDs...');
     const { data: classified, error: classifiedError } = await supabase
-      .from('table_classifications')
+      .from('learn_document_classifications')
       .select('entity_id')
       .eq('entity_type', 'google_expert_documents');
       
