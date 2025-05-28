@@ -217,7 +217,7 @@ async function getAllExperts(): Promise<MinimalExpert[]> {
   const supabase = supabaseClientService.getClient();
   
   const { data: experts, error } = await supabase
-    .from('experts')
+    .from('expert_profiles')
     .select('id, expert_name, full_name, mnemonic')
     .order('expert_name');
     
@@ -445,7 +445,7 @@ async function getFolderExpertsWithRelationships(folderId: string): Promise<{ ex
   
   // Fetch the actual expert details
   const { data: expertData, error: expertError } = await supabase
-    .from('experts')
+    .from('expert_profiles')
     .select('id, expert_name, full_name, mnemonic')
     .in('id', expertIds);
   
@@ -560,7 +560,7 @@ async function deleteExpertFromFolder(options: {
     }
     
     const { data: expertData, error: expertError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name, full_name')
       .eq('id', relationshipData.expert_id)
       .single();
@@ -640,7 +640,7 @@ async function assignExpertToFolder(options: {
     // Step 2: Verify expert exists
     if (verbose) loggerUtil.info(`Verifying expert ID: ${expertId}`);
     const { data: expertData, error: expertError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name, full_name')
       .eq('id', expertId)
       .single();

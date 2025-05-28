@@ -12,7 +12,7 @@ async function main() {
   
   // Get the expert
   const { data: expert, error } = await supabase
-    .from('experts')
+    .from('expert_profiles')
     .select('*')
     .eq('id', expertId)
     .single();

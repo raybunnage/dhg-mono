@@ -1,7 +1,7 @@
 {
   "tables": [
     "expert_documents",
-    "experts",
+    "expert_profiles",
     "document_types",
     "presentation_assets",
     "presentations",

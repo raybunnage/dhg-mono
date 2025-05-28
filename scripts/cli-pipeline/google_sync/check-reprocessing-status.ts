@@ -108,7 +108,7 @@ export async function checkReprocessingStatus(options: {
     if (options.expert) {
       // First get the expert ID
       const { data: expertData, error: expertError } = await supabaseClient
-        .from('experts')
+        .from('expert_profiles')
         .select('id')
         .eq('expert_name', options.expert)
         .maybeSingle();

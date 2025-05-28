@@ -55,7 +55,7 @@ const GutsDemo: React.FC<GutsDemoProps> = ({ pagePath, appName }) => {
     try {
       // This will automatically track table usage through the tracked client
       const { data, error } = await trackedSupabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .limit(5);
       

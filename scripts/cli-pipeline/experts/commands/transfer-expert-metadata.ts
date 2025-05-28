@@ -41,7 +41,7 @@ export async function transferExpertMetadata({
     
     // Step 1: Get all experts
     const { data: experts, error: expertsError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name, full_name, metadata')
       .order('expert_name', { ascending: true })
       .limit(expertLimit > 0 ? expertLimit : 1000);
@@ -158,7 +158,7 @@ export async function transferExpertMetadata({
         // Update the expert's metadata field
         if (!dryRun) {
           const { error: updateError } = await supabase
-            .from('experts')
+            .from('expert_profiles')
             .update({ metadata: parsedContent })
             .eq('id', expert.id);
 

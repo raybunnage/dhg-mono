@@ -50,7 +50,7 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
     try {
       if (expert) {
         const { error } = await supabase
-          .from("experts")
+          .from("expert_profiles")
           .update(data)
           .eq("id", expert.id);
         if (error) throw error;
@@ -59,7 +59,7 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
           description: "Expert updated successfully",
         });
       } else {
-        const { error } = await supabase.from("experts").insert([data]);
+        const { error } = await supabase.from("expert_profiles").insert([data]);
         if (error) throw error;
         toast({
           title: "Success",

@@ -178,7 +178,7 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
     
     // Check if the expert already exists
     const { data: existingExperts, error: checkError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name')
       .eq('expert_name', expertName)
       .limit(1);
@@ -220,7 +220,7 @@ export async function addExpert(options: AddExpertOptions): Promise<void> {
     
     // Insert the new expert
     const { data: insertedExpert, error: insertError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .insert({
         expert_name: expertName,
         full_name: fullName || expertName,

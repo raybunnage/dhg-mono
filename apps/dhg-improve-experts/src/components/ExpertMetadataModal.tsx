@@ -22,7 +22,7 @@ export const ExpertMetadataModal: React.FC<ExpertMetadataModalProps> = ({ isOpen
       try {
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('experts')
+          .from('expert_profiles')
           .select('metadata, expert_name, full_name')
           .eq('id', expertId)
           .single();

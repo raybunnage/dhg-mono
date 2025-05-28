@@ -318,7 +318,7 @@ program
             // Additional check for experts table
             const supabase = SupabaseClientService.getInstance().getClient();
             const { data, error } = await supabase
-              .from('experts')
+              .from('expert_profiles')
               .select('count(*)', { count: 'exact', head: true });
               
             if (error) {

@@ -64,7 +64,7 @@ export default function ExpertsDashboard() {
   const fetchExperts = async () => {
     try {
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .order('expert_name');
 
@@ -95,12 +95,12 @@ export default function ExpertsDashboard() {
     try {
       // Get total experts count
       const { count: totalExperts } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*', { count: 'exact', head: true });
       
       // Get core experts count
       const { count: coreExperts } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*', { count: 'exact', head: true })
         .eq('is_in_core_group', true);
       
@@ -211,7 +211,7 @@ export default function ExpertsDashboard() {
       }
       
       const { error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .delete()
         .eq('id', expert.id);
         
@@ -356,7 +356,7 @@ export default function ExpertsDashboard() {
       // Also update the expert record with some of this information
       if (document.expert_id) {
         await supabase
-          .from('experts')
+          .from('expert_profiles')
           .update({
             full_name: profileJson.name,
             expertise_area: profileJson.expertise.join(', '),

@@ -113,7 +113,14 @@ export type Database = {
             foreignKeyName: "fk_prompt_relationships_document_type"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types_original"
+            referencedRelation: "document_classifications_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_prompt_relationships_document_type"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
             referencedColumns: ["id"]
           },
           {
@@ -256,7 +263,14 @@ export type Database = {
             foreignKeyName: "prompts_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types_original"
+            referencedRelation: "document_classifications_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompts_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
             referencedColumns: ["id"]
           },
         ]
@@ -749,63 +763,6 @@ export type Database = {
         }
         Relationships: []
       }
-      document_types_original: {
-        Row: {
-          ai_processing_rules: Json | null
-          category: string
-          classifier: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema: Json | null
-          created_at: string
-          current_num_of_type: number | null
-          description: string | null
-          document_type: string
-          document_type_counts: number | null
-          file_extension: string | null
-          id: string
-          is_ai_generated: boolean
-          legacy_document_type_id: number | null
-          required_fields: Json | null
-          updated_at: string
-          validation_rules: Json | null
-        }
-        Insert: {
-          ai_processing_rules?: Json | null
-          category: string
-          classifier?: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema?: Json | null
-          created_at?: string
-          current_num_of_type?: number | null
-          description?: string | null
-          document_type: string
-          document_type_counts?: number | null
-          file_extension?: string | null
-          id?: string
-          is_ai_generated?: boolean
-          legacy_document_type_id?: number | null
-          required_fields?: Json | null
-          updated_at?: string
-          validation_rules?: Json | null
-        }
-        Update: {
-          ai_processing_rules?: Json | null
-          category?: string
-          classifier?: Database["public"]["Enums"]["document_classifier"] | null
-          content_schema?: Json | null
-          created_at?: string
-          current_num_of_type?: number | null
-          description?: string | null
-          document_type?: string
-          document_type_counts?: number | null
-          file_extension?: string | null
-          id?: string
-          is_ai_generated?: boolean
-          legacy_document_type_id?: number | null
-          required_fields?: Json | null
-          updated_at?: string
-          validation_rules?: Json | null
-        }
-        Relationships: []
-      }
       documentation_files: {
         Row: {
           ai_assessment: Json | null
@@ -959,7 +916,14 @@ export type Database = {
             foreignKeyName: "fk_documentation_files_type"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types_original"
+            referencedRelation: "document_classifications_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_documentation_files_type"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
             referencedColumns: ["id"]
           },
         ]
@@ -1052,36 +1016,6 @@ export type Database = {
           },
         ]
       }
-      domains: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          owner_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          owner_id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          owner_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       email_addresses: {
         Row: {
           created_at: string
@@ -1116,15 +1050,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_domain_id"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       email_messages: {
         Row: {
@@ -1184,15 +1110,7 @@ export type Database = {
           updated_at?: string
           url_cnt?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "emails_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       expert_citation_aliases: {
         Row: {
@@ -1218,7 +1136,7 @@ export type Database = {
             foreignKeyName: "fk_expert_uuid"
             columns: ["expert_uuid"]
             isOneToOne: false
-            referencedRelation: "experts"
+            referencedRelation: "expert_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1307,6 +1225,13 @@ export type Database = {
             foreignKeyName: "expert_documents_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
+            referencedRelation: "document_classifications_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
             referencedRelation: "document_types"
             referencedColumns: ["id"]
           },
@@ -1326,7 +1251,7 @@ export type Database = {
           },
         ]
       }
-      experts: {
+      expert_profiles: {
         Row: {
           created_at: string
           expert_name: string
@@ -2035,165 +1960,15 @@ export type Database = {
             foreignKeyName: "scripts_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "document_types_original"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sources: {
-        Row: {
-          abstract: string | null
-          aggregate_subject_classifications: string | null
-          all_references_cnt: number | null
-          article_type: string | null
-          authors: string | null
-          cleaned_authors: string | null
-          concept_count: number | null
-          created_at: string
-          date_text: string | null
-          day: number | null
-          domain_id: string
-          email_content_id: string | null
-          email_id: string | null
-          expert_id: string | null
-          file_hash: string | null
-          file_size: number | null
-          folder_level: number | null
-          google_id: string | null
-          has_processing_errors: boolean | null
-          has_title_and_reference_info: boolean | null
-          keywords: string | null
-          month: number | null
-          notes: string | null
-          parent_id: string | null
-          primary_authors: string | null
-          processing_error: string | null
-          ref_id: number | null
-          reference_info: string | null
-          reference_tag: string | null
-          relationship_action_id: number | null
-          source_id: string
-          source_identifier: string | null
-          source_type: string
-          subject_classifications: string | null
-          summary: string | null
-          title: string | null
-          trust_level: number | null
-          uni_document_type_id: string | null
-          updated_at: string
-          url_id: string | null
-          user_id: string | null
-          year: number | null
-        }
-        Insert: {
-          abstract?: string | null
-          aggregate_subject_classifications?: string | null
-          all_references_cnt?: number | null
-          article_type?: string | null
-          authors?: string | null
-          cleaned_authors?: string | null
-          concept_count?: number | null
-          created_at?: string
-          date_text?: string | null
-          day?: number | null
-          domain_id?: string
-          email_content_id?: string | null
-          email_id?: string | null
-          expert_id?: string | null
-          file_hash?: string | null
-          file_size?: number | null
-          folder_level?: number | null
-          google_id?: string | null
-          has_processing_errors?: boolean | null
-          has_title_and_reference_info?: boolean | null
-          keywords?: string | null
-          month?: number | null
-          notes?: string | null
-          parent_id?: string | null
-          primary_authors?: string | null
-          processing_error?: string | null
-          ref_id?: number | null
-          reference_info?: string | null
-          reference_tag?: string | null
-          relationship_action_id?: number | null
-          source_id?: string
-          source_identifier?: string | null
-          source_type: string
-          subject_classifications?: string | null
-          summary?: string | null
-          title?: string | null
-          trust_level?: number | null
-          uni_document_type_id?: string | null
-          updated_at?: string
-          url_id?: string | null
-          user_id?: string | null
-          year?: number | null
-        }
-        Update: {
-          abstract?: string | null
-          aggregate_subject_classifications?: string | null
-          all_references_cnt?: number | null
-          article_type?: string | null
-          authors?: string | null
-          cleaned_authors?: string | null
-          concept_count?: number | null
-          created_at?: string
-          date_text?: string | null
-          day?: number | null
-          domain_id?: string
-          email_content_id?: string | null
-          email_id?: string | null
-          expert_id?: string | null
-          file_hash?: string | null
-          file_size?: number | null
-          folder_level?: number | null
-          google_id?: string | null
-          has_processing_errors?: boolean | null
-          has_title_and_reference_info?: boolean | null
-          keywords?: string | null
-          month?: number | null
-          notes?: string | null
-          parent_id?: string | null
-          primary_authors?: string | null
-          processing_error?: string | null
-          ref_id?: number | null
-          reference_info?: string | null
-          reference_tag?: string | null
-          relationship_action_id?: number | null
-          source_id?: string
-          source_identifier?: string | null
-          source_type?: string
-          subject_classifications?: string | null
-          summary?: string | null
-          title?: string | null
-          trust_level?: number | null
-          uni_document_type_id?: string | null
-          updated_at?: string
-          url_id?: string | null
-          user_id?: string | null
-          year?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_sources_domain_id"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "document_classifications_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_sources_expert_id"
-            columns: ["expert_id"]
+            foreignKeyName: "scripts_document_type_id_fkey"
+            columns: ["document_type_id"]
             isOneToOne: false
-            referencedRelation: "experts"
+            referencedRelation: "document_types"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_sources_parent_id"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "sources"
-            referencedColumns: ["source_id"]
           },
         ]
       }
@@ -2305,7 +2080,7 @@ export type Database = {
             foreignKeyName: "sources_google_experts_expert_id_fkey"
             columns: ["expert_id"]
             isOneToOne: false
-            referencedRelation: "experts"
+            referencedRelation: "expert_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2560,10 +2335,43 @@ export type Database = {
       }
       document_classifications_view: {
         Row: {
-          document_type: string | null
-          file_name: string | null
-          processed_content: Json | null
-          subject_classification: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          expected_json_schema: Json | null
+          id: string | null
+          is_ai_generated: boolean | null
+          is_general_type: boolean | null
+          mnemonic: string | null
+          name: string | null
+          prompt_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          expected_json_schema?: Json | null
+          id?: string | null
+          is_ai_generated?: boolean | null
+          is_general_type?: boolean | null
+          mnemonic?: string | null
+          name?: string | null
+          prompt_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          expected_json_schema?: Json | null
+          id?: string | null
+          is_ai_generated?: boolean | null
+          is_general_type?: boolean | null
+          mnemonic?: string | null
+          name?: string | null
+          prompt_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2614,7 +2422,7 @@ export type Database = {
             foreignKeyName: "sources_google_experts_expert_id_fkey"
             columns: ["expert_id"]
             isOneToOne: false
-            referencedRelation: "experts"
+            referencedRelation: "expert_profiles"
             referencedColumns: ["id"]
           },
         ]

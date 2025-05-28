@@ -15,7 +15,7 @@ export const ExpertMetadataDebug: React.FC = () => {
       try {
         const supabase = SupabaseClientService.getInstance().getClient();
         const { data, error } = await supabase
-          .from('experts')
+          .from('expert_profiles')
           .select('metadata')
           .eq('id', expertId)
           .single();

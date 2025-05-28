@@ -39,7 +39,7 @@ async function main() {
     
     // First check the experts table
     const { data: expert, error: expertError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name, full_name, metadata')
       .eq('id', expertId)
       .single();

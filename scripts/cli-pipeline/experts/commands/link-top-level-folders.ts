@@ -40,7 +40,7 @@ export async function linkTopLevelFolders(options: LinkTopLevelFoldersOptions): 
     loggerUtil.info('Fetching available experts...');
     
     const { data: experts, error: expertsError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name, full_name, expertise_area')
       .order('expert_name');
     

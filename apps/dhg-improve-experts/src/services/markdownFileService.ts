@@ -1456,15 +1456,15 @@ Documentation for auditing expert profiles and data.`
         console.log('Could not connect using profiles table, trying other tables...');
       }
       
-      // Try experts table which should exist in this app
+      // Try expert_profiles table which should exist in this app
       try {
-        const { error } = await supabase.from('experts').select('count(*)', { count: 'exact', head: true });
+        const { error } = await supabase.from('expert_profiles').select('count(*)', { count: 'exact', head: true });
         if (!error) {
-          console.log('Supabase connection validated via experts table');
+          console.log('Supabase connection validated via expert_profiles table');
           return true;
         }
       } catch (e) {
-        console.log('Could not connect using experts table, trying other tables...');
+        console.log('Could not connect using expert_profiles table, trying other tables...');
       }
       
       // Try with domains table

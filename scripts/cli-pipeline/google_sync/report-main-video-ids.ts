@@ -503,7 +503,7 @@ export async function reportMainVideoIds(
           expertId = sourceExperts[0].expert_id;
           
           const { data: expertData, error: expertError } = await supabase
-            .from('experts')
+            .from('expert_profiles')
             .select('expert_name, full_name')
             .eq('id', expertId)
             .single();

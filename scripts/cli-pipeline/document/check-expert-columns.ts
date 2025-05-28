@@ -12,7 +12,7 @@ async function main() {
   // First, check if the expert_documents table exists
   try {
     const { data: expert, error } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('*')
       .eq('id', expertId)
       .single();

@@ -119,7 +119,7 @@ async function fetchRemainingExpertDocuments(limit: number, expertName?: string)
     if (expertName) {
       // Get the expert ID
       const { data: expertData, error: expertError } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('id')
         .eq('expert_name', expertName)
         .single();

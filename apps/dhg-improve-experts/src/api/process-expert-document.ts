@@ -150,7 +150,7 @@ export async function processExpertDocument(req, res) {
         
         if (Object.keys(expertUpdateData).length > 0) {
           await supabase
-            .from('experts')
+            .from('expert_profiles')
             .update(expertUpdateData)
             .eq('id', document.expert_id);
         }

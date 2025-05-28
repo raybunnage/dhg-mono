@@ -29,7 +29,7 @@ async getEnhancedProfile(expertId: string): Promise<EnhancedExpertProfile | null
     
     // First try to get the expert data itself - it may have metadata
     const { data: expertData, error: expertError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('metadata')
       .eq('id', expertId)
       .single();

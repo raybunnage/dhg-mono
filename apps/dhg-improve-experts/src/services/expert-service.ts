@@ -34,7 +34,7 @@ export class ExpertService {
       Logger.debug('Getting all experts');
       
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .order('expert_name');
       
@@ -55,7 +55,7 @@ export class ExpertService {
       Logger.debug(`Getting expert by ID: ${id}`);
       
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .eq('id', id)
         .single();
@@ -77,7 +77,7 @@ export class ExpertService {
       Logger.debug(`Getting expert basic info by ID: ${id}`);
       
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('expert_name, full_name')
         .eq('id', id)
         .single();
@@ -128,7 +128,7 @@ export class ExpertService {
       Logger.debug(`Upserting expert: ${expert.expert_name}`);
       
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .upsert(expertData)
         .select()
         .single();
@@ -150,7 +150,7 @@ export class ExpertService {
       Logger.debug(`Deleting expert with ID: ${id}`);
       
       const { error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .delete()
         .eq('id', id);
       

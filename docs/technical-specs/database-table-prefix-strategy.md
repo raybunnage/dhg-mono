@@ -12,19 +12,12 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 
 ### 2. Document Management System - `doc_` . TRICKIER
 - `doc_types` (from `document_types`)
-- `doc_types_original` (from `document_types_original`)
 - `doc_type_aliases` (from `document_type_aliases`)
 - `doc_concepts` (from `document_concepts`)
 - `doc_files` (from `documentation_files`)
 - `doc_files_missing_ids` (from `documentation_files_missing_doc_ids`)
 - `doc_processing_queue` (from `documentation_processing_queue`)
 - `doc_sections` (from `documentation_sections`)
-
-### 3. Expert System - `expert_` . TRICKER
-- `expert_profiles` (from `experts`)
-- `expert_documents` (from `expert_documents`)
-- `expert_preferences` (from `expert_preferences`)
-- `expert_citation_aliases` (from `citation_expert_aliases`) . DONE
 
 ### 4. Google Drive Integration - `google_` . . TRICKIER
 - `google_sources` (from `sources_google`)
@@ -41,11 +34,16 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `media_topic_segments` (from `media_topic_segments`)
 - `media_bookmarks` (from `media_bookmarks`)
 
-### 8. Command & Analytics - `cmd_`   LATER   probably change to command
+
+### 3. Expert System - `expert_` . DONE
+- `expert_profiles` (from `experts`) DONE
+- `expert_documents` (from `expert_documents`)  DONE
+- `expert_citation_aliases` (from `citation_expert_aliases`) . DONE
+
+### 8. Command & Analytics - `cmd_`   DONE
 - `cmd_tracking` (from `cli_command_tracking`)   leave as is
 - `cmd_categories` (from `command_categories`)
 - `cmd_patterns` (from `command_patterns`)
-
 
 
 ### 1. Authentication & User Management - `auth_` . DONE

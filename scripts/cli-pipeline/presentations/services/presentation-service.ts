@@ -341,7 +341,7 @@ export class PresentationService {
   public async getExpertDetails(expertId: string): Promise<ExpertDetails | null> {
     try {
       const { data, error } = await this.supabaseClient
-        .from('experts')
+        .from('expert_profiles')
         .select('id, name')
         .eq('id', expertId)
         .single();
@@ -1977,7 +1977,7 @@ export class PresentationService {
               
               // Now get the expert name
               const { data: expert, error: expertError } = await this.supabaseClient
-                .from('experts')
+                .from('expert_profiles')
                 .select('expert_name')
                 .eq('id', expertId)
                 .single();
@@ -2428,7 +2428,7 @@ export class PresentationService {
             
             // Try to find the expert ID from the keyword
             const { data: expertData, error: expertError } = await this._supabaseClient
-              .from('experts')
+              .from('expert_profiles')
               .select('id, expert_name')
               .ilike('expert_name', `%${matchingExpertKeyword}%`)
               .limit(1);

@@ -66,7 +66,7 @@ function TestComponent() {
           if (!authError) {
             // Only run this query if auth succeeded
             const { data, error } = await supabase
-              .from('experts')
+              .from('expert_profiles')
               .select('count');
             if (!error) {
               console.log('Supabase test:', { data });

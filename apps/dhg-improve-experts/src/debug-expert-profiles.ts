@@ -10,7 +10,7 @@ async function testExpertProcessedContent() {
   
   // Get a list of experts
   const { data: experts, error: expertsError } = await supabase
-    .from('experts')
+    .from('expert_profiles')
     .select('id, expert_name, metadata')
     .limit(5);
   

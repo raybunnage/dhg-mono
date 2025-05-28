@@ -186,7 +186,7 @@ export async function listExperts(options: ListExpertsOptions): Promise<void> {
     
     // Get all experts
     const { data: experts, error: expertsError } = await supabase
-      .from('experts')
+      .from('expert_profiles')
       .select('id, expert_name, full_name, mnemonic')
       .order('expert_name')
       .limit(limit);

@@ -307,7 +307,7 @@ export async function extractTitlesCommand(options: ExtractTitlesOptions): Promi
       
       // First, get the expert ID for the given name
       const { data: expertData, error: expertError } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('id')
         .eq('expert_name', expertName)
         .single();

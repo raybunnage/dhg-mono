@@ -35,7 +35,7 @@ check_supabase() {
     async function testConnection() {
       try {
         const supabase = SupabaseClientService.getInstance().getClient();
-        const { data, error } = await supabase.from('experts').select('count(*)', { count: 'exact', head: true });
+        const { data, error } = await supabase.from('expert_profiles').select('count(*)', { count: 'exact', head: true });
         if (error) {
           console.log('❌ Supabase connection test failed:', error.message);
           return 1;

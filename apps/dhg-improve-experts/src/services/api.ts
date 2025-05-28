@@ -16,7 +16,7 @@ export const supabaseService = {
   async getExperts(): Promise<ApiResponse<any[]>> {
     try {
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
       
       if (error) throw error

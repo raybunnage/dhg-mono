@@ -1329,7 +1329,7 @@ export function Home() {
     try {
       // First try to get the expert's basic info to ensure we can display something
       const { data: expertData, error: expertError } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('id, full_name, expert_name, bio')
         .eq('id', expertId)
         .single();
@@ -1546,7 +1546,7 @@ export function Home() {
     
     try {
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .eq('id', expertId)
         .single();

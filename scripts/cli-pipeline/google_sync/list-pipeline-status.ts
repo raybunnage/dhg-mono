@@ -83,7 +83,7 @@ async function listPipelineStatus(options: {
     // Apply expert filter if provided
     if (options.expert) {
       const { data: expert, error: expertError } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('id')
         .eq('expert_name', options.expert)
         .single();
