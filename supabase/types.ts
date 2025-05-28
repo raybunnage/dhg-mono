@@ -542,48 +542,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cli_command_tracking: {
-        Row: {
-          affected_entity: string | null
-          command_name: string
-          created_at: string
-          duration_ms: number | null
-          error_message: string | null
-          execution_time: string
-          id: string
-          pipeline_name: string
-          records_affected: number | null
-          status: string
-          summary: string | null
-        }
-        Insert: {
-          affected_entity?: string | null
-          command_name: string
-          created_at?: string
-          duration_ms?: number | null
-          error_message?: string | null
-          execution_time: string
-          id?: string
-          pipeline_name: string
-          records_affected?: number | null
-          status: string
-          summary?: string | null
-        }
-        Update: {
-          affected_entity?: string | null
-          command_name?: string
-          created_at?: string
-          duration_ms?: number | null
-          error_message?: string | null
-          execution_time?: string
-          id?: string
-          pipeline_name?: string
-          records_affected?: number | null
-          status?: string
-          summary?: string | null
-        }
-        Relationships: []
-      }
       command_categories: {
         Row: {
           color: string | null
@@ -638,6 +596,48 @@ export type Database = {
           pattern?: string
           replacement?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      command_tracking: {
+        Row: {
+          affected_entity: string | null
+          command_name: string
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_time: string
+          id: string
+          pipeline_name: string
+          records_affected: number | null
+          status: string
+          summary: string | null
+        }
+        Insert: {
+          affected_entity?: string | null
+          command_name: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_time: string
+          id?: string
+          pipeline_name: string
+          records_affected?: number | null
+          status: string
+          summary?: string | null
+        }
+        Update: {
+          affected_entity?: string | null
+          command_name?: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_time?: string
+          id?: string
+          pipeline_name?: string
+          records_affected?: number | null
+          status?: string
+          summary?: string | null
         }
         Relationships: []
       }

@@ -28,7 +28,7 @@ async function analyzeGoogleSyncCommandUsage() {
   try {
     // 1. Get overall statistics for all google_sync commands
     const { data: commandStats, error: statsError } = await supabase
-      .from('cli_command_tracking')
+      .from('command_tracking')
       .select('*')
       .eq('pipeline_name', 'google_sync')
       .order('created_at', { ascending: false });

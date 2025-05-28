@@ -31,7 +31,7 @@ export interface CommandTrackingRecord {
 export class CommandTrackingService {
   private static instance: CommandTrackingService;
   private supabaseService: SupabaseClientService;
-  private TRACKING_TABLE = 'cli_command_tracking';
+  private TRACKING_TABLE = 'command_tracking';
   
   /**
    * Private constructor to enforce singleton pattern
@@ -303,7 +303,7 @@ export class CommandTrackingService {
   public async getCommandStats(): Promise<any[]> {
     try {
       const supabase = this.supabaseService.getClient();
-      const { data, error } = await supabase.rpc('get_cli_command_stats');
+      const { data, error } = await supabase.rpc('get_command_stats');
       
       if (error) {
         Logger.error(`Error fetching command stats: ${error.message}`);

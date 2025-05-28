@@ -36,7 +36,7 @@ export async function generateUsageReport(options: ReportOptions): Promise<void>
     
     // Get pipeline stats
     const { data: pipelineStats, error: pipelineError } = await supabase.rpc(
-      'get_cli_command_stats'
+      'get_command_stats'
     );
     
     if (pipelineError) {
@@ -53,7 +53,7 @@ export async function generateUsageReport(options: ReportOptions): Promise<void>
     
     // Get recent command executions for last used info
     const { data: recentCommands, error: recentError } = await supabase
-      .from('cli_command_tracking')
+      .from('command_tracking')
       .select('*')
       .gte('execution_time', recentDate.toISOString())
       .order('execution_time', { ascending: false });
