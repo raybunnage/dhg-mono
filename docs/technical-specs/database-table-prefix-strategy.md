@@ -47,6 +47,7 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `cmd_patterns` (from `command_patterns`)
 
 
+
 ### 1. Authentication & User Management - `auth_` . DONE
 - `auth_allowed_emails` (from `allowed_emails`)
 - `auth_user_profiles` (from `user_profiles_v2`)
@@ -75,6 +76,16 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `filter_user_profiles` (from `user_filter_profiles`)
 - `filter_user_profile_drives` (from `user_filter_profile_drives`)
 
+
+### 11. Processing & Batch Operations - `batch_` . PARTWAY DONE
+- `batch_processing` (from `processing_batches`) . DONE 
+- `batch_table_classifications` (from `table_classifications`) NEED TO THINK IT THROUGH
+
+
+### 7. Script Management - `script_` DONE
+- `script_registry` (from `scripts`)
+
+
 ### 12. System & Infrastructure - `sys_` . DONE
 - `sys_mime_types` (from `mime_types`) DONE
 DELETED
@@ -87,13 +98,6 @@ ARCHIVED
 - `sys_function_registry` (from `function_registry`)  archived
 
 
-
-### 7. Script Management - `script_` LATER
-- `script_registry` (from `scripts`)
-
-### 11. Processing & Batch Operations - `batch_` . LATER
-- `batch_processing` (from `processing_batches`)
-- `batch_table_classifications` (from `table_classifications`)
 
 
 

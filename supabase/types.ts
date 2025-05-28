@@ -127,15 +127,15 @@ export type Database = {
             foreignKeyName: "prompt_relationships_prompt_id_fkey"
             columns: ["prompt_id"]
             isOneToOne: false
-            referencedRelation: "ai_prompts"
-            referencedColumns: ["id"]
+            referencedRelation: "ai_prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
           },
           {
             foreignKeyName: "prompt_relationships_prompt_id_fkey"
             columns: ["prompt_id"]
             isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
+            referencedRelation: "ai_prompts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -166,31 +166,31 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
+            foreignKeyName: "ai_prompt_template_associations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_template_associations_view"
+            referencedColumns: ["prompt_id"]
+          },
+          {
+            foreignKeyName: "ai_prompt_template_associations_prompt_id_fkey"
             columns: ["prompt_id"]
             isOneToOne: false
             referencedRelation: "ai_prompts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            foreignKeyName: "ai_prompt_template_associations_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "ai_prompt_output_templates"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "prompt_template_associations_template_id_fkey"
+            foreignKeyName: "ai_prompt_template_associations_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
+            referencedRelation: "ai_prompt_template_associations_view"
             referencedColumns: ["template_id"]
           },
         ]
@@ -488,34 +488,59 @@ export type Database = {
           },
         ]
       }
-      citation_expert_aliases: {
+      batch_processing: {
         Row: {
-          alias_name: string
-          expert_id: number | null
-          expert_uuid: string
-          id: number
+          completed_at: string | null
+          created_at: string
+          error_details: string | null
+          error_message: string | null
+          id: string
+          item_ids: Json | null
+          priority: number | null
+          processed_duration_seconds: number | null
+          processed_files: number | null
+          processor_config: Json | null
+          resource_usage: Json | null
+          status: string
+          total_duration_seconds: number | null
+          total_files: number
+          updated_at: string
         }
         Insert: {
-          alias_name: string
-          expert_id?: number | null
-          expert_uuid: string
-          id?: number
+          completed_at?: string | null
+          created_at?: string
+          error_details?: string | null
+          error_message?: string | null
+          id?: string
+          item_ids?: Json | null
+          priority?: number | null
+          processed_duration_seconds?: number | null
+          processed_files?: number | null
+          processor_config?: Json | null
+          resource_usage?: Json | null
+          status: string
+          total_duration_seconds?: number | null
+          total_files: number
+          updated_at?: string
         }
         Update: {
-          alias_name?: string
-          expert_id?: number | null
-          expert_uuid?: string
-          id?: number
+          completed_at?: string | null
+          created_at?: string
+          error_details?: string | null
+          error_message?: string | null
+          id?: string
+          item_ids?: Json | null
+          priority?: number | null
+          processed_duration_seconds?: number | null
+          processed_files?: number | null
+          processor_config?: Json | null
+          resource_usage?: Json | null
+          status?: string
+          total_duration_seconds?: number | null
+          total_files?: number
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_expert_uuid"
-            columns: ["expert_uuid"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       cli_command_tracking: {
         Row: {
@@ -1169,6 +1194,35 @@ export type Database = {
           },
         ]
       }
+      expert_citation_aliases: {
+        Row: {
+          alias_name: string
+          expert_id: number | null
+          expert_uuid: string
+          id: number
+        }
+        Insert: {
+          alias_name: string
+          expert_id?: number | null
+          expert_uuid: string
+          id?: number
+        }
+        Update: {
+          alias_name?: string
+          expert_id?: number | null
+          expert_uuid?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_expert_uuid"
+            columns: ["expert_uuid"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expert_documents: {
         Row: {
           ai_summary_status:
@@ -1272,38 +1326,6 @@ export type Database = {
           },
         ]
       }
-      expert_preferences: {
-        Row: {
-          created_at: string
-          expert_id: string
-          id: string
-          preference_level: number | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          expert_id: string
-          id?: string
-          preference_level?: number | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          expert_id?: string
-          id?: string
-          preference_level?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "expert_preferences_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       experts: {
         Row: {
           created_at: string
@@ -1367,12 +1389,12 @@ export type Database = {
             foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "filter_user_profiles"
+            referencedRelation: "filter_user_profiless"
             referencedColumns: ["id"]
           },
         ]
       }
-      filter_user_profiles: {
+      filter_user_profiless: {
         Row: {
           created_at: string | null
           description: string | null
@@ -1932,61 +1954,7 @@ export type Database = {
           },
         ]
       }
-      processing_batches: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          error_details: string | null
-          error_message: string | null
-          id: string
-          item_ids: Json | null
-          priority: number | null
-          processed_duration_seconds: number | null
-          processed_files: number | null
-          processor_config: Json | null
-          resource_usage: Json | null
-          status: string
-          total_duration_seconds: number | null
-          total_files: number
-          updated_at: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          error_details?: string | null
-          error_message?: string | null
-          id?: string
-          item_ids?: Json | null
-          priority?: number | null
-          processed_duration_seconds?: number | null
-          processed_files?: number | null
-          processor_config?: Json | null
-          resource_usage?: Json | null
-          status: string
-          total_duration_seconds?: number | null
-          total_files: number
-          updated_at?: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          error_details?: string | null
-          error_message?: string | null
-          id?: string
-          item_ids?: Json | null
-          priority?: number | null
-          processed_duration_seconds?: number | null
-          processed_files?: number | null
-          processor_config?: Json | null
-          resource_usage?: Json | null
-          status?: string
-          total_duration_seconds?: number | null
-          total_files?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      scripts: {
+      scripts_registry: {
         Row: {
           ai_assessment: Json | null
           ai_generated_tags: string[] | null
@@ -2576,6 +2544,20 @@ export type Database = {
       }
     }
     Views: {
+      ai_prompt_template_associations_view: {
+        Row: {
+          association_created_at: string | null
+          association_id: string | null
+          association_updated_at: string | null
+          priority: number | null
+          prompt_id: string | null
+          prompt_name: string | null
+          template_description: string | null
+          template_id: string | null
+          template_name: string | null
+        }
+        Relationships: []
+      }
       document_classifications_view: {
         Row: {
           document_type: string | null
@@ -2584,6 +2566,30 @@ export type Database = {
           subject_classification: string | null
         }
         Relationships: []
+      }
+      learn_user_progress: {
+        Row: {
+          avg_completion: number | null
+          bookmarks_created: number | null
+          email: string | null
+          interested_topics: string[] | null
+          learning_goals: string[] | null
+          name: string | null
+          onboarding_completed: boolean | null
+          profile_completeness: number | null
+          total_minutes: number | null
+          user_id: string | null
+          videos_watched: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_v2_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       media_content_view: {
         Row: {
@@ -2609,100 +2615,6 @@ export type Database = {
             columns: ["expert_id"]
             isOneToOne: false
             referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prompt_template_associations: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          priority: number | null
-          prompt_id: string | null
-          template_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          priority?: number | null
-          prompt_id?: string | null
-          template_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          priority?: number | null
-          prompt_id?: string | null
-          template_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompt_output_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_template_associations_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_template_associations_view"
-            referencedColumns: ["template_id"]
-          },
-        ]
-      }
-      prompt_template_associations_view: {
-        Row: {
-          association_created_at: string | null
-          association_id: string | null
-          association_updated_at: string | null
-          priority: number | null
-          prompt_id: string | null
-          prompt_name: string | null
-          template_description: string | null
-          template_id: string | null
-          template_name: string | null
-        }
-        Relationships: []
-      }
-      user_learning_progress: {
-        Row: {
-          avg_completion: number | null
-          bookmarks_created: number | null
-          email: string | null
-          interested_topics: string[] | null
-          learning_goals: string[] | null
-          name: string | null
-          onboarding_completed: boolean | null
-          profile_completeness: number | null
-          total_minutes: number | null
-          user_id: string | null
-          videos_watched: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_profiles_v2_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
