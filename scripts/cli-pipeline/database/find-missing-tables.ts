@@ -8,7 +8,7 @@ async function findMissingTables() {
   const targetTables = [
     'prompt_output_templates',
     'prompt_template_associations',
-    'user_profiles_v2'
+    'auth_user_profiles'
   ];
 
   console.log('🔍 Searching for tables in the database...\n');

@@ -52,8 +52,8 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 ### 7. Script Management - `script_`
 - `script_registry` (from `scripts`)
 
-### 8. Command & Analytics - `cmd_`
-- `cmd_tracking` (from `cli_command_tracking`)
+### 8. Command & Analytics - `cmd_`   probably change to command
+- `cmd_tracking` (from `cli_command_tracking`)   leave as is
 - `cmd_categories` (from `command_categories`)
 - `cmd_patterns` (from `command_patterns`)
 

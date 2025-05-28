@@ -78,7 +78,7 @@ class ProfileService {
       console.log('[ProfileService] Saving to database:', dbProfile);
 
       const { data, error } = await supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .upsert(dbProfile, {
           onConflict: 'id'
         })
@@ -109,7 +109,7 @@ class ProfileService {
       const supabase = supabaseBrowserClient.getClient();
 
       const { data, error } = await supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('*')
         .eq('id', userId)
         .single();

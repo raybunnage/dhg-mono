@@ -8,7 +8,7 @@
  * - Email whitelist authentication
  * - Automatic profile collection for non-whitelisted users
  * - Uses auth_allowed_emails.id as universal user identifier
- * - Integrates with user_profiles_v2 table
+ * - Integrates with auth_user_profiles table
  * - localStorage session persistence
  * 
  * Following CLAUDE.md:

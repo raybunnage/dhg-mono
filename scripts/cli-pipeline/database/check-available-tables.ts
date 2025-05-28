@@ -16,7 +16,7 @@ async function checkAvailableTables() {
     'prompt_output_templates',
     'prompt_template_associations',
     'user_profiles',
-    'user_profiles_v2',
+    'auth_user_profiles',
     'profiles'
   ];
   

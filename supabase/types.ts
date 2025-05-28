@@ -159,36 +159,7 @@ export type Database = {
         }
         Relationships: []
       }
-      citation_expert_aliases: {
-        Row: {
-          alias_name: string
-          expert_id: number | null
-          expert_uuid: string
-          id: number
-        }
-        Insert: {
-          alias_name: string
-          expert_id?: number | null
-          expert_uuid: string
-          id?: number
-        }
-        Update: {
-          alias_name?: string
-          expert_id?: number | null
-          expert_uuid?: string
-          id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_expert_uuid"
-            columns: ["expert_uuid"]
-            isOneToOne: false
-            referencedRelation: "experts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cli_auth_tokens: {
+      auth_cli_tokens: {
         Row: {
           created_at: string | null
           expires_at: string | null
@@ -217,6 +188,139 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      auth_user_profiles: {
+        Row: {
+          avoided_topics: string[] | null
+          bio_summary: string | null
+          content_tags_following: string[] | null
+          created_at: string | null
+          credentials: string[] | null
+          current_challenges: string | null
+          id: string
+          industry_sectors: string[] | null
+          intended_application: string | null
+          interested_experts: string[] | null
+          interested_topics: string[] | null
+          last_activity: string | null
+          learning_background: string | null
+          learning_goals: string[] | null
+          learning_pace: string | null
+          onboarding_completed: boolean | null
+          preferred_depth: string | null
+          preferred_formats: string[] | null
+          preferred_session_length: number | null
+          priority_subjects: string[] | null
+          profession: string | null
+          professional_title: string | null
+          profile_completeness: number | null
+          reason_for_learning: string | null
+          referral_source: string | null
+          specialty_areas: string[] | null
+          time_commitment: string | null
+          updated_at: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          avoided_topics?: string[] | null
+          bio_summary?: string | null
+          content_tags_following?: string[] | null
+          created_at?: string | null
+          credentials?: string[] | null
+          current_challenges?: string | null
+          id: string
+          industry_sectors?: string[] | null
+          intended_application?: string | null
+          interested_experts?: string[] | null
+          interested_topics?: string[] | null
+          last_activity?: string | null
+          learning_background?: string | null
+          learning_goals?: string[] | null
+          learning_pace?: string | null
+          onboarding_completed?: boolean | null
+          preferred_depth?: string | null
+          preferred_formats?: string[] | null
+          preferred_session_length?: number | null
+          priority_subjects?: string[] | null
+          profession?: string | null
+          professional_title?: string | null
+          profile_completeness?: number | null
+          reason_for_learning?: string | null
+          referral_source?: string | null
+          specialty_areas?: string[] | null
+          time_commitment?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          avoided_topics?: string[] | null
+          bio_summary?: string | null
+          content_tags_following?: string[] | null
+          created_at?: string | null
+          credentials?: string[] | null
+          current_challenges?: string | null
+          id?: string
+          industry_sectors?: string[] | null
+          intended_application?: string | null
+          interested_experts?: string[] | null
+          interested_topics?: string[] | null
+          last_activity?: string | null
+          learning_background?: string | null
+          learning_goals?: string[] | null
+          learning_pace?: string | null
+          onboarding_completed?: boolean | null
+          preferred_depth?: string | null
+          preferred_formats?: string[] | null
+          preferred_session_length?: number | null
+          priority_subjects?: string[] | null
+          profession?: string | null
+          professional_title?: string | null
+          profile_completeness?: number | null
+          reason_for_learning?: string | null
+          referral_source?: string | null
+          specialty_areas?: string[] | null
+          time_commitment?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_v2_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      citation_expert_aliases: {
+        Row: {
+          alias_name: string
+          expert_id: number | null
+          expert_uuid: string
+          id: number
+        }
+        Insert: {
+          alias_name: string
+          expert_id?: number | null
+          expert_uuid: string
+          id?: number
+        }
+        Update: {
+          alias_name?: string
+          expert_id?: number | null
+          expert_uuid?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_expert_uuid"
+            columns: ["expert_uuid"]
+            isOneToOne: false
+            referencedRelation: "experts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cli_command_tracking: {
         Row: {
@@ -1655,24 +1759,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-        }
-        Relationships: []
-      }
       prompt_categories: {
         Row: {
           created_at: string | null
@@ -2690,110 +2776,6 @@ export type Database = {
           {
             foreignKeyName: "user_learning_analytics_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "auth_allowed_emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_profiles_v2: {
-        Row: {
-          avoided_topics: string[] | null
-          bio_summary: string | null
-          content_tags_following: string[] | null
-          created_at: string | null
-          credentials: string[] | null
-          current_challenges: string | null
-          id: string
-          industry_sectors: string[] | null
-          intended_application: string | null
-          interested_experts: string[] | null
-          interested_topics: string[] | null
-          last_activity: string | null
-          learning_background: string | null
-          learning_goals: string[] | null
-          learning_pace: string | null
-          onboarding_completed: boolean | null
-          preferred_depth: string | null
-          preferred_formats: string[] | null
-          preferred_session_length: number | null
-          priority_subjects: string[] | null
-          profession: string | null
-          professional_title: string | null
-          profile_completeness: number | null
-          reason_for_learning: string | null
-          referral_source: string | null
-          specialty_areas: string[] | null
-          time_commitment: string | null
-          updated_at: string | null
-          years_experience: number | null
-        }
-        Insert: {
-          avoided_topics?: string[] | null
-          bio_summary?: string | null
-          content_tags_following?: string[] | null
-          created_at?: string | null
-          credentials?: string[] | null
-          current_challenges?: string | null
-          id: string
-          industry_sectors?: string[] | null
-          intended_application?: string | null
-          interested_experts?: string[] | null
-          interested_topics?: string[] | null
-          last_activity?: string | null
-          learning_background?: string | null
-          learning_goals?: string[] | null
-          learning_pace?: string | null
-          onboarding_completed?: boolean | null
-          preferred_depth?: string | null
-          preferred_formats?: string[] | null
-          preferred_session_length?: number | null
-          priority_subjects?: string[] | null
-          profession?: string | null
-          professional_title?: string | null
-          profile_completeness?: number | null
-          reason_for_learning?: string | null
-          referral_source?: string | null
-          specialty_areas?: string[] | null
-          time_commitment?: string | null
-          updated_at?: string | null
-          years_experience?: number | null
-        }
-        Update: {
-          avoided_topics?: string[] | null
-          bio_summary?: string | null
-          content_tags_following?: string[] | null
-          created_at?: string | null
-          credentials?: string[] | null
-          current_challenges?: string | null
-          id?: string
-          industry_sectors?: string[] | null
-          intended_application?: string | null
-          interested_experts?: string[] | null
-          interested_topics?: string[] | null
-          last_activity?: string | null
-          learning_background?: string | null
-          learning_goals?: string[] | null
-          learning_pace?: string | null
-          onboarding_completed?: boolean | null
-          preferred_depth?: string | null
-          preferred_formats?: string[] | null
-          preferred_session_length?: number | null
-          priority_subjects?: string[] | null
-          profession?: string | null
-          professional_title?: string | null
-          profile_completeness?: number | null
-          reason_for_learning?: string | null
-          referral_source?: string | null
-          specialty_areas?: string[] | null
-          time_commitment?: string | null
-          updated_at?: string | null
-          years_experience?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_profiles_v2_id_fkey"
-            columns: ["id"]
             isOneToOne: true
             referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]

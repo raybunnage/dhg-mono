@@ -6,7 +6,7 @@
  * - If not, collect comprehensive profile and auto-add
  * - No email verification required
  * - Uses allowed_emails.id as universal user ID
- * - Integrates with user_profiles_v2 table
+ * - Integrates with auth_user_profiles table
  */
 
 import { lightAuthService } from '@shared/services/light-auth-service';

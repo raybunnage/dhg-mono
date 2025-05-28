@@ -6,7 +6,7 @@ async function checkTableDependencies() {
     console.log('🔍 Checking table dependencies for prompt and user profile tables...\n');
 
     const supabase = SupabaseClientService.getInstance().getClient();
-    const tablesToCheck = ['prompt_output_templates', 'prompt_template_associations', 'user_profiles_v2'];
+    const tablesToCheck = ['prompt_output_templates', 'prompt_template_associations', 'auth_user_profiles'];
 
     for (const tableName of tablesToCheck) {
         console.log(`\n📋 Checking table: ${tableName}`);

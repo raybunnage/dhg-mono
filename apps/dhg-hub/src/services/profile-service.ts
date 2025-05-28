@@ -8,7 +8,7 @@ export interface UserProfile {
   avatar_url?: string | null;
   created_at: string;
   updated_at: string;
-  // Full profile data from user_profiles_v2
+  // Full profile data from auth_user_profiles
   profession?: string;
   professional_title?: string;
   years_experience?: number;
@@ -57,7 +57,7 @@ class ProfileService {
   async getProfile(userId: string): Promise<ProfileServiceResult> {
     try {
       const { data, error } = await supabaseBrowser.getClient()
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('*')
         .eq('id', userId)
         .single();

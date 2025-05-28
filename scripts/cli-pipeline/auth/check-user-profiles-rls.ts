@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
 
 /**
- * Check RLS policies for user_profiles_v2 table
+ * Check RLS policies for auth_user_profiles table
  * 
- * This script checks the Row Level Security policies for the user_profiles_v2 table
+ * This script checks the Row Level Security policies for the auth_user_profiles table
  * and tests if a specific user can insert/update records
  */
 
@@ -40,7 +40,7 @@ async function checkRLSPolicies() {
     // Check existing profile
     console.log('\n2. Checking if profile already exists...');
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles_v2')
+      .from('auth_user_profiles')
       .select('*')
       .eq('id', userId)
       .single();
@@ -54,9 +54,9 @@ async function checkRLSPolicies() {
     }
     
     // Get RLS policies
-    console.log('\n3. Checking RLS policies for user_profiles_v2...');
+    console.log('\n3. Checking RLS policies for auth_user_profiles...');
     const { data: policies, error: policyError } = await supabase
-      .rpc('get_table_policies', { table_name: 'user_profiles_v2' });
+      .rpc('get_table_policies', { table_name: 'auth_user_profiles' });
     
     if (policyError) {
       console.error('Error getting policies:', policyError);
@@ -65,7 +65,7 @@ async function checkRLSPolicies() {
       const { data: altPolicies, error: altError } = await supabase
         .from('pg_policies')
         .select('*')
-        .eq('tablename', 'user_profiles_v2');
+        .eq('tablename', 'auth_user_profiles');
       
       if (!altError && altPolicies) {
         console.log('Found policies:', altPolicies);
@@ -85,13 +85,13 @@ async function checkRLSPolicies() {
     };
     
     const { error: insertError } = await supabase
-      .from('user_profiles_v2')
+      .from('auth_user_profiles')
       .insert(testData);
     
     if (insertError) {
       console.error('Insert test failed:', insertError);
       console.log('\nThis indicates an RLS policy is blocking the insert.');
-      console.log('The user_profiles_v2 table likely requires:');
+      console.log('The auth_user_profiles table likely requires:');
       console.log('- User must be authenticated');
       console.log('- User can only insert their own profile (id must match auth.uid())');
       console.log('- Or user must have specific role/permission');
@@ -100,7 +100,7 @@ async function checkRLSPolicies() {
       
       // Clean up test data
       await supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .delete()
         .eq('id', userId)
         .eq('profession', 'Test');

@@ -29,7 +29,7 @@ export const TestProfilePage: React.FC = () => {
       console.log('Attempting to save:', testData);
 
       const { data, error } = await supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .upsert(testData)
         .select()
         .single();

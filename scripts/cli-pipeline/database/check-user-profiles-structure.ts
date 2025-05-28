@@ -3,7 +3,7 @@
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function checkUserProfilesStructure() {
-    console.log('🔍 Checking user_profiles_v2 table structure...\n');
+    console.log('🔍 Checking auth_user_profiles table structure...\n');
 
     const supabase = SupabaseClientService.getInstance().getClient();
 
@@ -17,7 +17,7 @@ async function checkUserProfilesStructure() {
                     is_nullable,
                     column_default
                 FROM information_schema.columns 
-                WHERE table_name = 'user_profiles_v2'
+                WHERE table_name = 'auth_user_profiles'
                 AND table_schema = 'backup'
                 ORDER BY ordinal_position;
             `
@@ -26,7 +26,7 @@ async function checkUserProfilesStructure() {
         if (error) {
             console.log(`❌ Error checking backup schema: ${error.message}`);
         } else if (columns && columns.length > 0) {
-            console.log('✅ Found user_profiles_v2 in backup schema');
+            console.log('✅ Found auth_user_profiles in backup schema');
             console.log('\n📊 Table Structure:');
             columns.forEach((col: any) => {
                 console.log(`  - ${col.column_name}: ${col.data_type}${col.is_nullable === 'NO' ? ' NOT NULL' : ''}`);
@@ -34,7 +34,7 @@ async function checkUserProfilesStructure() {
 
             // Get sample data
             const { data: sampleData, error: sampleError } = await supabase.rpc('execute_sql', {
-                sql_query: `SELECT * FROM backup.user_profiles_v2 LIMIT 3;`
+                sql_query: `SELECT * FROM backup.auth_user_profiles LIMIT 3;`
             });
 
             if (!sampleError && sampleData) {
@@ -42,7 +42,7 @@ async function checkUserProfilesStructure() {
                 console.log(JSON.stringify(sampleData, null, 2));
             }
         } else {
-            console.log('❌ user_profiles_v2 not found in backup schema');
+            console.log('❌ auth_user_profiles not found in backup schema');
         }
     } catch (error) {
         console.log(`❌ Error: ${error}`);
@@ -58,20 +58,20 @@ async function checkUserProfilesStructure() {
                     is_nullable,
                     column_default
                 FROM information_schema.columns 
-                WHERE table_name = 'user_profiles_v2'
+                WHERE table_name = 'auth_user_profiles'
                 AND table_schema = 'public'
                 ORDER BY ordinal_position;
             `
         });
 
         if (!publicError && publicColumns && publicColumns.length > 0) {
-            console.log('\n✅ Found user_profiles_v2 in public schema too');
+            console.log('\n✅ Found auth_user_profiles in public schema too');
             console.log('\n📊 Public Table Structure:');
             publicColumns.forEach((col: any) => {
                 console.log(`  - ${col.column_name}: ${col.data_type}${col.is_nullable === 'NO' ? ' NOT NULL' : ''}`);
             });
         } else {
-            console.log('\n❌ user_profiles_v2 not found in public schema');
+            console.log('\n❌ auth_user_profiles not found in public schema');
         }
     } catch (error) {
         console.log(`❌ Error checking public schema: ${error}`);

@@ -1,7 +1,7 @@
 /**
  * User Profile Service - Shared Service
  * 
- * Manages user profiles in the user_profiles_v2 table
+ * Manages user profiles in the auth_user_profiles table
  * Uses allowed_emails.id as the universal user identifier
  * 
  * Following CLAUDE.md:
@@ -15,9 +15,9 @@ import { SupabaseClientService } from '../supabase-client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../../../supabase/types';
 
-type UserProfile = Database['public']['Tables']['user_profiles_v2']['Row'];
-type UserProfileInsert = Database['public']['Tables']['user_profiles_v2']['Insert'];
-type UserProfileUpdate = Database['public']['Tables']['user_profiles_v2']['Update'];
+type UserProfile = Database['public']['Tables']['auth_user_profiles']['Row'];
+type UserProfileInsert = Database['public']['Tables']['auth_user_profiles']['Insert'];
+type UserProfileUpdate = Database['public']['Tables']['auth_user_profiles']['Update'];
 
 export interface ProfileFormData {
   // Professional Background
@@ -97,7 +97,7 @@ class UserProfileService {
     try {
       this.ensureSupabase();
       const { data, error } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('*')
         .eq('id', allowedEmailId)
         .single();
@@ -164,7 +164,7 @@ class UserProfileService {
       
       // Use upsert to handle both create and update
       const { data, error } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .upsert(profileRecord, {
           onConflict: 'id',
           ignoreDuplicates: false
@@ -192,7 +192,7 @@ class UserProfileService {
     try {
       this.ensureSupabase();
       const { data, error } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .update({
           ...updates,
           last_activity: new Date().toISOString()

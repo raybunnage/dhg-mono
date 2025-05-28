@@ -296,7 +296,7 @@ class LightAuthBrowserService {
   async getUserProfile(userId: string): Promise<{ success: boolean; profile?: any; error?: string }> {
     try {
       const { data, error } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('*')
         .eq('id', userId)
         .single();
@@ -317,7 +317,7 @@ class LightAuthBrowserService {
   async hasCompletedOnboarding(userId: string): Promise<boolean> {
     try {
       const { data, error } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('id')
         .eq('id', userId)
         .single();

@@ -25,7 +25,7 @@ class UserProfileBrowserService {
       
       // First check if profile already exists
       const { data: existing, error: checkError } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('id')
         .eq('id', userId)
         .single();
@@ -44,7 +44,7 @@ class UserProfileBrowserService {
       if (existing) {
         // Update existing profile
         result = await this.supabase
-          .from('user_profiles_v2')
+          .from('auth_user_profiles')
           .update(profileRecord)
           .eq('id', existing.id)
           .select()
@@ -52,7 +52,7 @@ class UserProfileBrowserService {
       } else {
         // Create new profile
         result = await this.supabase
-          .from('user_profiles_v2')
+          .from('auth_user_profiles')
           .insert({
             id: userId, // Add the required id field
             ...profileRecord,

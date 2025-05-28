@@ -110,7 +110,7 @@ class DhgHubLightAuthService {
 
       // Check if user has a profile
       const { data: profiles } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .select('*')
         .eq('id', allowedEmail.id);
 
@@ -182,7 +182,7 @@ class DhgHubLightAuthService {
 
       // Create user profile
       const { data: userProfile, error: profileError } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .insert({
           id: allowedEmail.id,
           ...data.profile,
@@ -229,7 +229,7 @@ class DhgHubLightAuthService {
   async createProfile(userId: string, profileData: any): Promise<{ profile: any | null; error: Error | null }> {
     try {
       const { data: profile, error } = await this.supabase
-        .from('user_profiles_v2')
+        .from('auth_user_profiles')
         .insert({
           id: userId,
           ...profileData,

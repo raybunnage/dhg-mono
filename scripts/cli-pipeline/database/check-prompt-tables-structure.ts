@@ -60,7 +60,7 @@ async function checkPromptTablesStructure() {
   console.log('Checking for references to missing tables in prompts table...');
   console.log('='.repeat(60));
   
-  const missingTables = ['prompt_output_templates', 'prompt_template_associations', 'user_profiles_v2'];
+  const missingTables = ['prompt_output_templates', 'prompt_template_associations', 'auth_user_profiles'];
   
   for (const missingTable of missingTables) {
     const { data, error } = await supabase
@@ -76,9 +76,9 @@ async function checkPromptTablesStructure() {
     }
   }
   
-  // Check profiles table structure (since user_profiles_v2 is missing)
+  // Check profiles table structure (since auth_user_profiles is missing)
   console.log(`\n\n${'='.repeat(60)}`);
-  console.log('Checking profiles table (potential replacement for user_profiles_v2)');
+  console.log('Checking profiles table (potential replacement for auth_user_profiles)');
   console.log('='.repeat(60));
   
   const { data: profileData, error: profileError, count: profileCount } = await supabase

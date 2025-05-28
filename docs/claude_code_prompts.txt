@@ -32,7 +32,48 @@ Table Rename Command Instructions
  ./scripts/cli-pipeline/database/database-cli.sh rename-table allowed_emails auth_allowed_emails
  ./scripts/cli-pipeline/database/database-cli.sh rename-table cli_auth_tokens auth_cli_tokens
  ./scripts/cli-pipeline/database/database-cli.sh rename-table user_profiles_v2 auth_user_profiles
-- `auth_user_profiles` (from `user_profiles_v2`)
+
+
+
+Perfect! I've successfully updated all references from user_profiles_v2 to auth_user_profiles across the codebase. Here's a summary of the changes:
+
+  Updated Files (17 total):
+
+  1. Shared Services:
+
+  - packages/shared/services/user-profile-service/user-profile-service.ts - Updated table references in type definitions and all database queries
+  - packages/shared/services/light-auth-enhanced-service/light-auth-enhanced-service.ts - Updated comment
+
+  2. dhg-audio App:
+
+  - apps/dhg-audio/src/services/light-auth-browser-service.ts - Updated 2 queries
+  - apps/dhg-audio/src/services/user-profile-browser-service.ts - Updated 4 queries (select, update, insert)
+  - apps/dhg-audio/src/pages/TestProfilePage.tsx - Updated test query
+  - apps/dhg-audio/src/services/profile-service.ts - Updated 2 queries (upsert, select)
+  - apps/dhg-audio/src/services/light-auth-service.ts - Updated comment
+
+  3. dhg-hub App:
+
+  - apps/dhg-hub/src/services/dhg-hub-light-auth-service.ts - Updated 3 queries
+  - apps/dhg-hub/src/services/profile-service.ts - Updated comment and query
+  - apps/dhg-hub/src/services/user-profile-browser-service.ts - Updated 3 queries
+
+  4. Scripts:
+
+  - scripts/cli-pipeline/auth/check-user-profiles-rls.ts - Updated all references
+  - scripts/cli-pipeline/database/find-missing-tables.ts - Updated target tables list
+  - scripts/cli-pipeline/database/verify-tables-moved.ts - Updated tables to check
+  - scripts/cli-pipeline/database/check-prompt-tables-structure.ts - Updated missing tables list
+  - scripts/cli-pipeline/database/check-user-profiles-structure.ts - Updated all SQL queries
+  - scripts/cli-pipeline/database/check-table-dependencies.ts - Updated tables to check
+  - scripts/cli-pipeline/database/check-available-tables.ts - Updated common tables list
+
+  Remaining References:
+
+  - supabase/types.ts - This is an auto-generated file and should not be manually modified
+
+  All functional code now correctly references auth_user_profiles instead of user_profiles_v2. The ProfileForm component itself doesn't contain any
+  database references, so no changes were needed there.
 
 
 I've successfully updated all references from allowed_emails to auth_allowed_emails across the codebase. Here's a summary of the changes:
