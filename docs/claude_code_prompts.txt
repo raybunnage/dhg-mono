@@ -30,9 +30,41 @@ Table Rename Command Instructions
   ./scripts/cli-pipeline/database/database-cli.sh rename-table old_table_name new_table_name
 
  ./scripts/cli-pipeline/database/database-cli.sh rename-table allowed_emails auth_allowed_emails
- ./scripts/cli-pipeline/database/database-cli.sh rename-table allowed_emails auth_allowed_emails
+ ./scripts/cli-pipeline/database/database-cli.sh rename-table cli_auth_tokens auth_cli_tokens
+ ./scripts/cli-pipeline/database/database-cli.sh rename-table user_profiles_v2 auth_user_profiles
+- `auth_user_profiles` (from `user_profiles_v2`)
 
 
+I've successfully updated all references from allowed_emails to auth_allowed_emails across the codebase. Here's a summary of the changes:
+
+  Updated Files (21 total):
+  1. Shared Services:
+    - light-auth-enhanced-service.ts (6 occurrences)
+    - auth-service.ts (1 occurrence)
+    - browser-auth-service.ts (3 occurrences)
+  2. App Services:
+    - dhg-audio: light-auth-browser-service.ts (2), light-auth-service-simple.ts (1), auth-service.ts (1), supabase-browser.ts (1)
+    - dhg-hub: dhg-hub-light-auth-service.ts (6)
+    - dhg-admin-config: AllowedEmailsManagement.tsx (7), LoginStatistics.tsx (2)
+  3. Scripts/Tests:
+    - test-light-auth-login-tracking.ts (6)
+    - test-light-auth-with-allowed-email.ts (1)
+    - verify-light-auth-user-id.ts (8)
+    - test-light-auth-audit-logging.ts (2)
+    - find-missing-tables.ts (1)
+    - verify-user-roles-removal.ts (11)
+    - check-tables-existence.ts (2)
+    - check-user-profiles-rls.ts (3)
+    - verify-email-allowlist-migration.ts (6)
+    - check-auth-migration-objects.ts (1)
+    - check-and-create-rls-policies.ts (1)
+
+  Remaining References:
+  - supabase/types.ts - Auto-generated file (should not be modified)
+  - Archive/backup files - Historical files (should not be modified)
+  - Comments in service files - Conceptual references, not table names
+
+  All functional code now correctly uses auth_allowed_emails as the table name.
 
   This will:
   - Rename old_table_name to new_table_name

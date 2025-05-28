@@ -15,7 +15,7 @@ async function testLightAuthLoginTracking() {
     // Step 1: Get an allowed email to test with
     console.log('📋 Step 1: Getting a test allowed email');
     const { data: allowedEmails, error: emailError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('*')
       .eq('is_active', true)
       .limit(1);
@@ -35,7 +35,7 @@ async function testLightAuthLoginTracking() {
     
     const currentCount = testEmail.login_count || 0;
     const { error: updateError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .update({
         last_login_at: new Date().toISOString(),
         login_count: currentCount + 1
@@ -52,7 +52,7 @@ async function testLightAuthLoginTracking() {
     // Step 3: Verify the update
     console.log('\n📋 Step 3: Verifying the update');
     const { data: updatedEmail, error: verifyError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('*')
       .eq('id', testEmail.id)
       .single();
@@ -93,7 +93,7 @@ async function testLightAuthLoginTracking() {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between updates
       
       const { data: current } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('login_count')
         .eq('id', testEmail.id)
         .single();
@@ -101,7 +101,7 @@ async function testLightAuthLoginTracking() {
       const newCount = (current?.login_count || 0) + 1;
       
       await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({
           last_login_at: new Date().toISOString(),
           login_count: newCount
@@ -113,7 +113,7 @@ async function testLightAuthLoginTracking() {
 
     // Final check
     const { data: finalEmail } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('*')
       .eq('id', testEmail.id)
       .single();

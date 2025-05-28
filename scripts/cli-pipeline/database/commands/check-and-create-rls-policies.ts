@@ -398,7 +398,7 @@ Examples:
   check-and-create-rls-policies
   
   # Check and create policies for a specific table
-  check-and-create-rls-policies --table allowed_emails
+  check-and-create-rls-policies --table auth_allowed_emails
 
 This command will:
 1. Find all non-backup tables in the public schema

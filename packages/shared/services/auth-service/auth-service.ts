@@ -1041,7 +1041,7 @@ export class AuthService {
   public async getAllowedEmails(): Promise<AllowedEmail[]> {
     try {
       const { data, error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('is_active', true)
         .order('email', { ascending: true });

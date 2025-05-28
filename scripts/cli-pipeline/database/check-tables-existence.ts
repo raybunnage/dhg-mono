@@ -5,7 +5,7 @@ async function checkTablesExistence() {
   
   const supabase = SupabaseClientService.getInstance().getClient();
   
-  const tablesToCheck = ['user_roles', 'allowed_emails', 'access_requests'];
+  const tablesToCheck = ['user_roles', 'auth_allowed_emails', 'access_requests'];
   
   // First, let's use the execute_sql function to check table existence
   const { data: sqlResult, error: sqlError } = await supabase.rpc('execute_sql', {
@@ -13,7 +13,7 @@ async function checkTablesExistence() {
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public' 
-      AND table_name IN ('user_roles', 'allowed_emails', 'access_requests')
+      AND table_name IN ('user_roles', 'auth_allowed_emails', 'access_requests')
     `
   });
   

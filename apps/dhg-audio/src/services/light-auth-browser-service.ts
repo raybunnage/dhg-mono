@@ -53,7 +53,7 @@ class LightAuthBrowserService {
   async registerUser(profile: any): Promise<any> {
     try {
       const { data: allowedEmail, error: allowError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .insert({
           email: profile.email.toLowerCase(),
           name: profile.name,
@@ -92,7 +92,7 @@ class LightAuthBrowserService {
 
       // Get the allowed email record
       const { data: allowedEmail, error: emailError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('email', email.toLowerCase())
         .single();

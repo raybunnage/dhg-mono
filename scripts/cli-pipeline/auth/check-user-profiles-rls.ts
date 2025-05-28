@@ -23,18 +23,18 @@ async function checkRLSPolicies() {
   try {
     const supabase = SupabaseClientService.getInstance().getClient();
     
-    // Check if user exists in allowed_emails
-    console.log('\n1. Checking if user exists in allowed_emails table...');
+    // Check if user exists in auth_allowed_emails
+    console.log('\n1. Checking if user exists in auth_allowed_emails table...');
     const { data: allowedEmail, error: allowedError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('*')
       .eq('id', userId)
       .single();
     
     if (allowedError) {
-      console.error('Error checking allowed_emails:', allowedError);
+      console.error('Error checking auth_allowed_emails:', allowedError);
     } else {
-      console.log('User found in allowed_emails:', allowedEmail);
+      console.log('User found in auth_allowed_emails:', allowedEmail);
     }
     
     // Check existing profile

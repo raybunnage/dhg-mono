@@ -7,7 +7,7 @@
  * Features:
  * - Email whitelist authentication
  * - Automatic profile collection for non-whitelisted users
- * - Uses allowed_emails.id as universal user identifier
+ * - Uses auth_allowed_emails.id as universal user identifier
  * - Integrates with user_profiles_v2 table
  * - localStorage session persistence
  * 
@@ -85,7 +85,7 @@ class SimpleLightAuthService implements LightAuthService {
   async registerUser(profile: any): Promise<any> {
     try {
       const { data: allowedEmail, error: allowError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .insert({
           email: profile.email.toLowerCase(),
           name: profile.name,
@@ -144,7 +144,7 @@ class SimpleLightAuthService implements LightAuthService {
       }
 
       const { data: allowedEmail, error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('email', email.toLowerCase())
         .eq('is_active', true)
@@ -207,7 +207,7 @@ class SimpleLightAuthService implements LightAuthService {
   async getAllowedEmails(): Promise<any[]> {
     try {
       const { data, error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('is_active', true)
         .order('email', { ascending: true });
@@ -227,7 +227,7 @@ class SimpleLightAuthService implements LightAuthService {
   async removeFromWhitelist(email: string): Promise<any> {
     try {
       const { error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({ is_active: false })
         .eq('email', email.toLowerCase());
 
@@ -573,13 +573,13 @@ class LightAuthEnhancedService {
   // ===== LOGIN TRACKING METHODS =====
 
   /**
-   * Update login tracking fields in allowed_emails
+   * Update login tracking fields in auth_allowed_emails
    */
   private async updateLoginTracking(userId: string): Promise<void> {
     try {
       // First get current login count
       const { data: currentData, error: fetchError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('login_count')
         .eq('id', userId)
         .single();
@@ -593,7 +593,7 @@ class LightAuthEnhancedService {
 
       // Update last_login_at and increment login_count
       const { error: updateError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({
           last_login_at: new Date().toISOString(),
           login_count: currentCount + 1

@@ -12,9 +12,7 @@ Based on analysis of the 56 existing tables, here are the recommended prefixes f
 - `auth_allowed_emails` (from `allowed_emails`)
 - `auth_user_profiles` (from `user_profiles_v2`)
 - `auth_audit_log` (from `auth_audit_log`)
-- `auth_access_requests` (from `access_requests`)
 - `auth_cli_tokens` (from `cli_auth_tokens`)
-- `auth_profiles` (from `profiles`)
 
 ### 2. Document Management System - `doc_`
 - `doc_types` (from `document_types`)

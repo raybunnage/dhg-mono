@@ -91,7 +91,7 @@ class DhgHubLightAuthService {
       }
 
       const { data: allowedEmail, error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('email', email.toLowerCase())
         .eq('is_active', true)
@@ -165,7 +165,7 @@ class DhgHubLightAuthService {
     try {
       // First, add to allowed emails
       const { data: allowedEmail, error: allowError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .insert({
           email: data.email.toLowerCase(),
           name: data.name,
@@ -195,7 +195,7 @@ class DhgHubLightAuthService {
         console.error('Error creating profile:', profileError);
         // Rollback allowed email creation
         await this.supabase
-          .from('allowed_emails')
+          .from('auth_allowed_emails')
           .delete()
           .eq('id', allowedEmail.id);
         return { success: false, error: profileError.message };
@@ -261,7 +261,7 @@ class DhgHubLightAuthService {
 
       // Get updated user data
       const { data: allowedEmail } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('id', userId)
         .single();
@@ -295,7 +295,7 @@ class DhgHubLightAuthService {
   }
 
   /**
-   * Update login tracking fields in allowed_emails
+   * Update login tracking fields in auth_allowed_emails
    */
   private async updateLoginTracking(userId: string): Promise<void> {
     try {
@@ -303,7 +303,7 @@ class DhgHubLightAuthService {
       
       // First get current login count
       const { data: currentData, error: fetchError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('login_count')
         .eq('id', userId)
         .single();
@@ -318,7 +318,7 @@ class DhgHubLightAuthService {
 
       // Update last_login_at and increment login_count
       const { error: updateError } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({
           last_login_at: new Date().toISOString(),
           login_count: currentCount + 1

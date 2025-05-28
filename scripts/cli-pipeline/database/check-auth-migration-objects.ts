@@ -9,7 +9,7 @@ async function checkAuthMigrationObjects() {
 
   // Check for tables
   console.log('=== CHECKING TABLES ===');
-  const tablesToCheck = ['allowed_emails', 'access_requests', 'user_roles'];
+  const tablesToCheck = ['auth_allowed_emails', 'access_requests', 'user_roles'];
   
   for (const tableName of tablesToCheck) {
     const { data, error } = await supabase

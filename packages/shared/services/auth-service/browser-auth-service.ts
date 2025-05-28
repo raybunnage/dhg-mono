@@ -302,7 +302,7 @@ class BrowserAuthService {
   async getAllowedEmails(): Promise<AllowedEmail[]> {
     try {
       const { data, error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .order('email', { ascending: true });
 
@@ -421,7 +421,7 @@ class BrowserAuthService {
   async updateAllowedEmail(emailId: string, updates: Partial<AllowedEmail>): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update(updates)
         .eq('id', emailId);
 
@@ -443,7 +443,7 @@ class BrowserAuthService {
   async deleteAllowedEmail(emailId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await this.supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .delete()
         .eq('id', emailId);
 

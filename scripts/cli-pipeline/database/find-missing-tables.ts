@@ -51,7 +51,7 @@ async function findMissingTables() {
     'templates',
     'user_profiles',
     'profiles',
-    'allowed_emails',
+    'auth_allowed_emails',
     'command_history'
   ];
 

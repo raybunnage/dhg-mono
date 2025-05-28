@@ -25,7 +25,7 @@ async function verifyEmailAllowlistMigration() {
 
     // Test with an allowed email (if any exist)
     const { data: allowedEmails, error: listError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('email')
       .limit(1);
     
@@ -45,18 +45,18 @@ async function verifyEmailAllowlistMigration() {
     console.error('   ❌ Failed to test is_email_allowed function:', error);
   }
 
-  // Test 2: Check if allowed_emails table exists
-  console.log('\n2. Checking allowed_emails table:');
+  // Test 2: Check if auth_allowed_emails table exists
+  console.log('\n2. Checking auth_allowed_emails table:');
   try {
     const { data, error, count } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('*', { count: 'exact', head: false })
       .limit(5);
     
     if (error) {
-      console.error('   ❌ Error accessing allowed_emails table:', error.message);
+      console.error('   ❌ Error accessing auth_allowed_emails table:', error.message);
     } else {
-      console.log(`   ✅ allowed_emails table exists with ${count || 0} entries`);
+      console.log(`   ✅ auth_allowed_emails table exists with ${count || 0} entries`);
       if (data && data.length > 0) {
         console.log('   Sample entries:');
         data.forEach(entry => {
@@ -65,7 +65,7 @@ async function verifyEmailAllowlistMigration() {
       }
     }
   } catch (error) {
-    console.error('   ❌ Failed to check allowed_emails table:', error);
+    console.error('   ❌ Failed to check auth_allowed_emails table:', error);
   }
 
   // Test 3: Check user_profiles table for professional columns
@@ -146,7 +146,7 @@ async function verifyEmailAllowlistMigration() {
       
       // Clean up test email
       const { error: deleteError } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .delete()
         .eq('email', testEmail);
       

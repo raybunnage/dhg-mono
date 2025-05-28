@@ -202,9 +202,9 @@ export const LoginStatistics: React.FC = () => {
         .map(([auth_method, count]) => ({ auth_method, count }))
         .sort((a, b) => b.count - a.count);
 
-      // Get top users from allowed_emails with login counts
+      // Get top users from auth_allowed_emails with login counts
       const { data: topUsersData, error: topUsersError } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('id, email, login_count, last_login_at')
         .not('login_count', 'is', null)
         .gt('login_count', 0)

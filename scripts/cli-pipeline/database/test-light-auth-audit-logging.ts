@@ -132,11 +132,11 @@ async function testLightAuthAuditLogging() {
       });
     }
 
-    // Cleanup: Remove test user from allowed_emails
+    // Cleanup: Remove test user from auth_allowed_emails
     if (userId) {
-      console.log('\n🧹 Cleanup: Removing test user from allowed_emails');
+      console.log('\n🧹 Cleanup: Removing test user from auth_allowed_emails');
       const { error: cleanupError } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({ is_active: false })
         .eq('email', TEST_EMAIL);
 

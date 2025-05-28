@@ -15,7 +15,7 @@ async function testLightAuthWithAllowedEmail() {
     // Step 1: Get an existing allowed email
     console.log('📋 Step 1: Getting an existing allowed email');
     const { data: allowedEmails, error: emailError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('*')
       .eq('is_active', true)
       .limit(1);

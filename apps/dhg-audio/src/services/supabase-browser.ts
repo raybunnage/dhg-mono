@@ -63,7 +63,7 @@ class SupabaseBrowserClient {
   public async testConnection(): Promise<boolean> {
     try {
       const client = this.getClient();
-      const { error } = await client.from('allowed_emails').select('id').limit(1);
+      const { error } = await client.from('auth_allowed_emails').select('id').limit(1);
       
       if (error) {
         console.error('[SupabaseBrowserClient] Connection test failed:', error);

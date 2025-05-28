@@ -41,15 +41,15 @@ async function verifyLightAuthUserId() {
         console.log(`   User ID: ${log.user_id}`);
         console.log(`   Email: ${log.metadata?.email || 'N/A'}`);
 
-        // Step 2: Check if this user_id exists in allowed_emails
+        // Step 2: Check if this user_id exists in auth_allowed_emails
         const { data: allowedEmail, error: emailError } = await supabase
-          .from('allowed_emails')
+          .from('auth_allowed_emails')
           .select('*')
           .eq('id', log.user_id)
           .single();
 
         if (emailError) {
-          console.log(`   ❌ User ID not found in allowed_emails: ${emailError.message}`);
+          console.log(`   ❌ User ID not found in auth_allowed_emails: ${emailError.message}`);
           
           // Check if it's in auth.users instead
           const { data: authUser, error: authUserError } = await supabase.rpc('execute_sql', {
@@ -57,11 +57,11 @@ async function verifyLightAuthUserId() {
           });
           
           if (!authUserError && authUser && authUser.length > 0) {
-            console.log(`   ⚠️  User ID found in auth.users (should be in allowed_emails!)`);
+            console.log(`   ⚠️  User ID found in auth.users (should be in auth_allowed_emails!)`);
             console.log(`      Auth user email: ${authUser[0].email}`);
           }
         } else {
-          console.log(`   ✅ User ID correctly matches allowed_emails.id`);
+          console.log(`   ✅ User ID correctly matches auth_allowed_emails.id`);
           console.log(`      Allowed email: ${allowedEmail.email}`);
           console.log(`      Name: ${allowedEmail.name}`);
           console.log(`      Added: ${allowedEmail.added_at}`);
@@ -69,16 +69,16 @@ async function verifyLightAuthUserId() {
       }
     }
 
-    // Step 3: Show a sample of allowed_emails records
-    console.log('\n📋 Step 3: Sample of allowed_emails records');
+    // Step 3: Show a sample of auth_allowed_emails records
+    console.log('\n📋 Step 3: Sample of auth_allowed_emails records');
     const { data: sampleEmails, error: sampleError } = await supabase
-      .from('allowed_emails')
+      .from('auth_allowed_emails')
       .select('id, email, name, added_at')
       .limit(5)
       .order('added_at', { ascending: false });
 
     if (!sampleError && sampleEmails) {
-      console.log('\nRecent allowed_emails entries:');
+      console.log('\nRecent auth_allowed_emails entries:');
       sampleEmails.forEach(email => {
         console.log(`  - ID: ${email.id}`);
         console.log(`    Email: ${email.email}`);

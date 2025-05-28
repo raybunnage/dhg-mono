@@ -26,17 +26,17 @@ async function verifyUserRolesRemoval() {
     console.log('⚠️ Unable to verify user_roles table status:', userRolesError?.message);
   }
 
-  // 2. Check if allowed_emails table exists
-  console.log('\n2. Checking if allowed_emails table exists...');
+  // 2. Check if auth_allowed_emails table exists
+  console.log('\n2. Checking if auth_allowed_emails table exists...');
   const { data: allowedEmailsData, error: allowedEmailsError } = await supabase
-    .from('allowed_emails')
+    .from('auth_allowed_emails')
     .select('email')
     .limit(1);
 
   if (!allowedEmailsError) {
-    console.log('✅ allowed_emails table exists and is accessible');
+    console.log('✅ auth_allowed_emails table exists and is accessible');
   } else {
-    console.log('❌ Error accessing allowed_emails table:', allowedEmailsError.message);
+    console.log('❌ Error accessing auth_allowed_emails table:', allowedEmailsError.message);
     allPassed = false;
   }
 
@@ -61,40 +61,40 @@ async function verifyUserRolesRemoval() {
     allPassed = false;
   }
 
-  // 4. Test allowed_emails table policies
-  console.log('\n4. Testing allowed_emails table policies...');
+  // 4. Test auth_allowed_emails table policies
+  console.log('\n4. Testing auth_allowed_emails table policies...');
   
   // Test read access (should work for any authenticated user)
   const { data: readTest, error: readError } = await supabase
-    .from('allowed_emails')
+    .from('auth_allowed_emails')
     .select('email, created_at')
     .limit(5);
 
   if (!readError) {
-    console.log('✅ Read access to allowed_emails works');
+    console.log('✅ Read access to auth_allowed_emails works');
     if (readTest && readTest.length > 0) {
       console.log(`   Found ${readTest.length} allowed email(s)`);
     }
   } else {
-    console.log('❌ Error reading from allowed_emails:', readError.message);
+    console.log('❌ Error reading from auth_allowed_emails:', readError.message);
     allPassed = false;
   }
 
   // 5. Check RLS policies
-  console.log('\n5. Checking RLS policies on allowed_emails...');
+  console.log('\n5. Checking RLS policies on auth_allowed_emails...');
   const { data: policies, error: policiesError } = await supabase
     .rpc('execute_sql', {
       sql: `
         SELECT pol.polname, pol.polcmd 
         FROM pg_policy pol
         JOIN pg_class pc ON pol.polrelid = pc.oid
-        WHERE pc.relname = 'allowed_emails'
+        WHERE pc.relname = 'auth_allowed_emails'
         AND pc.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
       `
     });
 
   if (!policiesError && policies) {
-    console.log('✅ RLS policies found on allowed_emails:');
+    console.log('✅ RLS policies found on auth_allowed_emails:');
     policies.forEach((policy: any) => {
       const cmdMap: { [key: string]: string } = {
         'r': 'SELECT',

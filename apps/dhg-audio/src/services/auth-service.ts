@@ -305,7 +305,7 @@ class BrowserAuthService {
   async getAllowedEmails(): Promise<any[]> {
     try {
       const { data, error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .eq('is_active', true)
         .order('email', { ascending: true });

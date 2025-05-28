@@ -37,7 +37,7 @@ export const AllowedEmailsManagement: React.FC = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('*')
         .order('added_at', { ascending: false });
 
@@ -71,7 +71,7 @@ export const AllowedEmailsManagement: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .insert([{
           email: formData.email,
           name: formData.name,
@@ -100,7 +100,7 @@ export const AllowedEmailsManagement: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({
           email: formData.email,
           name: formData.name,
@@ -131,7 +131,7 @@ export const AllowedEmailsManagement: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .delete()
         .eq('id', email.id);
 
@@ -163,7 +163,7 @@ export const AllowedEmailsManagement: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .update({ is_active: !email.is_active })
         .eq('id', email.id);
 
@@ -199,7 +199,7 @@ export const AllowedEmailsManagement: React.FC = () => {
       if (error) {
         setMessage(`Error sending invitation: ${error.message}`);
       } else {
-        // Update the allowed_emails record to track invitation
+        // Update the auth_allowed_emails record to track invitation
         const updatedMetadata = {
           ...email.metadata,
           auth_invitation_sent: true,
@@ -208,7 +208,7 @@ export const AllowedEmailsManagement: React.FC = () => {
         };
 
         await supabase
-          .from('allowed_emails')
+          .from('auth_allowed_emails')
           .update({ 
             metadata: updatedMetadata,
             notes: email.notes + `\n[${new Date().toLocaleDateString()}] Auth invitation sent`
@@ -253,7 +253,7 @@ export const AllowedEmailsManagement: React.FC = () => {
           };
 
           await supabase
-            .from('allowed_emails')
+            .from('auth_allowed_emails')
             .update({ metadata: updatedMetadata })
             .eq('id', email.id);
             

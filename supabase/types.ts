@@ -9,7 +9,64 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      allowed_emails: {
+      app_pages: {
+        Row: {
+          app_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          page_name: string
+          page_path: string
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          page_name: string
+          page_path: string
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          page_name?: string
+          page_path?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      asset_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      auth_allowed_emails: {
         Row: {
           added_at: string | null
           added_by: string | null
@@ -69,63 +126,6 @@ export type Database = {
           organization?: string | null
           preferences?: Json | null
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      app_pages: {
-        Row: {
-          app_name: string
-          created_at: string | null
-          description: string | null
-          id: string
-          page_name: string
-          page_path: string
-          updated_at: string | null
-        }
-        Insert: {
-          app_name: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          page_name: string
-          page_path: string
-          updated_at?: string | null
-        }
-        Update: {
-          app_name?: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          page_name?: string
-          page_path?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      asset_types: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          display_order: number | null
-          icon: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          name?: string
         }
         Relationships: []
       }
@@ -1253,7 +1253,7 @@ export type Database = {
             foreignKeyName: "media_bookmarks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -1298,7 +1298,7 @@ export type Database = {
             foreignKeyName: "media_playback_events_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -1345,7 +1345,7 @@ export type Database = {
             foreignKeyName: "media_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -2472,6 +2472,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_table_migrations: {
+        Row: {
+          compatibility_view_created: boolean | null
+          dependencies: Json | null
+          id: string
+          migrated_at: string | null
+          migrated_by: string | null
+          new_name: string
+          notes: string | null
+          old_name: string
+          rollback_at: string | null
+          rollback_by: string | null
+          status: string | null
+        }
+        Insert: {
+          compatibility_view_created?: boolean | null
+          dependencies?: Json | null
+          id?: string
+          migrated_at?: string | null
+          migrated_by?: string | null
+          new_name: string
+          notes?: string | null
+          old_name: string
+          rollback_at?: string | null
+          rollback_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          compatibility_view_created?: boolean | null
+          dependencies?: Json | null
+          id?: string
+          migrated_at?: string | null
+          migrated_by?: string | null
+          new_name?: string
+          notes?: string | null
+          old_name?: string
+          rollback_at?: string | null
+          rollback_by?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       table_classifications: {
         Row: {
           created_at: string | null
@@ -2549,7 +2591,7 @@ export type Database = {
             foreignKeyName: "user_content_scores_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -2649,7 +2691,7 @@ export type Database = {
             foreignKeyName: "user_learning_analytics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -2753,7 +2795,7 @@ export type Database = {
             foreignKeyName: "user_profiles_v2_id_fkey"
             columns: ["id"]
             isOneToOne: true
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -2895,7 +2937,7 @@ export type Database = {
             foreignKeyName: "user_profiles_v2_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "allowed_emails"
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]

@@ -89,7 +89,7 @@ class DhgAudioLightAuthService {
       
       // Check if email is on the allowed list
       const { data: allowedEmail, error } = await supabase
-        .from('allowed_emails')
+        .from('auth_allowed_emails')
         .select('id, email, name, created_at')
         .eq('email', email.toLowerCase())
         .single();
