@@ -977,12 +977,12 @@ export type Database = {
             foreignKeyName: "user_filter_profile_drives_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "filter_user_profiless"
+            referencedRelation: "filter_user_profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      filter_user_profiless: {
+      filter_user_profiles: {
         Row: {
           created_at: string | null
           description: string | null

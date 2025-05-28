@@ -39,7 +39,7 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 | table_classifications | learn_document_classifications | Document classification tracking |
 | user_content_scores | learn_user_scores | User content scores |
 | user_filter_profile_drives | filter_user_profile_drives | User drive filters |
-| user_filter_profiles | filter_user_profiless | User filter profiles |
+| user_filter_profiles | filter_user_profiles | User filter profiles |
 | user_learning_analytics | learn_user_analytics | Learning analytics data |
 | user_profiles_v2 | auth_user_profiles | User profile information |
 | user_subject_interests | learn_user_interests | User learning interests |

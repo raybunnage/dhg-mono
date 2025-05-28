@@ -47,7 +47,7 @@ export class FilterService {
    */
   public async loadProfile(profileId: string): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
-      .from('filter_user_profiless')
+      .from('filter_user_profiles')
       .select('*')
       .eq('id', profileId)
       .single();
@@ -74,7 +74,7 @@ export class FilterService {
    */
   public async loadActiveProfile(): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
-      .from('filter_user_profiless')
+      .from('filter_user_profiles')
       .select('*')
       .eq('is_active', true)
       .limit(1);
@@ -113,7 +113,7 @@ export class FilterService {
     try {
       // First deactivate all profiles
       const { error: deactivateError } = await this.supabase
-        .from('filter_user_profiless')
+        .from('filter_user_profiles')
         .update({ is_active: false })
         .not('id', 'is', null);
 
@@ -124,7 +124,7 @@ export class FilterService {
 
       // Then activate the specified profile
       const { error: activateError } = await this.supabase
-        .from('filter_user_profiless')
+        .from('filter_user_profiles')
         .update({ is_active: true })
         .eq('id', profileId);
 
@@ -209,7 +209,7 @@ export class FilterService {
    */
   public async createProfile(profile: Omit<FilterProfile, 'id' | 'created_at'>): Promise<FilterProfile | null> {
     const { data, error } = await this.supabase
-      .from('filter_user_profiless')
+      .from('filter_user_profiles')
       .insert(profile)
       .select()
       .single();
@@ -231,7 +231,7 @@ export class FilterService {
   public async updateProfile(profileId: string, updates: Partial<Omit<FilterProfile, 'id' | 'created_at'>>): Promise<boolean> {
     try {
       const { error } = await this.supabase
-        .from('filter_user_profiless')
+        .from('filter_user_profiles')
         .update(updates)
         .eq('id', profileId);
       
@@ -276,7 +276,7 @@ export class FilterService {
 
     // Then delete the profile itself
     const { error } = await this.supabase
-      .from('filter_user_profiless')
+      .from('filter_user_profiles')
       .delete()
       .eq('id', profileId);
 
@@ -303,7 +303,7 @@ export class FilterService {
       console.log('FilterService: Fetching filter profiles from database');
       
       const { data, error } = await this.supabase
-        .from('filter_user_profiless')
+        .from('filter_user_profiles')
         .select('*')
         .order('name');
 

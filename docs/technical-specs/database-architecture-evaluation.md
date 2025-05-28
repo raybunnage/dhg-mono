@@ -2,94 +2,113 @@
 
 **Document Location**: `docs/technical-specs/database-architecture-evaluation.md`  
 **Created**: May 2025  
-**Status**: Current Analysis
+**Last Updated**: May 2025 (Post-Table Renaming)
+**Status**: Current Analysis - Reflects Completed Table Prefix Implementation
 
 ## Executive Summary
 
-This document provides a comprehensive evaluation of the DHG database architecture based on the current schema and usage patterns. The analysis identifies strengths, weaknesses, missing components, and provides actionable recommendations for improvement.
+This document provides a comprehensive evaluation of the DHG database architecture following the successful implementation of the table prefix strategy. All 43 tables have been renamed according to their functional domains, with migration tracking in `sys_table_migrations`. The analysis identifies strengths, current state, and provides actionable recommendations for future improvements.
 
 ## Table of Contents
 
-1. [Architecture Strengths](#architecture-strengths)
-2. [Major Issues & Missing Tables](#major-issues--missing-tables)
-3. [Tables Requiring Improvements](#tables-requiring-improvements)
-4. [Inconsistencies](#inconsistencies)
-5. [High-Priority Fixes](#high-priority-fixes)
-6. [Tables to Remove](#tables-to-remove)
-7. [Missing Features](#missing-features)
-8. [Recommended Migration Order](#recommended-migration-order)
+1. [Current Architecture State](#current-architecture-state)
+2. [Architecture Strengths](#architecture-strengths)
+3. [Major Issues & Missing Tables](#major-issues--missing-tables)
+4. [Tables Requiring Improvements](#tables-requiring-improvements)
+5. [Inconsistencies](#inconsistencies)
+6. [High-Priority Fixes](#high-priority-fixes)
+7. [Tables to Consider for Future Updates](#tables-to-consider-for-future-updates)
+8. [Missing Features](#missing-features)
+9. [Recommended Migration Order](#recommended-migration-order)
+
+## Current Architecture State
+
+### Table Organization by Prefix (43 tables total)
+
+| Prefix | Domain | Tables | Records |
+|--------|--------|--------|---------|
+| `learn_` | Learning Platform | 11 | 7,446 |
+| `ai_` | AI & Prompts | 5 | 28 |
+| `google_` | Google Drive | 5 | 2,757 |
+| `auth_` | Authentication | 4 | 21 |
+| `doc_` | Documents | 3 | 711 |
+| `command_` | Commands | 3 | 4,452 |
+| `media_` | Media | 2 | 570 |
+| `expert_` | Experts | 2 | 326 |
+| `email_` | Email | 2 | 5,469 |
+| `filter_` | Filtering | 2 | 5 |
+| `sys_` | System | 2 | 53 |
+| `batch_` | Batch Ops | 1 | 7 |
+| `scripts_` | Scripts | 1 | 143 |
+
+**Total Records**: 21,988 across all tables
 
 ## Architecture Strengths
 
-The current database architecture demonstrates several positive design decisions:
+The completed table renaming implementation demonstrates several architectural improvements:
 
-1. **Well-organized domain separation** - Clear distinction between different functional areas (auth, media, documents, experts)
-2. **Consistent UUID usage** - Good choice for distributed systems and avoiding sequential ID issues
-3. **Comprehensive audit trails** - Good tracking with timestamps and user references throughout
-4. **Flexible metadata storage** - JSONB fields allow for extensibility without schema changes
-5. **Proper normalization** - Most entities are properly separated with appropriate relationships
+1. **Clear Domain Organization** - Every table now has a prefix indicating its functional area
+2. **Consistent Naming Convention** - All tables follow the `prefix_entity` pattern
+3. **Migration Tracking** - Complete audit trail in `sys_table_migrations` (37 migrations)
+4. **Well-organized Learning Platform** - 11 `learn_` tables provide comprehensive learning features
+5. **Comprehensive Google Integration** - 5 `google_` tables handle Drive integration effectively
+6. **Strong Command Analytics** - 4,440 tracked commands show active usage monitoring
+7. **Flexible Metadata Storage** - JSONB fields throughout for extensibility
 
 ## Major Issues & Missing Tables
 
-### 1. User Identity Fragmentation
+### 1. User Identity System (Resolved)
 
 **Current State:**
-- `allowed_emails` (3 records) - Being used
-- `profiles` (10 records) - Partially used
-- `user_profiles` (0 records) - Not used
-- `user_profiles_v2` (0 records) - Not used
+- `auth_allowed_emails` (6 records) - Primary user identity table
+- `auth_user_profiles` (3 records) - Extended user profile data
+- `auth_audit_log` (12 records) - Authentication tracking
+- `auth_cli_tokens` (0 records) - CLI authentication ready
 
-**Problem:** User data is scattered across multiple tables with no clear primary source of truth.
+**Status:** ✅ User system has been consolidated around the `auth_` prefix.
 
-**Solution:** Consolidate around `allowed_emails` as the primary user identity table.
+### 2. Empty Learning Platform Tables
 
-### 2. Missing Relationship Tables
+Several `learn_` tables are ready but unused:
+- `learn_topics` (0 records) - Topic definitions awaiting implementation
+- `learn_media_sessions` (0 records) - Media tracking not connected
+- `learn_media_playback_events` (0 records) - Playback tracking not implemented
+- `learn_media_bookmarks` (0 records) - Bookmarking feature not active
+- `learn_user_interests` (0 records) - Interest tracking not implemented
+- `learn_user_scores` (0 records) - Scoring system not active
+- `learn_user_analytics` (0 records) - Analytics not aggregated
 
-The following junction tables are needed for many-to-many relationships:
+**Recommendation:** Prioritize implementation of these learning features.
+
+### 3. Missing Relationship Tables
+
+The following junction tables are still needed:
 
 ```sql
 -- User to Expert relationships (who follows which experts)
-CREATE TABLE user_expert_following (
-  user_id UUID REFERENCES allowed_emails(id),
-  expert_id UUID REFERENCES experts(id),
+CREATE TABLE learn_user_expert_following (
+  user_id UUID REFERENCES auth_allowed_emails(id),
+  expert_id UUID REFERENCES expert_profiles(id),
   followed_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (user_id, expert_id)
 );
 
--- User to Document bookmarks/favorites
-CREATE TABLE user_document_bookmarks (
-  user_id UUID REFERENCES allowed_emails(id),
-  document_id UUID REFERENCES expert_documents(id),
-  bookmarked_at TIMESTAMPTZ DEFAULT NOW(),
-  notes TEXT,
-  PRIMARY KEY (user_id, document_id)
-);
-
--- User to Topic subscriptions
-CREATE TABLE user_topic_subscriptions (
-  user_id UUID REFERENCES allowed_emails(id),
-  topic_id UUID REFERENCES learning_topics(id),
-  subscribed_at TIMESTAMPTZ DEFAULT NOW(),
-  notification_preference TEXT DEFAULT 'digest',
-  PRIMARY KEY (user_id, topic_id)
-);
-
 -- Document to Topic relationships
-CREATE TABLE document_topics (
-  document_id UUID REFERENCES expert_documents(id),
-  topic_id UUID REFERENCES learning_topics(id),
+CREATE TABLE learn_document_topics (
+  document_id UUID REFERENCES google_expert_documents(id),
+  topic_id UUID REFERENCES learn_topics(id),
   relevance_score FLOAT DEFAULT 1.0,
   PRIMARY KEY (document_id, topic_id)
 );
 ```
 
-### 3. Missing Core System Tables
+### 4. Missing Notification System
 
 ```sql
 -- Notification system
-CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES allowed_emails(id),
+CREATE TABLE sys_notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth_allowed_emails(id),
   type TEXT NOT NULL,
   title TEXT NOT NULL,
   message TEXT,
@@ -97,221 +116,135 @@ CREATE TABLE notifications (
   read_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- User activity summary (for dashboards)
-CREATE TABLE user_activity_summary (
-  user_id UUID PRIMARY KEY REFERENCES allowed_emails(id),
-  total_documents_viewed INTEGER DEFAULT 0,
-  total_videos_watched INTEGER DEFAULT 0,
-  total_time_spent_minutes INTEGER DEFAULT 0,
-  last_activity_at TIMESTAMPTZ,
-  streak_days INTEGER DEFAULT 0,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
 ```
 
 ## Tables Requiring Improvements
 
-### 1. allowed_emails Table (Primary User Table)
+### 1. auth_allowed_emails Table (6 records)
 
 **Missing Fields:**
 ```sql
-ALTER TABLE allowed_emails 
-ADD COLUMN last_login_at TIMESTAMPTZ,
-ADD COLUMN login_count INTEGER DEFAULT 0,
-ADD COLUMN email_verified BOOLEAN DEFAULT false,
-ADD COLUMN email_verified_at TIMESTAMPTZ,
-ADD COLUMN preferences JSONB DEFAULT '{}',
-ADD COLUMN avatar_url TEXT,
-ADD COLUMN timezone TEXT DEFAULT 'UTC',
-ADD COLUMN locale TEXT DEFAULT 'en-US';
+ALTER TABLE auth_allowed_emails 
+ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'UTC',
+ADD COLUMN IF NOT EXISTS locale TEXT DEFAULT 'en-US';
 ```
 
-### 2. expert_documents Table (731 records)
+### 2. google_expert_documents Table (850 records)
+
+**Current Fields Are Comprehensive** - This table has been well-designed with:
+- AI summary status tracking
+- Classification metadata
+- Processing pipeline status
+- Reprocessing capabilities
+- Whisper model tracking
+
+### 3. media_presentations Table (117 records)
 
 **Missing Fields:**
 ```sql
-ALTER TABLE expert_documents
-ADD COLUMN file_size BIGINT,
-ADD COLUMN mime_type TEXT,
-ADD COLUMN reading_time_minutes INTEGER,
-ADD COLUMN is_published BOOLEAN DEFAULT false,
-ADD COLUMN published_at TIMESTAMPTZ,
-ADD COLUMN view_count INTEGER DEFAULT 0,
-ADD COLUMN language TEXT DEFAULT 'en',
-ADD COLUMN tags TEXT[],
-ADD COLUMN embargo_until TIMESTAMPTZ;
-```
-
-### 3. presentations Table (117 records)
-
-**Missing Fields:**
-```sql
-ALTER TABLE presentations
+ALTER TABLE media_presentations
 ADD COLUMN thumbnail_url TEXT,
 ADD COLUMN tags TEXT[],
 ADD COLUMN is_featured BOOLEAN DEFAULT false,
 ADD COLUMN presenter_names TEXT[],
 ADD COLUMN presentation_date DATE,
 ADD COLUMN language TEXT DEFAULT 'en',
-ADD COLUMN difficulty_level TEXT CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
-ADD COLUMN target_audience TEXT[],
-ADD COLUMN slides_url TEXT;
+ADD COLUMN difficulty_level TEXT CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced'));
 ```
 
-### 4. sources_google Table (857 records)
+### 4. expert_profiles Table (96 records)
 
 **Missing Fields:**
 ```sql
-ALTER TABLE sources_google
-ADD COLUMN sync_status TEXT DEFAULT 'pending' CHECK (sync_status IN ('pending', 'syncing', 'completed', 'failed')),
-ADD COLUMN last_sync_error TEXT,
-ADD COLUMN last_sync_at TIMESTAMPTZ,
-ADD COLUMN file_hash TEXT,
-ADD COLUMN is_archived BOOLEAN DEFAULT false,
-ADD COLUMN archive_reason TEXT,
-ADD COLUMN processing_priority INTEGER DEFAULT 0;
-```
-
-### 5. experts Table (96 records)
-
-**Missing Fields:**
-```sql
-ALTER TABLE experts
+ALTER TABLE expert_profiles
 ADD COLUMN bio TEXT,
 ADD COLUMN credentials TEXT[],
 ADD COLUMN areas_of_expertise TEXT[],
 ADD COLUMN profile_image_url TEXT,
 ADD COLUMN contact_info JSONB,
-ADD COLUMN is_verified BOOLEAN DEFAULT false,
-ADD COLUMN verified_at TIMESTAMPTZ,
 ADD COLUMN follower_count INTEGER DEFAULT 0;
 ```
 
 ## Inconsistencies
 
-### 1. Backup Table Proliferation
+### 1. ~~Table Naming Issue~~ **FIXED**
 
-**Issue:** Multiple backup tables cluttering the schema:
-- `presentations_backup_2025_05_02`
-- `expert_documents_backup_2025_05_05`
-- `document_types_backup_2025_05_02`
-- etc.
+- ~~`filter_user_profiless` had a double 's' at the end~~
+- ✅ **FIXED**: Now correctly named `filter_user_profiles`
 
-**Solution:** Implement proper backup strategy:
-1. Move all backup tables to a separate `backup` schema
-2. Use point-in-time recovery instead of table copies
-3. Implement proper archival procedures
+### 2. Sync Tables Empty
 
-### 2. Naming Inconsistencies
+Despite active Google Drive integration:
+- `google_sync_history` (0 records)
+- `google_sync_statistics` (0 records)
 
-| Issue | Examples | Recommendation |
-|-------|----------|----------------|
-| Timestamp fields | Some use `created_at/updated_at`, others only `created_at` | All tables should have both |
-| Soft delete strategy | Mix of `is_active` and `is_deleted` | Standardize on `is_deleted` |
-| User references | Some use `user_id`, others reference different tables | Always reference `allowed_emails.id` |
-| Boolean prefixes | Mix of `is_`, `has_`, and no prefix | Standardize on `is_` prefix |
+These should be populated during sync operations.
 
 ### 3. Empty Core Tables
 
-Critical tables with 0 records despite system activity:
-
-| Table | Purpose | Issue |
-|-------|---------|-------|
-| `learning_topics` | Core categorization | Feature not implemented |
-| `media_sessions` | Video tracking | Integration broken |
-| `auth_audit_log` | Security tracking | Not hooked up to auth service |
-| `user_profiles_v2` | User preferences | Using wrong table |
-| `sources` | Content sources | Replaced by sources_google |
+Critical tables that should have data:
+- `auth_cli_tokens` (0 records) - CLI auth not implemented
+- `learn_topics` (0 records) - Core categorization missing
 
 ## High-Priority Fixes
 
-### 1. Fix User System (Immediate)
+### 1. ~~Fix filter_user_profiless Typo~~ **COMPLETED**
 
 ```sql
--- Step 1: Enhance allowed_emails to be the primary user table
-ALTER TABLE allowed_emails 
-ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
-
--- Step 2: Migrate data from profiles table
-UPDATE allowed_emails ae
-SET 
-  metadata = COALESCE(ae.metadata, '{}'::jsonb) || 
-    (SELECT row_to_json(p)::jsonb FROM profiles p WHERE p.id = ae.auth_user_id)
-WHERE EXISTS (SELECT 1 FROM profiles p WHERE p.id = ae.auth_user_id);
-
--- Step 3: Update all foreign keys to reference allowed_emails
--- (This requires careful migration of each referencing table)
+-- ✅ COMPLETED: Table has been renamed
+-- The table is now correctly named filter_user_profiles
+-- Migration has been tracked in sys_table_migrations
 ```
 
-### 2. Add Missing Indexes (Performance)
+### 2. Implement Google Sync Tracking
+
+```sql
+-- Ensure sync operations are tracked
+-- Check if triggers or functions need to be created
+-- to populate google_sync_history and google_sync_statistics
+```
+
+### 3. Add Missing Indexes
 
 ```sql
 -- High-traffic lookups that need indexes
-CREATE INDEX IF NOT EXISTS idx_expert_documents_source_id ON expert_documents(source_id);
-CREATE INDEX IF NOT EXISTS idx_expert_documents_pipeline_status ON expert_documents(pipeline_status);
-CREATE INDEX IF NOT EXISTS idx_expert_documents_document_type_id ON expert_documents(document_type_id);
-CREATE INDEX IF NOT EXISTS idx_presentations_expert_document_id ON presentations(expert_document_id);
-CREATE INDEX IF NOT EXISTS idx_allowed_emails_email ON allowed_emails(email);
-CREATE INDEX IF NOT EXISTS idx_allowed_emails_auth_user_id ON allowed_emails(auth_user_id);
-CREATE INDEX IF NOT EXISTS idx_sources_google_drive_id ON sources_google(drive_id);
-CREATE INDEX IF NOT EXISTS idx_sources_google_parent_folder_id ON sources_google(parent_folder_id);
+CREATE INDEX IF NOT EXISTS idx_google_expert_documents_source_id ON google_expert_documents(source_id);
+CREATE INDEX IF NOT EXISTS idx_google_expert_documents_pipeline_status ON google_expert_documents(pipeline_status);
+CREATE INDEX IF NOT EXISTS idx_media_presentations_expert_document_id ON media_presentations(expert_document_id);
+CREATE INDEX IF NOT EXISTS idx_learn_document_classifications_entity_id ON learn_document_classifications(entity_id);
+CREATE INDEX IF NOT EXISTS idx_google_sources_drive_id ON google_sources(drive_id);
+CREATE INDEX IF NOT EXISTS idx_google_sources_parent_folder_id ON google_sources(parent_folder_id);
 ```
 
-### 3. Add Cascade Rules (Data Integrity)
+## Tables to Consider for Future Updates
 
-```sql
--- Example: Ensure related data is cleaned up
-ALTER TABLE expert_documents
-DROP CONSTRAINT IF EXISTS expert_documents_source_id_fkey,
-ADD CONSTRAINT expert_documents_source_id_fkey 
-  FOREIGN KEY (source_id) 
-  REFERENCES sources_google(id) 
-  ON DELETE CASCADE;
+### 1. Potential New Prefixes
 
-ALTER TABLE presentation_assets
-DROP CONSTRAINT IF EXISTS presentation_assets_presentation_id_fkey,
-ADD CONSTRAINT presentation_assets_presentation_id_fkey 
-  FOREIGN KEY (presentation_id) 
-  REFERENCES presentations(id) 
-  ON DELETE CASCADE;
-```
+Consider creating new prefix groups for:
+- `analytics_` - For aggregated metrics and reporting
+- `workflow_` - For content approval and publishing workflows
+- `cache_` - For performance optimization
 
-## Tables to Remove
+### 2. Tables That May Need Renaming
 
-### 1. Redundant User Tables
-- `profiles` - Merge into `allowed_emails`
-- `user_profiles` - Not used
-- `user_profiles_v2` - Not used
-
-### 2. Backup Tables (Move to separate schema)
-- All tables ending in `_backup_YYYY_MM_DD`
-- `sync_history_backup`
-- `view_backups`
-
-### 3. Unused Tables
-- `sources` - Empty, replaced by `sources_google`
-- `lionya_emails` - Appears to be test data
-
-### 4. Deprecated Tables
-- `document_types_original` - Keep only current version
+While the current naming is functional, consider:
+- `document_types` → `doc_types` (consistency with doc_ prefix)
+- `document_type_aliases` → `doc_type_aliases` (consistency)
 
 ## Missing Features
 
-Based on the architecture, these features lack database support:
+Based on the architecture analysis, these features lack database support:
 
-### 1. Notification System
-- No way to notify users of new content
-- No tracking of what notifications were sent
-- No user preferences for notifications
+### 1. Analytics Infrastructure
+- No aggregated metrics tables
+- No user cohort analysis support
+- Limited to raw `command_tracking` data
 
-### 2. Content Recommendations
-- `user_content_scores` exists but empty
-- No algorithm tracking or A/B testing support
-- No recommendation feedback loop
+### 2. Content Versioning
+- No version history for documents
+- No diff tracking
+- No rollback capability
 
 ### 3. Collaboration Features
 - No comments on documents/videos
@@ -319,52 +252,50 @@ Based on the architecture, these features lack database support:
 - No sharing mechanisms
 - No team/group concepts
 
-### 4. Analytics Infrastructure
-- Limited event tracking
-- No aggregated metrics tables
-- No user cohort analysis support
-
-### 5. Content Versioning
-- No version history for documents
-- No diff tracking
-- No rollback capability
+### 4. Workflow Management
+- No content approval process
+- No publishing workflow
+- No editorial calendar
 
 ## Recommended Migration Order
 
-### Phase 1: Critical Fixes (Week 1-2)
-1. Fix user system consolidation
+### Phase 1: Quick Fixes (Week 1)
+1. ~~Fix `filter_user_profiless` typo~~ ✅ **COMPLETED**
 2. Add missing indexes
-3. Hook up auth_audit_log
-4. Clean up backup tables
+3. Implement Google sync tracking
+4. Review and fix any broken foreign keys
 
-### Phase 2: Data Integrity (Week 3-4)
-1. Add missing foreign key constraints
-2. Standardize naming conventions
-3. Add missing timestamp fields
-4. Implement soft delete consistently
+### Phase 2: Learning Platform Activation (Week 2-3)
+1. Implement `learn_topics` population
+2. Connect media tracking to `learn_media_sessions`
+3. Activate bookmarking features
+4. Enable user interest tracking
 
-### Phase 3: Feature Tables (Week 5-8)
-1. Add notification system
+### Phase 3: Feature Tables (Week 4-6)
+1. Add notification system (`sys_notifications`)
 2. Implement user-expert relationships
-3. Add document bookmarking
-4. Create activity tracking tables
+3. Add document-topic mappings
+4. Create analytics aggregation tables
 
-### Phase 4: Enhancement (Week 9-12)
+### Phase 4: Enhancement (Week 7-10)
 1. Add missing fields to core tables
 2. Implement content versioning
 3. Add collaboration features
-4. Build analytics infrastructure
+4. Build workflow management
 
 ## Monitoring & Maintenance
 
-### Regular Reviews
-- Weekly: Check for orphaned records
-- Monthly: Review index usage
-- Quarterly: Analyze table growth patterns
+### Health Checks
+```bash
+# Use the CLI tools to monitor table health
+./scripts/cli-pipeline/database/database-cli.sh table-records
+./scripts/cli-pipeline/database/database-cli.sh empty-tables
+./scripts/cli-pipeline/database/database-cli.sh health-check
+```
 
 ### Performance Monitoring
 ```sql
--- Query to find tables without primary keys
+-- Find tables without primary keys
 SELECT schemaname, tablename 
 FROM pg_tables 
 WHERE schemaname = 'public' 
@@ -374,30 +305,32 @@ AND tablename NOT IN (
   WHERE constraint_type = 'PRIMARY KEY'
 );
 
--- Query to find missing indexes on foreign keys
-SELECT
-  tc.table_name,
-  kcu.column_name,
-  tc.constraint_name
-FROM information_schema.table_constraints tc
-JOIN information_schema.key_column_usage kcu
-  ON tc.constraint_name = kcu.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY'
-AND NOT EXISTS (
-  SELECT 1
-  FROM pg_indexes
-  WHERE tablename = tc.table_name
-  AND indexdef LIKE '%' || kcu.column_name || '%'
-);
+-- Check index usage
+SELECT 
+  schemaname,
+  tablename,
+  indexname,
+  idx_scan,
+  idx_tup_read,
+  idx_tup_fetch
+FROM pg_stat_user_indexes
+WHERE schemaname = 'public'
+ORDER BY idx_scan;
 ```
 
 ## Conclusion
 
-The database architecture has a solid foundation but needs consolidation and enhancement. The priority should be:
+The database architecture has successfully implemented a comprehensive prefix-based naming strategy with 43 tables organized into 13 functional domains. Key achievements:
 
-1. **Consolidate user system** - Critical for all features
-2. **Add missing relationships** - Enable core functionality
-3. **Improve performance** - Add indexes and optimize queries
-4. **Enable new features** - Add tables for notifications, recommendations, etc.
+1. ✅ **Complete prefix implementation** - All tables renamed and tracked
+2. ✅ **Clear domain separation** - 13 prefix groups for different functions  
+3. ✅ **Active usage** - 21,988 records showing real system usage
+4. ✅ **Migration tracking** - Full audit trail in `sys_table_migrations`
 
-By following this plan, the system will be more maintainable, performant, and ready for future growth.
+Priority improvements:
+1. ~~**Fix naming typo** - `filter_user_profiless` → `filter_user_profiles`~~ ✅ **COMPLETED**
+2. **Activate learning features** - Implement the 7 empty `learn_` tables
+3. **Add missing indexes** - Improve query performance
+4. **Implement notifications** - Enable user engagement features
+
+The foundation is solid and ready for continued development.
