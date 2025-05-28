@@ -30,7 +30,7 @@ async function updateSubjectDescriptions() {
       
       // Update the record
       const { error } = await supabase
-        .from('subject_classifications')
+        .from('learn_subject_classifications')
         .update({ description })
         .eq('id', id);
       

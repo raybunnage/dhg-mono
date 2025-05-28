@@ -34,7 +34,7 @@ export interface ClassificationHierarchy extends Classification {
 export class ClassifyService {
   private static instance: ClassifyService;
   private supabaseService: SupabaseClientService;
-  private tableName = 'subject_classifications';
+  private tableName = 'learn_subject_classifications';
   
   /**
    * Private constructor to enforce singleton pattern

@@ -51,15 +51,15 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
         }
       }
       
-      // Check classify service connection to subject_classifications table
-      console.log('\n🔍 Checking classify service and subject_classifications table...');
+      // Check classify service connection to learn_subject_classifications table
+      console.log('\n🔍 Checking classify service and learn_subject_classifications table...');
       try {
         const serviceTest = await classifyService.testConnection();
         
         if (serviceTest.success) {
           results.classifyService = { 
             status: 'success', 
-            message: `Connected to subject_classifications table successfully.` 
+            message: `Connected to learn_subject_classifications table successfully.` 
           };
           
           console.log('✅ Classify service connection successful');
@@ -83,7 +83,7 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
         
         console.error('❌ Classify service check failed');
         console.error('   This could be due to:');
-        console.error('   - The subject_classifications table does not exist yet');
+        console.error('   - The learn_subject_classifications table does not exist yet');
         console.error('   - Insufficient permissions to access the table');
         console.error('   - A configuration issue with the classify service');
         
@@ -110,13 +110,13 @@ export async function healthCheckCommand(options: HealthCheckOptions = {}): Prom
         console.log('❌ One or more systems are unhealthy');
         
         if (results.classifyService.status === 'failure' && results.database.status === 'success') {
-          console.log('\n💡 Suggestion: The subject_classifications table may not exist yet.');
+          console.log('\n💡 Suggestion: The learn_subject_classifications table may not exist yet.');
           console.log('   You might need to create it with a SQL migration like:');
-          console.log('\n   CREATE TABLE IF NOT EXISTS public.subject_classifications (');
+          console.log('\n   CREATE TABLE IF NOT EXISTS public.learn_subject_classifications (');
           console.log('     id UUID DEFAULT gen_random_uuid() PRIMARY KEY NOT NULL,');
           console.log('     name TEXT NOT NULL,');
           console.log('     description TEXT,');
-          console.log('     parent_id UUID REFERENCES public.subject_classifications(id),');
+          console.log('     parent_id UUID REFERENCES public.learn_subject_classifications(id),');
           console.log('     category TEXT,');
           console.log('     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),');
           console.log('     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),');

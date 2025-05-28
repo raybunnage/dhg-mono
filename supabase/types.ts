@@ -1289,7 +1289,40 @@ export type Database = {
           },
         ]
       }
-      learning_topics: {
+      learn_subject_classifications: {
+        Row: {
+          associated_concepts: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          short_name: string | null
+          subject: string
+          subject_character: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          associated_concepts?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          short_name?: string | null
+          subject: string
+          subject_character?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          associated_concepts?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          short_name?: string | null
+          subject?: string
+          subject_character?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      learn_topics: {
         Row: {
           created_at: string
           description: string | null
@@ -1316,7 +1349,130 @@ export type Database = {
             foreignKeyName: "learning_topics_parent_topic_id_fkey"
             columns: ["parent_topic_id"]
             isOneToOne: false
-            referencedRelation: "learning_topics"
+            referencedRelation: "learn_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_user_analytics: {
+        Row: {
+          average_session_length: number | null
+          completion_rate: number | null
+          experts_followed: string[] | null
+          insights: Json | null
+          last_calculated: string | null
+          preferred_time_of_day: string | null
+          quiz_average_score: number | null
+          topics_explored: string[] | null
+          total_minutes_watched: number | null
+          user_id: string
+        }
+        Insert: {
+          average_session_length?: number | null
+          completion_rate?: number | null
+          experts_followed?: string[] | null
+          insights?: Json | null
+          last_calculated?: string | null
+          preferred_time_of_day?: string | null
+          quiz_average_score?: number | null
+          topics_explored?: string[] | null
+          total_minutes_watched?: number | null
+          user_id: string
+        }
+        Update: {
+          average_session_length?: number | null
+          completion_rate?: number | null
+          experts_followed?: string[] | null
+          insights?: Json | null
+          last_calculated?: string | null
+          preferred_time_of_day?: string | null
+          quiz_average_score?: number | null
+          topics_explored?: string[] | null
+          total_minutes_watched?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_learning_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_user_interests: {
+        Row: {
+          created_at: string
+          id: string
+          interest_level: number | null
+          subject_classification_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_level?: number | null
+          subject_classification_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_level?: number | null
+          subject_classification_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subject_interests_subject_classification_id_fkey"
+            columns: ["subject_classification_id"]
+            isOneToOne: false
+            referencedRelation: "learn_subject_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learn_user_scores: {
+        Row: {
+          calculated_at: string | null
+          difficulty_match: number | null
+          engagement_score: number | null
+          id: string
+          media_id: string
+          reason: string | null
+          relevance_score: number | null
+          shown_to_user: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          calculated_at?: string | null
+          difficulty_match?: number | null
+          engagement_score?: number | null
+          id?: string
+          media_id: string
+          reason?: string | null
+          relevance_score?: number | null
+          shown_to_user?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          calculated_at?: string | null
+          difficulty_match?: number | null
+          engagement_score?: number | null
+          id?: string
+          media_id?: string
+          reason?: string | null
+          relevance_score?: number | null
+          shown_to_user?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_content_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "auth_allowed_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -2423,39 +2579,6 @@ export type Database = {
         }
         Relationships: []
       }
-      subject_classifications: {
-        Row: {
-          associated_concepts: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          short_name: string | null
-          subject: string
-          subject_character: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          associated_concepts?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          short_name?: string | null
-          subject: string
-          subject_character?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          associated_concepts?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          short_name?: string | null
-          subject?: string
-          subject_character?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       sync_history: {
         Row: {
           completed_at: string | null
@@ -2633,51 +2756,7 @@ export type Database = {
             foreignKeyName: "fk_subject_classification"
             columns: ["subject_classification_id"]
             isOneToOne: false
-            referencedRelation: "subject_classifications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_content_scores: {
-        Row: {
-          calculated_at: string | null
-          difficulty_match: number | null
-          engagement_score: number | null
-          id: string
-          media_id: string
-          reason: string | null
-          relevance_score: number | null
-          shown_to_user: boolean | null
-          user_id: string | null
-        }
-        Insert: {
-          calculated_at?: string | null
-          difficulty_match?: number | null
-          engagement_score?: number | null
-          id?: string
-          media_id: string
-          reason?: string | null
-          relevance_score?: number | null
-          shown_to_user?: boolean | null
-          user_id?: string | null
-        }
-        Update: {
-          calculated_at?: string | null
-          difficulty_match?: number | null
-          engagement_score?: number | null
-          id?: string
-          media_id?: string
-          reason?: string | null
-          relevance_score?: number | null
-          shown_to_user?: boolean | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_content_scores_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "auth_allowed_emails"
+            referencedRelation: "learn_subject_classifications"
             referencedColumns: ["id"]
           },
         ]
@@ -2734,85 +2813,6 @@ export type Database = {
           name?: string
         }
         Relationships: []
-      }
-      user_learning_analytics: {
-        Row: {
-          average_session_length: number | null
-          completion_rate: number | null
-          experts_followed: string[] | null
-          insights: Json | null
-          last_calculated: string | null
-          preferred_time_of_day: string | null
-          quiz_average_score: number | null
-          topics_explored: string[] | null
-          total_minutes_watched: number | null
-          user_id: string
-        }
-        Insert: {
-          average_session_length?: number | null
-          completion_rate?: number | null
-          experts_followed?: string[] | null
-          insights?: Json | null
-          last_calculated?: string | null
-          preferred_time_of_day?: string | null
-          quiz_average_score?: number | null
-          topics_explored?: string[] | null
-          total_minutes_watched?: number | null
-          user_id: string
-        }
-        Update: {
-          average_session_length?: number | null
-          completion_rate?: number | null
-          experts_followed?: string[] | null
-          insights?: Json | null
-          last_calculated?: string | null
-          preferred_time_of_day?: string | null
-          quiz_average_score?: number | null
-          topics_explored?: string[] | null
-          total_minutes_watched?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_learning_analytics_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "auth_allowed_emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_subject_interests: {
-        Row: {
-          created_at: string
-          id: string
-          interest_level: number | null
-          subject_classification_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          interest_level?: number | null
-          subject_classification_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          interest_level?: number | null
-          subject_classification_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_subject_interests_subject_classification_id_fkey"
-            columns: ["subject_classification_id"]
-            isOneToOne: false
-            referencedRelation: "subject_classifications"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {

@@ -35,6 +35,41 @@ Table Rename Command Instructions
 
 
 
+Summary
+
+  I have successfully updated all references to the old table names to the new names:
+
+  1. learning_topics → learn_topics
+    - Updated in supabase/media_tracking_rls_policies.sql
+    - Updated in supabase/media_tracking_tables.sql
+  2. user_subject_interests → learn_user_interests
+    - Updated in supabase/media_tracking_rls_policies.sql
+    - Updated in supabase/media_tracking_tables.sql
+  3. user_content_scores → learn_user_scores
+    - Updated in supabase/migrations/20250131_unified_learning_platform_fixed.sql
+    - Updated in docs/technical-specs/unified-learning-platform-architecture.md
+  4. user_learning_analytics → learn_user_analytics
+    - Updated in supabase/migrations/20250131_unified_learning_platform_fixed.sql
+    - Updated in docs/technical-specs/unified-learning-platform-architecture.md
+  5. subject_classifications → learn_subject_classifications
+    - Updated in supabase/media_tracking_tables.sql
+    - Updated in scripts/cli-pipeline/document/update-subject-descriptions.ts
+    - Updated in packages/shared/services/classify-service.ts
+    - Updated in apps/dhg-hub/src/pages/Home.tsx
+    - Updated in apps/dhg-admin-explore/src/pages/Home.tsx
+    - Updated in scripts/cli-pipeline/all_pipelines/classification-rollup.ts
+    - Updated in scripts/cli-pipeline/classify/commands/health-check.ts
+    - Updated in supabase/sql/aaa_latest_presentations.sql
+
+  Finally:
+  - Generated updated supabase types with the new table names
+  - Cleared all caches to ensure the changes take effect
+
+  The table renaming is complete and all code references have been updated.
+
+
+
+
 Perfect! I've successfully updated all references from user_profiles_v2 to auth_user_profiles across the codebase. Here's a summary of the changes:
 
   Updated Files (17 total):

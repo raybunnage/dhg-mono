@@ -1,6 +1,6 @@
 
 
-CREATE TABLE "subject_classifications" (
+CREATE TABLE "learn_subject_classifications" (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     subject TEXT NOT NULL,
     subject_character TEXT,
@@ -11,7 +11,7 @@ CREATE TABLE "subject_classifications" (
 );
 
 
-   subject_classifications: {
+   learn_subject_classifications: {
         Row: {
           associated_concepts: string | null
           created_at: string | null
@@ -32,7 +32,7 @@ END;
 $$ language 'plpgsql';
 
 CREATE TRIGGER update_subject_classifications_updated_at
-    BEFORE UPDATE ON subject_classifications
+    BEFORE UPDATE ON learn_subject_classifications
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

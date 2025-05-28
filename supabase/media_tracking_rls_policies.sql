@@ -7,9 +7,9 @@
 ALTER TABLE media_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_playback_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_bookmarks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE learning_topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learn_topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_topic_segments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_subject_interests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learn_user_interests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expert_preferences ENABLE ROW LEVEL SECURITY;
 
 -- media_sessions policies
@@ -79,26 +79,26 @@ CREATE POLICY "Allow delete for authenticated users"
   FOR DELETE
   USING (auth.role() = 'authenticated');
 
--- learning_topics policies
+-- learn_topics policies
 -- For learning topics, we allow read access to all authenticated users
 -- But restrict write operations to service_role (admin)
 CREATE POLICY "Allow read access for all authenticated users"
-  ON learning_topics
+  ON learn_topics
   FOR SELECT
   USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow insert for service role"
-  ON learning_topics
+  ON learn_topics
   FOR INSERT
   WITH CHECK (auth.role() = 'service_role');
 
 CREATE POLICY "Allow update for service role"
-  ON learning_topics
+  ON learn_topics
   FOR UPDATE
   USING (auth.role() = 'service_role');
 
 CREATE POLICY "Allow delete for service role"
-  ON learning_topics
+  ON learn_topics
   FOR DELETE
   USING (auth.role() = 'service_role');
 
@@ -123,24 +123,24 @@ CREATE POLICY "Allow delete for service role"
   FOR DELETE
   USING (auth.role() = 'service_role');
 
--- user_subject_interests policies
+-- learn_user_interests policies
 CREATE POLICY "Allow read access for all authenticated users"
-  ON user_subject_interests
+  ON learn_user_interests
   FOR SELECT
   USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow insert for authenticated users"
-  ON user_subject_interests
+  ON learn_user_interests
   FOR INSERT
   WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow update for authenticated users"
-  ON user_subject_interests
+  ON learn_user_interests
   FOR UPDATE
   USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow delete for authenticated users"
-  ON user_subject_interests
+  ON learn_user_interests
   FOR DELETE
   USING (auth.role() = 'authenticated');
 

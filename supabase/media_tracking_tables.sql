@@ -54,11 +54,11 @@ CREATE TABLE IF NOT EXISTS media_bookmarks (
 -------------------------------------------------------
 
 -- Learning Topics - Identified topics in media for focused learning
-CREATE TABLE IF NOT EXISTS learning_topics (
+CREATE TABLE IF NOT EXISTS learn_topics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
-  parent_topic_id UUID REFERENCES learning_topics(id), -- For hierarchical topics
+  parent_topic_id UUID REFERENCES learn_topics(id), -- For hierarchical topics
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   UNIQUE(name)
 );
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS learning_topics (
 CREATE TABLE IF NOT EXISTS media_topic_segments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   source_id UUID REFERENCES sources_google(id) NOT NULL,
-  topic_id UUID REFERENCES learning_topics(id) NOT NULL,
+  topic_id UUID REFERENCES learn_topics(id) NOT NULL,
   expert_id UUID REFERENCES experts(id), -- Link to expert discussing topic (if applicable)
   start_position REAL NOT NULL, -- Start timestamp in seconds
   end_position REAL NOT NULL, -- End timestamp in seconds
@@ -82,9 +82,9 @@ CREATE TABLE IF NOT EXISTS media_topic_segments (
 -------------------------------------------------------
 
 -- User Subject Interests - Tracks which subjects a user is interested in
-CREATE TABLE IF NOT EXISTS user_subject_interests (
+CREATE TABLE IF NOT EXISTS learn_user_interests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  subject_classification_id UUID REFERENCES subject_classifications(id) NOT NULL,
+  subject_classification_id UUID REFERENCES learn_subject_classifications(id) NOT NULL,
   interest_level INTEGER CHECK (interest_level BETWEEN 1 AND 5), -- 1-5 rating
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS media_recommendations (
 CREATE TABLE IF NOT EXISTS learning_assessments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   session_id UUID REFERENCES media_sessions(id) ON DELETE CASCADE,
-  topic_id UUID REFERENCES learning_topics(id),
+  topic_id UUID REFERENCES learn_topics(id),
   assessment_type TEXT NOT NULL CHECK (assessment_type IN ('quiz', 'reflection', 'summary', 'notes')),
   content TEXT NOT NULL, -- Question or prompt
   response TEXT, -- User's response
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS learning_assessments (
 -- Learning Progress - Overall progress tracking across topics
 CREATE TABLE IF NOT EXISTS learning_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  topic_id UUID REFERENCES learning_topics(id) NOT NULL,
+  topic_id UUID REFERENCES learn_topics(id) NOT NULL,
   proficiency_level TEXT CHECK (proficiency_level IN ('novice', 'beginner', 'intermediate', 'advanced', 'expert')),
   media_consumed JSONB, -- List of consumed media for this topic
   time_spent REAL DEFAULT 0, -- Total time spent on topic (seconds)
@@ -167,7 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_media_topic_segments_topic_id ON media_topic_segm
 CREATE INDEX IF NOT EXISTS idx_media_topic_segments_expert_id ON media_topic_segments(expert_id);
 
 -- User preference indexes
-CREATE INDEX IF NOT EXISTS idx_user_subject_interests_subject_id ON user_subject_interests(subject_classification_id);
+CREATE INDEX IF NOT EXISTS idx_user_subject_interests_subject_id ON learn_user_interests(subject_classification_id);
 CREATE INDEX IF NOT EXISTS idx_expert_preferences_expert_id ON expert_preferences(expert_id);
 
 -------------------------------------------------------
@@ -209,7 +209,7 @@ LEFT JOIN
 LEFT JOIN
   table_classifications tc ON tc.entity_id = sg.id AND tc.entity_type = 'sources_google'
 LEFT JOIN
-  subject_classifications sc ON sc.id = tc.subject_classification_id
+  learn_subject_classifications sc ON sc.id = tc.subject_classification_id
 WHERE
   sg.mime_type IN ('audio/x-m4a', 'audio/mpeg', 'video/mp4', 'application/vnd.google-apps.video')
   AND sg.is_deleted = false;

@@ -157,7 +157,7 @@ quiz_responses (Future)
 ### 5. Personalization & Recommendations
 
 ```sql
-user_content_scores
+learn_user_scores
 ├── id UUID PRIMARY KEY
 ├── user_id UUID REFERENCES allowed_emails(id)
 ├── media_id UUID
@@ -168,7 +168,7 @@ user_content_scores
 ├── calculated_at TIMESTAMPTZ
 └── shown_to_user BOOLEAN DEFAULT false
 
-user_learning_analytics
+learn_user_analytics
 ├── user_id UUID PRIMARY KEY REFERENCES allowed_emails(id)
 ├── total_minutes_watched INTEGER
 ├── average_session_length INTEGER
@@ -191,7 +191,7 @@ graph TD
     A -->|id| E[media_bookmarks]
     A -->|id| F[learning_paths]
     A -->|id| G[quiz_responses]
-    A -->|id| H[user_content_scores]
+    A -->|id| H[learn_user_scores]
     
     I[media/presentations] -->|media_id| C
     I -->|media_id| J[media_topic_segments]
@@ -225,7 +225,7 @@ INSERT INTO user_profiles_v2 (
 );
 
 -- Step 3: System calculates initial content recommendations
-INSERT INTO user_content_scores (user_id, media_id, relevance_score, reason)
+INSERT INTO learn_user_scores (user_id, media_id, relevance_score, reason)
 SELECT 
     user_id,
     media_id,

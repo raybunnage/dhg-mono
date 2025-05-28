@@ -50,7 +50,7 @@ export async function generateClassificationRollup(options: ClassificationRollup
     
     // First get the list of subject classifications to have proper names available
     const { data: subjectsList, error: subjectsError } = await supabase
-      .from('subject_classifications')
+      .from('learn_subject_classifications')
       .select('id, subject, subject_character');
       
     if (subjectsError) {
@@ -217,7 +217,7 @@ export async function generateClassificationRollup(options: ClassificationRollup
           
           // Get all the subject information
           const { data: subjectInfo, error: subjectError } = await supabase
-            .from('subject_classifications')
+            .from('learn_subject_classifications')
             .select('*')
             .order('subject');
             

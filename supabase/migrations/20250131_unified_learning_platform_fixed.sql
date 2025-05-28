@@ -143,8 +143,8 @@ CREATE INDEX idx_media_bookmarks_media_id ON media_bookmarks(media_id);
 CREATE INDEX idx_media_bookmarks_tags ON media_bookmarks USING GIN(tags);
 
 -- 8. Create user_content_scores for personalization
-DROP TABLE IF EXISTS user_content_scores CASCADE;
-CREATE TABLE user_content_scores (
+DROP TABLE IF EXISTS learn_user_scores CASCADE;
+CREATE TABLE learn_user_scores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES allowed_emails(id) ON DELETE CASCADE,
   media_id UUID NOT NULL,
@@ -158,13 +158,13 @@ CREATE TABLE user_content_scores (
   UNIQUE(user_id, media_id)
 );
 
--- Indexes for user_content_scores
-CREATE INDEX idx_user_content_scores_user_id ON user_content_scores(user_id);
-CREATE INDEX idx_user_content_scores_relevance ON user_content_scores(relevance_score DESC);
+-- Indexes for learn_user_scores
+CREATE INDEX idx_user_content_scores_user_id ON learn_user_scores(user_id);
+CREATE INDEX idx_user_content_scores_relevance ON learn_user_scores(relevance_score DESC);
 
 -- 9. Create user_learning_analytics for aggregated data
-DROP TABLE IF EXISTS user_learning_analytics CASCADE;
-CREATE TABLE user_learning_analytics (
+DROP TABLE IF EXISTS learn_user_analytics CASCADE;
+CREATE TABLE learn_user_analytics (
   user_id UUID PRIMARY KEY REFERENCES allowed_emails(id) ON DELETE CASCADE,
   total_minutes_watched INTEGER DEFAULT 0,
   average_session_length INTEGER DEFAULT 0,
@@ -262,8 +262,8 @@ ALTER TABLE user_profiles_v2 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_playback_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_bookmarks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_content_scores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_learning_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learn_user_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learn_user_analytics ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist to avoid conflicts
 DO $$
@@ -284,11 +284,11 @@ BEGIN
     DROP POLICY IF EXISTS "Users can view own bookmarks" ON media_bookmarks;
     DROP POLICY IF EXISTS "Users can manage own bookmarks" ON media_bookmarks;
     
-    -- user_content_scores policies
-    DROP POLICY IF EXISTS "Users can view own scores" ON user_content_scores;
+    -- learn_user_scores policies
+    DROP POLICY IF EXISTS "Users can view own scores" ON learn_user_scores;
     
-    -- user_learning_analytics policies
-    DROP POLICY IF EXISTS "Users can view own analytics" ON user_learning_analytics;
+    -- learn_user_analytics policies
+    DROP POLICY IF EXISTS "Users can view own analytics" ON learn_user_analytics;
 END;
 $$;
 
@@ -355,20 +355,20 @@ CREATE POLICY "Users can manage own bookmarks" ON media_bookmarks
   );
 
 -- Users can view their own content scores
-CREATE POLICY "Users can view own scores" ON user_content_scores
+CREATE POLICY "Users can view own scores" ON learn_user_scores
   FOR SELECT USING (
     user_id IN (
       SELECT ae.id FROM allowed_emails ae 
-      WHERE ae.auth_user_id = auth.uid() OR ae.id = user_content_scores.user_id
+      WHERE ae.auth_user_id = auth.uid() OR ae.id = learn_user_scores.user_id
     )
   );
 
 -- Users can view their own analytics
-CREATE POLICY "Users can view own analytics" ON user_learning_analytics
+CREATE POLICY "Users can view own analytics" ON learn_user_analytics
   FOR SELECT USING (
     user_id IN (
       SELECT ae.id FROM allowed_emails ae 
-      WHERE ae.auth_user_id = auth.uid() OR ae.id = user_learning_analytics.user_id
+      WHERE ae.auth_user_id = auth.uid() OR ae.id = learn_user_analytics.user_id
     )
   );
 
@@ -378,14 +378,14 @@ COMMENT ON TABLE media_sessions IS 'Tracks user viewing sessions for presentatio
 COMMENT ON TABLE media_playback_events IS 'Detailed playback events within media sessions';
 COMMENT ON TABLE media_topic_segments IS 'AI-identified topic segments within media for content matching';
 COMMENT ON TABLE media_bookmarks IS 'User-created bookmarks and notes on media content';
-COMMENT ON TABLE user_content_scores IS 'Personalized content relevance scores for recommendations';
-COMMENT ON TABLE user_learning_analytics IS 'Aggregated learning analytics per user';
+COMMENT ON TABLE learn_user_scores IS 'Personalized content relevance scores for recommendations';
+COMMENT ON TABLE learn_user_analytics IS 'Aggregated learning analytics per user';
 
 -- Migration complete message
 DO $$
 BEGIN
   RAISE NOTICE 'Unified Learning Platform migration completed successfully';
-  RAISE NOTICE 'Tables created/updated: allowed_emails, user_profiles_v2, media_sessions, media_playback_events, media_topic_segments, media_bookmarks, user_content_scores, user_learning_analytics';
+  RAISE NOTICE 'Tables created/updated: allowed_emails, user_profiles_v2, media_sessions, media_playback_events, media_topic_segments, media_bookmarks, learn_user_scores, learn_user_analytics';
   RAISE NOTICE 'access_requests table has been dropped as requested';
 END;
 $$;

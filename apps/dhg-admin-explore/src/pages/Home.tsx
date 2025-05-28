@@ -243,7 +243,7 @@ type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'] & 
   document_type?: { document_type: string } | null;
 };
 
-type SubjectClassification = Database['public']['Tables']['subject_classifications']['Row'];
+type SubjectClassification = Database['public']['Tables']['learn_subject_classifications']['Row'];
 type TableClassification = Database['public']['Tables']['table_classifications']['Row'];
 
 export function Home() {
@@ -640,7 +640,7 @@ export function Home() {
 
         // Fetch all subject classifications for the filter
         const { data: subjectsData, error: subjectsError } = await supabase
-          .from('subject_classifications')
+          .from('learn_subject_classifications')
           .select('*')
           .order('subject');
 
