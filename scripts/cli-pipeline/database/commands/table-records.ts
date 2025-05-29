@@ -6,7 +6,8 @@ const program = new Command();
 
 program
   .name('table-records')
-  .description('List tables with record counts')
+  .description('List tables with record counts (default: only non-empty tables)')
+  .option('-a, --all', 'Show all tables including empty ones')
   .option('-m, --min-count <number>', 'Only show tables with at least this many records', parseInt)
   .option('-s, --sort', 'Sort results by record count (descending)', false)
   .option('-r, --reverse', 'Reverse the sort order', false)
@@ -25,7 +26,12 @@ program
       // Filter tables based on options
       let filteredTables = tables;
       
-      // Filter by minimum count
+      // By default, filter out empty tables unless --all flag is set
+      if (!options.all && options.minCount === undefined) {
+        filteredTables = filteredTables.filter(table => table.count > 0);
+      }
+      
+      // Filter by minimum count (overrides default behavior)
       if (options.minCount !== undefined && !isNaN(options.minCount)) {
         filteredTables = filteredTables.filter(table => table.count >= options.minCount);
       }

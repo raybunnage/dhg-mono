@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg-primary: #f0f8ff; /* Alice Blue */
+    --color-bg-secondary: #e6f3ff; /* Light Blue */
+    --color-bg-card: #ffffff;
+    --color-bg-hover: #dbeafe; /* Lighter Blue */
+    --color-text-primary: #1e3a8a; /* Dark Blue */
+    --color-text-secondary: #3b82f6; /* Medium Blue */
+    --color-border: #bfdbfe; /* Light Blue Border */
+  }
+
+  body {
+    @apply bg-sky-50;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-sky-100;
+  }
+
+  .btn-primary {
+    @apply bg-sky-500 text-white hover:bg-sky-600 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors;
+  }
+}

@@ -479,7 +479,7 @@ export const AllowedEmailsManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {email.metadata?.auth_user_exists ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-sky-800">
                           Full Auth
                         </span>
                       ) : email.metadata?.auth_invitation_sent ? (
@@ -487,7 +487,7 @@ export const AllowedEmailsManagement: React.FC = () => {
                           Invited
                         </span>
                       ) : (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-sky-800">
                           Light Only
                         </span>
                       )}
