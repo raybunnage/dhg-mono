@@ -26,6 +26,7 @@
 #   remove-expert-docs-pdf-records Remove expert_documents for PDF files with null document_type_id (incl. large PDFs)
 #   sync-expert-documents        Sync sources_google files with expert_documents records (create missing records)
 #   assign-main-video-id         Assign main_video_id to all nested folders/files in a high-level folder
+#   refresh-main-video-id        Find MP4 in folder and update main_video_id for all items (auto-detect video)
 #   report-folder-video-assignments  Generate report showing main_video_id assignments for a folder and nested items
 #   help                         Show this help message
 
@@ -1297,6 +1298,12 @@ fi
 if [ "$1" = "assign-main-video-id" ]; then
   shift
   track_command "assign-main-video-id" "ts-node $SCRIPT_DIR/assign-main-video-id.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "refresh-main-video-id" ]; then
+  shift
+  track_command "refresh-main-video-id" "ts-node $SCRIPT_DIR/refresh-main-video-id.ts $*"
   exit $?
 fi
 

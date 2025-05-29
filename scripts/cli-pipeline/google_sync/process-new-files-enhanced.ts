@@ -515,12 +515,27 @@ async function processNewFilesEnhanced(rootDriveId?: string): Promise<ProcessRes
     let filesToProcess = [];
     if (files.length > 0) {
       const fileIds = files.map(f => f.id);
-      const { data: existingExpDocs } = await supabase
-        .from('google_expert_documents')
-        .select('source_id')
-        .in('source_id', fileIds);
       
-      const existingSourceIds = new Set((existingExpDocs || []).map(e => e.source_id));
+      // Process in batches to avoid Supabase query limits
+      const checkBatchSize = 100; // Safe batch size for IN queries
+      let allExistingExpDocs: any[] = [];
+      
+      for (let i = 0; i < fileIds.length; i += checkBatchSize) {
+        const batch = fileIds.slice(i, i + checkBatchSize);
+        const { data: batchExpDocs, error: batchError } = await supabase
+          .from('google_expert_documents')
+          .select('source_id')
+          .in('source_id', batch);
+        
+        if (batchError) {
+          console.error(`Error checking existing expert docs (batch ${Math.floor(i/checkBatchSize) + 1}):`, batchError);
+          // Continue with other batches even if one fails
+        } else if (batchExpDocs) {
+          allExistingExpDocs = [...allExistingExpDocs, ...batchExpDocs];
+        }
+      }
+      
+      const existingSourceIds = new Set(allExistingExpDocs.map(e => e.source_id));
       filesToProcess = files.filter(f => !existingSourceIds.has(f.id));
     }
     

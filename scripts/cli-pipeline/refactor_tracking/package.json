@@ -1,0 +1,8 @@
+{
+  "name": "refactor-tracking-cli",
+  "version": "1.0.0",
+  "description": "CLI for tracking google sync command refactoring",
+  "dependencies": {
+    "commander": "^11.0.0"
+  }
+}

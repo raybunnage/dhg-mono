@@ -41,6 +41,12 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">DHG Admin Config</h1>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/work-summaries')}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Work Summaries
+              </button>
               <span className="text-sm text-gray-600">
                 {user?.email}
                 <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
