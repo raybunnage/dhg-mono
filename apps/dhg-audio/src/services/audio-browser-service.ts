@@ -1,4 +1,5 @@
 import { supabaseBrowser } from './supabase-browser-adapter';
+import { FilterService } from '@shared/services/filter-service/filter-service';
 
 /**
  * Browser-compatible audio service
@@ -8,10 +9,12 @@ import { supabaseBrowser } from './supabase-browser-adapter';
 class AudioBrowserService {
   private static instance: AudioBrowserService;
   private supabase: any;
+  private filterService: FilterService;
 
   private constructor() {
     try {
       this.supabase = supabaseBrowser.getClient();
+      this.filterService = new FilterService(this.supabase);
       console.log('Supabase client initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Supabase client:', error);
@@ -40,7 +43,7 @@ class AudioBrowserService {
         supabaseUrl: import.meta.env.VITE_SUPABASE_URL
       });
       
-      const query = this.supabase
+      let query = this.supabase
         .from('google_sources')
         .select(`
           id,
@@ -51,9 +54,11 @@ class AudioBrowserService {
           path,
           metadata,
           parent_folder_id,
+          root_drive_id,
+          path_array,
           google_sources_experts(
             expert_id,
-            experts:expert_id(
+            expert_profiles:expert_id(
               expert_name,
               full_name
             )
@@ -66,6 +71,9 @@ class AudioBrowserService {
         .is('is_deleted', false)
         .order('name', { ascending: true })
         .limit(limit || 100);
+
+      // Apply filter if one is active
+      query = await this.filterService.applyFilterToQuery(query);
       
       console.log('Executing Supabase query');
       const { data, error } = await query;
@@ -140,9 +148,11 @@ class AudioBrowserService {
           path,
           metadata,
           parent_folder_id,
+          root_drive_id,
+          path_array,
           google_sources_experts(
             expert_id,
-            experts:expert_id(
+            expert_profiles:expert_id(
               expert_name,
               full_name
             )

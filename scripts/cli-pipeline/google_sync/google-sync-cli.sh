@@ -9,6 +9,8 @@
 #   classify-powerpoints         Classify PowerPoint files missing document types using local extraction and Claude AI
 #   reclassify-docs              Re-classify documents with temperature=0 for deterministic results
 #   classify-docs-service        Classify .docx and .txt files missing document types
+#   classify                     NEW: Universal document classification - handles all file types
+#   test-classify                NEW: Test the unified classification service  
 #   reprocess-docx-files         Reprocess DOCX files with needs_reprocessing status
 #   check-duplicates             Check for duplicate files in sources_google
 #   check-document-types         Check for files missing document types
@@ -163,6 +165,22 @@ if [ "$1" = "classify-powerpoints" ]; then
   fi
   
   track_command "$CMD_NAME" "ts-node $SCRIPT_DIR/classify-powerpoints.ts $ARGS"
+  exit $?
+fi
+
+# NEW: Unified classification command
+if [ "$1" = "classify" ]; then
+  shift
+  echo "Running unified document classification..."
+  track_command "classify" "ts-node $SCRIPT_DIR/classify.ts $*"
+  exit $?
+fi
+
+# NEW: Test classification command
+if [ "$1" = "test-classify" ]; then
+  shift
+  echo "Testing unified classification service..."
+  track_command "test-classify" "ts-node $SCRIPT_DIR/test-classify.ts $*"
   exit $?
 fi
 

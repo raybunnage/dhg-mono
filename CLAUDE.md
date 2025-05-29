@@ -311,6 +311,20 @@ const { data, error } = await supabase
 - Consult `supabase/types.ts` for schema information (single source of truth)
 - Use proper column names: `experts.expert_name`, `document_types.name`
 
+**Accessing auth.users Table**:
+```typescript
+// ❌ WRONG: Direct table access doesn't work from client code
+const { data, error } = await supabase.from('auth.users').select('*');
+
+// ✅ CORRECT: Use the auth admin API with service role key
+const { data: { users }, error } = await supabase.auth.admin.listUsers();
+
+// ✅ CORRECT: In SQL migrations, you CAN directly reference auth.users
+// UPDATE auth_allowed_emails SET auth_user_id = (SELECT id FROM auth.users WHERE email = ...)
+```
+
+**Note**: The `auth.users` table is in the auth schema and requires special access. Use the auth admin API methods when working with user data from TypeScript/JavaScript code.
+
 ## Claude Service Usage
 
 **Import and Use the Singleton**:

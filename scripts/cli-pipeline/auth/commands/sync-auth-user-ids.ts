@@ -31,10 +31,10 @@ async function syncAuthUserIds() {
       return;
     }
     
-    // Step 2: Get all auth users
-    const { data: authUsers, error: authError } = await supabase
-      .from('auth.users')
-      .select('id, email');
+    // Step 2: Get all auth users using auth.getUser() for service role
+    // Note: Direct access to auth.users table requires service role key
+    // We'll use the admin API to list users instead
+    const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
     
     if (authError) {
       console.error('❌ Error fetching auth users:', authError);

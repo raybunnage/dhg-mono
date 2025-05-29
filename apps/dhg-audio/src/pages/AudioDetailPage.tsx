@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
-import { AudioPlayer, Transcript } from '@/components';
+import { Transcript, TrackedAudioPlayer } from '@/components';
 
 export const AudioDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -104,9 +104,11 @@ export const AudioDetailPage = () => {
       </div>
 
       <div className="mb-8">
-        <AudioPlayer 
+        <TrackedAudioPlayer 
           url={audioFile.url} 
-          title={audioFile.name} 
+          title={audioFile.name}
+          mediaId={audioFile.id}
+          enableTracking={true}
         />
       </div>
       

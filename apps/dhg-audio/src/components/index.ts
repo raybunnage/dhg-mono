@@ -1,5 +1,6 @@
 export * from './AudioList';
 export * from './AudioPlayer';
+export * from './TrackedAudioPlayer';
 export * from './Layout';
 export * from './Transcript';
 

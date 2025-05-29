@@ -1,1 +1,1 @@
-export * from './useAuth';
+export { useMediaTracking } from './useMediaTracking';

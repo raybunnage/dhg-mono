@@ -9,7 +9,7 @@
  * - Integrates with auth_user_profiles table
  */
 
-import { lightAuthService } from '@shared/services/light-auth-service';
+import { lightAuthService } from '@shared/services/light-auth-enhanced-service';
 import { userProfileService, type ProfileFormData } from '@shared/services/user-profile-service';
 import type { User, Session } from '@supabase/supabase-js';
 

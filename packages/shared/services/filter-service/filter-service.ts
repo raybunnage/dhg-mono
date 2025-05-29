@@ -1,6 +1,4 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
-import { Database } from '../../../../supabase/types';
 
 /**
  * Represents a filter profile that can be applied to queries
