@@ -3,8 +3,6 @@ import { AuthProvider } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { WorkSummaries } from './pages/WorkSummaries';
-import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useEffect } from 'react';
 
@@ -26,22 +24,6 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/work-summaries" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <WorkSummaries />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/refactor-status" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <CommandRefactorStatus />
             </ProtectedRoute>
           } 
         />

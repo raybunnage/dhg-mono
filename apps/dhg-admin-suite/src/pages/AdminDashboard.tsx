@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { UserManagement } from '../components/UserManagement';
 import { AllowedEmailsManagement } from '../components/AllowedEmailsManagement';
-import { ServerManagement } from '../components/ServerManagement';
 import { LoginStatistics } from '../components/LoginStatistics';
-import { DriveFilterManagement } from '../components/DriveFilterManagement';
 
 export const AdminDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'servers' | 'stats' | 'filters'>('emails');
+  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'stats'>('emails');
 
   const handleSignOut = async () => {
     await signOut();
@@ -39,20 +37,8 @@ export const AdminDashboard: React.FC = () => {
       <header className="bg-white shadow-sm border-b border-sky-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-sky-900">DHG Admin Config</h1>
+            <h1 className="text-2xl font-bold text-sky-900">DHG Admin Suite</h1>
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/work-summaries')}
-                className="text-sm text-sky-600 hover:text-sky-800 font-medium"
-              >
-                Work Summaries
-              </button>
-              <button
-                onClick={() => navigate('/refactor-status')}
-                className="text-sm text-sky-600 hover:text-sky-800 font-medium"
-              >
-                Refactor Status
-              </button>
               <span className="text-sm text-sky-700">
                 {user?.email}
                 <span className="ml-2 px-2 py-1 text-xs bg-sky-100 text-sky-800 rounded-full">
@@ -99,18 +85,6 @@ export const AdminDashboard: React.FC = () => {
               User Management
             </button>
             <button
-              onClick={() => setActiveTab('servers')}
-              className={`
-                py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'servers'
-                  ? 'border-sky-500 text-sky-700 font-medium'
-                  : 'border-transparent text-sky-600 hover:text-sky-800 hover:border-sky-300'
-                }
-              `}
-            >
-              Server Management
-            </button>
-            <button
               onClick={() => setActiveTab('stats')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
@@ -122,18 +96,6 @@ export const AdminDashboard: React.FC = () => {
             >
               Login Statistics
             </button>
-            <button
-              onClick={() => setActiveTab('filters')}
-              className={`
-                py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'filters'
-                  ? 'border-sky-500 text-sky-700 font-medium'
-                  : 'border-transparent text-sky-600 hover:text-sky-800 hover:border-sky-300'
-                }
-              `}
-            >
-              Drive Filters
-            </button>
           </nav>
         </div>
         
@@ -142,12 +104,8 @@ export const AdminDashboard: React.FC = () => {
           <AllowedEmailsManagement />
         ) : activeTab === 'users' ? (
           <UserManagement />
-        ) : activeTab === 'servers' ? (
-          <ServerManagement />
-        ) : activeTab === 'stats' ? (
-          <LoginStatistics />
         ) : (
-          <DriveFilterManagement />
+          <LoginStatistics />
         )}
       </main>
     </div>
