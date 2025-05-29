@@ -47,6 +47,12 @@ export const AdminDashboard: React.FC = () => {
               >
                 Work Summaries
               </button>
+              <button
+                onClick={() => navigate('/refactor-status')}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Refactor Status
+              </button>
               <span className="text-sm text-gray-600">
                 {user?.email}
                 <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">

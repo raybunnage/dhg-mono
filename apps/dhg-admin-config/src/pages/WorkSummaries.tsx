@@ -128,6 +128,12 @@ export function WorkSummaries() {
               <h1 className="text-2xl font-bold text-gray-900">AI Work Summaries</h1>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/refactor-status')}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Refactor Status
+              </button>
               <span className="text-sm text-gray-600">
                 {user?.email}
               </span>

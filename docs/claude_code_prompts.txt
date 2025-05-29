@@ -1,5 +1,13 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
+
+./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto \
+    "Clear title" \
+    "Detailed description" \
+    "command1,command2" \
+    "tag1,tag2"
+
+
 ./scripts/cli-pipeline/drive_filter/drive-filter-cli.sh set-active-profile -p 'Dynamic Healing Discussion Group'
 
 ./scripts/cli-pipeline/drive_filter/drive-filter-cli.sh set-active-profile -p 'Polyvagal Steering Group'
@@ -19,6 +27,65 @@ new fields in allowed_emails
 upgrading dhg-hub to do lightweight authentication
 making a video viewer 
 refactoring the sync commands into pieces
+
+
+Best Practice Recommendations
+
+  🎯 Recommended Approach for AI Assistants
+
+  After completing any significant work, I should run:
+
+  ./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto \
+    "Clear title" \
+    "Detailed description" \
+    "command1,command2" \
+    "tag1,tag2"
+
+  📋 Key Features of the System
+
+  1. Auto-Summary Command (auto)
+    - Automatically detects category (bug_fix, feature, refactoring, documentation)
+    - Auto-generates relevant tags from content
+    - Simple positional arguments - no need for flags
+    - Perfect for AI to use consistently
+  2. Manual Add Command (add)
+    - Full control with --flags
+    - Good for complex summaries with metadata
+  3. Import Command (import)
+    - Can parse historical summaries from claude_code_prompts.txt
+
+  🔍 Viewing Summaries
+
+  - Navigate to /work-summaries in dhg-admin-config
+  - Search by title, content, commands, or tags
+  - Filter by category
+  - Expand/collapse long summaries
+
+  ✅ When I Should Add Summaries
+
+  - After fixing bugs
+  - After creating new features
+  - After refactoring code
+  - After creating new commands
+  - After significant configuration changes
+  - After creating documentation
+
+  📝 What Makes a Good Summary
+
+  - Title: Specific action taken
+  - Content: Problem → Solution → Impact
+  - Commands: Actual CLI commands affected
+  - Tags: Help future searches (auto-detected if not provided)
+
+  The system is now fully operational with:
+  - Database tracking
+  - Web UI for browsing/searching
+  - Streamlined CLI for adding summaries
+  - Auto-detection of categories and tags
+  - Best practices documentation
+
+  I've already added summaries for today's work on the UI fixes and the auto-summary system itself!
+
 
 Summary
 

@@ -3,7 +3,8 @@
 # Work Summaries CLI - Track AI assistant work
 #
 # Commands:
-#   add          Add a new work summary
+#   add          Add a new work summary (manual)
+#   auto         Auto-generate a work summary (AI-friendly)
 #   import       Import summaries from claude_code_prompts.txt
 #   help         Show this help message
 
@@ -18,11 +19,13 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "Usage: ./work-summaries-cli.sh <command> [options]"
   echo ""
   echo "Commands:"
-  echo "  add          Add a new work summary"
+  echo "  add          Add a new work summary (manual)"
+  echo "  auto         Auto-generate a work summary (AI-friendly)"
   echo "  import       Import summaries from claude_code_prompts.txt"
   echo ""
   echo "Examples:"
   echo "  ./work-summaries-cli.sh add --title \"Fixed bug\" --content \"Description\" --commands \"cmd1,cmd2\""
+  echo "  ./work-summaries-cli.sh auto \"Fixed bug\" \"Description of the fix\""
   echo "  ./work-summaries-cli.sh import"
   exit 0
 fi
@@ -32,6 +35,11 @@ case "$1" in
   "add")
     shift
     ts-node "$SCRIPT_DIR/add-summary.ts" "$@"
+    ;;
+    
+  "auto")
+    shift
+    ts-node "$SCRIPT_DIR/auto-summary.ts" "$@"
     ;;
     
   "import")

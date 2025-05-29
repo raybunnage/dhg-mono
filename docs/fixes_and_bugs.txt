@@ -1,0 +1,82 @@
+questions
+
+Only Prerequsite:
+1) Premise - having a good set of material on a google drive
+   a) I catalogue it, process it with ai, extract document type - a set of commands that help process the material - that the user does not have to know at all
+   b) write it into a postgres database - supabase
+   c) write a front end over it in react - and relate the material and present it nicely and interactively
+   d) I can actually view the material on the google drive - without having to store it in the database - its lightweight and fast
+
+2) First major dropdown - just picks the google drive you want to work with - currently this is only set to Dynamic Healing Discussion Group
+   a) but soon - all the videos from our friday discussions
+   b) DR's, Davids - anyone elses dedicated google drive  
+
+
+
+what is it 
+1) a one page app for quick access to all the videos and associated materials in the google drive for anyone who comes to the google drive   - search and play
+2) comprehensive summaries, titles, categorizatin, transcription, association of documents, searching - two differing summaries - video summary and presetnations highlights - both optional
+3) context around the presentation - other files in the folders - are always shown and easily accessible
+4) a viewer of the source - video, powerpoints, mp4s, text files, doc files and pdf files - all in either summary or actual form
+
+5) this is the basis for a general purpose - presentation 
+
+
+0) does it need another way to show all the videos - or is what we have good enough
+a) omni search window
+b) pills to filter presentations
+c) tab to switch to filter by experts - okay if its a little bigger because the videos are usually 1   
+ Naviaux(4), Carter(5), Hanscom(3), DR(6)
+ Pandi(1), Lustig(2), you can better explore 
+
+Finishing work windows
+1) filter by experts or filter by subjects
+2) new experts by presenatins - some kind of ui that has all the experts and their associated presenations - could 
+3) I want to showcase the curated conversatin - the "AI Narrative Summaries" - may not have videos or there can be videos tied to it
+4) add a concept wheel - 
+ 
+ 1) search window
+  is the omni search method at the beginning workable?
+  should I consider showing some kind of condensed summary when you Hover over a video?
+  should I try to highlight in the video summary the search words?   if it matches the word you searched for - it remembers and highlights
+  need to search for powerpoints - 
+
+
+2) presentation cards - it shows the title and the mp4 name and the epxerts and the date -
+  a) consider adding mutlipe experts where there is more than 1
+  b) consider listing the key concepts (if not too busy ) - maybe 5 - then taking you the concept wheel
+  c) problably remove the filter name
+
+
+3) expert - popup info
+     do you like the popup expert info?  
+     working on assigning and showing many experts per video - going to present them below the title, but probably just the one on the card?
+     what order to present   1st primary  2nd secondary etc,
+     is there a preferable order for the expert assignment per document
+     for a video - i assume i don't need to call out the moderator as an associted expert - is that a correct assumption?
+     should the expert card be for all experts or just the currently chosen 1
+     highlight the links - in the etl so you it will open up the browser
+
+
+ 4) video summary  - collapsible window
+    a) is the summary too long
+    how long should it be?
+    Is it too hard to read?
+    how could I break it up - in different sentences 
+    is it too showy - the writeups - have enthusiastic - should I tone it down
+
+  
+5) Presentation assets - consider putting the title in the presentation asset window
+  a) use the file type as an icon - for it
+  b) web links - new thypes of assets with the information - and a link to open up a browser 
+  c) add document types on the cards
+  d) shorten mime_type to a short name for the type - 
+  e) possibly at the title - at least on a AJQWtBPbBgnB5A2HioJuANIUfGXhySK9YMxXVaonCWCRhOEsB6J17AimgWT7g6NSL4WH29Jtoq2pUpQ7XzwGdZe
+  f) short files where the presentatin highlight is longer thant the file - reconsider what is going on
+
+
+
+fixes In progress
+1) websites handled as links in presentation assets cards - remove summaries for them 
+2) assets show titles - when you over over them - or maybe condensed summaries 
+3) assets show the document types - presentatin accouncement, etc.  Q & A
