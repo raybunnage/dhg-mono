@@ -1,0 +1,17 @@
+{
+  "name": "dev-tasks-cli",
+  "version": "1.0.0",
+  "description": "CLI for managing Claude Code development tasks",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

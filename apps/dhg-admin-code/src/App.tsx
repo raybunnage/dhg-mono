@@ -5,6 +5,9 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { CodeDashboard } from './pages/CodeDashboard';
 import { WorkSummaries } from './pages/WorkSummaries';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
+import TasksPage from './pages/TasksPage';
+import CreateTaskPage from './pages/CreateTaskPage';
+import TaskDetailPage from './pages/TaskDetailPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -34,6 +37,30 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <CommandRefactorStatus />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/tasks" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <TasksPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/tasks/new" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <CreateTaskPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/tasks/:id" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <TaskDetailPage />
             </ProtectedRoute>
           } 
         />

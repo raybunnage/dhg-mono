@@ -1,6 +1,6 @@
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
-
+write up this latest ai-work_summary and add it using 
 ./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto \
     "Clear title" \
     "Detailed description" \

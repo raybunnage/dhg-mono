@@ -1,0 +1,197 @@
+import { supabase } from '../lib/supabase';
+
+export interface DevTask {
+  id: string;
+  title: string;
+  description: string;
+  task_type: 'bug' | 'feature' | 'refactor' | 'question';
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  claude_request?: string;
+  claude_response?: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  created_by?: string;
+}
+
+export interface DevTaskTag {
+  id: string;
+  task_id: string;
+  tag: string;
+  created_at: string;
+}
+
+export interface DevTaskFile {
+  id: string;
+  task_id: string;
+  file_path: string;
+  action: 'created' | 'modified' | 'deleted';
+  created_at: string;
+}
+
+export class TaskService {
+  // Task CRUD operations
+  static async getTasks(filters?: {
+    status?: string;
+    priority?: string;
+    search?: string;
+  }) {
+    let query = supabase
+      .from('dev_tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+    if (filters?.priority) {
+      query = query.eq('priority', filters.priority);
+    }
+    if (filters?.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as DevTask[];
+  }
+
+  static async getTask(id: string) {
+    const { data, error } = await supabase
+      .from('dev_tasks')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return data as DevTask;
+  }
+
+  static async createTask(task: Partial<DevTask>) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data, error } = await supabase
+      .from('dev_tasks')
+      .insert({
+        ...task,
+        created_by: user?.id
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTask;
+  }
+
+  static async updateTask(id: string, updates: Partial<DevTask>) {
+    const { data, error } = await supabase
+      .from('dev_tasks')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTask;
+  }
+
+  static async deleteTask(id: string) {
+    const { error } = await supabase
+      .from('dev_tasks')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+
+  // Tag operations
+  static async getTaskTags(taskId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_tags')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('tag');
+    
+    if (error) throw error;
+    return data as DevTaskTag[];
+  }
+
+  static async addTag(taskId: string, tag: string) {
+    const { data, error } = await supabase
+      .from('dev_task_tags')
+      .insert({ task_id: taskId, tag })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskTag;
+  }
+
+  static async removeTag(tagId: string) {
+    const { error } = await supabase
+      .from('dev_task_tags')
+      .delete()
+      .eq('id', tagId);
+    
+    if (error) throw error;
+  }
+
+  // File operations
+  static async getTaskFiles(taskId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_files')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('file_path');
+    
+    if (error) throw error;
+    return data as DevTaskFile[];
+  }
+
+  static async addFile(taskId: string, filePath: string, action: 'created' | 'modified' | 'deleted' = 'modified') {
+    const { data, error } = await supabase
+      .from('dev_task_files')
+      .insert({ task_id: taskId, file_path: filePath, action })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskFile;
+  }
+
+  static async removeFile(fileId: string) {
+    const { error } = await supabase
+      .from('dev_task_files')
+      .delete()
+      .eq('id', fileId);
+    
+    if (error) throw error;
+  }
+
+  // Helper to format task for Claude
+  static formatForClaude(task: DevTask, tags: string[] = []): string {
+    const tagString = tags.length > 0 ? `Tags: ${tags.join(', ')}\n` : '';
+    
+    return `# Task: ${task.title}
+ID: ${task.id}
+Type: ${task.task_type}
+Priority: ${task.priority}
+
+## Description
+${task.description}
+
+## Context
+${tagString}
+Created: ${new Date(task.created_at).toLocaleDateString()}`;
+  }
+
+  // Mark task as complete with Claude response
+  static async completeTask(id: string, claudeResponse: string) {
+    return this.updateTask(id, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      claude_response: claudeResponse
+    });
+  }
+}

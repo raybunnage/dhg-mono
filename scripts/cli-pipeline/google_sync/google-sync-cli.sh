@@ -476,6 +476,9 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "    generate-audio-batch         Generate batch processing scripts for audio extraction"
   echo "    upload-audio-files           Upload extracted M4A files to Google Drive"
   echo ""
+  echo "STATISTICS:"
+  echo "    populate-statistics          Populate google_sync_statistics table with folder statistics for active drive"
+  echo ""
   echo "OTHER:"
   echo "    analyze-command-usage        Analyze Google sync command usage patterns from tracking data"
   echo "    analyze-unprocessed-files    Analyze which files in sources_google don't have expert_documents records"
@@ -646,6 +649,16 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "  # Upload extracted M4A files from a specific directory"
   echo "  ./google-sync-cli.sh upload-audio-files --batch-dir=\"/Users/username/Documents/dhg-audio-processing/batch-123\""
+  echo ""
+  echo "STATISTICS:"
+  echo "  # Populate sync statistics for the active filter profile"
+  echo "  ./google-sync-cli.sh populate-statistics --verbose"
+  echo ""
+  echo "  # Populate statistics for a specific root drive ID"
+  echo "  ./google-sync-cli.sh populate-statistics --root-drive-id \"1ABC123XYZ\" --verbose"
+  echo ""
+  echo "  # Preview statistics calculation without updating database"
+  echo "  ./google-sync-cli.sh populate-statistics --dry-run --verbose"
   echo ""
   echo "ANALYTICS:"
   echo "  # Analyze Google sync command usage patterns"
@@ -1329,5 +1342,12 @@ fi
 if [ "$1" = "upload-audio-files" ]; then
   shift
   track_command "upload-audio-files" "ts-node $SCRIPT_DIR/upload-audio-files.ts $*"
+  exit $?
+fi
+
+# STATISTICS COMMANDS
+if [ "$1" = "populate-statistics" ]; then
+  shift
+  track_command "populate-statistics" "ts-node $SCRIPT_DIR/populate-sync-statistics.ts $*"
   exit $?
 fi

@@ -53,7 +53,15 @@ export const CodeDashboard: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <button
+            onClick={() => navigate('/tasks')}
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
+          >
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Claude Code Tasks</h2>
+            <p className="text-gray-600">Create and track development tasks for Claude Code</p>
+          </button>
+
           <button
             onClick={() => navigate('/work-summaries')}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
