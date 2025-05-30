@@ -14,6 +14,7 @@ interface CommandRefactor {
   command_type: string;
   current_status: string;
   description: string;
+  pipeline: string | null;
   test_criteria: string[];
   test_results: string | null;
   issues_found: string | null;
@@ -28,6 +29,7 @@ interface CommandRefactor {
 interface StatusSummary {
   command_type: string;
   current_status: string;
+  pipeline: string | null;
   count: number;
 }
 
@@ -46,8 +48,10 @@ export function CommandRefactorStatus() {
   const [commands, setCommands] = useState<CommandRefactor[]>([]);
   const [statusSummary, setStatusSummary] = useState<StatusSummary[]>([]);
   const [commandStats, setCommandStats] = useState<Record<string, CommandStats>>({});
+  const [selectedPipeline, setSelectedPipeline] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [pipelines, setPipelines] = useState<string[]>([]);
   const [expandedCommands, setExpandedCommands] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -93,6 +97,14 @@ export function CommandRefactorStatus() {
 
       setCommands(commandsData || []);
       setStatusSummary(summaryData || []);
+      
+      // Extract unique pipelines from commands
+      const uniquePipelines = [...new Set(
+        (commandsData || [])
+          .map(cmd => cmd.pipeline)
+          .filter(p => p !== null)
+      )] as string[];
+      setPipelines(uniquePipelines.sort());
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -167,15 +179,20 @@ export function CommandRefactorStatus() {
     const totals: Record<string, number> = {};
     const completed: Record<string, number> = {};
     
+    // Filter status summary by selected pipeline
+    const filteredSummary = selectedPipeline === 'all' 
+      ? statusSummary 
+      : statusSummary.filter(item => item.pipeline === selectedPipeline);
+    
     // Initialize counters for each command type
-    statusSummary.forEach(item => {
+    filteredSummary.forEach(item => {
       if (!totals[item.command_type]) {
         totals[item.command_type] = 0;
         completed[item.command_type] = 0;
       }
     });
 
-    statusSummary.forEach(item => {
+    filteredSummary.forEach(item => {
       totals[item.command_type] += item.count;
       
       // Count various completion statuses as "completed"
@@ -231,6 +248,7 @@ export function CommandRefactorStatus() {
 
   // Filter commands
   const filteredCommands = commands.filter(cmd => {
+    if (selectedPipeline !== 'all' && cmd.pipeline !== selectedPipeline) return false;
     if (selectedType !== 'all' && cmd.command_type !== selectedType) return false;
     if (selectedStatus !== 'all' && cmd.current_status !== selectedStatus) return false;
     return true;
@@ -254,7 +272,11 @@ export function CommandRefactorStatus() {
       <div className="max-w-7xl mx-auto">
         {/* Progress Overview */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Progress</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {selectedPipeline !== 'all' 
+              ? `${selectedPipeline} Pipeline Progress` 
+              : 'Overall Progress'}
+          </h2>
           
           {/* Progress Bar */}
           <div className="mb-4">
@@ -342,7 +364,25 @@ export function CommandRefactorStatus() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pipeline
+              </label>
+              <select
+                value={selectedPipeline}
+                onChange={(e) => setSelectedPipeline(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Pipelines</option>
+                {pipelines.map(pipeline => (
+                  <option key={pipeline} value={pipeline}>
+                    {pipeline}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Command Type
@@ -395,6 +435,11 @@ export function CommandRefactorStatus() {
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{command.command_name}</h3>
                         <div className="flex items-center gap-2 mt-1">
+                          {command.pipeline && (
+                            <span className="text-sm text-blue-600 font-medium">
+                              {command.pipeline}
+                            </span>
+                          )}
                           <span className="text-sm text-gray-500">
                             {getTypeIcon(command.command_type)} {command.command_type}
                           </span>

@@ -11,17 +11,24 @@ const supabase = SupabaseClientService.getInstance().getClient();
 const args = process.argv.slice(2);
 const typeIndex = args.indexOf('--type');
 const typeFilter = typeIndex !== -1 && args[typeIndex + 1] ? args[typeIndex + 1] : null;
+const pipelineIndex = args.indexOf('--pipeline');
+const pipelineFilter = pipelineIndex !== -1 && args[pipelineIndex + 1] ? args[pipelineIndex + 1] : null;
 
 async function listCommands() {
   try {
     let query = supabase
       .from('command_refactor_tracking')
-      .select('command_name, command_type, current_status, description')
+      .select('command_name, command_type, current_status, description, pipeline')
+      .order('pipeline')
       .order('command_type')
       .order('command_name');
     
     if (typeFilter) {
       query = query.eq('command_type', typeFilter);
+    }
+    
+    if (pipelineFilter) {
+      query = query.eq('pipeline', pipelineFilter);
     }
     
     const { data: commands, error } = await query;
@@ -33,27 +40,36 @@ async function listCommands() {
       return;
     }
     
-    // Group by type
-    const grouped: Record<string, any[]> = {};
+    // Group by pipeline first, then by type
+    const grouped: Record<string, Record<string, any[]>> = {};
     commands.forEach(cmd => {
-      if (!grouped[cmd.command_type]) {
-        grouped[cmd.command_type] = [];
+      const pipeline = cmd.pipeline || 'unassigned';
+      if (!grouped[pipeline]) {
+        grouped[pipeline] = {};
       }
-      grouped[cmd.command_type].push(cmd);
+      if (!grouped[pipeline][cmd.command_type]) {
+        grouped[pipeline][cmd.command_type] = [];
+      }
+      grouped[pipeline][cmd.command_type].push(cmd);
     });
     
     // Display
-    Object.keys(grouped).sort().forEach(type => {
-      console.log(`\n📁 ${type.toUpperCase()} COMMANDS:`);
-      console.log('─'.repeat(80));
+    Object.keys(grouped).sort().forEach(pipeline => {
+      console.log(`\n🚀 PIPELINE: ${pipeline.toUpperCase()}`);
+      console.log('═'.repeat(80));
       
-      grouped[type].forEach(cmd => {
-        const statusEmoji = getStatusEmoji(cmd.current_status);
-        const statusColor = getStatusColor(cmd.current_status);
-        console.log(`${statusEmoji} ${cmd.command_name.padEnd(35)} ${statusColor}${cmd.current_status}${'\x1b[0m'}`);
-        if (cmd.description) {
-          console.log(`   ${cmd.description}`);
-        }
+      Object.keys(grouped[pipeline]).sort().forEach(type => {
+        console.log(`\n  📁 ${type.toUpperCase()} COMMANDS:`);
+        console.log('  ' + '─'.repeat(78));
+        
+        grouped[pipeline][type].forEach(cmd => {
+          const statusEmoji = getStatusEmoji(cmd.current_status);
+          const statusColor = getStatusColor(cmd.current_status);
+          console.log(`  ${statusEmoji} ${cmd.command_name.padEnd(35)} ${statusColor}${cmd.current_status}${'\x1b[0m'}`);
+          if (cmd.description) {
+            console.log(`     ${cmd.description}`);
+          }
+        });
       });
     });
     

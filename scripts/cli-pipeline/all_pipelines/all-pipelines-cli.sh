@@ -136,6 +136,16 @@ update_deprecated_to_archive() {
   track_command "update-deprecated-to-archive" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-deprecated-to-archive.ts $@"
 }
 
+# Command handler for populate-command-registry
+populate_command_registry() {
+  track_command "populate-command-registry" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/populate-command-registry.ts $@"
+}
+
+# Command handler for populate-pipeline-tables
+populate_pipeline_tables() {
+  track_command "populate-pipeline-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/populate-pipeline-tables.ts $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -163,6 +173,8 @@ show_help() {
   echo "SYSTEM:"
   echo "    check-deprecated-commands Check deprecated commands that should be archived"
   echo "    update-deprecated-to-archive Update all deprecated commands to archived status"
+  echo "    populate-command-registry Scan all pipelines and populate command registry"
+  echo "    populate-pipeline-tables  Populate database table usage for each pipeline"
   echo "    help                      Show this help message"
   echo ""
   echo "COMMON OPTIONS:"
@@ -257,6 +269,12 @@ case "$1" in
     ;;
   "update-deprecated-to-archive")
     update_deprecated_to_archive "${@:2}"
+    ;;
+  "populate-command-registry")
+    populate_command_registry "${@:2}"
+    ;;
+  "populate-pipeline-tables")
+    populate_pipeline_tables "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

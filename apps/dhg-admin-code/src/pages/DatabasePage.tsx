@@ -131,10 +131,54 @@ export function DatabasePage() {
         processedTables.add(tableName);
 
         try {
-          // Get the count
-          const { count, error: countError } = await supabase
-            .from(tableName)
-            .select('*', { count: 'exact', head: true });
+          let count: number | null = null;
+          let countError: any = null;
+          
+          // Special handling for auth_audit_log table which requires admin access
+          if (tableName === 'auth_audit_log') {
+            // Try to use the SECURITY DEFINER function to get the actual count
+            const { data: auditCountData, error: auditCountError } = await supabase
+              .rpc('get_auth_audit_log_count');
+            
+            if (!auditCountError && auditCountData !== null) {
+              count = auditCountData;
+              // Successfully got count, now add to list with known columns
+              tableInfoList.push({
+                table_name: tableName,
+                table_schema: 'public',
+                table_type: 'BASE TABLE',
+                row_count: count,
+                columns: ['id', 'user_id', 'event_type', 'created_at', 'metadata', 'ip_address', 'user_agent'] // Known columns
+              });
+              continue;
+            } else {
+              // Fallback to regular count if function doesn't exist yet
+              const result = await supabase
+                .from(tableName)
+                .select('*', { count: 'exact', head: true });
+              
+              count = result.count || 0;
+              countError = result.error;
+              
+              // Add with note about RLS
+              tableInfoList.push({
+                table_name: tableName,
+                table_schema: 'public',
+                table_type: 'BASE TABLE',
+                row_count: count,
+                error: countError ? countError.message : (count === 0 ? 'RLS restricted - run migration for actual count' : null),
+                columns: ['id', 'user_id', 'event_type', 'created_at', 'metadata', 'ip_address', 'user_agent']
+              });
+              continue;
+            }
+          } else {
+            // Regular count for other tables
+            const result = await supabase
+              .from(tableName)
+              .select('*', { count: 'exact', head: true });
+            count = result.count;
+            countError = result.error;
+          }
 
           if (countError) {
             // Table doesn't exist, skip it
@@ -208,7 +252,8 @@ export function DatabasePage() {
       'batch_': { label: 'Batch', description: 'Batch operations' },
       'command_': { label: 'Command', description: 'Command & analytics' },
       'dev_': { label: 'Dev', description: 'Development tasks' },
-      'doc_': { label: 'Document', description: 'Document management' },
+      'doc_': { label: 'Docs', description: 'Document management' },
+      'document_': { label: 'Document Types', description: 'Document type definitions' },
       'email_': { label: 'Email', description: 'Email system' },
       'expert_': { label: 'Expert', description: 'Expert system' },
       'filter_': { label: 'Filter', description: 'User filters & preferences' },
@@ -255,7 +300,7 @@ export function DatabasePage() {
     if (selectedPrefix) {
       if (selectedPrefix === '_other') {
         const knownPrefixes = ['ai_', 'auth_', 'batch_', 'command_', 'dev_', 'doc_', 
-                               'email_', 'expert_', 'filter_', 'google_', 'learn_', 
+                               'document_', 'email_', 'expert_', 'filter_', 'google_', 'learn_', 
                                'media_', 'scripts_', 'sys_'];
         filtered = filtered.filter(table => 
           !knownPrefixes.some(prefix => table.table_name.startsWith(prefix))

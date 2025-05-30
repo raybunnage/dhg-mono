@@ -32,6 +32,7 @@ async function showCommand() {
     console.log(`\n📋 Command: ${command.command_name}`);
     console.log('─'.repeat(60));
     
+    console.log(`Pipeline: ${command.pipeline || 'unassigned'}`);
     console.log(`Type: ${command.command_type}`);
     console.log(`Status: ${getStatusEmoji(command.current_status)} ${command.current_status}`);
     

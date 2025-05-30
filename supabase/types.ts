@@ -852,6 +852,7 @@ export type Database = {
           notes: string | null
           old_implementation_path: string | null
           options: Json | null
+          pipeline: string | null
           signed_off_at: string | null
           signed_off_by: string | null
           test_criteria: string[] | null
@@ -870,6 +871,7 @@ export type Database = {
           notes?: string | null
           old_implementation_path?: string | null
           options?: Json | null
+          pipeline?: string | null
           signed_off_at?: string | null
           signed_off_by?: string | null
           test_criteria?: string[] | null
@@ -888,6 +890,7 @@ export type Database = {
           notes?: string | null
           old_implementation_path?: string | null
           options?: Json | null
+          pipeline?: string | null
           signed_off_at?: string | null
           signed_off_by?: string | null
           test_criteria?: string[] | null
@@ -2558,6 +2561,7 @@ export type Database = {
           command_type: string | null
           count: number | null
           current_status: string | null
+          pipeline: string | null
         }
         Relationships: []
       }
