@@ -36,6 +36,19 @@ interface AggregatedStats {
   lastUpdated: string | null;
 }
 
+interface FilterProfile {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+interface FilterProfileDrive {
+  id: string;
+  profile_id: string;
+  root_drive_id: string;
+  profile?: FilterProfile;
+}
+
 export const Statistics: React.FC = () => {
   const [statistics, setStatistics] = useState<SyncStatistics[]>([]);
   const [aggregatedStats, setAggregatedStats] = useState<AggregatedStats>({
@@ -51,54 +64,137 @@ export const Statistics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [profileDrives, setProfileDrives] = useState<FilterProfileDrive[]>([]);
+  const [selectedDriveId, setSelectedDriveId] = useState<string | null>(null);
+  const [allProfiles, setAllProfiles] = useState<FilterProfile[]>([]);
 
   useEffect(() => {
-    fetchStatistics();
+    fetchFilterProfiles();
   }, []);
+
+  useEffect(() => {
+    if (selectedDriveId) {
+      fetchStatistics();
+    }
+  }, [selectedDriveId]);
+
+  const fetchFilterProfiles = async () => {
+    try {
+      // Fetch all filter profiles with their drives
+      const { data: profiles, error: profilesError } = await supabase
+        .from('filter_user_profiles')
+        .select('*')
+        .order('name');
+
+      if (profilesError) throw profilesError;
+
+      if (profiles) {
+        setAllProfiles(profiles);
+        
+        // Fetch all drives with their profile relationships
+        const { data: drives, error: drivesError } = await supabase
+          .from('filter_user_profile_drives')
+          .select('*');
+
+        if (drivesError) throw drivesError;
+
+        if (drives && drives.length > 0) {
+          // Attach profile information to each drive
+          const drivesWithProfiles = drives.map(drive => ({
+            ...drive,
+            profile: profiles.find(p => p.id === drive.profile_id)
+          }));
+          
+          setProfileDrives(drivesWithProfiles);
+          
+          // Set the active profile's drive as selected by default
+          const activeProfile = profiles.find(p => p.is_active);
+          if (activeProfile) {
+            const activeDrive = drivesWithProfiles.find(d => d.profile_id === activeProfile.id);
+            if (activeDrive) {
+              setSelectedDriveId(activeDrive.root_drive_id);
+            }
+          } else if (drivesWithProfiles.length > 0) {
+            // If no active profile, select the first drive
+            setSelectedDriveId(drivesWithProfiles[0].root_drive_id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching filter profiles:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch filter profiles');
+    }
+  };
 
   const fetchStatistics = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('google_sync_statistics')
         .select('*')
         .order('google_drive_count', { ascending: false })
-        .limit(50);
+        .limit(200); // Increased limit to ensure we get all folders + TOTAL entry
+
+      // Filter by selected drive ID if available
+      if (selectedDriveId) {
+        query = query.eq('root_drive_id', selectedDriveId);
+      }
+
+      const { data, error: fetchError } = await query;
       
       if (fetchError) throw fetchError;
       
       if (data) {
-        setStatistics(data);
+        // Find the TOTAL entry
+        const totalEntry = data.find(stat => stat.folder_name === 'TOTAL FILES IN DRIVE');
         
-        // Calculate aggregated stats
-        const aggregated = data.reduce((acc, stat) => {
-          acc.totalFolders += 1;
-          acc.totalFiles += stat.google_drive_count;
-          acc.totalDocuments += stat.google_drive_documents;
-          acc.totalSubfolders += stat.google_drive_folders;
-          acc.totalMp4Files += stat.mp4_files;
-          acc.totalMp4Size += parseInt(stat.mp4_total_size || '0');
-          acc.totalNewFiles += stat.new_files;
-          
-          if (!acc.lastUpdated || new Date(stat.updated_at) > new Date(acc.lastUpdated)) {
-            acc.lastUpdated = stat.updated_at;
-          }
-          
-          return acc;
-        }, {
-          totalFolders: 0,
-          totalFiles: 0,
-          totalDocuments: 0,
-          totalSubfolders: 0,
-          totalMp4Files: 0,
-          totalMp4Size: 0,
-          totalNewFiles: 0,
-          lastUpdated: null as string | null
-        });
+        // Filter out the TOTAL entry from the regular statistics
+        const folderStats = data.filter(stat => stat.folder_name !== 'TOTAL FILES IN DRIVE');
+        setStatistics(folderStats);
         
-        setAggregatedStats(aggregated);
+        // Use TOTAL entry for aggregated stats if available, otherwise sum up folders
+        if (totalEntry) {
+          setAggregatedStats({
+            totalFolders: folderStats.length,
+            totalFiles: totalEntry.total_google_drive_items || totalEntry.google_drive_count,
+            totalDocuments: totalEntry.google_drive_documents,
+            totalSubfolders: totalEntry.google_drive_folders,
+            totalMp4Files: totalEntry.mp4_files,
+            totalMp4Size: parseInt(totalEntry.mp4_total_size || '0'),
+            totalNewFiles: totalEntry.new_files,
+            lastUpdated: totalEntry.updated_at
+          });
+        } else {
+          // Fallback: calculate aggregated stats from individual folders
+          const aggregated = folderStats.reduce((acc, stat) => {
+            acc.totalFolders += 1;
+            acc.totalFiles += stat.google_drive_count;
+            acc.totalDocuments += stat.google_drive_documents;
+            acc.totalSubfolders += stat.google_drive_folders;
+            acc.totalMp4Files += stat.mp4_files;
+            acc.totalMp4Size += parseInt(stat.mp4_total_size || '0');
+            acc.totalNewFiles += stat.new_files;
+            
+            if (!acc.lastUpdated || new Date(stat.updated_at) > new Date(acc.lastUpdated)) {
+              acc.lastUpdated = stat.updated_at;
+            }
+            
+            return acc;
+          }, {
+            totalFolders: 0,
+            totalFiles: 0,
+            totalDocuments: 0,
+            totalSubfolders: 0,
+            totalMp4Files: 0,
+            totalMp4Size: 0,
+            totalNewFiles: 0,
+            lastUpdated: null as string | null
+          });
+          
+          setAggregatedStats(aggregated);
+        }
       }
     } catch (err) {
       console.error('Error fetching statistics:', err);
@@ -157,25 +253,60 @@ export const Statistics: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header with Refresh Button */}
-        <div className="flex justify-between items-center">
-          <div>
+        {/* Header with Refresh Button and Drive Selector */}
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900">Google Drive Statistics</h2>
             <p className="text-gray-600 mt-1">
-              Statistics for: Dynamic Healing Discussion Group
+              {(() => {
+                const selectedDrive = profileDrives.find(d => d.root_drive_id === selectedDriveId);
+                const profileName = selectedDrive?.profile?.name || 'Unknown Profile';
+                const isActive = selectedDrive?.profile?.is_active;
+                return (
+                  <span>
+                    Viewing: {profileName}
+                    {isActive && <span className="ml-2 text-xs text-green-600">(Active Profile)</span>}
+                  </span>
+                );
+              })()}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Root Drive ID: 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV
-            </p>
+            {selectedDriveId && (
+              <p className="text-xs text-gray-500 mt-1">
+                Root Drive ID: {selectedDriveId}
+              </p>
+            )}
           </div>
-          <button
-            onClick={refreshStatistics}
-            disabled={refreshing}
-            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Drive Selector */}
+            {profileDrives.length > 0 && (
+              <div className="min-w-[300px]">
+                <label htmlFor="drive-select" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Profile
+                </label>
+                <select
+                  id="drive-select"
+                  value={selectedDriveId || ''}
+                  onChange={(e) => setSelectedDriveId(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                >
+                  {profileDrives.map((drive) => (
+                    <option key={drive.id} value={drive.root_drive_id}>
+                      {drive.profile?.name || 'Unknown Profile'}
+                      {drive.profile?.is_active && ' (Active)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <button
+              onClick={refreshStatistics}
+              disabled={refreshing || !selectedDriveId}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -233,7 +364,8 @@ export const Statistics: React.FC = () => {
         {/* Detailed Statistics Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Folder Statistics (Top 50 by Size)</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Folder Statistics ({statistics.length} folders)</h3>
+            <p className="text-sm text-gray-600 mt-1">Showing file counts per folder (top 50 by size)</p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

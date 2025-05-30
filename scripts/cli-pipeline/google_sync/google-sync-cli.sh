@@ -403,6 +403,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  * sync                         Sync files from Google Drive to the database with intelligent file categorization (legacy - use sync-all)"
   echo "    sync-all                     NEW: Complete sync pipeline (sync + process + metadata update) - RECOMMENDED"
   echo "    sync-files                   NEW: Fast core sync only - just file existence (< 30s typical)"
+  echo "    sync-history                 NEW: View recent sync history from the database"
   echo "    process-new-files-enhanced   NEW: Process new files with detailed hierarchical report (create expert_documents)"
   echo "    update-metadata              NEW: Update metadata for existing files (size, thumbnails, renames)"
   echo "    verify-deletions             NEW: Verify deleted files and optionally restore those that still exist"
@@ -1058,6 +1059,12 @@ if [ "$1" = "sync-files" ]; then
   exit $?
 fi
 
+if [ "$1" = "sync-history" ]; then
+  shift
+  track_command "sync-history" "ts-node $SCRIPT_DIR/view-sync-history.ts $*"
+  exit $?
+fi
+
 if [ "$1" = "process-new-files-enhanced" ]; then
   shift
   track_command "process-new-files-enhanced" "ts-node $SCRIPT_DIR/process-new-files-enhanced.ts $*"
@@ -1349,7 +1356,7 @@ fi
 # STATISTICS COMMANDS
 if [ "$1" = "populate-statistics" ]; then
   shift
-  track_command "populate-statistics" "ts-node $SCRIPT_DIR/populate-sync-statistics-recursive.ts $*"
+  track_command "populate-statistics" "ts-node $SCRIPT_DIR/populate-sync-statistics.ts $*"
   exit $?
 fi
 

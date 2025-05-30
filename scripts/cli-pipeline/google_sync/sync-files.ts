@@ -27,6 +27,7 @@ import { getGoogleDriveService, GoogleDriveService } from '../../../packages/sha
 import type { Database } from '../../../supabase/types';
 import { getActiveFilterProfile } from './get-active-filter-profile';
 import { displayActiveFilter } from './display-active-filter';
+import { createSyncHistory, completeSyncHistory } from './record-sync-history';
 
 // Load environment files
 function loadEnvFiles() {
@@ -455,6 +456,9 @@ async function syncFiles(
     duration: 0
   };
   
+  // Create sync history entry
+  let syncHistoryId: string | null = null;
+  
   try {
     // Get folder details
     const folder = await driveService.getFile(
@@ -463,6 +467,18 @@ async function syncFiles(
     );
     
     console.log(`📁 Syncing folder: ${folder.name} (${rootDriveId})`);
+    
+    // Create sync history entry if not in dry run mode
+    if (!isDryRun) {
+      syncHistoryId = await createSyncHistory({
+        folderId: rootDriveId,
+        folderName: folder.name
+      });
+      
+      if (syncHistoryId) {
+        console.log(`📝 Created sync history entry: ${syncHistoryId}`);
+      }
+    }
     
     // Ensure root folder exists in database
     if (!isDryRun) {
@@ -673,6 +689,18 @@ async function syncFiles(
   }
   
   result.duration = (Date.now() - startTime) / 1000;
+  
+  // Complete sync history entry
+  if (syncHistoryId && !isDryRun) {
+    const totalItemsProcessed = result.filesInserted + result.filesMarkedDeleted + result.filesSkipped;
+    await completeSyncHistory(syncHistoryId, {
+      itemsProcessed: totalItemsProcessed,
+      hasErrors: result.errors.length > 0,
+      errorMessage: result.errors.length > 0 ? result.errors.join('; ') : undefined
+    });
+    console.log(`📝 Completed sync history entry`);
+  }
+  
   return result;
 }
 

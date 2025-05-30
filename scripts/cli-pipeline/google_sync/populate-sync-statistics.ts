@@ -7,6 +7,7 @@ interface SyncStatisticsOptions {
   rootDriveId?: string;
   verbose?: boolean;
   dryRun?: boolean;
+  clearExisting?: boolean;
 }
 
 interface FolderStatistics {
@@ -80,17 +81,27 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
       }
     }
     
-    // Build the query for google_sources
-    let query = supabase
-      .from('google_sources')
-      .select('*')
-      .eq('is_deleted', false);
-    
-    if (activeRootDriveId) {
-      query = query.eq('root_drive_id', activeRootDriveId);
+    // Clear existing statistics if requested
+    if (options.clearExisting) {
+      console.log('Clearing existing statistics...');
+      const { error: deleteError } = await supabase
+        .from('google_sync_statistics')
+        .delete()
+        .eq('root_drive_id', activeRootDriveId);
+      
+      if (deleteError) {
+        console.error('Error clearing existing statistics:', deleteError);
+        return;
+      }
+      console.log('Existing statistics cleared.');
     }
     
-    const { data: sources, error: sourcesError } = await query;
+    // Get ALL sources for the active root drive
+    const { data: sources, error: sourcesError } = await supabase
+      .from('google_sources')
+      .select('*')
+      .eq('is_deleted', false)
+      .eq('root_drive_id', activeRootDriveId);
     
     if (sourcesError) {
       console.error('Error fetching sources:', sourcesError);
@@ -102,22 +113,22 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
       return;
     }
     
-    console.log(`Found ${sources.length} sources to analyze`);
+    console.log(`Found ${sources.length} sources to analyze for root drive: ${activeRootDriveId}`);
     
-    // Group sources by parent_folder_id
-    const folderMap = new Map<string, FolderStatistics>();
+    // Group sources by parent_folder_id to get folder statistics
+    const folderStats = new Map<string, FolderStatistics>();
     
-    // Initialize folder statistics
+    // Process each source
     for (const source of sources) {
-      const folderId = source.parent_folder_id || 'root';
+      const parentId = source.parent_folder_id || 'root';
       
-      if (!folderMap.has(folderId)) {
-        // Find the folder name from sources
-        const folderSource = sources.find(s => s.drive_id === folderId);
-        const folderName = folderSource?.name || (folderId === 'root' ? 'Root' : 'Unknown');
+      if (!folderStats.has(parentId)) {
+        // Find the parent folder info
+        const parentFolder = sources.find(s => s.drive_id === parentId);
+        const folderName = parentFolder?.name || (parentId === 'root' ? 'Root Level Items' : `Unknown (${parentId})`);
         
-        folderMap.set(folderId, {
-          folder_id: folderId,
+        folderStats.set(parentId, {
+          folder_id: parentId,
           folder_name: folderName,
           root_drive_id: activeRootDriveId || null,
           google_drive_count: 0,
@@ -133,13 +144,13 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
         });
       }
       
-      const stats = folderMap.get(folderId)!;
+      const stats = folderStats.get(parentId)!;
       
-      // Count Google Drive items
+      // Count this item
       stats.google_drive_count++;
       stats.total_google_drive_items++;
       
-      // Count by mime type
+      // Categorize by type
       if (source.mime_type === 'application/vnd.google-apps.folder') {
         stats.google_drive_folders++;
       } else {
@@ -161,28 +172,89 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
       if (createdDate > sevenDaysAgo) {
         stats.new_files++;
       }
-      
-      // For local vs matching files, we'd need to check against local file system
-      // For now, we'll set these to 0 as they require file system access
-      // In a real implementation, you might want to check against a local directory
     }
     
-    if (options.verbose) {
-      console.log('\nFolder Statistics:');
-      console.log('==================');
-      for (const [folderId, stats] of Array.from(folderMap.entries())) {
-        console.log(`\nFolder: ${stats.folder_name} (${folderId})`);
-        console.log(`  Total items: ${stats.google_drive_count}`);
-        console.log(`  Documents: ${stats.google_drive_documents}`);
-        console.log(`  Folders: ${stats.google_drive_folders}`);
-        console.log(`  MP4 files: ${stats.mp4_files}`);
-        console.log(`  MP4 total size: ${(Number(stats.mp4_total_size) / (1024 * 1024 * 1024)).toFixed(2)} GB`);
-        console.log(`  New files (last 7 days): ${stats.new_files}`);
+    // Now we'll only keep statistics for folders that have direct children
+    // And create one overall summary
+    const folderStatsList: FolderStatistics[] = [];
+    
+    // Add folder statistics (only for folders with direct children)
+    for (const [folderId, stats] of folderStats.entries()) {
+      if (stats.google_drive_count > 0) {
+        folderStatsList.push(stats);
       }
     }
     
+    // Create an overall summary entry
+    const overallStats: FolderStatistics = {
+      folder_id: `TOTAL-${activeRootDriveId}`,
+      folder_name: 'TOTAL FILES IN DRIVE',
+      root_drive_id: activeRootDriveId || null,
+      google_drive_count: sources.length,
+      google_drive_documents: sources.filter(s => s.mime_type !== 'application/vnd.google-apps.folder').length,
+      google_drive_folders: sources.filter(s => s.mime_type === 'application/vnd.google-apps.folder').length,
+      local_files: 0,
+      local_only_files: 0,
+      matching_files: 0,
+      mp4_files: 0,
+      mp4_total_size: BigInt(0),
+      new_files: 0,
+      total_google_drive_items: sources.length
+    };
+    
+    // Calculate MP4 stats for overall
+    for (const source of sources) {
+      if (source.mime_type === 'video/mp4' || source.name?.toLowerCase().endsWith('.mp4')) {
+        overallStats.mp4_files++;
+        if (source.size) {
+          overallStats.mp4_total_size = overallStats.mp4_total_size + BigInt(source.size);
+        }
+      }
+      
+      const createdDate = new Date(source.created_at);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      if (createdDate > sevenDaysAgo) {
+        overallStats.new_files++;
+      }
+    }
+    
+    // Add the overall stats as the first entry
+    folderStatsList.unshift(overallStats);
+    
+    if (options.verbose) {
+      console.log('\nFolder Statistics (Direct Children Only):');
+      console.log('==========================================');
+      
+      // Sort by count descending, but keep TOTAL first
+      const sortedStats = folderStatsList.slice(1).sort((a, b) => b.google_drive_count - a.google_drive_count);
+      const allStats = [folderStatsList[0], ...sortedStats];
+      
+      for (const stats of allStats) {
+        if (stats.folder_id.startsWith('TOTAL-')) {
+          console.log(`\n=== ${stats.folder_name} ===`);
+        } else {
+          console.log(`\nFolder: ${stats.folder_name}`);
+        }
+        console.log(`  Items in folder: ${stats.google_drive_count}`);
+        console.log(`  Documents: ${stats.google_drive_documents}`);
+        console.log(`  Subfolders: ${stats.google_drive_folders}`);
+        if (stats.mp4_files > 0) {
+          console.log(`  MP4 files: ${stats.mp4_files}`);
+          console.log(`  MP4 total size: ${(Number(stats.mp4_total_size) / (1024 * 1024 * 1024)).toFixed(2)} GB`);
+        }
+        if (stats.new_files > 0) {
+          console.log(`  New files (last 7 days): ${stats.new_files}`);
+        }
+      }
+    }
+    
+    console.log('\n=== SUMMARY ===');
+    console.log(`Total unique files in database: ${sources.length}`);
+    console.log(`Total folders with direct children: ${folderStatsList.length - 1}`); // -1 for TOTAL entry
+    
     if (options.dryRun) {
-      console.log('\n[DRY RUN] Would insert/update statistics for', folderMap.size, 'folders');
+      console.log('\n[DRY RUN] Would insert/update statistics for', folderStatsList.length, 'entries');
       return;
     }
     
@@ -190,7 +262,7 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
     let successCount = 0;
     let errorCount = 0;
     
-    for (const [folderId, stats] of Array.from(folderMap.entries())) {
+    for (const stats of folderStatsList) {
       // Convert BigInt to string for JSON serialization
       const statsForInsert = {
         ...stats,
@@ -208,16 +280,13 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
         errorCount++;
       } else {
         successCount++;
-        if (options.verbose) {
-          console.log(`✓ Updated statistics for ${stats.folder_name}`);
-        }
       }
     }
     
     console.log(`\nStatistics population complete:`);
     console.log(`  Successful updates: ${successCount}`);
     console.log(`  Failed updates: ${errorCount}`);
-    console.log(`  Total folders processed: ${folderMap.size}`);
+    console.log(`  Total entries created: ${folderStatsList.length}`);
     
   } catch (error) {
     console.error('Error populating sync statistics:', error);
@@ -227,10 +296,11 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
 // Set up the CLI
 program
   .name('populate-sync-statistics')
-  .description('Populate the google_sync_statistics table with current folder statistics')
+  .description('Populate the google_sync_statistics table with folder statistics (non-recursive)')
   .option('-r, --root-drive-id <id>', 'Filter statistics for a specific root drive ID')
   .option('-v, --verbose', 'Show detailed statistics for each folder')
   .option('-d, --dry-run', 'Show what would be updated without making changes')
+  .option('-c, --clear-existing', 'Clear existing statistics before populating')
   .action(async (options: SyncStatisticsOptions) => {
     await populateSyncStatistics(options);
   });

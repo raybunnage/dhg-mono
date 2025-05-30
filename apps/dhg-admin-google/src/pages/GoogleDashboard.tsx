@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 export const GoogleDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sync' | 'statistics' | 'filters'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sync' | 'statistics' | 'filters' | 'history'>('explorer');
 
   console.log('GoogleDashboard render - user:', user?.email, 'isAdmin:', isAdmin);
 
@@ -102,6 +102,21 @@ export const GoogleDashboard: React.FC = () => {
               `}
             >
               Drive Filters
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('history');
+                navigate('/sync-history');
+              }}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'history'
+                  ? 'border-purple-500 text-purple-700 font-medium'
+                  : 'border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300'
+                }
+              `}
+            >
+              Sync History
             </button>
           </nav>
         </div>

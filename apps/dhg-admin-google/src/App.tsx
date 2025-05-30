@@ -11,6 +11,7 @@ import Viewer from './pages/Viewer';
 import { SyncStatus } from './pages/SyncStatus';
 import { Statistics } from './pages/Statistics';
 import { Filters } from './pages/Filters';
+import SyncHistory from './pages/SyncHistory';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -80,6 +81,11 @@ function App() {
           <Route path="/filters" element={
             <ProtectedRoute>
               <Filters />
+            </ProtectedRoute>
+          } />
+          <Route path="/sync-history" element={
+            <ProtectedRoute>
+              <SyncHistory />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" />} />
