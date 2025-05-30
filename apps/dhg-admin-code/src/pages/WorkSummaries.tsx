@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft, CheckCircle, Clock, AlertCircle, FileText, Hash } from 'lucide-react';
+import { DashboardLayout } from '../components/DashboardLayout';
+import { TaskService } from '../services/task-service';
+import type { DevTask, DevTaskTag } from '../services/task-service';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -23,14 +26,27 @@ interface WorkSummary {
   metadata?: any;
 }
 
+interface TaskWithTags extends DevTask {
+  tags: string[];
+}
+
+interface WorkItem {
+  type: 'summary' | 'task';
+  date: string;
+  data: WorkSummary | TaskWithTags;
+}
+
 export function WorkSummaries() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [summaries, setSummaries] = useState<WorkSummary[]>([]);
-  const [filteredSummaries, setFilteredSummaries] = useState<WorkSummary[]>([]);
+  const [tasks, setTasks] = useState<TaskWithTags[]>([]);
+  const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -106,69 +122,34 @@ export function WorkSummaries() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-sky-50 flex items-center justify-center">
-        <div className="text-sky-700">Loading summaries...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-700">Loading summaries...</div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-sky-50">
-      {/* Header with navigation */}
-      <header className="bg-white shadow-sm border-b border-sky-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/')}
-                className="text-sky-600 hover:text-sky-800 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <h1 className="text-2xl font-bold text-sky-900">AI Work Summaries</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/refactor-status')}
-                className="text-sm text-sky-600 hover:text-sky-800 font-medium transition-colors"
-              >
-                Refactor Status
-              </button>
-              <span className="text-sm text-sky-700">
-                {user?.email}
-              </span>
-              <button
-                onClick={async () => {
-                  await signOut();
-                  navigate('/login');
-                }}
-                className="text-sm text-sky-600 hover:text-sky-800 transition-colors"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardLayout>
+      <div>
         {/* Description */}
         <div className="mb-6">
-          <p className="text-sky-700">Track and search through AI assistant work history</p>
+          <p className="text-gray-700">Track and search through AI assistant work history</p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-sky-100">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sky-400 h-5 w-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Search summaries, commands, tags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-sky-50 focus:bg-white transition-colors"
+                className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
               />
             </div>
 
@@ -177,7 +158,7 @@ export function WorkSummaries() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-sky-50 focus:bg-white transition-colors"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>
@@ -191,49 +172,49 @@ export function WorkSummaries() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-sky-100">
-            <div className="text-2xl font-bold text-sky-900">{summaries.length}</div>
-            <div className="text-sm text-sky-700">Total Summaries</div>
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-gray-900">{summaries.length}</div>
+            <div className="text-sm text-gray-700">Total Summaries</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-sky-100">
-            <div className="text-2xl font-bold text-sky-900">
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-gray-900">
               {summaries.filter(s => s.category === 'feature').length}
             </div>
-            <div className="text-sm text-sky-700">Features Added</div>
+            <div className="text-sm text-gray-700">Features Added</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-sky-100">
-            <div className="text-2xl font-bold text-sky-900">
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-gray-900">
               {summaries.filter(s => s.category === 'bug_fix').length}
             </div>
-            <div className="text-sm text-sky-700">Bugs Fixed</div>
+            <div className="text-sm text-gray-700">Bugs Fixed</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-sky-100">
-            <div className="text-2xl font-bold text-sky-900">
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-gray-900">
               {Array.from(new Set(summaries.flatMap(s => s.commands || []))).length}
             </div>
-            <div className="text-sm text-sky-700">Commands Worked On</div>
+            <div className="text-sm text-gray-700">Commands Worked On</div>
           </div>
         </div>
 
         {/* Summaries List */}
         <div className="space-y-4">
           {filteredSummaries.map(summary => (
-            <div key={summary.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-sky-100">
+            <div key={summary.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{getCategoryEmoji(summary.category)}</span>
-                      <h3 className="text-lg font-semibold text-sky-900">{summary.title}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{summary.title}</h3>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-sky-700 mb-3">
+                    <div className="flex items-center gap-4 text-sm text-gray-700 mb-3">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {new Date(summary.work_date).toLocaleDateString()}
                       </span>
                       {summary.category && (
-                        <span className="px-2 py-1 bg-sky-100 text-sky-800 rounded-full text-xs">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
                           {summary.category.replace('_', ' ')}
                         </span>
                       )}
@@ -241,14 +222,14 @@ export function WorkSummaries() {
 
                     {/* Summary Content with better expansion */}
                     <div className="mb-3">
-                      <p className={`text-sky-800 ${expandedSummaries.has(summary.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
+                      <p className={`text-gray-800 ${expandedSummaries.has(summary.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
                          style={expandedSummaries.has(summary.id) ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                         {summary.summary_content}
                       </p>
                       {summary.summary_content.length > 200 && (
                         <button
                           onClick={() => toggleExpanded(summary.id)}
-                          className="mt-2 text-sm text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1 transition-colors"
+                          className="mt-2 text-sm text-gray-600 hover:text-gray-800 font-medium flex items-center gap-1 transition-colors"
                         >
                           {expandedSummaries.has(summary.id) ? (
                             <>
@@ -268,7 +249,7 @@ export function WorkSummaries() {
                     {/* Commands and Tags */}
                     <div className="flex flex-wrap gap-2 mb-3">
                       {summary.commands?.map(cmd => (
-                        <span key={cmd} className="inline-flex items-center gap-1 px-2 py-1 bg-sky-100 text-sky-700 rounded-md text-xs border border-sky-200">
+                        <span key={cmd} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs border border-gray-200">
                           <Command className="h-3 w-3" />
                           {cmd}
                         </span>
@@ -283,9 +264,9 @@ export function WorkSummaries() {
 
                     {/* Metadata */}
                     {expandedSummaries.has(summary.id) && summary.metadata && (
-                      <div className="mt-4 p-3 bg-sky-50 rounded-md border border-sky-100">
-                        <h4 className="text-sm font-medium text-sky-800 mb-2">Additional Details</h4>
-                        <pre className="text-xs text-sky-700 overflow-x-auto">
+                      <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-100">
+                        <h4 className="text-sm font-medium text-gray-800 mb-2">Additional Details</h4>
+                        <pre className="text-xs text-gray-700 overflow-x-auto">
                           {JSON.stringify(summary.metadata, null, 2)}
                         </pre>
                       </div>
@@ -298,11 +279,11 @@ export function WorkSummaries() {
         </div>
 
         {filteredSummaries.length === 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center text-sky-600 border border-sky-100">
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-600 border border-gray-100">
             No summaries found matching your criteria
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ArrowLeft, CheckCircle, Clock, AlertCircle, Archive, Package, TestTube } from 'lucide-react';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

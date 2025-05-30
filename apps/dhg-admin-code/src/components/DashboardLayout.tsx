@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export const CodeDashboard: React.FC = () => {
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'tasks' | 'summaries' | 'refactor' | 'commands'>('tasks');
+  const location = useLocation();
+  
+  // Determine active tab based on current route
+  const getActiveTab = () => {
+    if (location.pathname.startsWith('/tasks')) return 'tasks';
+    if (location.pathname.startsWith('/work-summaries')) return 'summaries';
+    if (location.pathname.startsWith('/refactor-status')) return 'refactor';
+    if (location.pathname.startsWith('/cli-commands')) return 'commands';
+    return 'tasks'; // default
+  };
+  
+  const [activeTab, setActiveTab] = useState(getActiveTab());
+  
+  // Update active tab when location changes
+  useEffect(() => {
+    setActiveTab(getActiveTab());
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -58,10 +78,7 @@ export const CodeDashboard: React.FC = () => {
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
-              onClick={() => {
-                setActiveTab('tasks');
-                navigate('/tasks');
-              }}
+              onClick={() => navigate('/tasks')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'tasks'
@@ -73,10 +90,7 @@ export const CodeDashboard: React.FC = () => {
               Claude Code Tasks
             </button>
             <button
-              onClick={() => {
-                setActiveTab('summaries');
-                navigate('/work-summaries');
-              }}
+              onClick={() => navigate('/work-summaries')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'summaries'
@@ -88,10 +102,7 @@ export const CodeDashboard: React.FC = () => {
               Work Summaries
             </button>
             <button
-              onClick={() => {
-                setActiveTab('refactor');
-                navigate('/refactor-status');
-              }}
+              onClick={() => navigate('/refactor-status')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'refactor'
@@ -103,10 +114,7 @@ export const CodeDashboard: React.FC = () => {
               Refactor Status
             </button>
             <button
-              onClick={() => {
-                setActiveTab('commands');
-                navigate('/cli-commands');
-              }}
+              onClick={() => navigate('/cli-commands')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'commands'
@@ -120,10 +128,8 @@ export const CodeDashboard: React.FC = () => {
           </nav>
         </div>
 
-        {/* Main content area */}
-        <div className="text-center py-12">
-          <p className="text-gray-600">Select a tab above to navigate to the corresponding section</p>
-        </div>
+        {/* Page Content */}
+        {children}
       </main>
     </div>
   );

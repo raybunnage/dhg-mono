@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { CLIRegistryService } from '@shared/services/cli-registry-service';
+import { DashboardLayout } from '../components/DashboardLayout';
 import type { 
   CommandPipeline, 
   CommandDefinition, 

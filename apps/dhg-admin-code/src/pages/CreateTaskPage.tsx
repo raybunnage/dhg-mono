@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import { ArrowLeft, Save } from 'lucide-react';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 export default function CreateTaskPage() {
   const navigate = useNavigate();

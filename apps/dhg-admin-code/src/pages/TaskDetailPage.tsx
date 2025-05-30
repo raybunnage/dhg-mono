@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { TaskService, DevTask, DevTaskTag, DevTaskFile } from '../services/task-service';
+import { TaskService } from '../services/task-service';
+import type { DevTask, DevTaskTag, DevTaskFile } from '../services/task-service';
 import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -130,22 +132,27 @@ export default function TaskDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !task) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">{error || 'Task not found'}</p>
-      </div>
+      <DashboardLayout>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">{error || 'Task not found'}</p>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <DashboardLayout>
+      <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <Link
           to="/tasks"
@@ -373,5 +380,6 @@ export default function TaskDetailPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

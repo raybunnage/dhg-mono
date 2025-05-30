@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { profileService } from '../services/profile-service';
 
 // Try specific path import like dhg-admin-config uses
 import { ProfileForm, ProfileFormData } from '@shared/components/profile/ProfileForm';
@@ -17,7 +16,7 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
   const [tempUserData, setTempUserData] = useState<{ email: string; name: string; userId?: string }>({ email: '', name: '' });
   const [isNewUser, setIsNewUser] = useState(false);
   
-  const { login, registerWithProfile, completeProfile, user } = useAuth();
+  const { login, registerWithProfile, completeProfile } = useAuth();
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +30,11 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
       
       if (result.success && !result.needsProfile) {
         // Login successful - the App component will handle navigation
-        console.log('Login successful');
+        console.log('Login successful, user logged in without needing profile');
+        // Clear any stale form state
+        setEmail('');
+        // Force a storage event to trigger re-render in App component
+        window.dispatchEvent(new Event('storage'));
       } else if (result.needsProfile) {
         // User needs to complete profile
         console.log('User needs to complete profile, user:', result.user);
@@ -88,31 +91,30 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
 
         if (result.success) {
           console.log('New user registration successful');
+          // Reset form state
+          setShowProfileForm(false);
+          setEmail('');
+          setTempUserData({ email: '', name: '' });
           // Force re-authentication to update the user state
           window.dispatchEvent(new Event('storage'));
         } else {
           throw new Error(result.error || 'Registration failed');
         }
       } else if (tempUserData.userId) {
-        // Existing user - just complete profile
+        // Existing user - use completeProfile from auth hook
         console.log('Completing profile for existing user:', tempUserData.userId);
-        const result = await profileService.saveProfile(tempUserData.userId, profileData);
+        const success = await completeProfile(profileData);
         
-        if (result.success) {
+        if (success) {
           console.log('Profile completion successful');
-          // Update the user in localStorage to reflect profile completion
-          const currentUser = user || JSON.parse(localStorage.getItem('dhg_auth_user') || '{}');
-          if (currentUser) {
-            currentUser.user_metadata = {
-              ...currentUser.user_metadata,
-              profile_complete: true
-            };
-            localStorage.setItem('dhg_auth_user', JSON.stringify(currentUser));
-          }
+          // Reset form state
+          setShowProfileForm(false);
+          setEmail('');
+          setTempUserData({ email: '', name: '' });
           // Force re-authentication to update the user state
           window.dispatchEvent(new Event('storage'));
         } else {
-          throw new Error(result.error || 'Failed to save profile');
+          throw new Error('Failed to save profile');
         }
       } else {
         throw new Error('Invalid state: no user ID for profile completion');

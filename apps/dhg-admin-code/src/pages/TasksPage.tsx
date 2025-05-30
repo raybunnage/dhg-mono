@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { TaskService, DevTask } from '../services/task-service';
-import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { TaskService } from '../services/task-service';
+import type { DevTask } from '../services/task-service';
+import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<DevTask[]>([]);
@@ -10,6 +12,7 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCompleted, setShowCompleted] = useState(false); // Default to hiding completed tasks
 
   useEffect(() => {
     loadTasks();
@@ -88,22 +91,27 @@ export default function TasksPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Error: {error}</p>
-      </div>
+      <DashboardLayout>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">Error: {error}</p>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Claude Code Tasks</h1>
         <Link
@@ -180,13 +188,34 @@ export default function TasksPage() {
 
       {/* Task List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {tasks.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No tasks found. Create your first task to get started!</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {tasks.map((task) => (
+        {(() => {
+          // Apply client-side filtering for completed tasks
+          let filteredTasks = tasks;
+          
+          // If status filter is explicitly set to "completed", show only completed tasks
+          // Otherwise, respect the showCompleted toggle
+          if (statusFilter !== 'completed' && !showCompleted) {
+            filteredTasks = filteredTasks.filter(task => task.status !== 'completed');
+          }
+          
+          const completedCount = tasks.filter(task => task.status === 'completed').length;
+          const hiddenCompletedCount = !showCompleted && statusFilter !== 'completed' ? completedCount : 0;
+          
+          if (filteredTasks.length === 0) {
+            return (
+              <div className="p-8 text-center text-gray-500">
+                <p>
+                  {hiddenCompletedCount > 0 
+                    ? `No active tasks found. ${hiddenCompletedCount} completed task${hiddenCompletedCount !== 1 ? 's' : ''} hidden.`
+                    : 'No tasks found. Create your first task to get started!'}
+                </p>
+              </div>
+            );
+          }
+          
+          return (
+            <div className="divide-y divide-gray-200">
+              {filteredTasks.map((task) => (
               <Link
                 key={task.id}
                 to={`/tasks/${task.id}`}
@@ -228,5 +257,6 @@ export default function TasksPage() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }

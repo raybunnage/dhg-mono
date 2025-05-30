@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { CodeDashboard } from './pages/CodeDashboard';
 import { WorkSummaries } from './pages/WorkSummaries';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
@@ -21,7 +20,7 @@ function App() {
           path="/" 
           element={
             <ProtectedRoute requireAdmin>
-              <CodeDashboard />
+              <Navigate to="/tasks" replace />
             </ProtectedRoute>
           } 
         />
