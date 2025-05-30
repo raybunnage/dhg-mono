@@ -4,8 +4,9 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../utils/supabase-adapter';
 import { GoogleDriveExplorerService, FileNode } from '@shared/services/google-drive-explorer';
 import { FileTree, FileViewer } from '@shared/components/file-explorer';
+import { DashboardLayout } from '../components/DashboardLayout';
 
-function Viewer() {
+export default function Viewer() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
@@ -101,8 +102,9 @@ function Viewer() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">DHG Admin Explorer</h1>
+    <DashboardLayout>
+      <div className="container mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Google Drive Explorer</h1>
       
       {/* Stats and Controls */}
       <div className="bg-green-100 text-green-800 px-4 py-2 mb-4 rounded-lg shadow-sm border border-green-200">
@@ -196,7 +198,6 @@ function Viewer() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }
-
-export default Viewer;

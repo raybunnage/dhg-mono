@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export const CodeDashboard: React.FC = () => {
+export const GoogleDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'tasks' | 'summaries' | 'refactor' | 'commands'>('tasks');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sync' | 'statistics' | 'filters'>('explorer');
 
   const handleSignOut = async () => {
     await signOut();
@@ -34,7 +34,7 @@ export const CodeDashboard: React.FC = () => {
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">DHG Admin Code</h1>
+            <h1 className="text-2xl font-bold text-gray-900">DHG Admin Google</h1>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-700">
                 {user?.email}
@@ -59,63 +59,63 @@ export const CodeDashboard: React.FC = () => {
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => {
-                setActiveTab('tasks');
-                navigate('/tasks');
+                setActiveTab('explorer');
+                navigate('/explorer');
               }}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'tasks'
-                  ? 'border-blue-500 text-blue-700 font-medium'
+                ${activeTab === 'explorer'
+                  ? 'border-green-500 text-green-700 font-medium'
                   : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
                 }
               `}
             >
-              Claude Code Tasks
+              Drive Explorer
             </button>
             <button
               onClick={() => {
-                setActiveTab('summaries');
-                navigate('/work-summaries');
+                setActiveTab('sync');
+                navigate('/sync-status');
               }}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'summaries'
-                  ? 'border-blue-500 text-blue-700 font-medium'
+                ${activeTab === 'sync'
+                  ? 'border-green-500 text-green-700 font-medium'
                   : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
                 }
               `}
             >
-              Work History
+              Sync Status
             </button>
             <button
               onClick={() => {
-                setActiveTab('refactor');
-                navigate('/refactor-status');
+                setActiveTab('statistics');
+                navigate('/statistics');
               }}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'refactor'
-                  ? 'border-blue-500 text-blue-700 font-medium'
+                ${activeTab === 'statistics'
+                  ? 'border-green-500 text-green-700 font-medium'
                   : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
                 }
               `}
             >
-              Refactor Status
+              Statistics
             </button>
             <button
               onClick={() => {
-                setActiveTab('commands');
-                navigate('/cli-commands');
+                setActiveTab('filters');
+                navigate('/filters');
               }}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'commands'
-                  ? 'border-blue-500 text-blue-700 font-medium'
+                ${activeTab === 'filters'
+                  ? 'border-green-500 text-green-700 font-medium'
                   : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
                 }
               `}
             >
-              CLI Commands Registry
+              Drive Filters
             </button>
           </nav>
         </div>

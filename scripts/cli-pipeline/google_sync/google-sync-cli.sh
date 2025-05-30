@@ -478,6 +478,7 @@ if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo ""
   echo "STATISTICS:"
   echo "    populate-statistics          Populate google_sync_statistics table with folder statistics for active drive"
+  echo "    show-statistics             Display current sync statistics from the database"
   echo ""
   echo "OTHER:"
   echo "    analyze-command-usage        Analyze Google sync command usage patterns from tracking data"
@@ -1349,5 +1350,11 @@ fi
 if [ "$1" = "populate-statistics" ]; then
   shift
   track_command "populate-statistics" "ts-node $SCRIPT_DIR/populate-sync-statistics.ts $*"
+  exit $?
+fi
+
+if [ "$1" = "show-statistics" ]; then
+  shift
+  track_command "show-statistics" "ts-node $SCRIPT_DIR/show-statistics.ts $*"
   exit $?
 fi

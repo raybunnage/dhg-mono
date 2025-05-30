@@ -4,6 +4,45 @@ import { TaskService } from '../services/task-service';
 import { ArrowLeft, Save } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 
+// Apps list
+const APPS = [
+  'dhg-hub',
+  'dhg-audio',
+  'dhg-admin-suite',
+  'dhg-admin-code',
+  'dhg-admin-google'
+];
+
+// CLI Pipelines list
+const CLI_PIPELINES = [
+  'ai',
+  'all_pipelines',
+  'analysis',
+  'auth',
+  'classify',
+  'core',
+  'database',
+  'dev_tasks',
+  'document',
+  'document_types',
+  'drive_filter',
+  'examples',
+  'experts',
+  'google_sync',
+  'media-processing',
+  'mime_types',
+  'monitoring',
+  'presentations',
+  'prompt_service',
+  'refactor_tracking',
+  'scripts',
+  'shared',
+  'tracking',
+  'utilities',
+  'viewers',
+  'work_summaries'
+];
+
 export default function CreateTaskPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -14,6 +53,7 @@ export default function CreateTaskPage() {
     description: '',
     task_type: 'feature' as 'bug' | 'feature' | 'refactor' | 'question',
     priority: 'medium' as 'low' | 'medium' | 'high',
+    app: '',
     tags: ''
   });
 
@@ -35,6 +75,7 @@ export default function CreateTaskPage() {
         description: formData.description,
         task_type: formData.task_type,
         priority: formData.priority,
+        app: formData.app || undefined,
         status: 'pending'
       });
 
@@ -56,7 +97,8 @@ export default function CreateTaskPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <DashboardLayout>
+      <div className="max-w-3xl mx-auto">
       <div className="mb-6">
         <Link
           to="/tasks"
@@ -148,6 +190,34 @@ export default function CreateTaskPage() {
           </div>
 
           <div>
+            <label htmlFor="app" className="block text-sm font-medium text-gray-700 mb-1">
+              Application / Pipeline
+            </label>
+            <select
+              id="app"
+              value={formData.app}
+              onChange={(e) => setFormData({ ...formData, app: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              disabled={loading}
+            >
+              <option value="">Select an app or pipeline...</option>
+              <optgroup label="Applications">
+                {APPS.map(app => (
+                  <option key={app} value={app}>{app}</option>
+                ))}
+              </optgroup>
+              <optgroup label="CLI Pipelines">
+                {CLI_PIPELINES.map(pipeline => (
+                  <option key={`cli-${pipeline}`} value={`cli-${pipeline}`}>cli-{pipeline}</option>
+                ))}
+              </optgroup>
+            </select>
+            <p className="mt-1 text-sm text-gray-500">
+              Select the app or CLI pipeline this task relates to
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
               Tags
             </label>
@@ -190,5 +260,6 @@ export default function CreateTaskPage() {
         </form>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

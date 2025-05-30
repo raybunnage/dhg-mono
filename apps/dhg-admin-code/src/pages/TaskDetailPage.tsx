@@ -194,6 +194,11 @@ export default function TaskDetailPage() {
                 }`}>
                   {task.status.replace('_', ' ')}
                 </span>
+                {task.app && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                    {task.app}
+                  </span>
+                )}
               </div>
             </div>
             {task.status !== 'completed' && (

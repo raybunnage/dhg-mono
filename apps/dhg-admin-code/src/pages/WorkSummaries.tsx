@@ -50,63 +50,169 @@ export function WorkSummaries() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSummaries();
+    fetchData();
   }, []);
 
   useEffect(() => {
-    filterSummaries();
-  }, [searchQuery, selectedCategory, summaries]);
+    combineWorkItems();
+  }, [summaries, tasks]);
 
-  const fetchSummaries = async () => {
+  useEffect(() => {
+    filterWorkItems();
+  }, [searchQuery, selectedCategory, selectedType, workItems]);
+
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch summaries
+      const summariesPromise = supabase
         .from('ai_work_summaries')
         .select('*')
         .order('work_date', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setSummaries(data || []);
+      // Fetch tasks with their tags
+      const tasksPromise = TaskService.getTasks();
+      const tagsPromise = supabase
+        .from('dev_task_tags')
+        .select('*');
+
+      const [summariesResult, tasksResult, tagsResult] = await Promise.all([
+        summariesPromise,
+        tasksPromise,
+        tagsPromise
+      ]);
+
+      if (summariesResult.error) throw summariesResult.error;
+      if (tagsResult.error) throw tagsResult.error;
+
+      // Map tags to tasks
+      const tasksWithTags = (tasksResult || []).map(task => {
+        const taskTags = (tagsResult.data || []).filter(tag => tag.task_id === task.id);
+        return {
+          ...task,
+          tags: taskTags.map(t => t.tag)
+        };
+      });
+
+      setSummaries(summariesResult.data || []);
+      setTasks(tasksWithTags);
     } catch (error) {
-      console.error('Error fetching summaries:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterSummaries = () => {
-    let filtered = [...summaries];
+  const combineWorkItems = () => {
+    const items: WorkItem[] = [];
+    
+    // Add summaries
+    summaries.forEach(summary => {
+      items.push({
+        type: 'summary',
+        date: summary.work_date,
+        data: summary
+      });
+    });
+
+    // Add tasks (using created_at as the date)
+    tasks.forEach(task => {
+      items.push({
+        type: 'task',
+        date: task.created_at,
+        data: task
+      });
+    });
+
+    // Sort by date (newest first)
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setWorkItems(items);
+  };
+
+  const filterWorkItems = () => {
+    let filtered = [...workItems];
+
+    // Type filter
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(item => item.type === selectedType);
+    }
 
     // Category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(s => s.category === selectedCategory);
+      filtered = filtered.filter(item => {
+        if (item.type === 'summary') {
+          return (item.data as WorkSummary).category === selectedCategory;
+        } else {
+          const task = item.data as TaskWithTags;
+          return task.task_type === selectedCategory || task.status === selectedCategory;
+        }
+      });
     }
 
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(s => 
-        s.title.toLowerCase().includes(query) ||
-        s.summary_content.toLowerCase().includes(query) ||
-        s.commands?.some(cmd => cmd.toLowerCase().includes(query)) ||
-        s.tags?.some(tag => tag.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(item => {
+        if (item.type === 'summary') {
+          const summary = item.data as WorkSummary;
+          return summary.title.toLowerCase().includes(query) ||
+            summary.summary_content.toLowerCase().includes(query) ||
+            summary.commands?.some(cmd => cmd.toLowerCase().includes(query)) ||
+            summary.tags?.some(tag => tag.toLowerCase().includes(query));
+        } else {
+          const task = item.data as TaskWithTags;
+          return task.title.toLowerCase().includes(query) ||
+            task.description.toLowerCase().includes(query) ||
+            task.tags?.some(tag => tag.toLowerCase().includes(query));
+        }
+      });
     }
 
-    setFilteredSummaries(filtered);
+    setFilteredItems(filtered);
   };
 
   const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedSummaries);
+    const newExpanded = new Set(expandedItems);
     if (newExpanded.has(id)) {
       newExpanded.delete(id);
     } else {
       newExpanded.add(id);
     }
-    setExpandedSummaries(newExpanded);
+    setExpandedItems(newExpanded);
   };
 
-  const categories = ['all', ...Array.from(new Set(summaries.map(s => s.category).filter(Boolean)))];
+  const categories = ['all', ...Array.from(new Set([
+    ...summaries.map(s => s.category).filter(Boolean),
+    ...tasks.map(t => t.task_type).filter(Boolean),
+    ...tasks.map(t => t.status).filter(Boolean)
+  ]))];
+
+  const getTaskStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="w-4 h-4 text-gray-500" />;
+      case 'in_progress':
+        return <AlertCircle className="w-4 h-4 text-blue-500" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTaskTypeColor = (type: string) => {
+    switch (type) {
+      case 'bug':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'feature':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'refactor':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      default:
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+    }
+  };
 
   const getCategoryEmoji = (category: string) => {
     const emojis: Record<string, string> = {
@@ -135,22 +241,35 @@ export function WorkSummaries() {
       <div>
         {/* Description */}
         <div className="mb-6">
-          <p className="text-gray-700">Track and search through AI assistant work history</p>
+          <p className="text-gray-700">Track and manage AI assistant work history and development tasks</p>
         </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="Search summaries, commands, tags..."
+                placeholder="Search work items, tasks, commands..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
               />
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
+              >
+                <option value="all">All Types</option>
+                <option value="summary">Work Summaries</option>
+                <option value="task">Dev Tasks</option>
+              </select>
             </div>
 
             {/* Category Filter */}
@@ -170,117 +289,227 @@ export function WorkSummaries() {
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
             <div className="text-2xl font-bold text-gray-900">{summaries.length}</div>
-            <div className="text-sm text-gray-700">Total Summaries</div>
+            <div className="text-sm text-gray-700">Work Summaries</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-gray-900">{tasks.length}</div>
+            <div className="text-sm text-gray-700">Dev Tasks</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-emerald-900">
+              {tasks.filter(t => t.status === 'completed').length}
+            </div>
+            <div className="text-sm text-gray-700">Tasks Completed</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-blue-900">
+              {tasks.filter(t => t.status === 'in_progress').length}
+            </div>
+            <div className="text-sm text-gray-700">In Progress</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
             <div className="text-2xl font-bold text-gray-900">
-              {summaries.filter(s => s.category === 'feature').length}
+              {tasks.filter(t => t.status === 'pending').length}
             </div>
-            <div className="text-sm text-gray-700">Features Added</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-            <div className="text-2xl font-bold text-gray-900">
-              {summaries.filter(s => s.category === 'bug_fix').length}
-            </div>
-            <div className="text-sm text-gray-700">Bugs Fixed</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-            <div className="text-2xl font-bold text-gray-900">
-              {Array.from(new Set(summaries.flatMap(s => s.commands || []))).length}
-            </div>
-            <div className="text-sm text-gray-700">Commands Worked On</div>
+            <div className="text-sm text-gray-700">Pending Tasks</div>
           </div>
         </div>
 
-        {/* Summaries List */}
+        {/* Work Items List */}
         <div className="space-y-4">
-          {filteredSummaries.map(summary => (
-            <div key={summary.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">{getCategoryEmoji(summary.category)}</span>
-                      <h3 className="text-lg font-semibold text-gray-900">{summary.title}</h3>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-700 mb-3">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(summary.work_date).toLocaleDateString()}
-                      </span>
-                      {summary.category && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                          {summary.category.replace('_', ' ')}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Summary Content with better expansion */}
-                    <div className="mb-3">
-                      <p className={`text-gray-800 ${expandedSummaries.has(summary.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
-                         style={expandedSummaries.has(summary.id) ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-                        {summary.summary_content}
-                      </p>
-                      {summary.summary_content.length > 200 && (
-                        <button
-                          onClick={() => toggleExpanded(summary.id)}
-                          className="mt-2 text-sm text-gray-600 hover:text-gray-800 font-medium flex items-center gap-1 transition-colors"
-                        >
-                          {expandedSummaries.has(summary.id) ? (
-                            <>
-                              <ChevronUp className="h-4 w-4" />
-                              Show less
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-4 w-4" />
-                              Show more
-                            </>
+          {filteredItems.map(item => {
+            if (item.type === 'summary') {
+              const summary = item.data as WorkSummary;
+              return (
+                <div key={summary.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">{getCategoryEmoji(summary.category)}</span>
+                          <h3 className="text-lg font-semibold text-gray-900">{summary.title}</h3>
+                          <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs border border-blue-200">
+                            Summary
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-700 mb-3">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(summary.work_date).toLocaleDateString()}
+                          </span>
+                          {summary.category && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                              {summary.category.replace('_', ' ')}
+                            </span>
                           )}
-                        </button>
-                      )}
-                    </div>
+                        </div>
 
-                    {/* Commands and Tags */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {summary.commands?.map(cmd => (
-                        <span key={cmd} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs border border-gray-200">
-                          <Command className="h-3 w-3" />
-                          {cmd}
-                        </span>
-                      ))}
-                      {summary.tags?.map(tag => (
-                        <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs border border-emerald-200">
-                          <Tag className="h-3 w-3" />
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                        {/* Summary Content with better expansion */}
+                        <div className="mb-3">
+                          <p className={`text-gray-800 ${expandedItems.has(summary.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
+                             style={expandedItems.has(summary.id) ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                            {summary.summary_content}
+                          </p>
+                          {summary.summary_content.length > 200 && (
+                            <button
+                              onClick={() => toggleExpanded(summary.id)}
+                              className="mt-2 text-sm text-gray-600 hover:text-gray-800 font-medium flex items-center gap-1 transition-colors"
+                            >
+                              {expandedItems.has(summary.id) ? (
+                                <>
+                                  <ChevronUp className="h-4 w-4" />
+                                  Show less
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-4 w-4" />
+                                  Show more
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
 
-                    {/* Metadata */}
-                    {expandedSummaries.has(summary.id) && summary.metadata && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-100">
-                        <h4 className="text-sm font-medium text-gray-800 mb-2">Additional Details</h4>
-                        <pre className="text-xs text-gray-700 overflow-x-auto">
-                          {JSON.stringify(summary.metadata, null, 2)}
-                        </pre>
+                        {/* Commands and Tags */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {summary.commands?.map(cmd => (
+                            <span key={cmd} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs border border-gray-200">
+                              <Command className="h-3 w-3" />
+                              {cmd}
+                            </span>
+                          ))}
+                          {summary.tags?.map(tag => (
+                            <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs border border-emerald-200">
+                              <Tag className="h-3 w-3" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Metadata */}
+                        {expandedItems.has(summary.id) && summary.metadata && (
+                          <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-100">
+                            <h4 className="text-sm font-medium text-gray-800 mb-2">Additional Details</h4>
+                            <pre className="text-xs text-gray-700 overflow-x-auto">
+                              {JSON.stringify(summary.metadata, null, 2)}
+                            </pre>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              );
+            } else {
+              const task = item.data as TaskWithTags;
+              return (
+                <div key={task.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {getTaskStatusIcon(task.status)}
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            <Link to={`/tasks/${task.id}`} className="hover:text-gray-700 transition-colors">
+                              {task.title}
+                            </Link>
+                          </h3>
+                          <span className="inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 rounded-full text-xs border border-purple-200">
+                            Task
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-sm text-gray-600 flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(task.created_at).toLocaleDateString()}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs border ${getTaskTypeColor(task.task_type)}`}>
+                            {task.task_type}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                            task.priority === 'high' ? 'bg-red-100 text-red-800 border border-red-200' :
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                            'bg-gray-100 text-gray-800 border border-gray-200'
+                          }`}>
+                            {task.priority} priority
+                          </span>
+                        </div>
+
+                        {/* Task Description */}
+                        <div className="mb-3">
+                          <p className={`text-gray-800 ${expandedItems.has(task.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
+                             style={expandedItems.has(task.id) ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                            {task.description}
+                          </p>
+                          {task.description.length > 200 && (
+                            <button
+                              onClick={() => toggleExpanded(task.id)}
+                              className="mt-2 text-sm text-gray-600 hover:text-gray-800 font-medium flex items-center gap-1 transition-colors"
+                            >
+                              {expandedItems.has(task.id) ? (
+                                <>
+                                  <ChevronUp className="h-4 w-4" />
+                                  Show less
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-4 w-4" />
+                                  Show more
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Task Tags */}
+                        {task.tags && task.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {task.tags.map(tag => (
+                              <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs border border-gray-200">
+                                <Hash className="h-3 w-3" />
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Task Response (if completed) */}
+                        {task.status === 'completed' && task.claude_response && expandedItems.has(task.id) && (
+                          <div className="mt-4 p-3 bg-emerald-50 rounded-md border border-emerald-100">
+                            <h4 className="text-sm font-medium text-emerald-800 mb-2">Claude's Response</h4>
+                            <pre className="text-xs text-emerald-700 overflow-x-auto whitespace-pre-wrap">
+                              {task.claude_response}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Action Button */}
+                      <div>
+                        <Link
+                          to={`/tasks/${task.id}`}
+                          className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors"
+                        >
+                          View Task
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          })}
         </div>
 
-        {filteredSummaries.length === 0 && (
+        {filteredItems.length === 0 && (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-600 border border-gray-100">
-            No summaries found matching your criteria
+            No work items found matching your criteria
           </div>
         )}
       </div>

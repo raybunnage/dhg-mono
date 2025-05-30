@@ -11,12 +11,13 @@ export default function TasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [appFilter, setAppFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCompleted, setShowCompleted] = useState(false); // Default to hiding completed tasks
 
   useEffect(() => {
     loadTasks();
-  }, [statusFilter, priorityFilter, searchQuery]);
+  }, [statusFilter, priorityFilter, appFilter, searchQuery]);
 
   const loadTasks = async () => {
     try {
@@ -24,6 +25,7 @@ export default function TasksPage() {
       const filters: any = {};
       if (statusFilter) filters.status = statusFilter;
       if (priorityFilter) filters.priority = priorityFilter;
+      if (appFilter) filters.app = appFilter;
       if (searchQuery) filters.search = searchQuery;
       
       const data = await TaskService.getTasks(filters);
@@ -125,7 +127,7 @@ export default function TasksPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Search
@@ -145,7 +147,13 @@ export default function TasksPage() {
             </label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                // If user selects "completed" status, automatically show completed tasks
+                if (e.target.value === 'completed') {
+                  setShowCompleted(true);
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All Status</option>
@@ -171,12 +179,59 @@ export default function TasksPage() {
             </select>
           </div>
 
-          <div className="flex items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              App/Pipeline
+            </label>
+            <select
+              value={appFilter}
+              onChange={(e) => setAppFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Apps</option>
+              {/* Get unique apps from tasks */}
+              {Array.from(new Set(tasks.map(t => t.app).filter(Boolean))).sort().map(app => (
+                <option key={app} value={app}>{app}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-2 lg:col-span-1 flex items-end gap-2 flex-wrap">
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors ${
+                showCompleted 
+                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title={showCompleted ? 'Hide completed tasks' : 'Show completed tasks'}
+            >
+              {showCompleted ? (
+                <>
+                  <Eye className="w-4 h-4" />
+                  <span>Hide Completed</span>
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-4 h-4" />
+                  <span>Show Completed</span>
+                  {(() => {
+                    const completedCount = tasks.filter(t => t.status === 'completed').length;
+                    return completedCount > 0 ? (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
+                        {completedCount}
+                      </span>
+                    ) : null;
+                  })()}
+                </>
+              )}
+            </button>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setStatusFilter('');
                 setPriorityFilter('');
+                setAppFilter('');
               }}
               className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
             >
@@ -233,7 +288,7 @@ export default function TasksPage() {
                       <p className="text-gray-600 line-clamp-2 mb-2">
                         {task.description}
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(task.task_type)}`}>
                           {task.task_type}
                         </span>
@@ -243,6 +298,11 @@ export default function TasksPage() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(task.priority)}`}>
                           {task.priority}
                         </span>
+                        {task.app && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            {task.app}
+                          </span>
+                        )}
                         <span className="text-xs text-gray-500">
                           Created {new Date(task.created_at).toLocaleDateString()}
                         </span>
@@ -254,7 +314,8 @@ export default function TasksPage() {
               </Link>
             ))}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
     </DashboardLayout>

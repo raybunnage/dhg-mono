@@ -7,6 +7,7 @@ export interface DevTask {
   task_type: 'bug' | 'feature' | 'refactor' | 'question';
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
+  app?: string;
   claude_request?: string;
   claude_response?: string;
   created_at: string;
@@ -36,6 +37,7 @@ export class TaskService {
     status?: string;
     priority?: string;
     search?: string;
+    app?: string;
   }) {
     let query = supabase
       .from('dev_tasks')
@@ -47,6 +49,9 @@ export class TaskService {
     }
     if (filters?.priority) {
       query = query.eq('priority', filters.priority);
+    }
+    if (filters?.app) {
+      query = query.eq('app', filters.app);
     }
     if (filters?.search) {
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);

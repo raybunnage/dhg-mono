@@ -39,14 +39,16 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
     if (!activeRootDriveId) {
       const { data: activeProfile, error: profileError } = await supabase
         .from('filter_user_profiles')
-        .select('id, filter_name')
+        .select('id, name')
         .eq('is_active', true)
         .single();
       
       if (profileError || !activeProfile) {
-        console.log('No active filter profile found. Will calculate statistics for all files.');
+        console.log('No active filter profile found. Please set an active profile or specify --root-drive-id');
+        console.log('You can check profiles with: ./google-sync-cli.sh get-active-filter-profile');
+        return;
       } else {
-        console.log(`Using active filter profile: ${activeProfile.filter_name}`);
+        console.log(`Using active filter profile: ${activeProfile.name} (${activeProfile.id})`);
         
         // Get the root drive IDs for the active profile
         const { data: profileDrives, error: drivesError } = await supabase
@@ -54,11 +56,25 @@ async function populateSyncStatistics(options: SyncStatisticsOptions) {
           .select('root_drive_id')
           .eq('profile_id', activeProfile.id);
         
-        if (!drivesError && profileDrives && profileDrives.length === 1) {
+        if (drivesError) {
+          console.error('Error fetching profile drives:', drivesError);
+          return;
+        }
+        
+        if (!profileDrives || profileDrives.length === 0) {
+          console.log('No drives found for active profile. Please configure drives for this profile.');
+          return;
+        }
+        
+        if (profileDrives.length === 1) {
           activeRootDriveId = profileDrives[0].root_drive_id;
           console.log(`Found single root drive ID from active profile: ${activeRootDriveId}`);
-        } else if (!drivesError && profileDrives && profileDrives.length > 1) {
-          console.log(`Active profile has ${profileDrives.length} root drives. Please specify one with --root-drive-id`);
+        } else {
+          console.log(`Active profile has ${profileDrives.length} root drives:`);
+          profileDrives.forEach((drive, index) => {
+            console.log(`  ${index + 1}. ${drive.root_drive_id}`);
+          });
+          console.log('Please specify one with --root-drive-id <drive_id>');
           return;
         }
       }
