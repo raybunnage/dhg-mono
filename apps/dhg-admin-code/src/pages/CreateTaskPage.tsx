@@ -7,6 +7,7 @@ import { DashboardLayout } from '../components/DashboardLayout';
 // Apps list
 const APPS = [
   'dhg-hub',
+  'dhg-hub-lovable',
   'dhg-audio',
   'dhg-admin-suite',
   'dhg-admin-code',

@@ -135,6 +135,7 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
    - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
    - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
+   - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies)
    
    **Examples**: 
    - New authentication feature → `auth_password_resets`

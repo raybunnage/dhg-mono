@@ -20,6 +20,7 @@ interface CommandRefactor {
   signed_off_by: string | null;
   signed_off_at: string | null;
   notes: string | null;
+  options: Record<string, string> | null;
   created_at: string;
   updated_at: string;
 }
@@ -416,6 +417,24 @@ export function CommandRefactorStatus() {
                             {command.description}
                           </p>
                         )}
+                        {command.options && Object.keys(command.options).length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {Object.keys(command.options).slice(0, 4).map((option) => (
+                              <span 
+                                key={option}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                                title={command.options![option]}
+                              >
+                                {option}
+                              </span>
+                            ))}
+                            {Object.keys(command.options).length > 4 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">
+                                +{Object.keys(command.options).length - 4} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -466,6 +485,22 @@ export function CommandRefactorStatus() {
                             </span>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {command.options && Object.keys(command.options).length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Command Options</h4>
+                        <div className="space-y-1">
+                          {Object.entries(command.options).map(([option, description]) => (
+                            <div key={option} className="flex items-start text-sm">
+                              <code className="bg-gray-100 px-2 py-0.5 rounded text-gray-800 font-mono text-xs mr-2 flex-shrink-0">
+                                {option}
+                              </code>
+                              <span className="text-gray-600">{description}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 

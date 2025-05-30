@@ -1,20 +1,7 @@
-// This file loads Supabase credentials from environment variables
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
-
-// Read environment variables (from Vite)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
-}
+// This file now uses the shared Supabase adapter for cross-environment compatibility
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(
-  supabaseUrl as string, 
-  supabaseAnonKey as string
-);
+export const supabase = createSupabaseAdapter();

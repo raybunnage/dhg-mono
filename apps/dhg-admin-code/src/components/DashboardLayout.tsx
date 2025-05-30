@@ -17,6 +17,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/work-summaries')) return 'summaries';
     if (location.pathname.startsWith('/refactor-status')) return 'refactor';
     if (location.pathname.startsWith('/cli-commands')) return 'commands';
+    if (location.pathname.startsWith('/database')) return 'database';
     return 'tasks'; // default
   };
   
@@ -124,6 +125,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               CLI Commands Registry
+            </button>
+            <button
+              onClick={() => navigate('/database')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'database'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Database
             </button>
           </nav>
         </div>
