@@ -365,7 +365,7 @@ export const Statistics: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Folder Statistics ({statistics.length} folders)</h3>
-            <p className="text-sm text-gray-600 mt-1">Showing file counts per folder (top 50 by size)</p>
+            <p className="text-sm text-gray-600 mt-1">Showing file counts per folder (sorted by size)</p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

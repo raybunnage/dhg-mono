@@ -5,6 +5,7 @@ import { UserManagement } from '../components/UserManagement';
 import { AllowedEmailsManagement } from '../components/AllowedEmailsManagement';
 import { LoginStatistics } from '../components/LoginStatistics';
 import { DriveFilterManagement } from '../components/DriveFilterManagement';
+import { TestAuthAuditLog } from '../components/TestAuthAuditLog';
 
 export const AdminDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();

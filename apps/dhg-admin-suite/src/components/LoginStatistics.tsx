@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabase-admin';
 import { formatDistanceToNow } from 'date-fns';
 
 interface LoginStats {
@@ -75,7 +76,7 @@ export const LoginStatistics: React.FC = () => {
 
       // First, let's test if we can access the auth_audit_log table at all
       console.log('[LoginStatistics] Testing basic auth_audit_log access...');
-      const testQuery = await supabase
+      const testQuery = await supabaseAdmin
         .from('auth_audit_log')
         .select('*')
         .limit(1);
@@ -89,13 +90,19 @@ export const LoginStatistics: React.FC = () => {
 
       // Try to get all records first (no date filter) to see what's actually in the table
       console.log('[LoginStatistics] Fetching ALL auth_audit_log records...');
-      const allRecords = await supabase
+      console.log('[LoginStatistics] Using supabaseAdmin client:', supabaseAdmin);
+      
+      const allRecords = await supabaseAdmin
         .from('auth_audit_log')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      console.log('[LoginStatistics] All records query result:', allRecords);
+      console.log('[LoginStatistics] All records query result:', {
+        data: allRecords.data,
+        error: allRecords.error,
+        count: allRecords.data?.length || 0
+      });
       
       if (allRecords.error) {
         debugErrors.push(`All records query failed: ${allRecords.error.message}`);
@@ -109,17 +116,17 @@ export const LoginStatistics: React.FC = () => {
 
       // Get login events for different time periods
       const [logs24h, logs7d, logs30d] = await Promise.all([
-        supabase
+        supabaseAdmin
           .from('auth_audit_log')
           .select('*')
           .gte('created_at', oneDayAgo.toISOString())
           .order('created_at', { ascending: false }),
-        supabase
+        supabaseAdmin
           .from('auth_audit_log')
           .select('*')
           .gte('created_at', sevenDaysAgo.toISOString())
           .order('created_at', { ascending: false }),
-        supabase
+        supabaseAdmin
           .from('auth_audit_log')
           .select('*')
           .gte('created_at', thirtyDaysAgo.toISOString())
@@ -170,31 +177,58 @@ export const LoginStatistics: React.FC = () => {
         '30d': all30dEventTypes
       });
 
-      // Calculate statistics with broader event type matching
-      // First, let's count ALL events to see what we have
-      const totalLogins24h = logs24hData.length; // Count all events for now
-      const totalLogins7d = logs7dData.length;
-      const totalLogins30d = logs30dData.length;
-      const totalFailedLogins24h = 0; // We'll fix this once we see the actual event types
+      // Calculate statistics - filter for login events
+      // Based on actual data, we have simple event types: 'login' and 'logout'
+      const isLoginEvent = (eventType: string) => {
+        return eventType === 'login';
+      };
 
-      console.log('[LoginStatistics] Raw counts (all events):', {
+      const isFailedLoginEvent = (eventType: string) => {
+        // Check for login_failed or similar patterns
+        return eventType === 'login_failed' || 
+               eventType.toLowerCase().includes('login_fail') ||
+               eventType.toLowerCase().includes('auth_fail');
+      };
+
+      // Filter for successful login events
+      const successfulLogins24h = logs24hData.filter((log: AuditLogEntry) => isLoginEvent(log.event_type));
+      const successfulLogins7d = logs7dData.filter((log: AuditLogEntry) => isLoginEvent(log.event_type));
+      const successfulLogins30d = logs30dData.filter((log: AuditLogEntry) => isLoginEvent(log.event_type));
+      
+      // Filter for failed login events
+      const failedLogins24h = logs24hData.filter((log: AuditLogEntry) => isFailedLoginEvent(log.event_type));
+
+      // If no login events found using the filter, show all events as a fallback
+      const hasLoginEvents = successfulLogins24h.length > 0 || successfulLogins7d.length > 0 || successfulLogins30d.length > 0;
+      
+      const totalLogins24h = hasLoginEvents ? successfulLogins24h.length : logs24hData.length;
+      const totalLogins7d = hasLoginEvents ? successfulLogins7d.length : logs7dData.length;
+      const totalLogins30d = hasLoginEvents ? successfulLogins30d.length : logs30dData.length;
+      const totalFailedLogins24h = failedLogins24h.length;
+
+      console.log('[LoginStatistics] Filtered login counts:', {
         totalLogins24h,
         totalLogins7d,
-        totalLogins30d
+        totalLogins30d,
+        totalFailedLogins24h
       });
 
-      // Unique users
-      const uniqueUsers24h = new Set(logs24hData.filter((log: AuditLogEntry) => log.user_id).map((log: AuditLogEntry) => log.user_id)).size;
-      const uniqueUsers7d = new Set(logs7dData.filter((log: AuditLogEntry) => log.user_id).map((log: AuditLogEntry) => log.user_id)).size;
+      // Unique users (from successful logins or all events if no login events found)
+      const logsForUniqueUsers24h = hasLoginEvents ? successfulLogins24h : logs24hData;
+      const logsForUniqueUsers7d = hasLoginEvents ? successfulLogins7d : logs7dData;
+      
+      const uniqueUsers24h = new Set(logsForUniqueUsers24h.filter((log: AuditLogEntry) => log.user_id).map((log: AuditLogEntry) => log.user_id)).size;
+      const uniqueUsers7d = new Set(logsForUniqueUsers7d.filter((log: AuditLogEntry) => log.user_id).map((log: AuditLogEntry) => log.user_id)).size;
 
-      // Recent logins and failed logins - for now, show all recent events
-      const recentLogins = logs24hData.slice(0, 10);
-      const recentFailedLogins: AuditLogEntry[] = []; // We'll populate this once we know the event types
+      // Recent logins and failed logins
+      const recentLogins = hasLoginEvents ? successfulLogins24h.slice(0, 10) : logs24hData.slice(0, 10);
+      const recentFailedLogins = failedLogins24h.slice(0, 10);
 
-      // Auth method breakdown
+      // Auth method breakdown (only for successful logins or all events if no login events)
       const authMethodCounts: Record<string, number> = {};
-      logs7dData.forEach((log: AuditLogEntry) => {
-        const method = log.metadata?.auth_method || 'standard';
+      const logsForAuthMethod = hasLoginEvents ? successfulLogins7d : logs7dData;
+      logsForAuthMethod.forEach((log: AuditLogEntry) => {
+        const method = log.metadata?.auth_method || 'email/password';
         authMethodCounts[method] = (authMethodCounts[method] || 0) + 1;
       });
       
@@ -203,7 +237,7 @@ export const LoginStatistics: React.FC = () => {
         .sort((a, b) => b.count - a.count);
 
       // Get top users from auth_allowed_emails with login counts
-      const { data: topUsersData, error: topUsersError } = await supabase
+      const { data: topUsersData, error: topUsersError } = await supabaseAdmin
         .from('auth_allowed_emails')
         .select('id, email, login_count, last_login_at')
         .not('login_count', 'is', null)
@@ -223,8 +257,8 @@ export const LoginStatistics: React.FC = () => {
       }));
 
       // Get total users
-      const { count: totalUsers } = await supabase
-        .from('allowed_emails')
+      const { count: totalUsers } = await supabaseAdmin
+        .from('auth_allowed_emails')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
 
@@ -253,18 +287,22 @@ export const LoginStatistics: React.FC = () => {
           event_type: log.event_type,
           user_id: log.user_id,
           created_at: log.created_at,
-          metadata: log.metadata
+          metadata: log.metadata,
+          isLogin: isLoginEvent(log.event_type),
+          isFailed: isFailedLoginEvent(log.event_type)
         })),
         errors: debugErrors,
         lastRefresh: new Date().toISOString(),
         tableAccessTest: !testQuery.error,
         totalRecordsInTable: allRecords.data?.length || 0,
-        allRecordsSample: (allRecords.data || []).slice(0, 3).map(log => ({
+        allRecordsSample: (allRecords.data || []).slice(0, 5).map(log => ({
           id: log.id,
           event_type: log.event_type,
           user_id: log.user_id,
           created_at: log.created_at,
-          metadata: log.metadata
+          metadata: log.metadata,
+          isLogin: isLoginEvent(log.event_type),
+          isFailed: isFailedLoginEvent(log.event_type)
         }))
       });
 
@@ -350,6 +388,20 @@ export const LoginStatistics: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Show notice if we're displaying all audit events */}
+      {debugInfo && !debugInfo.uniqueEventTypes.some(type => 
+        type.toLowerCase().includes('login') || 
+        type.toLowerCase().includes('sign_in') || 
+        type.toLowerCase().includes('auth')
+      ) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+          <p className="text-sm text-yellow-800">
+            <strong>Note:</strong> No specific login events found. Showing all audit log entries.
+            Enable debug mode to see available event types.
+          </p>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

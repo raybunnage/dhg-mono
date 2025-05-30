@@ -16,5 +16,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['@shared/services/auth-service/auth-service']
-  }
+  },
+  // Load env files from monorepo root
+  envDir: path.resolve(__dirname, '../../')
 })

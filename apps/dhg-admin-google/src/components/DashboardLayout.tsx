@@ -5,7 +5,6 @@ import {
   FolderOpen, 
   RefreshCw, 
   BarChart3, 
-  Filter,
   LogOut
 } from 'lucide-react';
 
@@ -29,7 +28,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { id: 'explorer', label: 'Drive Explorer', path: '/explorer', icon: FolderOpen },
     { id: 'sync', label: 'Sync Status', path: '/sync-status', icon: RefreshCw },
     { id: 'statistics', label: 'Statistics', path: '/statistics', icon: BarChart3 },
-    { id: 'filters', label: 'Drive Filters', path: '/filters', icon: Filter },
   ];
 
   const activeTab = tabs.find(tab => location.pathname === tab.path)?.id || 'explorer';
