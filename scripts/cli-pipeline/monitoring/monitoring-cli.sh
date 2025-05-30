@@ -49,7 +49,9 @@ show_help() {
     echo "Commands:"
     echo "  scan <folder>          Scan a folder for insights"
     echo "  watch <folder>         Continuously monitor a folder"
-    echo "  report <folder>        Generate detailed report"
+    echo "  report <folder>        Generate detailed report with DB save"
+    echo "  history <folder>       Show historical monitoring data"
+    echo "  trends <folder>        Show monitoring trends over time"
     echo "  health                 Run health checks"
     echo "  quick <folder>         Quick scan (last 24h)"
     echo ""
@@ -60,6 +62,8 @@ show_help() {
     echo "  $0 scan apps/dhg-improve-experts"
     echo "  $0 watch packages/shared/services --interval 15"
     echo "  $0 quick apps/dhg-hub"
+    echo "  $0 history apps/dhg-hub --days 30"
+    echo "  $0 trends packages/shared/services"
 }
 
 # Ensure dependencies
@@ -93,6 +97,18 @@ case "$1" in
         folder="$1"
         echo -e "${BLUE}Generating detailed report for $folder...${NC}"
         cd "$SCRIPT_DIR" && npx tsx folder-monitor.ts scan "$folder" --save
+        ;;
+        
+    history)
+        track_command "history" "$@"
+        shift
+        cd "$SCRIPT_DIR" && npx tsx folder-monitor.ts history "$@"
+        ;;
+        
+    trends)
+        track_command "trends" "$@"
+        shift
+        cd "$SCRIPT_DIR" && npx tsx folder-monitor.ts trends "$@"
         ;;
         
     health)

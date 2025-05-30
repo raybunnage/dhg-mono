@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { browserAuthService, type AppUser } from '../services/admin-auth-service';
-import { isUserAdmin } from '../services/admin-auth-service';
+import { browserAuthService, isUserAdmin } from '../services/admin-auth-service';
+import type { AppUser } from '@shared/services/auth-service/types';
 
 interface AuthContextType {
   user: AppUser | null;

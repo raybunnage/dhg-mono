@@ -268,6 +268,54 @@ export type Database = {
           },
         ]
       }
+      ai_work_summaries: {
+        Row: {
+          category: string | null
+          commands: string[] | null
+          created_at: string | null
+          files_modified: string[] | null
+          id: string
+          metadata: Json | null
+          status: string | null
+          summary_content: string
+          tags: string[] | null
+          title: string
+          ui_components: string[] | null
+          updated_at: string | null
+          work_date: string
+        }
+        Insert: {
+          category?: string | null
+          commands?: string[] | null
+          created_at?: string | null
+          files_modified?: string[] | null
+          id?: string
+          metadata?: Json | null
+          status?: string | null
+          summary_content: string
+          tags?: string[] | null
+          title: string
+          ui_components?: string[] | null
+          updated_at?: string | null
+          work_date?: string
+        }
+        Update: {
+          category?: string | null
+          commands?: string[] | null
+          created_at?: string | null
+          files_modified?: string[] | null
+          id?: string
+          metadata?: Json | null
+          status?: string | null
+          summary_content?: string
+          tags?: string[] | null
+          title?: string
+          ui_components?: string[] | null
+          updated_at?: string | null
+          work_date?: string
+        }
+        Relationships: []
+      }
       auth_allowed_emails: {
         Row: {
           added_at: string | null
@@ -554,6 +602,8 @@ export type Database = {
           color: string | null
           created_at: string | null
           description: string | null
+          display_order: number | null
+          icon: string | null
           id: string
           name: string
           updated_at: string | null
@@ -562,6 +612,8 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           name: string
           updated_at?: string | null
@@ -570,11 +622,104 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           name?: string
           updated_at?: string | null
         }
         Relationships: []
+      }
+      command_definitions: {
+        Row: {
+          command_name: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          example_usage: string | null
+          id: string
+          is_dangerous: boolean | null
+          pipeline_id: string
+          requires_auth: boolean | null
+          requires_google_api: boolean | null
+          updated_at: string | null
+          usage_pattern: string | null
+        }
+        Insert: {
+          command_name: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          example_usage?: string | null
+          id?: string
+          is_dangerous?: boolean | null
+          pipeline_id: string
+          requires_auth?: boolean | null
+          requires_google_api?: boolean | null
+          updated_at?: string | null
+          usage_pattern?: string | null
+        }
+        Update: {
+          command_name?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          example_usage?: string | null
+          id?: string
+          is_dangerous?: boolean | null
+          pipeline_id?: string
+          requires_auth?: boolean | null
+          requires_google_api?: boolean | null
+          updated_at?: string | null
+          usage_pattern?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_definitions_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "command_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_dependencies: {
+        Row: {
+          command_id: string
+          created_at: string | null
+          dependency_name: string
+          dependency_type: string
+          description: string | null
+          id: string
+          is_required: boolean | null
+        }
+        Insert: {
+          command_id: string
+          created_at?: string | null
+          dependency_name: string
+          dependency_type: string
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+        }
+        Update: {
+          command_id?: string
+          created_at?: string | null
+          dependency_name?: string
+          dependency_type?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_dependencies_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "command_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       command_patterns: {
         Row: {
@@ -602,6 +747,148 @@ export type Database = {
           is_active?: boolean | null
           pattern?: string
           replacement?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      command_pipeline_tables: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          operation_type: string | null
+          pipeline_id: string
+          table_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          operation_type?: string | null
+          pipeline_id: string
+          table_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          operation_type?: string | null
+          pipeline_id?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_pipeline_tables_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "command_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_pipelines: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          guidance: string | null
+          id: string
+          last_scanned_at: string | null
+          name: string
+          script_path: string
+          status: string | null
+          updated_at: string | null
+          usage_example: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          guidance?: string | null
+          id?: string
+          last_scanned_at?: string | null
+          name: string
+          script_path: string
+          status?: string | null
+          updated_at?: string | null
+          usage_example?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          guidance?: string | null
+          id?: string
+          last_scanned_at?: string | null
+          name?: string
+          script_path?: string
+          status?: string | null
+          updated_at?: string | null
+          usage_example?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_pipelines_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "command_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_refactor_tracking: {
+        Row: {
+          command_name: string
+          command_type: string
+          created_at: string | null
+          current_status: string
+          description: string | null
+          id: string
+          issues_found: string | null
+          new_implementation_path: string | null
+          notes: string | null
+          old_implementation_path: string | null
+          signed_off_at: string | null
+          signed_off_by: string | null
+          test_criteria: string[] | null
+          test_results: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          command_name: string
+          command_type: string
+          created_at?: string | null
+          current_status?: string
+          description?: string | null
+          id?: string
+          issues_found?: string | null
+          new_implementation_path?: string | null
+          notes?: string | null
+          old_implementation_path?: string | null
+          signed_off_at?: string | null
+          signed_off_by?: string | null
+          test_criteria?: string[] | null
+          test_results?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          command_name?: string
+          command_type?: string
+          created_at?: string | null
+          current_status?: string
+          description?: string | null
+          id?: string
+          issues_found?: string | null
+          new_implementation_path?: string | null
+          notes?: string | null
+          old_implementation_path?: string | null
+          signed_off_at?: string | null
+          signed_off_by?: string | null
+          test_criteria?: string[] | null
+          test_results?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -645,6 +932,112 @@ export type Database = {
           records_affected?: number | null
           status?: string
           summary?: string | null
+        }
+        Relationships: []
+      }
+      dev_task_files: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          file_path: string
+          id: string
+          task_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          file_path: string
+          id?: string
+          task_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          file_path?: string
+          id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_task_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          tag: string
+          task_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          tag: string
+          task_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          tag?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_tasks: {
+        Row: {
+          claude_request: string | null
+          claude_response: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          priority: string | null
+          status: string | null
+          task_type: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          claude_request?: string | null
+          claude_response?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          claude_request?: string | null
+          claude_response?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string | null
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1309,6 +1702,7 @@ export type Database = {
           mp4_files: number | null
           mp4_total_size: string | null
           new_files: number | null
+          root_drive_id: string | null
           total_google_drive_items: number | null
         }
         Insert: {
@@ -1325,6 +1719,7 @@ export type Database = {
           mp4_files?: number | null
           mp4_total_size?: string | null
           new_files?: number | null
+          root_drive_id?: string | null
           total_google_drive_items?: number | null
         }
         Update: {
@@ -1341,6 +1736,7 @@ export type Database = {
           mp4_files?: number | null
           mp4_total_size?: string | null
           new_files?: number | null
+          root_drive_id?: string | null
           total_google_drive_items?: number | null
         }
         Relationships: []
@@ -2151,6 +2547,38 @@ export type Database = {
         }
         Relationships: []
       }
+      command_refactor_status_summary: {
+        Row: {
+          command_type: string | null
+          count: number | null
+          current_status: string | null
+        }
+        Relationships: []
+      }
+      commands_needing_attention: {
+        Row: {
+          command_name: string | null
+          command_type: string | null
+          current_status: string | null
+          description: string | null
+          priority: number | null
+        }
+        Insert: {
+          command_name?: string | null
+          command_type?: string | null
+          current_status?: string | null
+          description?: string | null
+          priority?: never
+        }
+        Update: {
+          command_name?: string | null
+          command_type?: string | null
+          current_status?: string | null
+          description?: string | null
+          priority?: never
+        }
+        Relationships: []
+      }
       document_classifications_view: {
         Row: {
           category: string | null
@@ -2245,6 +2673,21 @@ export type Database = {
           },
         ]
       }
+      recent_ai_work_summaries: {
+        Row: {
+          category: string | null
+          commands: string[] | null
+          created_at: string | null
+          id: string | null
+          status: string | null
+          summary_preview: string | null
+          tags: string[] | null
+          title: string | null
+          ui_components: string[] | null
+          work_date: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_allowed_email: {
@@ -2338,6 +2781,10 @@ export type Database = {
           p_denial_reason?: string
         }
         Returns: boolean
+      }
+      discover_pipeline_commands: {
+        Args: { p_pipeline_name: string; p_script_content: string }
+        Returns: Json
       }
       execute_sql: {
         Args: { sql_query: string }
@@ -2560,6 +3007,17 @@ export type Database = {
           is_primary: boolean
         }[]
       }
+      get_pipeline_statistics: {
+        Args: { p_pipeline_id?: string }
+        Returns: {
+          pipeline_id: string
+          pipeline_name: string
+          total_commands: number
+          tables_accessed: number
+          last_used: string
+          total_executions: number
+        }[]
+      }
       get_schema_info: {
         Args: { schema_name: string }
         Returns: Json
@@ -2720,6 +3178,19 @@ export type Database = {
       sanitize_command: {
         Args: { command_text: string }
         Returns: string
+      }
+      search_ai_work_summaries: {
+        Args: { search_query: string }
+        Returns: {
+          id: string
+          title: string
+          summary_content: string
+          work_date: string
+          commands: string[]
+          tags: string[]
+          category: string
+          rank: number
+        }[]
       }
       set_current_domain: {
         Args: { domain_id: string }

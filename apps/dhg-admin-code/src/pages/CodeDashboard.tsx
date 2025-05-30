@@ -77,6 +77,14 @@ export const CodeDashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Refactor Status</h2>
             <p className="text-gray-600">Track command refactoring progress and status</p>
           </button>
+
+          <button
+            onClick={() => navigate('/cli-commands')}
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
+          >
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">CLI Commands Registry</h2>
+            <p className="text-gray-600">Browse and manage all CLI pipelines and commands</p>
+          </button>
         </div>
       </main>
     </div>

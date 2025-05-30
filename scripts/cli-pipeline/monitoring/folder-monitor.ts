@@ -5,7 +5,7 @@ import { glob } from 'glob';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import chalk from 'chalk';
-// import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client/index.js';
 
 const program = new Command();
 
@@ -212,34 +212,255 @@ async function generateReport(result: MonitoringResult): Promise<void> {
 }
 
 async function saveResultToDatabase(result: MonitoringResult): Promise<void> {
-  // TODO: Re-enable database saving once supabase-adapter is available
-  console.log(chalk.gray('(Database logging will be available in next iteration)'));
-  
-  // try {
-  //   const supabase = SupabaseClientService.getInstance().getClient();
-  //   const { error } = await supabase
-  //     .from('monitoring_runs')
-  //     .insert({
-  //       folder_path: result.folder,
-  //       run_type: 'full_scan',
-  //       status: 'completed',
-  //       findings: result.findings,
-  //       completed_at: new Date().toISOString()
-  //     });
-  //   
-  //   if (error) {
-  //     console.error('Failed to save monitoring results:', error);
-  //   }
-  // } catch (err) {
-  //   // Table might not exist yet, that's okay
-  //   console.log(chalk.gray('(Database logging not available)'));
-  // }
+  try {
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // Create the monitoring run record
+    const { data: runData, error: runError } = await supabase
+      .from('sys_monitoring_runs')
+      .insert({
+        folder_path: result.folder,
+        run_type: 'manual',
+        status: 'completed',
+        findings: result.findings,
+        metrics: result.metrics,
+        completed_at: new Date().toISOString(),
+        created_by: process.env.USER || 'cli'
+      })
+      .select()
+      .single();
+    
+    if (runError) {
+      console.error(chalk.red('Failed to save monitoring run:'), runError);
+      return;
+    }
+    
+    console.log(chalk.green('✅ Results saved to database'));
+    
+    // Save individual findings for easier querying
+    if (runData && runData.id) {
+      const findingsToInsert = [];
+      
+      // Process each finding type
+      for (const [findingType, items] of Object.entries(result.findings)) {
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            if (typeof item === 'string') {
+              // Simple string findings (like newFiles, missingTests)
+              findingsToInsert.push({
+                run_id: runData.id,
+                finding_type: findingType,
+                severity: 'info',
+                file_path: item,
+                description: `${findingType}: ${item}`
+              });
+            } else if (typeof item === 'object') {
+              // Complex findings with more details
+              findingsToInsert.push({
+                run_id: runData.id,
+                finding_type: findingType,
+                severity: 'warning',
+                file_path: item.file,
+                description: (item as any).reason || (item as any).functionality || (item as any).suggestion,
+                suggestion: item.suggestion
+              });
+            }
+          }
+        }
+      }
+      
+      if (findingsToInsert.length > 0) {
+        const { error: findingsError } = await supabase
+          .from('sys_monitoring_findings')
+          .insert(findingsToInsert);
+          
+        if (findingsError) {
+          console.error(chalk.yellow('Warning: Could not save individual findings:'), findingsError);
+        }
+      }
+    }
+    
+    // Save metrics
+    const metricsToInsert = Object.entries(result.metrics).map(([metric_type, metric_value]) => ({
+      folder_path: result.folder,
+      metric_type,
+      metric_value: Number(metric_value),
+      metadata: { timestamp: result.timestamp }
+    }));
+    
+    const { error: metricsError } = await supabase
+      .from('sys_monitoring_metrics')
+      .insert(metricsToInsert);
+      
+    if (metricsError) {
+      console.error(chalk.yellow('Warning: Could not save metrics:'), metricsError);
+    }
+    
+  } catch (err) {
+    console.error(chalk.red('Database error:'), err);
+    console.log(chalk.yellow('⚠️  Results displayed but not saved to database'));
+  }
+}
+
+// Historical reporting functions
+async function getHistoricalReport(folderPath: string, days: number = 7): Promise<void> {
+  try {
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // Get monitoring runs from the last N days
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    
+    const { data: runs, error: runsError } = await supabase
+      .from('sys_monitoring_runs')
+      .select('*')
+      .eq('folder_path', folderPath)
+      .gte('created_at', since.toISOString())
+      .order('created_at', { ascending: false });
+      
+    if (runsError) {
+      console.error(chalk.red('Failed to fetch historical data:'), runsError);
+      return;
+    }
+    
+    if (!runs || runs.length === 0) {
+      console.log(chalk.yellow('No historical data found for this folder'));
+      return;
+    }
+    
+    console.log(chalk.blue.bold(`\n📈 Historical Report for ${folderPath}`));
+    console.log(chalk.gray(`Last ${days} days (${runs.length} runs)`));
+    console.log(chalk.gray('═'.repeat(60)));
+    
+    // Aggregate metrics over time
+    const { data: metrics, error: metricsError } = await supabase
+      .from('sys_monitoring_metrics')
+      .select('metric_type, metric_value, recorded_at')
+      .eq('folder_path', folderPath)
+      .gte('recorded_at', since.toISOString())
+      .order('recorded_at', { ascending: true });
+      
+    if (!metricsError && metrics) {
+      // Group metrics by type
+      const metricsByType: Record<string, number[]> = {};
+      metrics.forEach(m => {
+        if (!metricsByType[m.metric_type]) metricsByType[m.metric_type] = [];
+        metricsByType[m.metric_type].push(Number(m.metric_value));
+      });
+      
+      console.log(chalk.bold('\n📊 Metrics Summary:'));
+      for (const [type, values] of Object.entries(metricsByType)) {
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        console.log(`  ${type}:`);
+        console.log(`    Average: ${chalk.yellow(avg.toFixed(1))}`);
+        console.log(`    Range: ${chalk.green(min)} - ${chalk.red(max)}`);
+      }
+    }
+    
+    // Get top finding types
+    const { data: findings, error: findingsError } = await supabase
+      .from('sys_monitoring_findings')
+      .select('finding_type, severity')
+      .in('run_id', runs.map(r => r.id));
+      
+    if (!findingsError && findings) {
+      const findingCounts: Record<string, number> = {};
+      findings.forEach(f => {
+        findingCounts[f.finding_type] = (findingCounts[f.finding_type] || 0) + 1;
+      });
+      
+      console.log(chalk.bold('\n🔍 Top Issues:'));
+      Object.entries(findingCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .forEach(([type, count]) => {
+          console.log(`  ${type}: ${chalk.yellow(count)} occurrences`);
+        });
+    }
+    
+    console.log(chalk.gray('\n═'.repeat(60)));
+    
+  } catch (err) {
+    console.error(chalk.red('Error generating historical report:'), err);
+  }
+}
+
+async function getTrendReport(folderPath: string): Promise<void> {
+  try {
+    const supabase = SupabaseClientService.getInstance().getClient();
+    
+    // Get metrics over the last 30 days grouped by day
+    const { data: metrics, error } = await supabase
+      .from('sys_monitoring_metrics')
+      .select('*')
+      .eq('folder_path', folderPath)
+      .gte('recorded_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .order('recorded_at', { ascending: true });
+      
+    if (error) {
+      console.error(chalk.red('Failed to fetch trend data:'), error);
+      return;
+    }
+    
+    if (!metrics || metrics.length === 0) {
+      console.log(chalk.yellow('No trend data available'));
+      return;
+    }
+    
+    console.log(chalk.blue.bold(`\n📊 Trend Report for ${folderPath}`));
+    console.log(chalk.gray('Last 30 days'));
+    console.log(chalk.gray('═'.repeat(60)));
+    
+    // Group by metric type and show trend
+    const metricsByType: Record<string, Array<{date: string; value: number}>> = {};
+    
+    metrics.forEach(m => {
+      const date = new Date(m.recorded_at).toLocaleDateString();
+      if (!metricsByType[m.metric_type]) metricsByType[m.metric_type] = [];
+      metricsByType[m.metric_type].push({ date, value: Number(m.metric_value) });
+    });
+    
+    for (const [type, values] of Object.entries(metricsByType)) {
+      console.log(chalk.bold(`\n${type}:`));
+      
+      // Calculate trend
+      if (values.length >= 2) {
+        const firstValue = values[0].value;
+        const lastValue = values[values.length - 1].value;
+        const change = lastValue - firstValue;
+        const percentChange = (change / firstValue) * 100;
+        
+        const trendIcon = change > 0 ? '📈' : change < 0 ? '📉' : '➡️';
+        const trendColor = type.includes('filesWithoutTests') ? 
+          (change < 0 ? chalk.green : chalk.red) : 
+          (change > 0 ? chalk.green : chalk.red);
+          
+        console.log(`  ${trendIcon} Trend: ${trendColor(percentChange.toFixed(1) + '%')}`);
+        console.log(`  First: ${firstValue}, Latest: ${lastValue}`);
+      }
+    }
+    
+    console.log(chalk.gray('\n═'.repeat(60)));
+    
+  } catch (err) {
+    console.error(chalk.red('Error generating trend report:'), err);
+  }
 }
 
 // Commands
 program
   .name('folder-monitor')
   .description('Monitor folders for code quality and improvement opportunities');
+
+program
+  .command('quick <folder>')
+  .description('Quick scan for last 24 hours')
+  .action(async (folder: string) => {
+    // Run scan with 24h default
+    await program.parse(['', '', 'scan', folder, '--since', '1d']);
+  });
 
 program
   .command('scan <folder>')
@@ -289,6 +510,16 @@ program
   });
 
 program
+  .command('report <folder>')
+  .description('Generate detailed report with database save')
+  .option('-s, --since <date>', 'Check for files modified since date', '7d')
+  .option('--save', 'Save results to database', true)
+  .action(async (folder: string, options: any) => {
+    // Run scan with save option
+    await program.parse(['', '', 'scan', folder, '--since', options.since || '7d', '--save']);
+  });
+
+program
   .command('watch <folder>')
   .description('Continuously monitor a folder')
   .option('-i, --interval <minutes>', 'Check interval in minutes', '30')
@@ -304,6 +535,23 @@ program
       console.log(chalk.gray(`\n⏰ Running scheduled check at ${new Date().toLocaleTimeString()}`));
       await program.parse(['', '', 'scan', folder]);
     }, parseInt(options.interval) * 60 * 1000);
+  });
+
+program
+  .command('history <folder>')
+  .description('Show historical monitoring data')
+  .option('-d, --days <number>', 'Number of days to show', '7')
+  .action(async (folder: string, options: any) => {
+    const folderPath = path.resolve(folder);
+    await getHistoricalReport(folderPath, parseInt(options.days));
+  });
+
+program
+  .command('trends <folder>')
+  .description('Show monitoring trends over time')
+  .action(async (folder: string) => {
+    const folderPath = path.resolve(folder);
+    await getTrendReport(folderPath);
   });
 
 program.parse(process.argv);

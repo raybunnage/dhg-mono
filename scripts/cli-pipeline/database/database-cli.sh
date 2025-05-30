@@ -88,6 +88,9 @@ show_help() {
   echo "    rollback-rename      Rollback a table rename operation"
   echo "    list-migrations      List all table migration history"
   echo ""
+  echo "CLI REGISTRY:"
+  echo "    scan-cli-pipelines   Scan and import all CLI pipelines into command registry"
+  echo ""
   echo "OPTIONS:"
   echo "  --debug                Run commands directly without tracking"
   echo ""
@@ -443,6 +446,10 @@ case "$1" in
   "list-migrations")
     echo "📋 Listing table migration history..."
     track_command "list-migrations" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rollback-table-rename.ts list ${@:2}"
+    ;;
+  "scan-cli-pipelines")
+    echo "🔍 Scanning CLI pipelines for command registry..."
+    track_command "scan-cli-pipelines" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/scan-cli-pipelines.ts ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

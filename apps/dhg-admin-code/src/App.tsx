@@ -5,6 +5,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { CodeDashboard } from './pages/CodeDashboard';
 import { WorkSummaries } from './pages/WorkSummaries';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
+import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -37,6 +38,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <CommandRefactorStatus />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cli-commands" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <CLICommandsRegistry />
             </ProtectedRoute>
           } 
         />
