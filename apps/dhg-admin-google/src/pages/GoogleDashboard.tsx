@@ -7,44 +7,30 @@ export const GoogleDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'explorer' | 'sync' | 'statistics' | 'filters'>('explorer');
 
+  console.log('GoogleDashboard render - user:', user?.email, 'isAdmin:', isAdmin);
+
   const handleSignOut = async () => {
+    console.log('Signing out...');
     await signOut();
     navigate('/login');
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-700 mb-4">You need admin privileges to access this area.</p>
-          <button
-            onClick={handleSignOut}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-100">
+    <div className="min-h-screen bg-purple-50">
+      <header className="bg-white shadow-sm border-b border-purple-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">DHG Admin Google</h1>
+            <h1 className="text-2xl font-bold text-purple-900">DHG Admin Google</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-purple-700">
                 {user?.email}
-                <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
+                <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
                   Admin
                 </span>
               </span>
               <button
                 onClick={handleSignOut}
-                className="text-sm text-gray-600 hover:text-gray-800"
+                className="text-sm text-purple-600 hover:text-purple-800"
               >
                 Sign out
               </button>
@@ -55,7 +41,7 @@ export const GoogleDashboard: React.FC = () => {
 
       <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-purple-200 mb-8">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => {
@@ -65,8 +51,8 @@ export const GoogleDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'explorer'
-                  ? 'border-green-500 text-green-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-purple-500 text-purple-700 font-medium'
+                  : 'border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300'
                 }
               `}
             >
@@ -80,8 +66,8 @@ export const GoogleDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'sync'
-                  ? 'border-green-500 text-green-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-purple-500 text-purple-700 font-medium'
+                  : 'border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300'
                 }
               `}
             >
@@ -95,8 +81,8 @@ export const GoogleDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'statistics'
-                  ? 'border-green-500 text-green-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-purple-500 text-purple-700 font-medium'
+                  : 'border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300'
                 }
               `}
             >
@@ -110,8 +96,8 @@ export const GoogleDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'filters'
-                  ? 'border-green-500 text-green-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-purple-500 text-purple-700 font-medium'
+                  : 'border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300'
                 }
               `}
             >

@@ -4,8 +4,19 @@
  * Export all authentication service functionality
  */
 
-export { AuthService, authService } from './auth-service';
-export { browserAuthService } from './browser-auth-service';
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
+
+if (isBrowser) {
+  // Browser environment - export browser auth service
+  export { BrowserAuthService, getBrowserAuthService, browserAuthService } from './browser-auth-service';
+  export { browserAuthService as authService } from './browser-auth-service';
+} else {
+  // Node.js environment - export full auth service
+  export { AuthService, authService } from './auth-service';
+  export { BrowserAuthService, getBrowserAuthService, browserAuthService } from './browser-auth-service';
+}
+
 export * from './types';
 
 // Re-export commonly used types for convenience

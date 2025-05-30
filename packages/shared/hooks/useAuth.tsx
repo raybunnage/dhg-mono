@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { authService } from '../services/auth-service';
+import { browserAuthService as authService } from '../services/auth-service/browser-auth-service';
 import { AppUser, AuthResult } from '../services/auth-service/types';
 
 /**

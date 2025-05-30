@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { supabase } from '../utils/supabase-adapter';
 import { 
-  BarChart3, 
   FolderOpen, 
   FileText, 
   Film,
-  HardDrive,
   RefreshCw,
   Calendar,
   TrendingUp
@@ -53,7 +51,6 @@ export const Statistics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchStatistics();
@@ -121,15 +118,6 @@ export const Statistics: React.FC = () => {
     setRefreshing(false);
   };
 
-  const toggleFolder = (folderId: string) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpandedFolders(newExpanded);
-  };
 
   const formatFileSize = (bytes: number): string => {
     const gb = bytes / (1024 * 1024 * 1024);
@@ -174,7 +162,10 @@ export const Statistics: React.FC = () => {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Google Drive Statistics</h2>
             <p className="text-gray-600 mt-1">
-              Comprehensive overview of your Google Drive data
+              Statistics for: Dynamic Healing Discussion Group
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Root Drive ID: 1wriOM2j2IglnMcejplqG_XcCxSIfoRMV
             </p>
           </div>
           <button

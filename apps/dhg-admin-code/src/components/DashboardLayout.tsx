@@ -34,13 +34,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-green-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-700 mb-4">You need admin privileges to access this area.</p>
+          <h1 className="text-2xl font-bold text-green-900 mb-4">Access Denied</h1>
+          <p className="text-green-700 mb-4">You need admin privileges to access this area.</p>
           <button
             onClick={handleSignOut}
-            className="text-gray-600 hover:text-gray-800"
+            className="text-green-600 hover:text-green-800"
           >
             Sign out
           </button>
@@ -50,21 +50,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-100">
+    <div className="min-h-screen bg-green-50">
+      <header className="bg-white shadow-sm border-b border-green-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">DHG Admin Code</h1>
+            <h1 className="text-2xl font-bold text-green-900">DHG Admin Code</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-green-700">
                 {user?.email}
-                <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
+                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                   Admin
                 </span>
               </span>
               <button
                 onClick={handleSignOut}
-                className="text-sm text-gray-600 hover:text-gray-800"
+                className="text-sm text-green-600 hover:text-green-800"
               >
                 Sign out
               </button>
@@ -75,15 +75,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
       <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-green-200 mb-8">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => navigate('/tasks')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'tasks'
-                  ? 'border-blue-500 text-blue-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
                 }
               `}
             >
@@ -94,8 +94,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'summaries'
-                  ? 'border-blue-500 text-blue-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
                 }
               `}
             >
@@ -106,8 +106,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'refactor'
-                  ? 'border-blue-500 text-blue-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
                 }
               `}
             >
@@ -118,8 +118,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'commands'
-                  ? 'border-blue-500 text-blue-700 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
                 }
               `}
             >

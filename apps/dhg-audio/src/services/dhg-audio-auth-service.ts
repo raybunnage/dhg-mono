@@ -124,10 +124,15 @@ class DhgAudioAuthService {
     const success = await lightAuthEnhanced.completeProfile(userId, serviceProfile);
     
     if (success) {
+      console.log('[dhg-audio-auth-service] Profile completed successfully');
       // Update localStorage to reflect profile completion
       const user = this.getCurrentUser();
       if (user) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
+        // Mark the user as having completed their profile
+        const updatedUser = { ...user, profile_complete: true };
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedUser));
+        // Dispatch storage event to trigger re-render in useAuth hook
+        window.dispatchEvent(new Event('storage'));
       }
     }
 

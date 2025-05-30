@@ -1349,7 +1349,7 @@ fi
 # STATISTICS COMMANDS
 if [ "$1" = "populate-statistics" ]; then
   shift
-  track_command "populate-statistics" "ts-node $SCRIPT_DIR/populate-sync-statistics.ts $*"
+  track_command "populate-statistics" "ts-node $SCRIPT_DIR/populate-sync-statistics-recursive.ts $*"
   exit $?
 fi
 

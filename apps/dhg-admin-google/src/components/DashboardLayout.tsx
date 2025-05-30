@@ -14,9 +14,11 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  console.log('DashboardLayout render - user:', user?.email, 'location:', location.pathname);
 
   const handleSignOut = async () => {
     await signOut();
@@ -31,23 +33,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   ];
 
   const activeTab = tabs.find(tab => location.pathname === tab.path)?.id || 'explorer';
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-700 mb-4">You need admin privileges to access this area.</p>
-          <button
-            onClick={handleSignOut}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

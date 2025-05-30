@@ -10,7 +10,7 @@ export const Dashboard: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-purple-50">
       <div className="flex justify-center items-center h-64">
         <div className="text-gray-500">Redirecting to Google Dashboard...</div>
       </div>

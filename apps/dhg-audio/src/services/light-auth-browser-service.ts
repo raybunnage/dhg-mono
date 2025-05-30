@@ -28,6 +28,8 @@ export interface UserRegistrationData {
 class LightAuthBrowserService {
   private supabase: SupabaseClient;
   private mockSession: Session | null = null;
+  private readonly STORAGE_KEY = 'dhg_auth_user';
+  private readonly SESSION_KEY = 'dhg-audio-session';
 
   constructor() {
     this.supabase = supabaseBrowserClient.getClient();
@@ -128,16 +130,23 @@ class LightAuthBrowserService {
       };
 
       // Store in localStorage
-      localStorage.setItem('dhg-audio-session', JSON.stringify(this.mockSession));
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(this.mockSession));
+      // Also store user in the auth service key for compatibility
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(mockUser));
 
       // Log authentication event
       await this.logAuthEvent(allowedEmail.id, 'login', 'success');
+
+      // Check if user has completed profile
+      const hasProfile = await this.hasCompletedOnboarding(allowedEmail.id);
+      console.log('[LightAuthBrowser] User has profile:', hasProfile);
 
       return {
         success: true,
         user: mockUser,
         session: this.mockSession,
-        profileComplete: true
+        profileComplete: hasProfile,
+        needsProfile: !hasProfile
       };
     } catch (error) {
       console.error('[LightAuthBrowser] Login error:', error);
@@ -156,20 +165,36 @@ class LightAuthBrowserService {
       }
       
       this.mockSession = null;
-      localStorage.removeItem('dhg-audio-session');
+      localStorage.removeItem(this.SESSION_KEY);
+      localStorage.removeItem(this.STORAGE_KEY);
     } catch (error) {
       console.error('[LightAuthBrowser] Logout error:', error);
     }
   }
 
   getCurrentUser(): User | null {
+    // First check if we have a session
     const session = this.mockSession || this.getStoredSession();
-    return session?.user || null;
+    if (session?.user) {
+      return session.user;
+    }
+    
+    // Fallback to checking the user key directly
+    try {
+      const storedUser = localStorage.getItem(this.STORAGE_KEY);
+      if (storedUser) {
+        return JSON.parse(storedUser) as User;
+      }
+    } catch (error) {
+      console.error('[LightAuthBrowser] Error parsing stored user:', error);
+    }
+    
+    return null;
   }
 
   private getStoredSession(): Session | null {
     try {
-      const stored = localStorage.getItem('dhg-audio-session');
+      const stored = localStorage.getItem(this.SESSION_KEY);
       if (stored) {
         const session = JSON.parse(stored) as Session;
         // Check if expired
@@ -284,7 +309,22 @@ class LightAuthBrowserService {
   // Method to complete profile for existing user
   async completeProfile(userId: string, profile: ProfileFormData): Promise<boolean> {
     try {
+      console.log('[LightAuthBrowser] Completing profile for user:', userId);
       const profileResult = await userProfileBrowserService.createProfile(userId, profile);
+      
+      if (profileResult.success) {
+        console.log('[LightAuthBrowser] Profile created successfully');
+        // Refresh the user in local storage to ensure auth state is updated
+        const currentUser = this.getCurrentUser();
+        if (currentUser) {
+          // Update the user object to reflect that profile is complete
+          const updatedUser = { ...currentUser, profile_complete: true };
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedUser));
+          // Dispatch storage event to trigger re-render
+          window.dispatchEvent(new Event('storage'));
+        }
+      }
+      
       return profileResult.success;
     } catch (error) {
       console.error('[LightAuthBrowser] Error completing profile:', error);

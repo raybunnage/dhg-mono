@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { browserAuthService, type AccessRequestData } from '../../services/auth-service';
+import { getBrowserAuthService, type AccessRequestData } from '../../services/auth-service/browser';
 
 interface EmailAuthProps {
   onSuccess?: () => void;
@@ -20,11 +20,11 @@ export const EmailAuth: React.FC<EmailAuthProps> = ({ redirectTo }) => {
 
     try {
       // Check if email is allowed
-      const isAllowed = await browserAuthService.isEmailAllowed(email);
+      const isAllowed = await getBrowserAuthService().isEmailAllowed(email);
 
       if (isAllowed) {
         // Send magic link
-        const result = await browserAuthService.sendMagicLink({ 
+        const result = await getBrowserAuthService().sendMagicLink({ 
           email, 
           redirectTo: redirectTo || window.location.origin 
         });
@@ -144,7 +144,7 @@ const AccessRequestForm: React.FC<AccessRequestFormProps> = ({ email, onBack }) 
     setError(null);
 
     try {
-      const result = await browserAuthService.submitAccessRequest({
+      const result = await getBrowserAuthService().submitAccessRequest({
         email,
         ...formData
       });

@@ -126,6 +126,16 @@ dev_fresh() {
   track_command "dev-fresh" "$SCRIPT_DIR/dev-fresh.sh $@"
 }
 
+# Command handler for check-deprecated-commands
+check_deprecated_commands() {
+  track_command "check-deprecated-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/check-deprecated-commands.ts $@"
+}
+
+# Command handler for update-deprecated-to-archive
+update_deprecated_to_archive() {
+  track_command "update-deprecated-to-archive" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-deprecated-to-archive.ts $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -151,6 +161,8 @@ show_help() {
   echo "    quick-restart             Quick restart - kills Vite and clears Vite cache only"
   echo ""
   echo "SYSTEM:"
+  echo "    check-deprecated-commands Check deprecated commands that should be archived"
+  echo "    update-deprecated-to-archive Update all deprecated commands to archived status"
   echo "    help                      Show this help message"
   echo ""
   echo "COMMON OPTIONS:"
@@ -239,6 +251,12 @@ case "$1" in
     ;;
   "dev-fresh")
     dev_fresh "${@:2}"
+    ;;
+  "check-deprecated-commands")
+    check_deprecated_commands "${@:2}"
+    ;;
+  "update-deprecated-to-archive")
+    update_deprecated_to_archive "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

@@ -111,8 +111,15 @@ export const LightEmailAuth: React.FC<LightEmailAuthProps> = () => {
           setShowProfileForm(false);
           setEmail('');
           setTempUserData({ email: '', name: '' });
-          // Force re-authentication to update the user state
-          window.dispatchEvent(new Event('storage'));
+          // Re-login to get the updated user state
+          const loginResult = await login(tempUserData.email);
+          if (loginResult.success && !loginResult.needsProfile) {
+            console.log('Re-login successful after profile completion');
+            // Force re-authentication to update the user state
+            window.dispatchEvent(new Event('storage'));
+          } else {
+            console.error('Re-login failed after profile completion:', loginResult);
+          }
         } else {
           throw new Error('Failed to save profile');
         }

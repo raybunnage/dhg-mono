@@ -18,13 +18,13 @@ export const AdminDashboard: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-sky-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-sky-900 mb-4">Access Denied</h1>
-          <p className="text-sky-700 mb-4">You need admin privileges to access this area.</p>
+          <h1 className="text-2xl font-bold text-blue-900 mb-4">Access Denied</h1>
+          <p className="text-blue-700 mb-4">You need admin privileges to access this area.</p>
           <button
             onClick={handleSignOut}
-            className="text-sky-600 hover:text-sky-800"
+            className="text-blue-600 hover:text-blue-800"
           >
             Sign out
           </button>
@@ -34,21 +34,21 @@ export const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-sky-50">
-      <header className="bg-white shadow-sm border-b border-sky-100">
+    <div className="min-h-screen bg-blue-50">
+      <header className="bg-white shadow-sm border-b border-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-sky-900">DHG Admin Suite</h1>
+            <h1 className="text-2xl font-bold text-blue-900">DHG Admin Suite</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-sky-700">
+              <span className="text-sm text-blue-700">
                 {user?.email}
-                <span className="ml-2 px-2 py-1 text-xs bg-sky-100 text-sky-800 rounded-full">
+                <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                   Admin
                 </span>
               </span>
               <button
                 onClick={handleSignOut}
-                className="text-sm text-sky-600 hover:text-sky-800"
+                className="text-sm text-blue-600 hover:text-blue-800"
               >
                 Sign out
               </button>
@@ -59,15 +59,15 @@ export const AdminDashboard: React.FC = () => {
 
       <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Navigation */}
-        <div className="border-b border-sky-200 mb-8">
+        <div className="border-b border-blue-200 mb-8">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('emails')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'emails'
-                  ? 'border-sky-500 text-sky-700 font-medium'
-                  : 'border-transparent text-sky-600 hover:text-sky-800 hover:border-sky-300'
+                  ? 'border-blue-500 text-blue-700 font-medium'
+                  : 'border-transparent text-blue-600 hover:text-blue-800 hover:border-blue-300'
                 }
               `}
             >
@@ -78,8 +78,8 @@ export const AdminDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'users'
-                  ? 'border-sky-500 text-sky-700 font-medium'
-                  : 'border-transparent text-sky-600 hover:text-sky-800 hover:border-sky-300'
+                  ? 'border-blue-500 text-blue-700 font-medium'
+                  : 'border-transparent text-blue-600 hover:text-blue-800 hover:border-blue-300'
                 }
               `}
             >
@@ -90,8 +90,8 @@ export const AdminDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'stats'
-                  ? 'border-sky-500 text-sky-700 font-medium'
-                  : 'border-transparent text-sky-600 hover:text-sky-800 hover:border-sky-300'
+                  ? 'border-blue-500 text-blue-700 font-medium'
+                  : 'border-transparent text-blue-600 hover:text-blue-800 hover:border-blue-300'
                 }
               `}
             >
@@ -102,8 +102,8 @@ export const AdminDashboard: React.FC = () => {
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
                 ${activeTab === 'filters'
-                  ? 'border-sky-500 text-sky-700 font-medium'
-                  : 'border-transparent text-sky-600 hover:text-sky-800 hover:border-sky-300'
+                  ? 'border-blue-500 text-blue-700 font-medium'
+                  : 'border-transparent text-blue-600 hover:text-blue-800 hover:border-blue-300'
                 }
               `}
             >

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Archive, Package, TestTube } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Archive, Package, TestTube } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 
 // Initialize Supabase client
@@ -32,11 +30,21 @@ interface StatusSummary {
   count: number;
 }
 
+interface CommandStats {
+  pipeline_name: string;
+  command_name: string;
+  total_executions: number;
+  successful_executions: number;
+  failed_executions: number;
+  running_executions: number;
+  avg_duration_ms: number | null;
+  last_execution: string | null;
+}
+
 export function CommandRefactorStatus() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [commands, setCommands] = useState<CommandRefactor[]>([]);
   const [statusSummary, setStatusSummary] = useState<StatusSummary[]>([]);
+  const [commandStats, setCommandStats] = useState<Record<string, CommandStats>>({});
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [expandedCommands, setExpandedCommands] = useState<Set<string>>(new Set());
@@ -65,6 +73,22 @@ export function CommandRefactorStatus() {
         .order('current_status');
 
       if (summaryError) throw summaryError;
+
+      // Fetch command stats using the RPC function
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_command_stats');
+
+      if (statsError) {
+        console.error('Error fetching command stats:', statsError);
+      } else {
+        // Convert stats array to a map for easy lookup
+        const statsMap: Record<string, CommandStats> = {};
+        (statsData || []).forEach((stat: CommandStats) => {
+          // Map command stats to command names from refactor tracking
+          statsMap[stat.command_name] = stat;
+        });
+        setCommandStats(statsMap);
+      }
 
       setCommands(commandsData || []);
       setStatusSummary(summaryData || []);
@@ -138,25 +162,70 @@ export function CommandRefactorStatus() {
 
   // Calculate progress
   const calculateProgress = () => {
-    const totals = { existing: 0, new: 0, to_archive: 0 };
-    const completed = { existing: 0, new: 0, to_archive: 0 };
-
+    // Initialize with all command types found in the data
+    const totals: Record<string, number> = {};
+    const completed: Record<string, number> = {};
+    
+    // Initialize counters for each command type
     statusSummary.forEach(item => {
-      if (item.command_type in totals) {
-        totals[item.command_type as keyof typeof totals] += item.count;
-        if (item.current_status === 'signed_off') {
-          completed[item.command_type as keyof typeof totals] += item.count;
-        } else if (item.current_status === 'archived' && item.command_type === 'to_archive') {
-          completed.to_archive += item.count;
-        }
+      if (!totals[item.command_type]) {
+        totals[item.command_type] = 0;
+        completed[item.command_type] = 0;
       }
     });
 
-    const totalCommands = totals.existing + totals.new + totals.to_archive;
-    const completedCommands = completed.existing + completed.new + completed.to_archive;
+    statusSummary.forEach(item => {
+      totals[item.command_type] += item.count;
+      
+      // Count various completion statuses as "completed"
+      const completedStatuses = ['signed_off', 'completed', 'tested'];
+      const archivedStatuses = ['archived'];
+      
+      if (completedStatuses.includes(item.current_status)) {
+        completed[item.command_type] += item.count;
+      } else if (archivedStatuses.includes(item.current_status)) {
+        // For archived commands, they could be considered "completed" in terms of being done
+        completed[item.command_type] += item.count;
+      }
+    });
+
+    // Calculate overall totals
+    const totalCommands = Object.values(totals).reduce((sum, count) => sum + count, 0);
+    const completedCommands = Object.values(completed).reduce((sum, count) => sum + count, 0);
     const progressPercent = totalCommands > 0 ? Math.round((completedCommands / totalCommands) * 100) : 0;
 
-    return { totals, completed, progressPercent };
+    // Return both the dynamic totals and the specific ones for the UI cards
+    const specificTotals = { 
+      existing: totals.existing || 0, 
+      new: totals.new || 0, 
+      to_archive: totals.to_archive || 0 
+    };
+    const specificCompleted = { 
+      existing: completed.existing || 0, 
+      new: completed.new || 0, 
+      to_archive: completed.to_archive || 0 
+    };
+
+    return { 
+      totals: specificTotals, 
+      completed: specificCompleted, 
+      progressPercent,
+      allTotals: totals,
+      allCompleted: completed
+    };
+  };
+
+  // Calculate usage statistics
+  const calculateUsageStats = () => {
+    const commandsWithStats = commands.filter(cmd => commandStats[cmd.command_name]);
+    const commandsWithoutStats = commands.filter(cmd => !commandStats[cmd.command_name]);
+    const totalExecutions = Object.values(commandStats).reduce((sum, stat) => sum + stat.total_executions, 0);
+    
+    return {
+      commandsWithStats: commandsWithStats.length,
+      commandsWithoutStats: commandsWithoutStats.length,
+      totalExecutions
+    };
   };
 
   // Filter commands
@@ -167,55 +236,21 @@ export function CommandRefactorStatus() {
   });
 
   const { totals, completed, progressPercent } = calculateProgress();
+  const usageStats = calculateUsageStats();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading refactor status...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">Command Refactor Status</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/work-summaries')}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                Work Summaries
-              </button>
-              <span className="text-sm text-gray-600">
-                {user?.email}
-              </span>
-              <button
-                onClick={async () => {
-                  await signOut();
-                  navigate('/login');
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
         {/* Progress Overview */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Progress</h2>
@@ -280,6 +315,30 @@ export function CommandRefactorStatus() {
           </div>
         </div>
 
+        {/* Usage Statistics Summary */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Usage Statistics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">{usageStats.totalExecutions}</div>
+              <div className="text-sm text-gray-600">Total Command Executions</div>
+            </div>
+            <div className="border rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">{usageStats.commandsWithStats}</div>
+              <div className="text-sm text-gray-600">Commands with Usage Data</div>
+            </div>
+            <div className="border rounded-lg p-4">
+              <div className="text-2xl font-bold text-gray-600">{usageStats.commandsWithoutStats}</div>
+              <div className="text-sm text-gray-600">Commands Never Used</div>
+              {usageStats.commandsWithoutStats > 0 && (
+                <div className="text-xs text-gray-500 mt-1">
+                  May be new or not yet integrated
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -329,31 +388,84 @@ export function CommandRefactorStatus() {
                 onClick={() => toggleExpanded(command.id)}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(command.current_status)}
-                    <div>
-                      <h3 className="font-medium text-gray-900">{command.command_name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-500">
-                          {getTypeIcon(command.command_type)} {command.command_type}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(command.current_status)}`}>
-                          {command.current_status.replace('_', ' ')}
-                        </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      {getStatusIcon(command.current_status)}
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{command.command_name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm text-gray-500">
+                            {getTypeIcon(command.command_type)} {command.command_type}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(command.current_status)}`}>
+                            {command.current_status.replace('_', ' ')}
+                          </span>
+                          {commandStats[command.command_name] && (
+                            <span className="text-xs text-gray-500">
+                              • {commandStats[command.command_name].total_executions} executions
+                            </span>
+                          )}
+                        </div>
+                        {command.description && (
+                          <p className="text-sm text-gray-600 mt-1" style={{ 
+                            display: '-webkit-box', 
+                            WebkitLineClamp: 2, 
+                            WebkitBoxOrient: 'vertical', 
+                            overflow: 'hidden' 
+                          }}>
+                            {command.description}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <Package className={`h-5 w-5 text-gray-400 transform transition-transform ${expandedCommands.has(command.id) ? 'rotate-180' : ''}`} />
+                  <Package className={`h-5 w-5 text-gray-400 transform transition-transform flex-shrink-0 ml-4 ${expandedCommands.has(command.id) ? 'rotate-180' : ''}`} />
                 </div>
               </div>
 
               {expandedCommands.has(command.id) && (
                 <div className="px-4 pb-4 border-t">
                   <div className="pt-4 space-y-3">
-                    {command.description && (
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700">Description</h4>
-                        <p className="text-sm text-gray-600 mt-1">{command.description}</p>
+                    {commandStats[command.command_name] && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Usage Statistics</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          <div>
+                            <span className="text-gray-500">Total Executions:</span>
+                            <p className="font-medium">{commandStats[command.command_name].total_executions}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Success Rate:</span>
+                            <p className="font-medium text-green-600">
+                              {commandStats[command.command_name].total_executions > 0
+                                ? Math.round((commandStats[command.command_name].successful_executions / commandStats[command.command_name].total_executions) * 100)
+                                : 0}%
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Avg Duration:</span>
+                            <p className="font-medium">
+                              {commandStats[command.command_name].avg_duration_ms !== null
+                                ? `${Math.round(commandStats[command.command_name].avg_duration_ms!)}ms`
+                                : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Last Used:</span>
+                            <p className="font-medium">
+                              {commandStats[command.command_name].last_execution
+                                ? new Date(commandStats[command.command_name].last_execution!).toLocaleDateString()
+                                : 'Never'}
+                            </p>
+                          </div>
+                        </div>
+                        {commandStats[command.command_name].failed_executions > 0 && (
+                          <div className="mt-2 text-sm">
+                            <span className="text-red-600">
+                              {commandStats[command.command_name].failed_executions} failed execution(s)
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -414,6 +526,6 @@ export function CommandRefactorStatus() {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

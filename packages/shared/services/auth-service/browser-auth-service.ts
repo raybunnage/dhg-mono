@@ -463,3 +463,74 @@ class BrowserAuthService {
 // Export the class and a getter for the singleton instance
 export { BrowserAuthService };
 export const getBrowserAuthService = () => BrowserAuthService.getInstance();
+
+// Export a singleton instance for use in hooks (browser environments)
+export const browserAuthService = {
+  initialize: (supabaseClient: SupabaseClient) => BrowserAuthService.initialize(supabaseClient),
+  getInstance: () => BrowserAuthService.getInstance(),
+  
+  // Delegate all methods to the singleton instance
+  async signIn(email: string, password: string) {
+    return BrowserAuthService.getInstance().signIn(email, password);
+  },
+  async signUp(email: string, password: string, options?: { data?: Record<string, any> }) {
+    return BrowserAuthService.getInstance().signUp(email, password, options);
+  },
+  async signOut() {
+    return BrowserAuthService.getInstance().signOut();
+  },
+  async sendMagicLink(options: MagicLinkOptions) {
+    return BrowserAuthService.getInstance().sendMagicLink(options);
+  },
+  async getCurrentUser() {
+    return BrowserAuthService.getInstance().getCurrentUser();
+  },
+  async getSession() {
+    return BrowserAuthService.getInstance().getSession();
+  },
+  async refreshSession() {
+    return BrowserAuthService.getInstance().refreshSession();
+  },
+  async updateUserProfile(updates: UserProfileUpdate) {
+    return BrowserAuthService.getInstance().updateUserProfile(updates);
+  },
+  async hasPermission(permission: string) {
+    return BrowserAuthService.getInstance().hasPermission(permission);
+  },
+  async getUserRoles() {
+    return BrowserAuthService.getInstance().getUserRoles();
+  },
+  onAuthStateChange(callback: (user: AppUser | null) => void) {
+    return BrowserAuthService.getInstance().onAuthStateChange(callback);
+  },
+  async isEmailAllowed(email: string) {
+    return BrowserAuthService.getInstance().isEmailAllowed(email);
+  },
+  async submitAccessRequest(requestData: AccessRequestData) {
+    return BrowserAuthService.getInstance().submitAccessRequest(requestData);
+  },
+  async getPendingAccessRequests() {
+    return BrowserAuthService.getInstance().getPendingAccessRequests();
+  },
+  async getAllowedEmails() {
+    return BrowserAuthService.getInstance().getAllowedEmails();
+  },
+  async addAllowedEmail(email: string, name?: string, organization?: string, notes?: string) {
+    return BrowserAuthService.getInstance().addAllowedEmail(email, name, organization, notes);
+  },
+  async approveAccessRequest(requestId: string, notes?: string) {
+    return BrowserAuthService.getInstance().approveAccessRequest(requestId, notes);
+  },
+  async denyAccessRequest(requestId: string, reason?: string) {
+    return BrowserAuthService.getInstance().denyAccessRequest(requestId, reason);
+  },
+  async makeMeAdmin() {
+    return BrowserAuthService.getInstance().makeMeAdmin();
+  },
+  async updateAllowedEmail(emailId: string, updates: Partial<AllowedEmail>) {
+    return BrowserAuthService.getInstance().updateAllowedEmail(emailId, updates);
+  },
+  async deleteAllowedEmail(emailId: string) {
+    return BrowserAuthService.getInstance().deleteAllowedEmail(emailId);
+  }
+};

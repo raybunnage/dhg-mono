@@ -65,6 +65,15 @@ async function showStatistics(options: ShowStatisticsOptions) {
       });
       
       console.log('=== GOOGLE DRIVE SYNC STATISTICS SUMMARY ===\n');
+      
+      // Show which root drive this is for (if all records have the same one)
+      const rootDriveIds = [...new Set(data.map(d => d.root_drive_id).filter(Boolean))];
+      if (rootDriveIds.length === 1) {
+        console.log(`Root Drive ID: ${rootDriveIds[0]}`);
+      } else if (rootDriveIds.length > 1) {
+        console.log(`Multiple Root Drives: ${rootDriveIds.length} different drives`);
+      }
+      
       console.log(`Total Folders Analyzed: ${summary.totalFolders}`);
       console.log(`Total Files: ${summary.totalFiles.toLocaleString()}`);
       console.log(`Total Documents: ${summary.totalDocuments.toLocaleString()}`);
