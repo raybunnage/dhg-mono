@@ -4,6 +4,8 @@
 #
 # Commands:
 #   create       Create a new development task
+#   create-with-branch  Create task with git branch
+#   start-session       Start work session on a task
 #   list         List tasks with filtering options
 #   update       Update task status or details
 #   complete     Mark task as complete with Claude's response
@@ -31,6 +33,8 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo ""
   echo "Commands:"
   echo "  create       Create a new development task"
+  echo "  create-with-branch  Create task with git branch"
+  echo "  start-session       Start work session on a task"
   echo "  list         List tasks with filtering options"
   echo "  update       Update task status or details"
   echo "  complete     Mark task as complete with Claude's response"
@@ -39,7 +43,13 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  copy-request Format task for copying to Claude"
   echo ""
   echo "Examples:"
-  echo "  # Create a new task"
+  echo "  # Create a new task with git branch"
+  echo "  ./dev-tasks-cli.sh create-with-branch \"Fix auth flow\" \"Users can't login\" --type bug --priority high"
+  echo ""
+  echo "  # Start working on a task (switches to its branch)"
+  echo "  ./dev-tasks-cli.sh start-session <task-id>"
+  echo ""
+  echo "  # Create a regular task (no branch)"
   echo "  ./dev-tasks-cli.sh create --title \"Fix auth flow\" --description \"Users can't login\" --type bug --priority high"
   echo ""
   echo "  # List pending tasks"
@@ -66,6 +76,18 @@ case "$1" in
     track_command "dev-tasks" "create"
     shift
     ts-node "$SCRIPT_DIR/create-task.ts" "$@"
+    ;;
+    
+  "create-with-branch")
+    track_command "dev-tasks" "create-with-branch"
+    shift
+    ts-node "$SCRIPT_DIR/create-with-branch.ts" "$@"
+    ;;
+    
+  "start-session")
+    track_command "dev-tasks" "start-session"
+    shift
+    ts-node "$SCRIPT_DIR/start-session.ts" "$@"
     ;;
     
   "list")

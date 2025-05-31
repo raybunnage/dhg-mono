@@ -256,6 +256,10 @@ export class CLIRegistryService {
         requires_google_api: item.requires_google_api,
         is_dangerous: item.is_dangerous,
         display_order: item.display_order,
+        status: item.status,
+        is_hidden: item.is_hidden,
+        deprecated_at: item.deprecated_at,
+        last_verified_at: item.last_verified_at,
         created_at: item.created_at,
         updated_at: item.updated_at
       },

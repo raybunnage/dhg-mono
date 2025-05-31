@@ -340,16 +340,27 @@ export const CLICommandsRegistry: React.FC = () => {
 
                 <div className="space-y-4">
                   {commands.length > 0 ? (
-                    commands.map(command => (
+                    commands
+                      .filter(command => !command.is_hidden)
+                      .map(command => (
                       <div
                         key={command.id}
-                        className="bg-white p-4 rounded-lg shadow-sm border border-green-200"
+                        className={`bg-white p-4 rounded-lg shadow-sm border ${
+                          command.status === 'deprecated' ? 'border-red-200 opacity-75' : 'border-green-200'
+                        }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="text-md font-semibold text-gray-900 font-mono">
-                              {command.command_name}
-                            </h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-md font-semibold text-gray-900 font-mono">
+                                {command.command_name}
+                              </h4>
+                              {command.status && command.status !== 'active' && (
+                                <span className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(command.status)}`}>
+                                  {command.status}
+                                </span>
+                              )}
+                            </div>
                             {command.description && (
                               <p className="text-sm text-gray-600 mt-1">{command.description}</p>
                             )}
@@ -361,6 +372,16 @@ export const CLICommandsRegistry: React.FC = () => {
                             {command.example_usage && (
                               <div className="mt-2 text-xs text-gray-500 font-mono bg-green-50 p-2 rounded">
                                 Example: {command.example_usage}
+                              </div>
+                            )}
+                            {command.deprecated_at && (
+                              <div className="mt-2 text-xs text-red-600">
+                                Deprecated: {new Date(command.deprecated_at).toLocaleDateString()}
+                              </div>
+                            )}
+                            {command.last_verified_at && (
+                              <div className="mt-1 text-xs text-gray-400">
+                                Last verified: {new Date(command.last_verified_at).toLocaleDateString()}
                               </div>
                             )}
                           </div>
@@ -403,7 +424,10 @@ export const CLICommandsRegistry: React.FC = () => {
                         Pipeline
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                        Commands
+                        Active Commands
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                        Deprecated
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                         Tables Used
@@ -423,7 +447,10 @@ export const CLICommandsRegistry: React.FC = () => {
                           {stat.pipeline_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {stat.total_commands}
+                          {stat.active_commands || stat.total_commands}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {stat.deprecated_commands || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {stat.tables_accessed}

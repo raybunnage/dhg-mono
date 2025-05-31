@@ -146,6 +146,11 @@ populate_pipeline_tables() {
   track_command "populate-pipeline-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/populate-pipeline-tables.ts $@"
 }
 
+# Command handler for sync-command-status
+sync_command_status() {
+  track_command "sync-command-status" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/sync-command-status.ts $@"
+}
+
 # Print help information
 show_help() {
   echo "All Pipelines CLI - Master CLI for running health checks across all pipelines"
@@ -175,6 +180,7 @@ show_help() {
   echo "    update-deprecated-to-archive Update all deprecated commands to archived status"
   echo "    populate-command-registry Scan all pipelines and populate command registry"
   echo "    populate-pipeline-tables  Populate database table usage for each pipeline"
+  echo "  * sync-command-status       Sync command status by scanning CLI files for active/deprecated commands"
   echo "    help                      Show this help message"
   echo ""
   echo "COMMON OPTIONS:"
@@ -275,6 +281,9 @@ case "$1" in
     ;;
   "populate-pipeline-tables")
     populate_pipeline_tables "${@:2}"
+    ;;
+  "sync-command-status")
+    sync_command_status "${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

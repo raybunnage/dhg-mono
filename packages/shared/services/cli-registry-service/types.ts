@@ -36,6 +36,10 @@ export interface CommandDefinition {
   requires_google_api: boolean;
   is_dangerous: boolean;
   display_order?: number;
+  status?: 'active' | 'deprecated' | 'removed' | 'maintenance';
+  is_hidden?: boolean;
+  deprecated_at?: string;
+  last_verified_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +67,8 @@ export interface PipelineStatistics {
   pipeline_id: string;
   pipeline_name: string;
   total_commands: number;
+  active_commands?: number;
+  deprecated_commands?: number;
   tables_accessed: number;
   last_used?: string;
   total_executions: number;
