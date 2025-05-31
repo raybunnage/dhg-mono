@@ -18,6 +18,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/refactor-status')) return 'refactor';
     if (location.pathname.startsWith('/cli-commands')) return 'commands';
     if (location.pathname.startsWith('/database')) return 'database';
+    if (location.pathname.startsWith('/documents')) return 'documents';
+    if (location.pathname.startsWith('/hi-mom')) return 'hi-mom';
     return 'tasks'; // default
   };
   
@@ -137,6 +139,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Database
+            </button>
+            <button
+              onClick={() => navigate('/documents')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'documents'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Documents
+            </button>
+            <button
+              onClick={() => navigate('/hi-mom')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'hi-mom'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Hi Mom! 💚
             </button>
           </nav>
         </div>

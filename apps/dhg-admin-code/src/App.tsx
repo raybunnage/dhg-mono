@@ -6,6 +6,8 @@ import { WorkSummaries } from './pages/WorkSummaries';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
+import { DocumentsPage } from './pages/DocumentsPage';
+import { HiMomPage } from './pages/HiMomPage';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -58,6 +60,14 @@ function App() {
           } 
         />
         <Route 
+          path="/documents" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <DocumentsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/tasks" 
           element={
             <ProtectedRoute requireAdmin>
@@ -78,6 +88,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <TaskDetailPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/hi-mom" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <HiMomPage />
             </ProtectedRoute>
           } 
         />

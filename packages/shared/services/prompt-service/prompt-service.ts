@@ -720,3 +720,6 @@ export class PromptService {
 
 // Export singleton instance
 export const promptService = PromptService.getInstance();
+
+// Export document classifier
+export { documentClassifier, ClassificationRequest, ClassificationResult } from './document-classifier';

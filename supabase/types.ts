@@ -2858,6 +2858,10 @@ export type Database = {
           create_statement: string
         }[]
       }
+      get_auth_audit_log_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_backup_tables: {
         Args: Record<PropertyKey, never>
         Returns: {
