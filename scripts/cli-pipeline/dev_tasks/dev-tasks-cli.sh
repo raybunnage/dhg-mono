@@ -22,7 +22,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 track_command() {
   local command="$1"
   local subcommand="$2"
-  ts-node "$SCRIPT_DIR/../core/command-history-tracker.ts" "dev-tasks" "$command" "$subcommand" &
+  ts-node "$SCRIPT_DIR/../core/command-history-tracker.ts" "other" "dev-tasks" "$command" &
 }
 
 # Show help if no arguments

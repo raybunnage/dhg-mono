@@ -50,15 +50,25 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   useEffect(() => {
     if (!content && document.file_path) {
       setLoading(true);
-      // In a real implementation, this would fetch from your backend
-      fetch(`/api/documents/${encodeURIComponent(document.file_path)}`)
-        .then(res => res.text())
-        .then(text => {
-          setMarkdownContent(text);
+      // Fetch from the markdown server
+      fetch(`/api/markdown-file?path=${encodeURIComponent(document.file_path)}`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to load: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then(data => {
+          setMarkdownContent(data.content || '');
           setLoading(false);
         })
         .catch(err => {
           console.error('Error loading document:', err);
+          setMarkdownContent(`## Unable to Load Document\n\n` +
+            `The markdown file could not be loaded. Make sure:\n\n` +
+            `1. The markdown server is running: \`node md-server.mjs\`\n` +
+            `2. The file exists at: ${document.file_path}\n\n` +
+            `Error: ${err.message}`);
           setLoading(false);
         });
     }

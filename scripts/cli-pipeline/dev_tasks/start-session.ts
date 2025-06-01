@@ -1,11 +1,10 @@
 #!/usr/bin/env ts-node
 
-import { createSupabaseAdapter } from '../../../packages/shared/adapters/supabase-adapter';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { gitService } from '../../../packages/shared/services/git-service/git-service';
-import { v4 as uuidv4 } from 'uuid';
 
 async function startWorkSession(taskId: string) {
-  const supabase = createSupabaseAdapter();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
     // Get task details
@@ -64,15 +63,17 @@ async function startWorkSession(taskId: string) {
     }
     
     // Create work session
-    const sessionId = uuidv4();
-    const { error: sessionError } = await supabase
+    const { data: sessionData, error: sessionError } = await supabase
       .from('dev_task_work_sessions')
       .insert({
-        id: sessionId,
         task_id: taskId,
         claude_session_id: null, // Will be set when Claude session starts
         started_at: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
+    
+    const sessionId = sessionData?.id;
     
     if (sessionError) {
       console.error('Error creating work session:', sessionError.message);

@@ -1,8 +1,7 @@
 #!/usr/bin/env ts-node
 
-import { createSupabaseAdapter } from '../../../packages/shared/adapters/supabase-adapter';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { gitService } from '../../../packages/shared/services/git-service/git-service';
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreateTaskOptions {
   title: string;
@@ -15,11 +14,29 @@ interface CreateTaskOptions {
 }
 
 async function createTaskWithBranch(options: CreateTaskOptions) {
-  const supabase = createSupabaseAdapter();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
-    // Generate task ID
-    const taskId = uuidv4();
+    // Create task first to get auto-generated ID
+    const { data: newTask, error: createError } = await supabase
+      .from('dev_tasks')
+      .insert({
+        title: options.title,
+        description: options.description,
+        task_type: options.taskType || 'task',
+        priority: options.priority || 'medium',
+        app: options.app || null,
+        status: 'pending'
+      })
+      .select()
+      .single();
+    
+    if (createError || !newTask) {
+      console.error('Error creating task:', createError?.message || 'Unknown error');
+      return;
+    }
+    
+    const taskId = newTask.id;
     
     // Prepare git branch if requested
     let gitBranch: string | null = null;
@@ -63,27 +80,21 @@ async function createTaskWithBranch(options: CreateTaskOptions) {
       console.log(`✅ Branch created at commit: ${gitCommitStart.substring(0, 8)}`);
     }
     
-    // Create task in database
+    // Update task with git information
     const { data: task, error } = await supabase
       .from('dev_tasks')
-      .insert({
-        id: taskId,
-        title: options.title,
-        description: options.description,
-        task_type: options.taskType || 'task',
-        priority: options.priority || 'medium',
-        app: options.app || null,
-        status: 'pending',
+      .update({
         git_branch: gitBranch,
         git_commit_start: gitCommitStart,
         git_commit_current: gitCommitStart,
         git_commits_count: 0
       })
+      .eq('id', taskId)
       .select()
       .single();
     
     if (error) {
-      console.error('Error creating task:', error.message);
+      console.error('Error updating task with git info:', error.message);
       
       // Try to switch back to previous branch if we created one
       if (gitBranch) {

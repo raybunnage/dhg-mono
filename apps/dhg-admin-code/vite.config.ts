@@ -17,6 +17,16 @@ export default defineConfig({
     hmr: {
       port: 5177,
       host: 'localhost'
+    },
+    proxy: {
+      // Proxy markdown file requests to the markdown server
+      '/api/markdown': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        configure: (proxy, options) => {
+          console.log('Setting up markdown server proxy');
+        }
+      }
     }
   }
 })
