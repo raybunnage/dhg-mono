@@ -941,6 +941,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_task_commits: {
+        Row: {
+          commit_hash: string
+          commit_message: string | null
+          created_at: string | null
+          deletions: number | null
+          files_changed: number | null
+          id: string
+          insertions: number | null
+          task_id: string | null
+        }
+        Insert: {
+          commit_hash: string
+          commit_message?: string | null
+          created_at?: string | null
+          deletions?: number | null
+          files_changed?: number | null
+          id?: string
+          insertions?: number | null
+          task_id?: string | null
+        }
+        Update: {
+          commit_hash?: string
+          commit_message?: string | null
+          created_at?: string | null
+          deletions?: number | null
+          files_changed?: number | null
+          id?: string
+          insertions?: number | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dev_task_files: {
         Row: {
           action: string | null
@@ -969,6 +1017,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
             referencedColumns: ["id"]
           },
         ]
@@ -1000,6 +1055,61 @@ export type Database = {
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_task_work_sessions: {
+        Row: {
+          claude_session_id: string | null
+          commands_used: string[] | null
+          ended_at: string | null
+          files_modified: string[] | null
+          id: string
+          started_at: string | null
+          summary: string | null
+          task_id: string | null
+        }
+        Insert: {
+          claude_session_id?: string | null
+          commands_used?: string[] | null
+          ended_at?: string | null
+          files_modified?: string[] | null
+          id?: string
+          started_at?: string | null
+          summary?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          claude_session_id?: string | null
+          commands_used?: string[] | null
+          ended_at?: string | null
+          files_modified?: string[] | null
+          id?: string
+          started_at?: string | null
+          summary?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dev_tasks: {
@@ -1011,10 +1121,18 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string
+          git_branch: string | null
+          git_commit_current: string | null
+          git_commit_start: string | null
+          git_commits_count: number | null
           id: string
+          is_subtask: boolean | null
+          parent_task_id: string | null
           priority: string | null
+          revision_count: number | null
           status: string | null
           task_type: string | null
+          testing_notes: string | null
           title: string
           updated_at: string | null
         }
@@ -1026,10 +1144,18 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description: string
+          git_branch?: string | null
+          git_commit_current?: string | null
+          git_commit_start?: string | null
+          git_commits_count?: number | null
           id?: string
+          is_subtask?: boolean | null
+          parent_task_id?: string | null
           priority?: string | null
+          revision_count?: number | null
           status?: string | null
           task_type?: string | null
+          testing_notes?: string | null
           title: string
           updated_at?: string | null
         }
@@ -1041,14 +1167,37 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string
+          git_branch?: string | null
+          git_commit_current?: string | null
+          git_commit_start?: string | null
+          git_commits_count?: number | null
           id?: string
+          is_subtask?: boolean | null
+          parent_task_id?: string | null
           priority?: string | null
+          revision_count?: number | null
           status?: string | null
           task_type?: string | null
+          testing_notes?: string | null
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       doc_files: {
         Row: {
@@ -2588,6 +2737,50 @@ export type Database = {
           priority?: never
         }
         Relationships: []
+      }
+      dev_tasks_with_git: {
+        Row: {
+          app: string | null
+          claude_request: string | null
+          claude_response: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          git_branch: string | null
+          git_commit_current: string | null
+          git_commit_start: string | null
+          git_commits_count: number | null
+          id: string | null
+          is_subtask: boolean | null
+          last_worked_on: string | null
+          parent_task_id: string | null
+          priority: string | null
+          revision_count: number | null
+          status: string | null
+          task_type: string | null
+          testing_notes: string | null
+          title: string | null
+          total_commits: number | null
+          total_sessions: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_classifications_view: {
         Row: {

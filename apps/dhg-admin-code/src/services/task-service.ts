@@ -90,14 +90,34 @@ export class TaskService {
   }
 
   static async updateTask(id: string, updates: Partial<DevTask>) {
+    console.log('Updating task:', id, updates);
+    
+    // Check auth status
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('Auth status in updateTask:', user ? `Authenticated as ${user.email}` : 'Not authenticated');
+    
     const { data, error } = await supabase
       .from('dev_tasks')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating task:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Failed to update task: ${error.message}`);
+    }
+    
+    console.log('Task updated successfully:', data);
     return data as DevTask;
   }
 
@@ -193,10 +213,20 @@ Created: ${new Date(task.created_at).toLocaleDateString()}`;
 
   // Mark task as complete with Claude response
   static async completeTask(id: string, claudeResponse: string) {
-    return this.updateTask(id, {
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-      claude_response: claudeResponse
-    });
+    console.log('Completing task:', id, 'with response length:', claudeResponse?.length);
+    
+    try {
+      const result = await this.updateTask(id, {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        claude_response: claudeResponse
+      });
+      
+      console.log('Task completed successfully');
+      return result;
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+      throw error;
+    }
   }
 }

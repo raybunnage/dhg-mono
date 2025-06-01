@@ -66,12 +66,22 @@ export default function TaskDetailPage() {
   const handleComplete = async () => {
     if (!task || !id) return;
     
+    if (!claudeResponse.trim()) {
+      setError('Please enter Claude\'s response before completing the task');
+      return;
+    }
+    
     try {
+      console.log('Attempting to complete task:', id);
       await TaskService.completeTask(id, claudeResponse);
       await loadTask();
       setShowResponseForm(false);
+      setError(''); // Clear any previous errors
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete task');
+      console.error('Error in handleComplete:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to complete task';
+      setError(errorMessage);
+      // Don't close the form on error so user can retry
     }
   };
 
@@ -344,6 +354,11 @@ export default function TaskDetailPage() {
 
                 {showResponseForm && (
                   <div className="mt-4">
+                    {error && (
+                      <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-800 text-sm">{error}</p>
+                      </div>
+                    )}
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Paste Claude's Response
                     </label>
@@ -362,7 +377,10 @@ export default function TaskDetailPage() {
                         Save & Complete
                       </button>
                       <button
-                        onClick={() => setShowResponseForm(false)}
+                        onClick={() => {
+                          setShowResponseForm(false);
+                          setError(''); // Clear error when canceling
+                        }}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                       >
                         Cancel
