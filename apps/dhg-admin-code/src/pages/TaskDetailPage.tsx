@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
-import type { DevTask, DevTaskTag, DevTaskFile } from '../services/task-service';
-import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import type { DevTask, DevTaskTag, DevTaskFile, DevTaskCommit, DevTaskWorkSession } from '../services/task-service';
+import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCircle, GitBranch, GitCommit, Terminal, Calendar, FolderOpen, Trash2 } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 
 export default function TaskDetailPage() {
@@ -11,6 +11,8 @@ export default function TaskDetailPage() {
   const [task, setTask] = useState<DevTask | null>(null);
   const [tags, setTags] = useState<DevTaskTag[]>([]);
   const [files, setFiles] = useState<DevTaskFile[]>([]);
+  const [commits, setCommits] = useState<DevTaskCommit[]>([]);
+  const [workSessions, setWorkSessions] = useState<DevTaskWorkSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -30,14 +32,18 @@ export default function TaskDetailPage() {
     
     try {
       setLoading(true);
-      const [taskData, tagsData, filesData] = await Promise.all([
+      const [taskData, tagsData, filesData, commitsData, sessionsData] = await Promise.all([
         TaskService.getTask(id),
         TaskService.getTaskTags(id),
-        TaskService.getTaskFiles(id)
+        TaskService.getTaskFiles(id),
+        TaskService.getTaskCommits(id),
+        TaskService.getTaskWorkSessions(id)
       ]);
       setTask(taskData);
       setTags(tagsData);
       setFiles(filesData);
+      setCommits(commitsData);
+      setWorkSessions(sessionsData);
       if (taskData.claude_response) {
         setClaudeResponse(taskData.claude_response);
       }
@@ -127,14 +133,106 @@ export default function TaskDetailPage() {
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!task || !id) return;
+    
+    try {
+      const updates: any = { status: newStatus };
+      
+      // If moving to testing, prompt for testing notes
+      if (newStatus === 'testing') {
+        const testingNotes = prompt('Enter testing notes (optional):');
+        if (testingNotes !== null) {
+          updates.testing_notes = testingNotes;
+        }
+      }
+      
+      // If moving to revision, increment revision count
+      if (newStatus === 'revision' && task.revision_count !== null && task.revision_count !== undefined) {
+        updates.revision_count = task.revision_count + 1;
+      }
+      
+      await TaskService.updateTask(id, updates);
+      await loadTask();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update status');
+    }
+  };
+
+  const handleCreateWorktree = async () => {
+    if (!task || !id || !task.git_branch) return;
+    
+    try {
+      // Generate worktree path
+      const worktreeName = task.git_branch.replace(/\//g, '-');
+      const worktreePath = `../dhg-mono-${worktreeName}`;
+      
+      // Copy git commands to clipboard
+      const commands = `# Create worktree for task: ${task.title}
+cd ~/Documents/github/dhg-mono
+git worktree add ${worktreePath} ${task.git_branch}
+cd ${worktreePath}
+pnpm install
+cursor .`;
+      
+      await navigator.clipboard.writeText(commands);
+      
+      // Update task with worktree info
+      await TaskService.updateTask(id, {
+        worktree_path: worktreePath,
+        worktree_active: true
+      });
+      
+      await loadTask();
+      alert('Worktree commands copied to clipboard! Paste in terminal to create worktree.');
+    } catch (err) {
+      console.error('Failed to create worktree:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create worktree');
+    }
+  };
+
+  const handleRemoveWorktree = async () => {
+    if (!task || !id || !task.worktree_path) return;
+    
+    const confirmRemove = confirm(`Remove worktree at ${task.worktree_path}?`);
+    if (!confirmRemove) return;
+    
+    try {
+      // Copy removal command to clipboard
+      const command = `git worktree remove ${task.worktree_path}`;
+      await navigator.clipboard.writeText(command);
+      
+      // Update task to clear worktree info
+      await TaskService.updateTask(id, {
+        worktree_path: null,
+        worktree_active: false
+      });
+      
+      await loadTask();
+      alert('Worktree removal command copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to remove worktree:', err);
+      setError(err instanceof Error ? err.message : 'Failed to remove worktree');
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
         return <Clock className="w-5 h-5 text-gray-500" />;
       case 'in_progress':
         return <AlertCircle className="w-5 h-5 text-blue-500" />;
+      case 'testing':
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />;
+      case 'revision':
+        return <AlertCircle className="w-5 h-5 text-orange-500" />;
       case 'completed':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'merged':
+        return <CheckCircle className="w-5 h-5 text-purple-500" />;
+      case 'cancelled':
+        return <Clock className="w-5 h-5 text-gray-400" />;
       default:
         return null;
     }
@@ -200,6 +298,10 @@ export default function TaskDetailPage() {
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                   task.status === 'completed' ? 'bg-green-100 text-green-800' :
                   task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                  task.status === 'testing' ? 'bg-yellow-100 text-yellow-800' :
+                  task.status === 'revision' ? 'bg-orange-100 text-orange-800' :
+                  task.status === 'merged' ? 'bg-purple-100 text-purple-800' :
+                  task.status === 'cancelled' ? 'bg-gray-100 text-gray-400' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {task.status.replace('_', ' ')}
@@ -209,26 +311,90 @@ export default function TaskDetailPage() {
                     {task.app}
                   </span>
                 )}
+                {task.work_mode && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                    {task.work_mode === 'single-file' && '📄 Single File'}
+                    {task.work_mode === 'feature' && '🚀 Feature'}
+                    {task.work_mode === 'exploration' && '🔍 Exploration'}
+                    {task.work_mode === 'cross-repo' && '🔗 Cross-Repo'}
+                  </span>
+                )}
               </div>
             </div>
-            {task.status !== 'completed' && (
-              <button
-                onClick={copyToClipboard}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy for Claude
-                  </>
-                )}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {task.status !== 'completed' && (
+                <button
+                  onClick={copyToClipboard}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy for Claude
+                    </>
+                  )}
+                </button>
+              )}
+              
+              {/* Status transition buttons */}
+              {task.status === 'pending' && (
+                <button
+                  onClick={() => handleStatusChange('in_progress')}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Start Work
+                </button>
+              )}
+              
+              {task.status === 'in_progress' && (
+                <button
+                  onClick={() => handleStatusChange('testing')}
+                  className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                >
+                  Move to Testing
+                </button>
+              )}
+              
+              {task.status === 'testing' && (
+                <>
+                  <button
+                    onClick={() => handleStatusChange('completed')}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Mark Complete
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('revision')}
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                  >
+                    Needs Revision
+                  </button>
+                </>
+              )}
+              
+              {task.status === 'revision' && (
+                <button
+                  onClick={() => handleStatusChange('in_progress')}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Resume Work
+                </button>
+              )}
+              
+              {task.status === 'completed' && task.git_branch && (
+                <button
+                  onClick={() => handleStatusChange('merged')}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                >
+                  Mark as Merged
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -333,6 +499,139 @@ export default function TaskDetailPage() {
             </div>
           </div>
 
+          {/* Git Information */}
+          {(task.git_branch || task.git_commits_count) && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Git Information</h2>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                {task.git_branch && (
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-600">Branch:</span>
+                    <code className="text-sm bg-white px-2 py-1 rounded border border-gray-200">
+                      {task.git_branch}
+                    </code>
+                  </div>
+                )}
+                
+                {task.git_commits_count !== null && task.git_commits_count !== undefined && (
+                  <div className="flex items-center gap-2">
+                    <GitCommit className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-600">Commits:</span>
+                    <span className="text-sm">{task.git_commits_count}</span>
+                  </div>
+                )}
+                
+                {task.revision_count !== null && task.revision_count !== undefined && task.revision_count > 0 && (
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm font-medium text-gray-600">Revisions:</span>
+                    <span className="text-sm">{task.revision_count}</span>
+                  </div>
+                )}
+                
+                {task.is_subtask && task.parent_task_id && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-600">Parent Task:</span>
+                    <Link 
+                      to={`/tasks/${task.parent_task_id}`}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      View Parent
+                    </Link>
+                  </div>
+                )}
+              </div>
+              
+              {/* Worktree Management */}
+              {task.git_branch && (
+                <div className="mt-4 border-t pt-4">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Worktree Management:</h3>
+                  {task.worktree_active && task.worktree_path ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between bg-green-50 p-3 rounded">
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="w-4 h-4 text-green-600" />
+                          <span className="text-sm">
+                            Active worktree: <code className="bg-white px-2 py-0.5 rounded border border-green-200">{task.worktree_path}</code>
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleRemoveWorktree}
+                          className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Remove
+                        </button>
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <p className="text-gray-600">Open in Cursor:</p>
+                        <code className="block bg-gray-800 text-gray-100 p-2 rounded">
+                          cd ~/Documents/github{task.worktree_path.replace('..', '')} && cursor .
+                        </code>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCreateWorktree}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      Create Worktree
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {/* Git Commands Helper */}
+              {task.git_branch && !task.worktree_active && (
+                <div className="mt-4 border-t pt-4">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Git Commands (without worktree):</h3>
+                  <div className="space-y-2">
+                    {task.status === 'pending' && (
+                      <div className="text-xs space-y-1">
+                        <p className="text-gray-600">Create and checkout branch:</p>
+                        <code className="block bg-gray-800 text-gray-100 p-2 rounded">
+                          git checkout -b {task.git_branch}
+                        </code>
+                      </div>
+                    )}
+                    
+                    {task.status === 'in_progress' && (
+                      <div className="text-xs space-y-1">
+                        <p className="text-gray-600">Switch to task branch:</p>
+                        <code className="block bg-gray-800 text-gray-100 p-2 rounded">
+                          git checkout {task.git_branch}
+                        </code>
+                      </div>
+                    )}
+                    
+                    {(task.status === 'completed' || task.status === 'merged') && (
+                      <div className="text-xs space-y-1">
+                        <p className="text-gray-600">Merge to main:</p>
+                        <code className="block bg-gray-800 text-gray-100 p-2 rounded whitespace-pre">
+{`git checkout main
+git merge ${task.git_branch}
+git push origin main`}
+                        </code>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Testing Notes */}
+          {task.testing_notes && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Testing Notes</h2>
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <pre className="whitespace-pre-wrap text-sm text-gray-700">{task.testing_notes}</pre>
+              </div>
+            </div>
+          )}
+
           {/* Claude Response */}
           {task.status === 'completed' && task.claude_response ? (
             <div>
@@ -390,6 +689,87 @@ export default function TaskDetailPage() {
                 )}
               </div>
             )
+          )}
+
+          {/* Commits */}
+          {commits.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Commits</h2>
+              <div className="space-y-2">
+                {commits.map((commit) => (
+                  <div key={commit.id} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-start gap-3">
+                      <GitCommit className="w-4 h-4 text-gray-500 mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <code className="text-xs bg-gray-200 px-2 py-0.5 rounded">
+                            {commit.commit_hash.slice(0, 7)}
+                          </code>
+                          <span className="text-xs text-gray-500">
+                            {new Date(commit.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        {commit.commit_message && (
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{commit.commit_message}</p>
+                        )}
+                        {(commit.files_changed || commit.insertions || commit.deletions) && (
+                          <div className="flex gap-4 mt-1 text-xs text-gray-500">
+                            {commit.files_changed && <span>{commit.files_changed} files</span>}
+                            {commit.insertions && <span className="text-green-600">+{commit.insertions}</span>}
+                            {commit.deletions && <span className="text-red-600">-{commit.deletions}</span>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Work Sessions */}
+          {workSessions.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Work Sessions</h2>
+              <div className="space-y-2">
+                {workSessions.map((session) => (
+                  <div key={session.id} className="bg-blue-50 rounded-lg p-3">
+                    <div className="flex items-start gap-3">
+                      <Terminal className="w-4 h-4 text-blue-500 mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium">
+                            Session {new Date(session.started_at).toLocaleDateString()}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(session.started_at).toLocaleTimeString()} - {
+                              session.ended_at 
+                                ? new Date(session.ended_at).toLocaleTimeString()
+                                : 'In Progress'
+                            }
+                          </span>
+                        </div>
+                        {session.summary && (
+                          <p className="text-sm text-gray-700 mt-1">{session.summary}</p>
+                        )}
+                        {session.files_modified && session.files_modified.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs font-medium text-gray-600 mb-1">Files Modified:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {session.files_modified.map((file, idx) => (
+                                <code key={idx} className="text-xs bg-gray-200 px-2 py-0.5 rounded">
+                                  {file}
+                                </code>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Metadata */}

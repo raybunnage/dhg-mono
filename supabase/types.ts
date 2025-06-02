@@ -634,42 +634,54 @@ export type Database = {
         Row: {
           command_name: string
           created_at: string | null
+          deprecated_at: string | null
           description: string | null
           display_order: number | null
           example_usage: string | null
           id: string
           is_dangerous: boolean | null
+          is_hidden: boolean | null
+          last_verified_at: string | null
           pipeline_id: string
           requires_auth: boolean | null
           requires_google_api: boolean | null
+          status: string | null
           updated_at: string | null
           usage_pattern: string | null
         }
         Insert: {
           command_name: string
           created_at?: string | null
+          deprecated_at?: string | null
           description?: string | null
           display_order?: number | null
           example_usage?: string | null
           id?: string
           is_dangerous?: boolean | null
+          is_hidden?: boolean | null
+          last_verified_at?: string | null
           pipeline_id: string
           requires_auth?: boolean | null
           requires_google_api?: boolean | null
+          status?: string | null
           updated_at?: string | null
           usage_pattern?: string | null
         }
         Update: {
           command_name?: string
           created_at?: string | null
+          deprecated_at?: string | null
           description?: string | null
           display_order?: number | null
           example_usage?: string | null
           id?: string
           is_dangerous?: boolean | null
+          is_hidden?: boolean | null
+          last_verified_at?: string | null
           pipeline_id?: string
           requires_auth?: boolean | null
           requires_google_api?: boolean | null
+          status?: string | null
           updated_at?: string | null
           usage_pattern?: string | null
         }
@@ -1129,12 +1141,16 @@ export type Database = {
           is_subtask: boolean | null
           parent_task_id: string | null
           priority: string | null
+          requires_branch: boolean | null
           revision_count: number | null
           status: string | null
           task_type: string | null
           testing_notes: string | null
           title: string
           updated_at: string | null
+          work_mode: string | null
+          worktree_active: boolean | null
+          worktree_path: string | null
         }
         Insert: {
           app?: string | null
@@ -1152,12 +1168,16 @@ export type Database = {
           is_subtask?: boolean | null
           parent_task_id?: string | null
           priority?: string | null
+          requires_branch?: boolean | null
           revision_count?: number | null
           status?: string | null
           task_type?: string | null
           testing_notes?: string | null
           title: string
           updated_at?: string | null
+          work_mode?: string | null
+          worktree_active?: boolean | null
+          worktree_path?: string | null
         }
         Update: {
           app?: string | null
@@ -1175,12 +1195,16 @@ export type Database = {
           is_subtask?: boolean | null
           parent_task_id?: string | null
           priority?: string | null
+          requires_branch?: boolean | null
           revision_count?: number | null
           status?: string | null
           task_type?: string | null
           testing_notes?: string | null
           title?: string
           updated_at?: string | null
+          work_mode?: string | null
+          worktree_active?: boolean | null
+          worktree_path?: string | null
         }
         Relationships: [
           {
@@ -2985,6 +3009,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      deprecate_missing_commands: {
+        Args: { p_pipeline_id: string; p_current_commands: string[] }
+        Returns: number
+      }
       discover_pipeline_commands: {
         Args: { p_pipeline_name: string; p_script_content: string }
         Returns: Json
@@ -3040,6 +3068,17 @@ export type Database = {
       generate_unique_constraints_sql: {
         Args: { p_table_name: string }
         Returns: string
+      }
+      get_active_pipeline_commands: {
+        Args: { p_pipeline_id: string }
+        Returns: {
+          id: string
+          command_name: string
+          description: string
+          usage_pattern: string
+          example_usage: string
+          display_order: number
+        }[]
       }
       get_all_foreign_keys: {
         Args: Record<PropertyKey, never>
@@ -3220,6 +3259,8 @@ export type Database = {
           pipeline_id: string
           pipeline_name: string
           total_commands: number
+          active_commands: number
+          deprecated_commands: number
           tables_accessed: number
           last_used: string
           total_executions: number

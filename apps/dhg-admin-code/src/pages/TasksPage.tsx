@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask } from '../services/task-service';
-import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 
 export default function TasksPage() {
@@ -43,8 +43,16 @@ export default function TasksPage() {
         return <Clock className="w-4 h-4 text-gray-500" />;
       case 'in_progress':
         return <AlertCircle className="w-4 h-4 text-blue-500" />;
+      case 'testing':
+        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      case 'revision':
+        return <AlertCircle className="w-4 h-4 text-orange-500" />;
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'merged':
+        return <CheckCircle className="w-4 h-4 text-purple-500" />;
+      case 'cancelled':
+        return <Clock className="w-4 h-4 text-gray-400" />;
       default:
         return null;
     }
@@ -56,8 +64,16 @@ export default function TasksPage() {
         return 'bg-gray-100 text-gray-800';
       case 'in_progress':
         return 'bg-blue-100 text-blue-800';
+      case 'testing':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'revision':
+        return 'bg-orange-100 text-orange-800';
       case 'completed':
         return 'bg-green-100 text-green-800';
+      case 'merged':
+        return 'bg-purple-100 text-purple-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-400';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -159,7 +175,11 @@ export default function TasksPage() {
               <option value="">All Status</option>
               <option value="pending">Pending</option>
               <option value="in_progress">In Progress</option>
+              <option value="testing">Testing</option>
+              <option value="revision">Revision</option>
               <option value="completed">Completed</option>
+              <option value="merged">Merged</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
@@ -301,6 +321,18 @@ export default function TasksPage() {
                         {task.app && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                             {task.app}
+                          </span>
+                        )}
+                        {task.git_branch && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                            <GitBranch className="w-3 h-3" />
+                            {task.git_branch}
+                          </span>
+                        )}
+                        {task.worktree_active && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700" title={`Worktree: ${task.worktree_path}`}>
+                            <FolderOpen className="w-3 h-3" />
+                            Worktree
                           </span>
                         )}
                         <span className="text-xs text-gray-500">

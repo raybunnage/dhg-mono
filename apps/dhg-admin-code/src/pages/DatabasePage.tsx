@@ -7,6 +7,14 @@ interface TableInfo {
   table_schema: string;
   table_type: string;
   row_count: number;
+  size_pretty?: string;
+  size_bytes?: number;
+  column_count?: number;
+  has_primary_key?: boolean;
+  has_rls?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  description?: string;
   error?: string;
   columns?: string[];
 }
@@ -25,6 +33,7 @@ export function DatabasePage() {
   const [filterMode, setFilterMode] = useState<'all' | 'with-data' | 'empty'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrefix, setSelectedPrefix] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   // Load table information on mount
   useEffect(() => {
@@ -36,202 +45,68 @@ export function DatabasePage() {
     setError(null);
     
     try {
-      // Only use the NEW table names from supabase/types.ts
-      // These are the actual tables that exist in the database
-      const knownTables = [
-        // AI & prompt management (ai_ prefix)
-        'ai_prompt_categories',
-        'ai_prompt_output_templates', 
-        'ai_prompt_relationships',
-        'ai_prompt_template_associations',
-        'ai_prompts',
-        'ai_work_summaries',
-        
-        // Authentication & user management (auth_ prefix)
-        'auth_allowed_emails',
-        'auth_audit_log',
-        'auth_cli_tokens',
-        'auth_user_profiles',
-        
-        // Batch operations (batch_ prefix)
-        'batch_processing',
-        
-        // Command & analytics (command_ prefix)
-        'command_categories',
-        'command_definitions',
-        'command_dependencies',
-        'command_patterns',
-        'command_pipeline_tables',
-        'command_pipelines',
-        'command_refactor_tracking',
-        'command_tracking',
-        
-        // Development (dev_ prefix)
-        'dev_task_files',
-        'dev_task_tags',
-        'dev_tasks',
-        
-        // Document management (doc_ prefix)
-        'doc_files',
-        'document_type_aliases',
-        'document_types',
-        
-        // Email system (email_ prefix)
-        'email_addresses',
-        'email_messages',
-        
-        // Expert system (expert_ prefix)
-        'expert_profile_aliases',
-        'expert_profiles',
-        
-        // Filter & preferences (filter_ prefix)
-        'filter_user_profile_drives',
-        'filter_user_profiles',
-        
-        // Google Drive integration (google_ prefix)
-        'google_expert_documents',
-        'google_sources',
-        'google_sources_experts',
-        'google_sync_history',
-        'google_sync_statistics',
-        
-        // Learning platform (learn_ prefix)
-        'learn_document_classifications',
-        'learn_document_concepts',
-        'learn_media_bookmarks',
-        'learn_media_playback_events',
-        'learn_media_sessions',
-        'learn_media_topic_segments',
-        'learn_subject_classifications',
-        'learn_topics',
-        'learn_user_analytics',
-        'learn_user_interests',
-        'learn_user_progress',
-        'learn_user_scores',
-        
-        // Media & presentations (media_ prefix)
-        'media_presentation_assets',
-        'media_presentations',
-        
-        // Scripts (scripts_ prefix)
-        'scripts_registry',
-        
-        // System & infrastructure (sys_ prefix)
-        'sys_mime_types',
-        'sys_table_migrations'
-      ];
+      // Use the new dynamic function to get all tables
+      const { data: tablesData, error: tablesError } = await supabase
+        .rpc('get_all_tables_with_metadata');
+
+      if (tablesError) {
+        throw tablesError;
+      }
 
       const tableInfoList: TableInfo[] = [];
-      const processedTables = new Set<string>();
 
-      // Process each known table
-      for (const tableName of knownTables) {
-        // Skip if we've already processed this table
-        if (processedTables.has(tableName)) continue;
-        processedTables.add(tableName);
-
+      // Process each table from the dynamic function
+      for (const table of tablesData || []) {
         try {
-          let count: number | null = null;
-          let countError: any = null;
-          
-          // Special handling for auth_audit_log table which requires admin access
-          if (tableName === 'auth_audit_log') {
-            // Try to use the SECURITY DEFINER function to get the actual count
-            const { data: auditCountData, error: auditCountError } = await supabase
-              .rpc('get_auth_audit_log_count');
+          // Get column information for each table
+          const { data: columnsData, error: columnsError } = await supabase
+            .rpc('get_table_columns', { p_table_name: table.table_name });
+
+          const columns = columnsData?.map((col: any) => col.column_name) || [];
+
+          // For auth tables, we might need special handling
+          if (table.table_schema === 'auth' && table.row_count === 0) {
+            // Try to get actual count using a special function if available
+            const { data: actualCount } = await supabase
+              .rpc('get_table_row_count', { p_table_name: table.table_name });
             
-            if (!auditCountError && auditCountData !== null) {
-              count = auditCountData;
-              // Successfully got count, now add to list with known columns
-              tableInfoList.push({
-                table_name: tableName,
-                table_schema: 'public',
-                table_type: 'BASE TABLE',
-                row_count: count,
-                columns: ['id', 'user_id', 'event_type', 'created_at', 'metadata', 'ip_address', 'user_agent'] // Known columns
-              });
-              continue;
-            } else {
-              // Fallback to regular count if function doesn't exist yet
-              const result = await supabase
-                .from(tableName)
-                .select('*', { count: 'exact', head: true });
-              
-              count = result.count || 0;
-              countError = result.error;
-              
-              // Add with note about RLS
-              tableInfoList.push({
-                table_name: tableName,
-                table_schema: 'public',
-                table_type: 'BASE TABLE',
-                row_count: count,
-                error: countError ? countError.message : (count === 0 ? 'RLS restricted - run migration for actual count' : null),
-                columns: ['id', 'user_id', 'event_type', 'created_at', 'metadata', 'ip_address', 'user_agent']
-              });
-              continue;
+            if (actualCount !== null && actualCount !== undefined) {
+              table.row_count = actualCount;
             }
-          } else {
-            // Regular count for other tables
-            const result = await supabase
-              .from(tableName)
-              .select('*', { count: 'exact', head: true });
-            count = result.count;
-            countError = result.error;
           }
 
-          if (countError) {
-            // Table doesn't exist, skip it
-            if (countError.code === 'PGRST116') {
-              continue;
-            }
-            
-            tableInfoList.push({
-              table_name: tableName,
-              table_schema: 'public',
-              table_type: 'BASE TABLE',
-              row_count: 0,
-              error: countError.message
-            });
-            continue;
-          }
-
-          // Try to get a sample row to determine columns
-          const { data, error: dataError } = await supabase
-            .from(tableName)
-            .select('*')
-            .limit(1);
-
-          if (dataError) {
-            // Can get count but not data (likely RLS issue)
-            tableInfoList.push({
-              table_name: tableName,
-              table_schema: 'public',
-              table_type: 'BASE TABLE',
-              row_count: count || 0,
-              error: `RLS restriction: ${dataError.message}`
-            });
-            continue;
-          }
-
-          // Successfully accessed table
           tableInfoList.push({
-            table_name: tableName,
-            table_schema: 'public',
-            table_type: 'BASE TABLE',
-            row_count: count || 0,
-            columns: data && data.length > 0 ? Object.keys(data[0]) : []
+            table_name: table.table_name,
+            table_schema: table.table_schema || 'public',
+            table_type: table.table_type || 'BASE TABLE',
+            row_count: table.row_count || 0,
+            size_pretty: table.size_pretty,
+            size_bytes: table.size_bytes,
+            column_count: table.column_count,
+            has_primary_key: table.has_primary_key,
+            has_rls: table.has_rls,
+            created_at: table.created_at,
+            updated_at: table.updated_at,
+            description: table.description,
+            columns: columns,
+            error: columnsError ? columnsError.message : undefined
           });
 
         } catch (err) {
-          console.error(`Error checking table ${tableName}:`, err);
+          console.error(`Error processing table ${table.table_name}:`, err);
+          tableInfoList.push({
+            table_name: table.table_name,
+            table_schema: table.table_schema || 'public',
+            table_type: 'BASE TABLE',
+            row_count: 0,
+            error: err instanceof Error ? err.message : 'Unknown error'
+          });
         }
       }
 
-      // Sort tables alphabetically by default
-      tableInfoList.sort((a, b) => a.table_name.localeCompare(b.table_name));
-      
+      // Sort tables by prefix order (already done in SQL, but we can re-sort if needed)
       setTables(tableInfoList);
+      setLastRefresh(new Date());
       
     } catch (err) {
       console.error('Error loading table info:', err);
@@ -292,7 +167,8 @@ export function DatabasePage() {
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(table => 
-        table.table_name.toLowerCase().includes(searchTerm.toLowerCase())
+        table.table_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        table.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -326,6 +202,7 @@ export function DatabasePage() {
   const emptyTables = tables.filter(t => t.row_count === 0 && !t.error).length;
   const tablesWithErrors = tables.filter(t => t.error).length;
   const totalRecords = tables.reduce((sum, t) => sum + t.row_count, 0);
+  const totalSize = tables.reduce((sum, t) => sum + (t.size_bytes || 0), 0);
 
   return (
     <DashboardLayout>
@@ -333,11 +210,18 @@ export function DatabasePage() {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-green-900 mb-2">Database Overview</h1>
-          <p className="text-green-700">View table information and record counts across the database</p>
+          <p className="text-green-700">
+            Live view of all database tables and their metadata
+            {lastRefresh && (
+              <span className="text-sm text-green-600 ml-2">
+                (Last refreshed: {lastRefresh.toLocaleTimeString()})
+              </span>
+            )}
+          </p>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100">
             <div className="text-2xl font-bold text-green-900">{totalTables}</div>
             <div className="text-sm text-green-600 mt-1">Total Tables</div>
@@ -357,6 +241,12 @@ export function DatabasePage() {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100">
             <div className="text-2xl font-bold text-green-900">{totalRecords.toLocaleString()}</div>
             <div className="text-sm text-green-600 mt-1">Total Records</div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100">
+            <div className="text-2xl font-bold text-green-900">
+              {totalSize > 0 ? `${(totalSize / 1024 / 1024).toFixed(1)} MB` : 'N/A'}
+            </div>
+            <div className="text-sm text-green-600 mt-1">Total Size</div>
           </div>
         </div>
 
@@ -382,6 +272,7 @@ export function DatabasePage() {
                     ? 'bg-green-600 text-white'
                     : 'bg-green-100 text-green-700 hover:bg-green-200'
                 }`}
+                title={label}
               >
                 {label} ({count})
               </button>
@@ -396,7 +287,7 @@ export function DatabasePage() {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Search tables..."
+                placeholder="Search tables by name or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -441,9 +332,24 @@ export function DatabasePage() {
               <button
                 onClick={loadTableInfo}
                 disabled={loading}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
               >
-                {loading ? 'Loading...' : 'Refresh Data'}
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -478,10 +384,16 @@ export function DatabasePage() {
                     Row Count
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                    Size
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                     Columns
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                    Features
                   </th>
                 </tr>
               </thead>
@@ -489,7 +401,12 @@ export function DatabasePage() {
                 {getFilteredTables().map((table) => (
                   <tr key={table.table_name} className="hover:bg-green-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-green-900">{table.table_name}</div>
+                      <div>
+                        <div className="text-sm font-medium text-green-900">{table.table_name}</div>
+                        {table.description && (
+                          <div className="text-xs text-gray-500 mt-1">{table.description}</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -501,8 +418,13 @@ export function DatabasePage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-600">
+                        {table.size_pretty || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {table.error ? (
-                        <span className="text-red-600 text-sm">{table.error}</span>
+                        <span className="text-red-600 text-sm" title={table.error}>⚠️ Error</span>
                       ) : table.row_count > 0 ? (
                         <span className="text-green-600 text-sm">✓ Active</span>
                       ) : (
@@ -512,12 +434,38 @@ export function DatabasePage() {
                     <td className="px-6 py-4">
                       {table.columns && table.columns.length > 0 ? (
                         <div className="text-xs text-gray-600">
-                          {table.columns.slice(0, 3).join(', ')}
-                          {table.columns.length > 3 && ` +${table.columns.length - 3} more`}
+                          <span className="font-medium">{table.column_count || table.columns.length}</span> columns
+                          {table.columns.length > 0 && (
+                            <div className="mt-1">
+                              {table.columns.slice(0, 3).join(', ')}
+                              {table.columns.length > 3 && ` +${table.columns.length - 3} more`}
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">No column info</span>
+                        <span className="text-xs text-gray-400">
+                          {table.column_count ? `${table.column_count} columns` : 'No column info'}
+                        </span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
+                        {table.has_primary_key && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Has Primary Key">
+                            PK
+                          </span>
+                        )}
+                        {table.has_rls && (
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Row Level Security Enabled">
+                            RLS
+                          </span>
+                        )}
+                        {table.table_schema === 'auth' && (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded" title="Auth Schema">
+                            Auth
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

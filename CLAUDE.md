@@ -236,6 +236,19 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - ❌ NEVER create standalone `ts-node` scripts
    - ✅ ALWAYS integrate into shell script CLI pipelines
 
+6. **SQL Function Column Ambiguity**:
+   - ❌ **Problem**: "column reference is ambiguous" errors in PostgreSQL functions
+   - ✅ **Solution**: Always qualify column names with table alias in ORDER BY/WHERE clauses
+   - Example fix:
+     ```sql
+     -- ❌ WRONG: Ambiguous column reference
+     SELECT * FROM table_info ORDER BY table_name;
+     
+     -- ✅ CORRECT: Qualified column reference
+     SELECT * FROM table_info ORDER BY table_info.table_name;
+     ```
+   - This commonly occurs when RETURNS TABLE has columns with same names as query columns
+
 ## Debugging in a Monorepo Context
 
 1. **When an app has configuration issues**:

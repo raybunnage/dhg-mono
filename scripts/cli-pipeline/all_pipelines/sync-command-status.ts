@@ -147,24 +147,33 @@ class CommandStatusSyncer {
     // Extract commands based on file type
     if (scriptPath.endsWith('.sh')) {
       // For shell scripts, look for case statements
-      const caseRegex = /^\s*["']?([a-z-]+)["']?\s*\)/gm;
-      let match;
+      // First try to find case "$1" or case "$command" blocks
+      const caseBlockMatches = [
+        scriptContent.match(/case\s+"\$1"\s+in([\s\S]*?)esac/),
+        scriptContent.match(/case\s+"\$command"\s+in([\s\S]*?)esac/),
+        scriptContent.match(/case\s+\$1\s+in([\s\S]*?)esac/),
+        scriptContent.match(/case\s+\$command\s+in([\s\S]*?)esac/)
+      ];
       
-      // Find the case statement block
-      const caseBlockMatch = scriptContent.match(/case\s+"\$command"\s+in([\s\S]*?)esac/);
-      if (caseBlockMatch) {
-        const caseBlock = caseBlockMatch[1];
-        while ((match = caseRegex.exec(caseBlock)) !== null) {
-          const cmd = match[1];
-          // Filter out common non-command patterns
-          if (!['*', '--help', '-h', 'help'].includes(cmd)) {
-            commands.push(cmd);
+      for (const caseBlockMatch of caseBlockMatches) {
+        if (caseBlockMatch) {
+          const caseBlock = caseBlockMatch[1];
+          // Look for case patterns like "command") or 'command') or command)
+          const caseRegex = /^\s*["']?([a-z0-9-]+)["']?\s*\)/gm;
+          let match;
+          
+          while ((match = caseRegex.exec(caseBlock)) !== null) {
+            const cmd = match[1];
+            // Filter out common non-command patterns
+            if (!['*', '--help', '-h', 'help', ''].includes(cmd) && !cmd.startsWith('--')) {
+              commands.push(cmd);
+            }
           }
         }
       }
     } else if (scriptPath.endsWith('.ts') || scriptPath.endsWith('.js')) {
       // For TypeScript/JavaScript, look for commander commands
-      const commandRegex = /\.command\(['"]([a-z-]+)(?:\s|['"])/g;
+      const commandRegex = /\.command\(['"]([a-z0-9-]+)(?:\s|['"])/g;
       let match;
       
       while ((match = commandRegex.exec(scriptContent)) !== null) {

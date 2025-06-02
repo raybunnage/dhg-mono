@@ -55,8 +55,26 @@ export default function CreateTaskPage() {
     task_type: 'feature' as 'bug' | 'feature' | 'refactor' | 'question',
     priority: 'medium' as 'low' | 'medium' | 'high',
     app: '',
-    tags: ''
+    tags: '',
+    work_mode: 'single-file' as 'single-file' | 'feature' | 'exploration' | 'cross-repo',
+    requires_branch: false
   });
+
+  // Generate branch name from title and type
+  const generateBranchName = (title: string, type: string): string => {
+    const kebabCase = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .trim()
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+    
+    // Generate a short unique suffix (first 6 chars of timestamp)
+    const suffix = Date.now().toString(36).slice(-6);
+    
+    return `${type}/${kebabCase}-${suffix}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +88,11 @@ export default function CreateTaskPage() {
       setLoading(true);
       setError(null);
       
+      // Generate git branch name if requires_branch is enabled
+      const gitBranch = formData.requires_branch 
+        ? generateBranchName(formData.title, formData.task_type)
+        : undefined;
+
       // Create the task
       const task = await TaskService.createTask({
         title: formData.title,
@@ -77,7 +100,10 @@ export default function CreateTaskPage() {
         task_type: formData.task_type,
         priority: formData.priority,
         app: formData.app || undefined,
-        status: 'pending'
+        status: 'pending',
+        git_branch: gitBranch,
+        work_mode: formData.work_mode,
+        requires_branch: formData.requires_branch
       });
 
       // Add tags if provided
@@ -150,6 +176,38 @@ export default function CreateTaskPage() {
             />
             <p className="mt-1 text-sm text-gray-500">
               Tip: Use markdown formatting for better readability
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="work_mode" className="block text-sm font-medium text-gray-700 mb-1">
+              Work Mode
+            </label>
+            <select
+              id="work_mode"
+              value={formData.work_mode}
+              onChange={(e) => {
+                const mode = e.target.value as typeof formData.work_mode;
+                setFormData({ 
+                  ...formData, 
+                  work_mode: mode,
+                  // Auto-enable branch for feature mode
+                  requires_branch: mode === 'feature' ? true : formData.requires_branch
+                });
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              disabled={loading}
+            >
+              <option value="single-file">Single File - Quick fix or small change</option>
+              <option value="feature">Feature - Substantial new functionality</option>
+              <option value="exploration">Exploration - Research or experimentation</option>
+              <option value="cross-repo">Cross-Repo - Spans multiple repositories</option>
+            </select>
+            <p className="mt-1 text-sm text-gray-500">
+              {formData.work_mode === 'single-file' && 'Quick fixes that don\'t need a branch'}
+              {formData.work_mode === 'feature' && 'New features that need isolated development'}
+              {formData.work_mode === 'exploration' && 'Research tasks that may need temporary branches'}
+              {formData.work_mode === 'cross-repo' && 'Tasks that span multiple repositories'}
             </p>
           </div>
 
@@ -231,6 +289,36 @@ export default function CreateTaskPage() {
               placeholder="frontend, api, database (comma separated)"
               disabled={loading}
             />
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <label className="flex items-start">
+              <input
+                type="checkbox"
+                checked={formData.requires_branch}
+                onChange={(e) => setFormData({ ...formData, requires_branch: e.target.checked })}
+                className="mt-1 mr-3"
+                disabled={loading || formData.work_mode === 'feature'} // Always on for features
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Create Git branch
+                  {formData.work_mode === 'feature' && (
+                    <span className="text-xs text-gray-500 ml-2">(required for features)</span>
+                  )}
+                </span>
+                <p className="text-sm text-gray-500 mt-1">
+                  Create a dedicated git branch for this task. Recommended for features and larger changes.
+                  {formData.title && formData.requires_branch && (
+                    <span className="block mt-1">
+                      Branch name: <code className="bg-gray-200 px-1 rounded">
+                        {generateBranchName(formData.title, formData.task_type)}
+                      </code>
+                    </span>
+                  )}
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="flex justify-end space-x-4">
