@@ -4,6 +4,11 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { CLIRegistryService } from '@shared/services/cli-registry-service';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { CommandExecutionModal } from '../components/CommandExecutionModal';
+import { PipelineUsageChart } from '../components/PipelineUsageChart';
+import { ErrorAnalysis } from '../components/ErrorAnalysis';
+import { CommandUsageIndicator } from '../components/CommandUsageIndicator';
+import { CommandUsageTimeline } from '../components/CommandUsageTimeline';
 import type { 
   CommandPipeline, 
   CommandDefinition, 
@@ -34,6 +39,15 @@ interface RawPipelineData {
   updated_at: string;
 }
 
+interface CommandUsageData {
+  pipeline_name: string;
+  command_name: string;
+  execution_count: number;
+  last_executed: string | null;
+  success_count: number;
+  failure_count: number;
+}
+
 export const CLICommandsRegistry: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -49,11 +63,18 @@ export const CLICommandsRegistry: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'pipelines' | 'commands' | 'statistics' | 'raw-data'>('pipelines');
+  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
+  const [commandUsage, setCommandUsage] = useState<Map<string, CommandUsageData>>(new Map());
+  const [sortBy, setSortBy] = useState<'name' | 'usage' | 'recent'>('name');
+  const [executionModalOpen, setExecutionModalOpen] = useState(false);
+  const [selectedCommand, setSelectedCommand] = useState<{ pipeline: string; command: string } | null>(null);
+  const [usageFilter, setUsageFilter] = useState<'all' | 'high' | 'low' | 'unused'>('all');
 
   const registryService = new CLIRegistryService(supabase);
 
   useEffect(() => {
     loadData();
+    loadCommandUsage(); // Load usage data on component mount
   }, []);
 
   const loadData = async () => {
@@ -77,6 +98,23 @@ export const CLICommandsRegistry: React.FC = () => {
       // Set raw data
       if (rawPipelinesData.data) {
         setRawPipelines(rawPipelinesData.data);
+        
+        // Extract unique statuses from pipelines
+        const pipelineStatuses = [...new Set(rawPipelinesData.data
+          .map(p => p.status)
+          .filter(Boolean))] as string[];
+        
+        // Also check command statuses
+        const { data: commandStatuses } = await supabase
+          .from('command_definitions')
+          .select('status')
+          .not('status', 'is', null);
+        
+        const cmdStatuses = [...new Set(commandStatuses?.map(c => c.status) || [])] as string[];
+        
+        // Combine and deduplicate all statuses
+        const allStatuses = [...new Set([...pipelineStatuses, ...cmdStatuses])].sort();
+        setAvailableStatuses(allStatuses);
       }
       if (pipelineTablesData.data) {
         setPipelineTables(pipelineTablesData.data);
@@ -86,12 +124,91 @@ export const CLICommandsRegistry: React.FC = () => {
         categories: categoriesData.length,
         pipelines: pipelinesData.length,
         rawPipelines: rawPipelinesData.data?.length || 0,
-        pipelineTables: pipelineTablesData.data?.length || 0
+        pipelineTables: pipelineTablesData.data?.length || 0,
+        statuses: availableStatuses.length
       });
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCommandUsage = async () => {
+    try {
+      // Fetch command usage data with aggregation
+      const { data: usageData, error } = await supabase
+        .from('command_tracking')
+        .select('pipeline_name, command_name, status, execution_time');
+      
+      if (error) throw error;
+      
+      // Aggregate usage data
+      const usageMap = new Map<string, CommandUsageData>();
+      
+      usageData?.forEach(record => {
+        const key = `${record.pipeline_name}:${record.command_name}`;
+        const existing = usageMap.get(key) || {
+          pipeline_name: record.pipeline_name,
+          command_name: record.command_name,
+          execution_count: 0,
+          last_executed: null,
+          success_count: 0,
+          failure_count: 0
+        };
+        
+        existing.execution_count++;
+        if (record.status === 'success') {
+          existing.success_count++;
+        } else if (record.status === 'error' || record.status === 'failed') {
+          existing.failure_count++;
+        }
+        
+        // Update last executed if this is more recent
+        if (!existing.last_executed || record.execution_time > existing.last_executed) {
+          existing.last_executed = record.execution_time;
+        }
+        
+        usageMap.set(key, existing);
+        
+        // Also handle compound command names (e.g., "migration-run-staged" -> "run-staged")
+        // Check if this is a compound command like "migration-run-staged"
+        if (record.command_name.startsWith('migration-')) {
+          // Extract the subcommand part after "migration-"
+          const subcommand = record.command_name.substring('migration-'.length);
+          const subcommandKey = `${record.pipeline_name}:${subcommand}`;
+          
+          const subcommandExisting = usageMap.get(subcommandKey) || {
+            pipeline_name: record.pipeline_name,
+            command_name: subcommand,
+            execution_count: 0,
+            last_executed: null,
+            success_count: 0,
+            failure_count: 0
+          };
+          
+          subcommandExisting.execution_count++;
+          if (record.status === 'success') {
+            subcommandExisting.success_count++;
+          } else if (record.status === 'error' || record.status === 'failed') {
+            subcommandExisting.failure_count++;
+          }
+          
+          if (!subcommandExisting.last_executed || record.execution_time > subcommandExisting.last_executed) {
+            subcommandExisting.last_executed = record.execution_time;
+          }
+          
+          usageMap.set(subcommandKey, subcommandExisting);
+        }
+      });
+      
+      // Log summary of loaded data
+      if (usageMap.size > 0) {
+        console.log(`Loaded ${usageMap.size} unique command usage records from ${usageData?.length || 0} total records`);
+      }
+      setCommandUsage(usageMap);
+    } catch (error) {
+      console.error('Error loading command usage:', error);
     }
   };
 
@@ -101,6 +218,11 @@ export const CLICommandsRegistry: React.FC = () => {
       const commandsData = await registryService.getCommandsForPipeline(pipeline.id);
       setCommands(commandsData);
       setActiveTab('commands');
+      
+      // Load usage data if not already loaded
+      if (commandUsage.size === 0) {
+        await loadCommandUsage();
+      }
     } catch (error) {
       console.error('Error loading commands:', error);
     }
@@ -112,8 +234,10 @@ export const CLICommandsRegistry: React.FC = () => {
       pipeline.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pipeline.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = selectedCategory === '' || pipeline.category_id === selectedCategory;
-    const matchesStatus = selectedStatus === '' || pipeline.status === selectedStatus;
+    const matchesCategory = selectedCategory === '' || 
+      (selectedCategory === 'uncategorized' ? !pipeline.category_id : pipeline.category_id === selectedCategory);
+    const matchesStatus = selectedStatus === '' || 
+      (selectedStatus === 'null' ? !pipeline.status : pipeline.status === selectedStatus);
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -124,8 +248,10 @@ export const CLICommandsRegistry: React.FC = () => {
       pipeline.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pipeline.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = selectedCategory === '' || pipeline.category_id === selectedCategory;
-    const matchesStatus = selectedStatus === '' || pipeline.status === selectedStatus;
+    const matchesCategory = selectedCategory === '' || 
+      (selectedCategory === 'uncategorized' ? !pipeline.category_id : pipeline.category_id === selectedCategory);
+    const matchesStatus = selectedStatus === '' || 
+      (selectedStatus === 'null' ? !pipeline.status : pipeline.status === selectedStatus);
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -152,6 +278,24 @@ export const CLICommandsRegistry: React.FC = () => {
     return icons[category?.icon || ''] || '📦';
   };
 
+  const getRelativeTime = (dateString: string | null): string => {
+    if (!dateString) return 'Never';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 30) return date.toLocaleDateString();
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  };
+
   const getStatusBadge = (status: string) => {
     const styles = {
       active: 'bg-green-100 text-green-800',
@@ -159,6 +303,12 @@ export const CLICommandsRegistry: React.FC = () => {
       maintenance: 'bg-yellow-100 text-yellow-800'
     };
     return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+  };
+
+  const openExecutionModal = (pipelineName: string, commandName: string) => {
+    console.log('Opening execution modal with:', { pipelineName, commandName });
+    setSelectedCommand({ pipeline: pipelineName, command: commandName });
+    setExecutionModalOpen(true);
   };
 
   if (!isAdmin) {
@@ -213,6 +363,7 @@ export const CLICommandsRegistry: React.FC = () => {
                   {getCategoryIcon(cat)} {cat.name}
                 </option>
               ))}
+              <option value="uncategorized">❓ Uncategorized</option>
             </select>
             
             <select
@@ -221,9 +372,15 @@ export const CLICommandsRegistry: React.FC = () => {
               className="px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">All Status</option>
-              <option value="active">✅ Active</option>
-              <option value="deprecated">❌ Deprecated</option>
-              <option value="maintenance">🔧 Maintenance</option>
+              {availableStatuses.map(status => (
+                <option key={status} value={status}>
+                  {status === 'active' && '✅ '}
+                  {status === 'deprecated' && '❌ '}
+                  {status === 'maintenance' && '🔧 '}
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+              <option value="null">❔ No Status</option>
             </select>
           </div>
         </div>
@@ -338,11 +495,123 @@ export const CLICommandsRegistry: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Sort and Filter Options */}
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700">Sort by:</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as 'name' | 'usage' | 'recent')}
+                      className="px-3 py-1 border border-green-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="name">Name</option>
+                      <option value="usage">Most Used</option>
+                      <option value="recent">Recently Used</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Show:</label>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setUsageFilter('all')}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          usageFilter === 'all' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setUsageFilter('high')}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          usageFilter === 'high' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        High Volume
+                      </button>
+                      <button
+                        onClick={() => setUsageFilter('low')}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          usageFilter === 'low' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Low Volume
+                      </button>
+                      <button
+                        onClick={() => setUsageFilter('unused')}
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          usageFilter === 'unused' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Never Used
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   {commands.length > 0 ? (
-                    commands
+                    (() => {
+                      const filteredCommands = commands
                       .filter(command => !command.is_hidden)
-                      .map(command => (
+                      .map(command => {
+                        const usageKey = `${selectedPipeline.name}:${command.command_name}`;
+                        const usage = commandUsage.get(usageKey);
+                        
+                        
+                        return { command, usage };
+                      })
+                      .filter(({ usage }) => {
+                        // Apply usage filter
+                        const count = usage?.execution_count || 0;
+                        if (usageFilter === 'unused') return count === 0;
+                        if (usageFilter === 'high') return count >= 10; // High volume: 10+ uses
+                        if (usageFilter === 'low') return count > 0 && count < 10; // Low volume: 1-9 uses
+                        return true; // 'all' shows everything
+                      })
+                      .sort((a, b) => {
+                        if (sortBy === 'usage') {
+                          return (b.usage?.execution_count || 0) - (a.usage?.execution_count || 0);
+                        } else if (sortBy === 'recent') {
+                          const aTime = a.usage?.last_executed || '0';
+                          const bTime = b.usage?.last_executed || '0';
+                          return bTime.localeCompare(aTime);
+                        }
+                        return a.command.command_name.localeCompare(b.command.command_name);
+                      })
+                      
+                      return (
+                        <>
+                          {/* Show filter status */}
+                          {usageFilter !== 'all' && (
+                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <p className="text-sm text-blue-700">
+                                Showing {filteredCommands.length} of {commands.filter(c => !c.is_hidden).length} commands 
+                                {usageFilter === 'high' && ' with high usage (10+ executions)'}
+                                {usageFilter === 'low' && ' with low usage (1-9 executions)'}
+                                {usageFilter === 'unused' && ' that have never been used'}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Show warning if no tracking data */}
+                          {commandUsage.size === 0 && (
+                            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <p className="text-sm text-yellow-700">
+                                ⚠️ No command tracking data available. Commands will appear as "Never Used" until tracking data is collected.
+                                Run commands through the CLI to start collecting usage data.
+                              </p>
+                            </div>
+                          )}
+                          {filteredCommands.map(({ command, usage }) => (
                       <div
                         key={command.id}
                         className={`bg-white p-4 rounded-lg shadow-sm border ${
@@ -351,7 +620,7 @@ export const CLICommandsRegistry: React.FC = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mb-1">
                               <h4 className="text-md font-semibold text-gray-900 font-mono">
                                 {command.command_name}
                               </h4>
@@ -360,6 +629,23 @@ export const CLICommandsRegistry: React.FC = () => {
                                   {command.status}
                                 </span>
                               )}
+                            </div>
+                            {/* Usage Indicator and Timeline */}
+                            <div className="mb-3 space-y-2">
+                              <CommandUsageIndicator
+                                executionCount={usage?.execution_count || 0}
+                                lastExecuted={usage?.last_executed || null}
+                                successRate={usage && usage.execution_count > 0 
+                                  ? Math.round((usage.success_count / usage.execution_count) * 100) 
+                                  : 0}
+                                className="mb-2"
+                              />
+                              <CommandUsageTimeline
+                                pipelineName={selectedPipeline.name}
+                                commandName={command.command_name}
+                                days={14}
+                                className="mt-1"
+                              />
                             </div>
                             {command.description && (
                               <p className="text-sm text-gray-600 mt-1">{command.description}</p>
@@ -386,6 +672,12 @@ export const CLICommandsRegistry: React.FC = () => {
                             )}
                           </div>
                           <div className="flex gap-2 ml-4">
+                            <button
+                              onClick={() => openExecutionModal(selectedPipeline.name, command.command_name)}
+                              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                            >
+                              View History
+                            </button>
                             {command.requires_auth && (
                               <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                                 Auth
@@ -404,7 +696,10 @@ export const CLICommandsRegistry: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    ))
+                    ))}
+                        </>
+                      );
+                    })()
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       No commands found for this pipeline
@@ -416,8 +711,16 @@ export const CLICommandsRegistry: React.FC = () => {
 
             {/* Statistics Tab */}
             {activeTab === 'statistics' && (
-              <div className="bg-white rounded-lg shadow-sm border border-green-200 overflow-hidden">
-                <table className="min-w-full">
+              <div className="space-y-6">
+                {/* Usage Chart */}
+                <PipelineUsageChart />
+                
+                {/* Error Analysis */}
+                <ErrorAnalysis />
+                
+                {/* Statistics Table */}
+                <div className="bg-white rounded-lg shadow-sm border border-green-200 overflow-hidden">
+                  <table className="min-w-full">
                   <thead className="bg-green-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
@@ -459,12 +762,13 @@ export const CLICommandsRegistry: React.FC = () => {
                           {stat.total_executions}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {stat.last_used ? new Date(stat.last_used).toLocaleDateString() : 'Never'}
+                          {getRelativeTime(stat.last_used)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
 
@@ -562,6 +866,16 @@ export const CLICommandsRegistry: React.FC = () => {
           </>
         )}
       </div>
+      
+      {/* Execution History Modal */}
+      {selectedCommand && (
+        <CommandExecutionModal
+          isOpen={executionModalOpen}
+          onClose={() => setExecutionModalOpen(false)}
+          pipelineName={selectedCommand.pipeline}
+          commandName={selectedCommand.command}
+        />
+      )}
     </DashboardLayout>
   );
 };

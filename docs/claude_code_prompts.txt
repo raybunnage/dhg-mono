@@ -6,12 +6,26 @@ cd sc
 
 
 
-write up this latest ai-work_summary and add it using 
+write up this latest ai-work_summary and add it using and be careful about how you handle quotes to try to get it right the first time
 ./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto \
     "Clear title" \
     "Detailed description" \
     "command1,command2" \
     "tag1,tag2"
+
+
+now I need to revisit the media processing commands.
+
+Heres the situation.  I have developed a number of commands for media processing.  Some worked really well and some only partially worked.
+
+Now I need you to examine all the command and pare them down to a workable reliable set
+
+IN the end my mp
+
+
+
+Investigate whether it is better to add some ui elements to the existing cli commands registry page or to create a dedicated command tracking page now that the cli pipelines and registry are linked more closel together. What do you think is best.  Give me some options before I decide what do to
+
 
 
 ./scripts/cli-pipeline/drive_filter/drive-filter-cli.sh set-active-profile -p 'Dynamic Healing Discussion Group'

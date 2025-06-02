@@ -3090,6 +3090,23 @@ export type Database = {
           create_statement: string
         }[]
       }
+      get_all_tables_with_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          table_schema: string
+          table_type: string
+          row_count: number
+          size_pretty: string
+          size_bytes: number
+          column_count: number
+          has_primary_key: boolean
+          has_rls: boolean
+          created_at: string
+          updated_at: string
+          description: string
+        }[]
+      }
       get_auth_audit_log_count: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -3277,6 +3294,7 @@ export type Database = {
           data_type: string
           is_nullable: string
           column_default: string
+          ordinal_position: number
         }[]
       }
       get_table_columns_plus: {
@@ -3348,6 +3366,10 @@ export type Database = {
       get_table_metadata: {
         Args: { p_target_table: string }
         Returns: Json
+      }
+      get_table_row_count: {
+        Args: { p_table_name: string }
+        Returns: number
       }
       get_triggers: {
         Args: { schema_name: string }

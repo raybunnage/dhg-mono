@@ -13,15 +13,11 @@ This guide explains how to use Git worktrees effectively with the Claude Code Ta
 5. [Daily Workflow](#daily-workflow)
 6. [Committing Changes](#committing-changes)
 7. [Testing Your Changes](#testing-your-changes)
-8. [Completiwrite up this latest ai-work_summary and add it using 
-./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto \
-    "Clear title" \
-    "Detailed description" \
-    "command1,command2" \
-    "tag1,tag2"ng a Task](#completing-a-task)
-9. [Best Practices](#best-practices)
-10. [Example Scenario](#example-scenario)
-11. [Recovery Commands](#recovery-commands)
+8. [Completing a Task](#completing-a-task)
+9. [Using the Enhanced Claude Code Tasks Interface](#using-the-enhanced-claude-code-tasks-interface)
+10. [Best Practices](#best-practices)
+11. [Example Scenario](#example-scenario)
+12. [Recovery Commands](#recovery-commands)
 
 ## What are Git Worktrees?
 
@@ -229,6 +225,138 @@ gh pr create --title "feat: add authentication to dhg-audio" --body "## Summary
    git worktree remove ../dhg-mono-feature-your-task-name-abc123
    ```
 3. Run the command to remove the worktree directory
+
+## Using the Enhanced Claude Code Tasks Interface
+
+The Claude Code Tasks page in dhg-admin-code has been enhanced with powerful workflow management features to better support iterative development with Claude.
+
+### Workflow Progress Tracking
+
+The task detail page now displays a visual workflow progress indicator showing your current stage:
+
+- **Pending** → **In Progress** → **Testing** → **Revision** → **Completed** → **Merged**
+
+Each stage has specific actions available:
+- **Pending**: Click "Start Working" to begin
+- **In Progress**: Click "Move to Testing" when ready to test
+- **Testing**: Either "Mark as Completed" or "Needs Revision"
+- **Revision**: Click "Resume Work" to continue making changes
+- **Completed**: Click "Mark as Merged" after PR is merged
+
+### Worktree Management Panel
+
+The right sidebar now features a dedicated Worktree Management section:
+
+#### When No Worktree Exists
+- Shows a clear explanation of worktrees
+- Prominent "Create Worktree" button
+- One-click copy of all setup commands
+
+#### When Worktree is Active
+- Green status indicator with worktree path
+- "Open in Cursor" button that copies the command
+- "Remove Worktree" button for cleanup
+- Helpful tips about worktree usage
+
+### Claude Iteration Tracking
+
+A new "Claude Iterations" panel helps you track multiple rounds of changes:
+
+#### Starting a Work Session
+1. Click "Start Session" when beginning work with Claude
+2. The session timer starts automatically
+3. Work with Claude, make changes, test them
+
+#### Ending a Work Session
+1. Click "End Session" when finishing an iteration
+2. Add a summary of what was accomplished
+3. The system tracks:
+   - Session duration
+   - Summary of changes
+   - Files modified (if tracked)
+   - Claude conversation ID (if available)
+
+#### Session History
+- View all previous sessions for the task
+- See how long each iteration took
+- Review what was accomplished in each round
+- Track progress through revisions
+
+### Multi-Stage Workflow for Testing and Tweaking
+
+The enhanced UI supports the reality that tasks often require multiple iterations:
+
+1. **Initial Development** (In Progress)
+   - Copy task to Claude
+   - Implement initial solution
+   - Track with work session
+
+2. **Testing Phase**
+   - Move task to "Testing" status
+   - Try out the implementation
+   - Add testing notes
+
+3. **Revision Cycles**
+   - If issues found, click "Needs Revision"
+   - Add notes about what needs fixing
+   - Task shows revision count
+   - Resume work with Claude
+   - Track new iteration with session
+
+4. **Completion**
+   - After successful testing, mark as completed
+   - All iterations and revisions are preserved
+
+### Task List Enhancements
+
+The main tasks list now shows:
+- Worktree status badges (green "Worktree" indicator)
+- Current workflow stage with color coding
+- Revision count for tasks that needed rework
+- Git branch information
+
+### Practical Example
+
+Here's how to use the new features for a typical task:
+
+1. **Create Task**: Add a new feature task with branch creation
+2. **Start Work**: 
+   - Click "Start Working" to move to In Progress
+   - Click "Create Worktree" and set up your environment
+   - Click "Start Session" in the iteration tracker
+3. **First Claude Iteration**:
+   - Copy task to Claude
+   - Implement the feature
+   - End session with summary: "Initial implementation of auth system"
+4. **Testing**:
+   - Click "Move to Testing"
+   - Test the implementation
+   - Find issues with token expiration
+5. **Revision**:
+   - Click "Needs Revision"
+   - Add note: "Token expiration not handled correctly"
+   - Click "Resume Work"
+   - Start new session
+6. **Second Claude Iteration**:
+   - Copy updated task to Claude with revision notes
+   - Fix the issues
+   - End session: "Fixed token expiration handling"
+7. **Final Testing**:
+   - Test again
+   - Everything works!
+   - Click "Mark as Completed"
+8. **Cleanup**:
+   - Create PR
+   - After merge, click "Mark as Merged"
+   - Click "Remove Worktree"
+
+### Tips for the Enhanced UI
+
+- **Use Sessions**: Always track your Claude iterations with sessions
+- **Add Summaries**: Brief summaries help you remember what each iteration accomplished
+- **Track Revisions**: The revision counter shows how many cycles a task went through
+- **Update Status**: Move through the workflow stages as you progress
+- **Clean Up**: Remove worktrees after merging to keep the UI clean
 
 ## Best Practices
 

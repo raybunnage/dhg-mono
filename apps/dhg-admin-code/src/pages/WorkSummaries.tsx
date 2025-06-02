@@ -239,9 +239,10 @@ export function WorkSummaries() {
   return (
     <DashboardLayout>
       <div>
-        {/* Description */}
+        {/* Page Header */}
         <div className="mb-6">
-          <p className="text-gray-700">Track and manage AI assistant work history and development tasks</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Work Summaries</h1>
+          <p className="text-gray-600">Track and manage AI assistant work history and development tasks</p>
         </div>
 
         {/* Filters */}
@@ -351,7 +352,7 @@ export function WorkSummaries() {
 
                         {/* Summary Content with better expansion */}
                         <div className="mb-3">
-                          <p className={`text-gray-800 ${expandedItems.has(summary.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
+                          <p className={`text-gray-600 leading-relaxed ${expandedItems.has(summary.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
                              style={expandedItems.has(summary.id) ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                             {summary.summary_content}
                           </p>
@@ -443,7 +444,7 @@ export function WorkSummaries() {
 
                         {/* Task Description */}
                         <div className="mb-3">
-                          <p className={`text-gray-800 ${expandedItems.has(task.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
+                          <p className={`text-gray-600 leading-relaxed ${expandedItems.has(task.id) ? 'whitespace-pre-wrap' : 'overflow-hidden'}`}
                              style={expandedItems.has(task.id) ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                             {task.description}
                           </p>

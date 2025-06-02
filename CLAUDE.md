@@ -169,11 +169,53 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - ⚠️ **ALWAYS implement command tracking** for new CLI commands
    - Add to shell script wrapper using `track_command` function
    - Copy structure from existing pipelines (e.g., google-sync-cli.sh)
+   - ⚠️ **After adding new commands, ALWAYS run**:
+     ```bash
+     ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh populate-command-registry
+     ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh sync-command-status
+     ```
+     This ensures new commands are registered and tracking is enabled
 
 3. **Implementation Standards**:
    - Implement full functionality, not placeholder code
    - Include proper error handling and logging
    - Test commands with real data before submitting
+
+## CLI Command Registry
+
+**Before creating new CLI commands**, check the existing command registry:
+```sql
+-- Check existing commands in a specific pipeline
+SELECT cp.name as pipeline_name, cd.command_name, cd.description 
+FROM command_pipelines cp
+JOIN command_definitions cd ON cd.pipeline_id = cp.id
+WHERE cp.name = 'google_sync' 
+ORDER BY cd.command_name;
+
+-- Check all active pipelines and their commands
+SELECT cp.name as pipeline_name, cp.display_name, 
+       COUNT(cd.id) as command_count, cp.status
+FROM command_pipelines cp
+LEFT JOIN command_definitions cd ON cd.pipeline_id = cp.id
+WHERE cp.status = 'active'
+GROUP BY cp.id, cp.name, cp.display_name, cp.status
+ORDER BY cp.name;
+
+-- Check which tables a pipeline uses
+SELECT cpt.table_name, cpt.operation_type, cpt.description
+FROM command_pipeline_tables cpt
+JOIN command_pipelines cp ON cp.id = cpt.pipeline_id
+WHERE cp.name = 'google_sync'
+ORDER BY cpt.table_name;
+```
+
+**Key Registry Tables**:
+- `command_pipelines` - CLI pipeline scripts (e.g., google-sync-cli.sh)
+- `command_definitions` - Individual commands within each pipeline
+- `command_pipeline_tables` - Database tables used by each pipeline
+- `scripts_registry` - Individual script files (separate from CLI commands)
+
+**Note**: CLI commands (in pipelines) and individual scripts are tracked separately. Focus on the command_* tables for CLI pipeline work.
 
 ## Development Workflow
 

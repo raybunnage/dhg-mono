@@ -126,6 +126,16 @@ dev_fresh() {
   track_command "dev-fresh" "$SCRIPT_DIR/dev-fresh.sh $@"
 }
 
+# Command handler for nuclear-clean
+nuclear_clean() {
+  track_command "nuclear-clean" "$SCRIPT_DIR/nuclear-clean.sh $@"
+}
+
+# Command handler for app-reinstall
+app_reinstall() {
+  track_command "app-reinstall" "$SCRIPT_DIR/app-reinstall.sh $@"
+}
+
 # Command handler for check-deprecated-commands
 check_deprecated_commands() {
   track_command "check-deprecated-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/check-deprecated-commands.ts $@"
@@ -174,6 +184,8 @@ show_help() {
   echo "  * clear-app-cache <app>     Clear cache for a specific app (e.g., dhg-audio)"
   echo "  * dev-fresh <app>           Clear cache and start fresh dev server for an app"
   echo "    quick-restart             Quick restart - kills Vite and clears Vite cache only"
+  echo "  * app-reinstall <app>       Reinstall node_modules for a specific app only (targeted fix)"
+  echo "    nuclear-clean <app|all>   NUCLEAR option - removes ALL caches and node_modules, forces reinstall"
   echo ""
   echo "SYSTEM:"
   echo "    check-deprecated-commands Check deprecated commands that should be archived"
@@ -242,6 +254,17 @@ show_help() {
   echo ""
   echo "  # Quick restart for a specific app"
   echo "  ./all-pipelines-cli.sh quick-restart --app dhg-admin-explore"
+  echo ""
+  echo "APP REINSTALL (RECOMMENDED):"
+  echo "  # Reinstall node_modules for just one app (keeps root and other apps intact)"
+  echo "  ./all-pipelines-cli.sh app-reinstall dhg-admin-code"
+  echo ""
+  echo "NUCLEAR CLEAN (EXTREME):"
+  echo "  # Nuclear clean for a specific app (removes all caches and node_modules)"
+  echo "  ./all-pipelines-cli.sh nuclear-clean dhg-admin-code"
+  echo ""
+  echo "  # Nuclear clean for entire monorepo"
+  echo "  ./all-pipelines-cli.sh nuclear-clean all"
 }
 
 # Main command router
@@ -269,6 +292,12 @@ case "$1" in
     ;;
   "dev-fresh")
     dev_fresh "${@:2}"
+    ;;
+  "app-reinstall")
+    app_reinstall "${@:2}"
+    ;;
+  "nuclear-clean")
+    nuclear_clean "${@:2}"
     ;;
   "check-deprecated-commands")
     check_deprecated_commands "${@:2}"

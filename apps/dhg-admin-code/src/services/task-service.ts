@@ -288,4 +288,49 @@ Created: ${new Date(task.created_at).toLocaleDateString()}`;
       throw error;
     }
   }
+
+  // Work session management
+  static async startWorkSession(taskId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .insert({
+        task_id: taskId,
+        started_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession;
+  }
+
+  static async endWorkSession(sessionId: string, summary: string, filesModified?: string[]) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .update({
+        ended_at: new Date().toISOString(),
+        summary,
+        files_modified: filesModified
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession;
+  }
+
+  static async updateWorkSessionClaude(sessionId: string, claudeSessionId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .update({
+        claude_session_id: claudeSessionId
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession;
+  }
 }

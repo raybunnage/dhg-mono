@@ -65,6 +65,30 @@ async function autoSummary() {
   }
 
   try {
+    // First check for duplicates within the last hour
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+    
+    const { data: existingSummaries, error: checkError } = await supabase
+      .from('ai_work_summaries')
+      .select('id, title, created_at')
+      .eq('title', summaryData.title)
+      .gte('created_at', oneHourAgo.toISOString())
+      .order('created_at', { ascending: false });
+    
+    if (checkError) throw checkError;
+    
+    if (existingSummaries && existingSummaries.length > 0) {
+      console.log(`⚠️  Duplicate detected: A summary with the same title was created ${Math.round((Date.now() - new Date(existingSummaries[0].created_at).getTime()) / 60000)} minutes ago`);
+      console.log(`   Existing ID: ${existingSummaries[0].id}`);
+      console.log(`   Use --force to create anyway`);
+      
+      // Check if --force flag is present
+      if (!process.argv.includes('--force')) {
+        process.exit(0);
+      }
+    }
+    
     const { data, error } = await supabase
       .from('ai_work_summaries')
       .insert({
