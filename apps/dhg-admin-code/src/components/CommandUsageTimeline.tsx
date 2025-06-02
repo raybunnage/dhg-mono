@@ -96,10 +96,10 @@ export const CommandUsageTimeline: React.FC<CommandUsageTimelineProps> = ({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="flex gap-0.5">
-        {data.map((day, index) => (
+        {data.map((day) => (
           <div
             key={day.date}
-            className={`w-2 h-2 rounded-sm transition-colors ${
+            className={`w-2 h-3 rounded-sm transition-colors ${
               day.hasActivity 
                 ? day.count >= 5 
                   ? 'bg-green-600' 
@@ -113,7 +113,7 @@ export const CommandUsageTimeline: React.FC<CommandUsageTimelineProps> = ({
         ))}
       </div>
       <span className="text-xs text-gray-500">
-        {totalCount > 0 ? `${totalCount} in ${days}d` : `No activity`}
+        {totalCount > 0 ? `${totalCount} in ${days}d` : `No activity in ${days}d`}
       </span>
     </div>
   );

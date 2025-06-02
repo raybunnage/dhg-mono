@@ -3165,6 +3165,18 @@ export type Database = {
           success_rate: number
         }[]
       }
+      get_command_usage_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          pipeline_name: string
+          command_name: string
+          execution_count: number
+          success_count: number
+          failure_count: number
+          last_executed: string
+          avg_duration_ms: number
+        }[]
+      }
       get_document_type_counts: {
         Args: Record<PropertyKey, never>
         Returns: {

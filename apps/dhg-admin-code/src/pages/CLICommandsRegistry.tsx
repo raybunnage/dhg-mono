@@ -73,6 +73,7 @@ export const CLICommandsRegistry: React.FC = () => {
   const registryService = new CLIRegistryService(supabase);
 
   useEffect(() => {
+    console.log('🚀 Component mounted, loading data...');
     loadData();
     loadCommandUsage(); // Load usage data on component mount
   }, []);
@@ -135,85 +136,95 @@ export const CLICommandsRegistry: React.FC = () => {
   };
 
   const loadCommandUsage = async () => {
+    console.log('🔄 loadCommandUsage() called');
     try {
-      // Fetch command usage data with aggregation
+      // Use the new aggregation function for efficient data loading
       const { data: usageData, error } = await supabase
-        .from('command_tracking')
-        .select('pipeline_name, command_name, status, execution_time');
+        .rpc('get_command_usage_stats');
+      
+      console.log('📊 Query result:', { 
+        hasData: !!usageData, 
+        recordCount: usageData?.length || 0,
+        error: error 
+      });
+      
+      if (usageData && usageData.length > 0) {
+        console.log('📊 First few records:', usageData.slice(0, 3));
+        
+        // Check specifically for database records
+        const databaseRecords = usageData.filter(r => r.pipeline_name === 'database');
+        console.log(`📊 Database records found: ${databaseRecords.length}`);
+        if (databaseRecords.length > 0) {
+          console.log('📊 Sample database records:', databaseRecords.slice(0, 3));
+        }
+      }
       
       if (error) throw error;
       
-      // Aggregate usage data
+      // Convert the aggregated data to our usage map format
       const usageMap = new Map<string, CommandUsageData>();
       
       usageData?.forEach(record => {
         const key = `${record.pipeline_name}:${record.command_name}`;
-        const existing = usageMap.get(key) || {
+        
+        // The RPC function already aggregated the data
+        const usage: CommandUsageData = {
           pipeline_name: record.pipeline_name,
           command_name: record.command_name,
-          execution_count: 0,
-          last_executed: null,
-          success_count: 0,
-          failure_count: 0
+          execution_count: Number(record.execution_count) || 0,
+          last_executed: record.last_executed,
+          success_count: Number(record.success_count) || 0,
+          failure_count: Number(record.failure_count) || 0
         };
         
-        existing.execution_count++;
-        if (record.status === 'success') {
-          existing.success_count++;
-        } else if (record.status === 'error' || record.status === 'failed') {
-          existing.failure_count++;
-        }
-        
-        // Update last executed if this is more recent
-        if (!existing.last_executed || record.execution_time > existing.last_executed) {
-          existing.last_executed = record.execution_time;
-        }
-        
-        usageMap.set(key, existing);
+        usageMap.set(key, usage);
         
         // Also handle compound command names (e.g., "migration-run-staged" -> "run-staged")
-        // Check if this is a compound command like "migration-run-staged"
-        if (record.command_name.startsWith('migration-')) {
-          // Extract the subcommand part after "migration-"
-          const subcommand = record.command_name.substring('migration-'.length);
-          const subcommandKey = `${record.pipeline_name}:${subcommand}`;
-          
-          const subcommandExisting = usageMap.get(subcommandKey) || {
-            pipeline_name: record.pipeline_name,
-            command_name: subcommand,
-            execution_count: 0,
-            last_executed: null,
-            success_count: 0,
-            failure_count: 0
-          };
-          
-          subcommandExisting.execution_count++;
-          if (record.status === 'success') {
-            subcommandExisting.success_count++;
-          } else if (record.status === 'error' || record.status === 'failed') {
-            subcommandExisting.failure_count++;
+        // This handles the case where subcommands are tracked with prefixes
+        const commandPrefixes = ['migration-', 'backup-', 'auth-', 'table-'];
+        
+        for (const prefix of commandPrefixes) {
+          if (record.command_name.startsWith(prefix)) {
+            // Extract the subcommand part after the prefix
+            const subcommand = record.command_name.substring(prefix.length);
+            const subcommandKey = `${record.pipeline_name}:${subcommand}`;
+            
+            // Create a copy for the subcommand
+            const subcommandUsage: CommandUsageData = {
+              ...usage,
+              command_name: subcommand
+            };
+            
+            usageMap.set(subcommandKey, subcommandUsage);
+            break; // Only process the first matching prefix
           }
-          
-          if (!subcommandExisting.last_executed || record.execution_time > subcommandExisting.last_executed) {
-            subcommandExisting.last_executed = record.execution_time;
-          }
-          
-          usageMap.set(subcommandKey, subcommandExisting);
         }
       });
       
       // Log summary of loaded data
-      if (usageMap.size > 0) {
-        console.log(`Loaded ${usageMap.size} unique command usage records from ${usageData?.length || 0} total records`);
-      }
+      console.log(`✅ Processed usage data:`, {
+        totalRecords: usageData?.length || 0,
+        uniqueCommands: usageMap.size,
+        sampleKeys: Array.from(usageMap.keys()).slice(0, 5),
+        databaseKeys: Array.from(usageMap.keys()).filter(k => k.startsWith('database:')),
+        allKeys: Array.from(usageMap.keys())
+      });
+      
       setCommandUsage(usageMap);
+      console.log('✅ commandUsage state updated');
     } catch (error) {
-      console.error('Error loading command usage:', error);
+      console.error('❌ Error loading command usage:', error);
     }
   };
 
   const loadPipelineCommands = async (pipeline: CommandPipeline) => {
     try {
+      console.log('📌 Selected pipeline:', {
+        name: pipeline.name,
+        display_name: pipeline.display_name,
+        id: pipeline.id
+      });
+      
       setSelectedPipeline(pipeline);
       const commandsData = await registryService.getCommandsForPipeline(pipeline.id);
       setCommands(commandsData);
@@ -348,6 +359,234 @@ export const CLICommandsRegistry: React.FC = () => {
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Refresh'}
+            </button>
+            {/* Debug: Test data button - always show for debugging */}
+            <button
+                onClick={() => {
+                  // Create fake usage data for testing
+                  const fakeUsage = new Map<string, CommandUsageData>();
+                  
+                  // Add some fake data including migration-run-staged
+                  fakeUsage.set('database:migration-run-staged', {
+                    pipeline_name: 'database',
+                    command_name: 'migration-run-staged',
+                    execution_count: 45,
+                    last_executed: new Date().toISOString(),
+                    success_count: 43,
+                    failure_count: 2
+                  });
+                  
+                  fakeUsage.set('database:list-tables', {
+                    pipeline_name: 'database',
+                    command_name: 'list-tables',
+                    execution_count: 25,
+                    last_executed: new Date().toISOString(),
+                    success_count: 24,
+                    failure_count: 1
+                  });
+                  
+                  fakeUsage.set('database:check-tables', {
+                    pipeline_name: 'database',
+                    command_name: 'check-tables',
+                    execution_count: 5,
+                    last_executed: new Date(Date.now() - 86400000).toISOString(),
+                    success_count: 5,
+                    failure_count: 0
+                  });
+                  
+                  fakeUsage.set('database:backup', {
+                    pipeline_name: 'database',
+                    command_name: 'backup',
+                    execution_count: 0,
+                    last_executed: null,
+                    success_count: 0,
+                    failure_count: 0
+                  });
+                  
+                  // Process the fake data through our normalization logic
+                  const processedUsage = new Map<string, CommandUsageData>();
+                  fakeUsage.forEach((data, key) => {
+                    processedUsage.set(key, data);
+                    
+                    // Apply the same prefix handling as loadCommandUsage
+                    const commandPrefixes = ['migration-', 'backup-', 'auth-', 'table-'];
+                    for (const prefix of commandPrefixes) {
+                      if (data.command_name.startsWith(prefix)) {
+                        const subcommand = data.command_name.substring(prefix.length);
+                        const subcommandKey = `${data.pipeline_name}:${subcommand}`;
+                        processedUsage.set(subcommandKey, {
+                          ...data,
+                          command_name: subcommand
+                        });
+                        break;
+                      }
+                    }
+                  });
+                  
+                  setCommandUsage(processedUsage);
+                  console.log('Loaded test data:', processedUsage);
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Load Test Data
+              </button>
+            
+            {/* Reload Usage Data */}
+            <button
+              onClick={async () => {
+                console.log('🔄 Manually reloading usage data...');
+                await loadCommandUsage();
+                console.log('✅ Usage data reloaded');
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Reload Usage Data
+            </button>
+            
+            {/* Debug: Test Query */}
+            <button
+              onClick={async () => {
+                console.log('🔍 Testing command_tracking query...');
+                try {
+                  // First, check if table exists and has data
+                  const { count, error: countError } = await supabase
+                    .from('command_tracking')
+                    .select('*', { count: 'exact', head: true });
+                  
+                  console.log('Count query result:', { count, error: countError });
+                  
+                  // Get a sample of data
+                  const { data, error } = await supabase
+                    .from('command_tracking')
+                    .select('*')
+                    .limit(5);
+                    
+                  console.log('Sample data query:', { 
+                    success: !error,
+                    error,
+                    data,
+                    dataLength: data?.length 
+                  });
+                  
+                  if (data && data.length > 0) {
+                    console.log('First record:', data[0]);
+                    
+                    // Show all unique pipeline names
+                    const uniquePipelines = [...new Set(data.map(d => d.pipeline_name))];
+                    console.log('Unique pipelines in sample:', uniquePipelines);
+                  }
+                  
+                  // Get all unique pipelines in the table
+                  const { data: allPipelines } = await supabase
+                    .from('command_tracking')
+                    .select('pipeline_name')
+                    .order('pipeline_name');
+                    
+                  if (allPipelines) {
+                    const uniqueAllPipelines = [...new Set(allPipelines.map(p => p.pipeline_name))];
+                    console.log('All unique pipelines in table:', uniqueAllPipelines);
+                    
+                    // Count by pipeline
+                    const pipelineCounts = uniqueAllPipelines.map(pipeline => {
+                      const count = allPipelines.filter(p => p.pipeline_name === pipeline).length;
+                      return { pipeline, count };
+                    });
+                    console.log('Records per pipeline:', pipelineCounts);
+                  }
+                  
+                  // Specifically check for database commands
+                  console.log('\n🔍 Checking specifically for database commands...');
+                  const { data: dbCommands } = await supabase
+                    .from('command_tracking')
+                    .select('pipeline_name, command_name, execution_time')
+                    .eq('pipeline_name', 'database')
+                    .order('execution_time', { ascending: false })
+                    .limit(10);
+                    
+                  console.log('Database pipeline commands:', dbCommands?.length || 0);
+                  if (dbCommands && dbCommands.length > 0) {
+                    console.log('Recent database commands:', dbCommands.slice(0, 5));
+                  }
+                  
+                  // Check if there are any commands with database-like names
+                  const { data: dbLikeCommands } = await supabase
+                    .from('command_tracking')
+                    .select('pipeline_name, command_name, execution_time')
+                    .or('command_name.ilike.%table%,command_name.ilike.%migration%,command_name.ilike.%backup%')
+                    .order('execution_time', { ascending: false })
+                    .limit(20);
+                    
+                  if (dbLikeCommands && dbLikeCommands.length > 0) {
+                    console.log('\n🔍 Commands that look like database commands:');
+                    dbLikeCommands.forEach(cmd => {
+                      console.log(`  - ${cmd.pipeline_name}:${cmd.command_name} (${new Date(cmd.execution_time).toLocaleDateString()})`);
+                    });
+                  }
+                } catch (err) {
+                  console.error('Test query error:', err);
+                }
+              }}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+            >
+              Test Query
+            </button>
+            
+            {/* Debug: Inspect current data */}
+            <button
+              onClick={() => {
+                console.log('=== Current Command Usage Data ===');
+                console.log('Button clicked!');
+                console.log('Total entries:', commandUsage.size);
+                
+                if (commandUsage.size === 0) {
+                  console.log('⚠️ commandUsage is EMPTY!');
+                  console.log('This means loadCommandUsage() either:');
+                  console.log('1. Was never called');
+                  console.log('2. Found no data in command_tracking table');
+                  console.log('3. Had an error that was silently caught');
+                  return;
+                }
+                
+                // Group by pipeline
+                const byPipeline = new Map<string, any[]>();
+                commandUsage.forEach((usage, key) => {
+                  const [pipeline, command] = key.split(':');
+                  if (!byPipeline.has(pipeline)) {
+                    byPipeline.set(pipeline, []);
+                  }
+                  byPipeline.get(pipeline)!.push({
+                    key,
+                    command,
+                    count: usage.execution_count,
+                    lastUsed: usage.last_executed
+                  });
+                });
+                
+                // Log each pipeline's data
+                byPipeline.forEach((commands, pipeline) => {
+                  console.log(`\nPipeline: ${pipeline} (${commands.length} commands)`);
+                  commands
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 10)
+                    .forEach(cmd => {
+                      console.log(`  - ${cmd.command}: ${cmd.count} uses`);
+                    });
+                });
+                
+                // Show high volume commands
+                const highVolume = Array.from(commandUsage.entries())
+                  .filter(([_, usage]) => usage.execution_count >= 10)
+                  .map(([key, usage]) => ({ key, count: usage.execution_count }))
+                  .sort((a, b) => b.count - a.count);
+                
+                console.log('\nHigh volume commands (10+ uses):', highVolume.length);
+                highVolume.slice(0, 10).forEach(cmd => {
+                  console.log(`  - ${cmd.key}: ${cmd.count} uses`);
+                });
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Inspect Usage Data
             </button>
           </div>
           
@@ -495,6 +734,45 @@ export const CLICommandsRegistry: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Debug: Show keys for current pipeline */}
+                <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+                  <button
+                    onClick={() => {
+                      console.log('=== Keys for current pipeline ===');
+                      console.log('Pipeline:', selectedPipeline.name);
+                      
+                      const pipelineKeys = Array.from(commandUsage.keys()).filter(key => {
+                        const [pipeline] = key.split(':');
+                        return pipeline === selectedPipeline.name || 
+                               pipeline === selectedPipeline.name.replace(/-/g, '_') ||
+                               pipeline === selectedPipeline.name.replace(/_/g, '-');
+                      });
+                      
+                      console.log(`Found ${pipelineKeys.length} keys for this pipeline:`, pipelineKeys);
+                      
+                      // Also show ALL keys in commandUsage to see what we have
+                      console.log('ALL keys in commandUsage:', Array.from(commandUsage.keys()));
+                      
+                      // Show command names from registry vs tracking
+                      const registryCommands = commands.map(c => c.command_name).sort();
+                      const trackingCommands = pipelineKeys.map(k => k.split(':')[1]).sort();
+                      
+                      console.log('Commands in registry:', registryCommands);
+                      console.log('Commands in tracking:', trackingCommands);
+                      
+                      // Find mismatches
+                      const inRegistryNotTracking = registryCommands.filter(c => !trackingCommands.includes(c));
+                      const inTrackingNotRegistry = trackingCommands.filter(c => !registryCommands.includes(c));
+                      
+                      console.log('In registry but not tracking:', inRegistryNotTracking);
+                      console.log('In tracking but not registry:', inTrackingNotRegistry);
+                    }}
+                    className="text-xs px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                  >
+                    Debug Pipeline Keys
+                  </button>
+                </div>
+
                 {/* Sort and Filter Options */}
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -560,22 +838,112 @@ export const CLICommandsRegistry: React.FC = () => {
                 <div className="space-y-4">
                   {commands.length > 0 ? (
                     (() => {
+                      // Debug: Log filter state
+                      console.log('=== Filter Debug Info ===');
+                      console.log('Current filter:', usageFilter);
+                      console.log('Selected pipeline:', selectedPipeline?.name);
+                      console.log('Total commands:', commands.length);
+                      console.log('Command usage map size:', commandUsage.size);
+                      
+                      // Show what's in the usage map
+                      const usageStats = {
+                        total: commandUsage.size,
+                        withData: 0,
+                        high: 0,
+                        low: 0,
+                        unused: 0
+                      };
+                      
+                      commandUsage.forEach((usage) => {
+                        if (usage.execution_count > 0) usageStats.withData++;
+                        if (usage.execution_count >= 10) usageStats.high++;
+                        else if (usage.execution_count > 0 && usage.execution_count < 10) usageStats.low++;
+                        else if (usage.execution_count === 0) usageStats.unused++;
+                      });
+                      
+                      console.log('Usage statistics:', usageStats);
+                      
                       const filteredCommands = commands
                       .filter(command => !command.is_hidden)
                       .map(command => {
-                        const usageKey = `${selectedPipeline.name}:${command.command_name}`;
-                        const usage = commandUsage.get(usageKey);
+                        // Try multiple key variations to handle underscore/hyphen differences
+                        const pipelineName = selectedPipeline.name;
+                        const commandName = command.command_name;
+                        const keys = [
+                          `${pipelineName}:${commandName}`,
+                          `${pipelineName.replace(/-/g, '_')}:${commandName}`,
+                          `${pipelineName.replace(/_/g, '-')}:${commandName}`,
+                          // Also try command name variations
+                          `${pipelineName}:${commandName.replace(/-/g, '_')}`,
+                          `${pipelineName.replace(/-/g, '_')}:${commandName.replace(/-/g, '_')}`
+                        ];
                         
+                        let usage = null;
+                        let matchedKey = null;
+                        for (const key of keys) {
+                          usage = commandUsage.get(key);
+                          if (usage) {
+                            matchedKey = key;
+                            break;
+                          }
+                        }
+                        
+                        // Debug first few commands
+                        if (commands.indexOf(command) < 3) {
+                          console.log(`🔍 Looking up ${commandName}:`, {
+                            pipeline: pipelineName,
+                            triedKeys: keys,
+                            found: !!usage,
+                            matchedKey,
+                            availableKeys: Array.from(commandUsage.keys()).filter(k => k.includes(commandName))
+                          });
+                        }
                         
                         return { command, usage };
                       })
-                      .filter(({ usage }) => {
+                      .filter(({ usage, command }) => {
                         // Apply usage filter
                         const count = usage?.execution_count || 0;
-                        if (usageFilter === 'unused') return count === 0;
-                        if (usageFilter === 'high') return count >= 10; // High volume: 10+ uses
-                        if (usageFilter === 'low') return count > 0 && count < 10; // Low volume: 1-9 uses
-                        return true; // 'all' shows everything
+                        
+                        // More detailed debugging
+                        const debugInfo: any = {
+                          command: command.command_name,
+                          hasUsage: !!usage,
+                          count: count,
+                          filter: usageFilter
+                        };
+                        
+                        let shouldInclude = false;
+                        
+                        switch (usageFilter) {
+                          case 'all':
+                            shouldInclude = true;
+                            debugInfo.reason = 'showing all';
+                            break;
+                          case 'unused':
+                            shouldInclude = count === 0;
+                            debugInfo.reason = `count === 0? ${count === 0}`;
+                            break;
+                          case 'high':
+                            shouldInclude = count >= 10;
+                            debugInfo.reason = `count >= 10? ${count >= 10}`;
+                            break;
+                          case 'low':
+                            shouldInclude = count > 0 && count < 10;
+                            debugInfo.reason = `0 < count < 10? ${count > 0 && count < 10}`;
+                            break;
+                          default:
+                            shouldInclude = true;
+                        }
+                        
+                        debugInfo.included = shouldInclude;
+                        
+                        // Log first few for debugging
+                        if (commands.indexOf(command) < 5 || (shouldInclude && usageFilter !== 'all')) {
+                          console.log('Filter decision:', debugInfo);
+                        }
+                        
+                        return shouldInclude;
                       })
                       .sort((a, b) => {
                         if (sortBy === 'usage') {
@@ -587,6 +955,43 @@ export const CLICommandsRegistry: React.FC = () => {
                         }
                         return a.command.command_name.localeCompare(b.command.command_name);
                       })
+                      
+                      // Debug: Log final results
+                      console.log('=== Final Results ===');
+                      console.log('Filtered commands count:', filteredCommands.length);
+                      
+                      // Check the actual distribution before filtering
+                      const beforeFilter = commands
+                        .filter(command => !command.is_hidden)
+                        .map(command => {
+                          // Try multiple key variations
+                          const pipelineName = selectedPipeline.name;
+                          const keys = [
+                            `${pipelineName}:${command.command_name}`,
+                            `${pipelineName.replace(/-/g, '_')}:${command.command_name}`,
+                            `${pipelineName.replace(/_/g, '-')}:${command.command_name}`
+                          ];
+                          
+                          let usage = null;
+                          for (const key of keys) {
+                            usage = commandUsage.get(key);
+                            if (usage) break;
+                          }
+                          return { command, usage };
+                        });
+                      
+                      console.log('Before filter distribution:', {
+                        total: beforeFilter.length,
+                        unused: beforeFilter.filter(({usage}) => !usage || usage.execution_count === 0).length,
+                        low: beforeFilter.filter(({usage}) => usage && usage.execution_count > 0 && usage.execution_count < 10).length,
+                        high: beforeFilter.filter(({usage}) => usage && usage.execution_count >= 10).length
+                      });
+                      
+                      console.log('After filter distribution:', {
+                        unused: filteredCommands.filter(({usage}) => !usage || usage.execution_count === 0).length,
+                        low: filteredCommands.filter(({usage}) => usage && usage.execution_count > 0 && usage.execution_count < 10).length,
+                        high: filteredCommands.filter(({usage}) => usage && usage.execution_count >= 10).length
+                      });
                       
                       return (
                         <>
@@ -643,7 +1048,7 @@ export const CLICommandsRegistry: React.FC = () => {
                               <CommandUsageTimeline
                                 pipelineName={selectedPipeline.name}
                                 commandName={command.command_name}
-                                days={14}
+                                days={45}
                                 className="mt-1"
                               />
                             </div>

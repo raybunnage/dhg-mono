@@ -254,6 +254,15 @@ ORDER BY cpt.table_name;
 - `scripts/cli-pipeline/{domain}/` - CLI commands (ONLY place for new scripts)
 - `supabase/types.ts` - Database schema (single source of truth)
 
+## Database Migration Workflow
+
+When creating database migrations, use the CLI pipeline commands:
+1. **Validate**: `./scripts/cli-pipeline/database/database-cli.sh migration validate [migration.sql]`
+2. **Test**: `./scripts/cli-pipeline/database/database-cli.sh migration test [migration.sql]`
+3. **Apply**: `./scripts/cli-pipeline/database/database-cli.sh migration run-staged [migration.sql]`
+
+This ensures migrations are properly tested before applying to the database.
+
 ## Common Issues to Avoid
 
 1. **Creating files in wrong locations**: 
