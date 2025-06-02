@@ -271,6 +271,20 @@ async function runStagedMigration(options: StagedRunOptions): Promise<void> {
       process.exit(1);
     } else {
       console.log('\n🎉 Migration completed successfully!');
+      
+      // Auto-regenerate types.ts after successful migration
+      console.log('\n🔄 Regenerating TypeScript types...');
+      try {
+        const { execSync } = require('child_process');
+        execSync('pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts', {
+          cwd: process.cwd(),
+          stdio: 'inherit'
+        });
+        console.log('✅ TypeScript types regenerated successfully');
+      } catch (typeGenError) {
+        console.warn('⚠️  Failed to regenerate types.ts:', typeGenError);
+        console.log('💡 Run manually: pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts');
+      }
     }
 
   } catch (error) {

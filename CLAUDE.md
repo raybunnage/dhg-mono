@@ -143,6 +143,13 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - New learning feature → `learn_quiz_results`
    
    Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
+   
+   **Table Creation Dates**: When creating new tables, always add an entry to `sys_table_definitions` with the creation date:
+   ```sql
+   -- After creating your table, add its metadata
+   INSERT INTO sys_table_definitions (table_schema, table_name, description, purpose, created_date)
+   VALUES ('public', 'your_new_table', 'Brief description', 'Purpose/use case', CURRENT_DATE);
+   ```
 
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
@@ -225,13 +232,20 @@ ORDER BY cpt.table_name;
    - Verify no hardcoded credentials exist in code
    - Ensure CLI commands are properly integrated into pipeline structure
 
-2. **Safe Refactoring**:
+2. **Database Migration Workflow**:
+   - ✅ **Types.ts is automatically regenerated after successful migrations**
+   - The run-staged command now automatically runs: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - This ensures TypeScript interfaces always match the updated database schema
+   - If type generation fails, the command provides manual instructions
+   - Consider committing the updated types.ts file along with your migration
+
+3. **Safe Refactoring**:
    - ⚠️ **Never break existing functionality**
    - Make small, incremental changes and test after each step
    - When moving code to shared services: make it work first, then extract, then replace
    - Ask for permission before major architectural changes
 
-3. **Document Solutions After Struggles**:
+4. **Document Solutions After Struggles**:
    - ⚠️ **After overcoming significant challenges, update this CLAUDE.md file**
    - Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions

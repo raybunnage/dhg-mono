@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { TableDetailsModal } from '../components/TableDetailsModal';
 import { supabase } from '../lib/supabase';
 
 interface TableInfo {
@@ -15,6 +16,10 @@ interface TableInfo {
   created_at?: string;
   updated_at?: string;
   description?: string;
+  purpose?: string;
+  created_date?: string;
+  created_by?: string;
+  notes?: string;
   error?: string;
   columns?: string[];
 }
@@ -26,14 +31,27 @@ interface PrefixInfo {
   description: string;
 }
 
+interface ViewInfo {
+  view_name: string;
+  view_schema: string;
+  is_updatable: boolean;
+  is_insertable: boolean;
+  has_rls: boolean;
+  table_dependencies: string[];
+  suggested_prefix: string;
+}
+
 export function DatabasePage() {
   const [tables, setTables] = useState<TableInfo[]>([]);
+  const [views, setViews] = useState<ViewInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'with-data' | 'empty'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrefix, setSelectedPrefix] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load table information on mount
   useEffect(() => {
@@ -45,10 +63,22 @@ export function DatabasePage() {
     setError(null);
     
     try {
-      // Use the new dynamic function to get all tables
-      // Only get public schema tables and auth.users
-      const { data: tablesData, error: tablesError } = await supabase
-        .rpc('get_all_tables_with_metadata');
+      // First try the enhanced function, fall back to the basic one if it doesn't exist
+      let tablesData: any[] | null = null;
+      let tablesError: any = null;
+
+      // Try the new function with definitions
+      const result = await supabase.rpc('get_table_info_with_definitions');
+      
+      if (result.error?.code === '42883') { // Function does not exist
+        // Fall back to the existing function
+        const fallbackResult = await supabase.rpc('get_all_tables_with_metadata');
+        tablesData = fallbackResult.data;
+        tablesError = fallbackResult.error;
+      } else {
+        tablesData = result.data;
+        tablesError = result.error;
+      }
 
       if (tablesError) {
         throw tablesError;
@@ -101,6 +131,10 @@ export function DatabasePage() {
             created_at: table.created_at,
             updated_at: table.updated_at,
             description: table.description,
+            purpose: table.purpose,
+            created_date: table.created_date,
+            created_by: table.created_by,
+            notes: table.notes,
             columns: columns,
             error: columnsError ? columnsError.message : undefined
           });
@@ -112,6 +146,11 @@ export function DatabasePage() {
             table_schema: table.table_schema || 'public',
             table_type: 'BASE TABLE',
             row_count: 0,
+            description: table.description,
+            purpose: table.purpose,
+            created_date: table.created_date,
+            created_by: table.created_by,
+            notes: table.notes,
             error: err instanceof Error ? err.message : 'Unknown error'
           });
         }
@@ -119,6 +158,10 @@ export function DatabasePage() {
 
       // Sort tables by prefix order (already done in SQL, but we can re-sort if needed)
       setTables(tableInfoList);
+      
+      // Load views as well
+      await loadViewInfo();
+      
       setLastRefresh(new Date());
       
     } catch (err) {
@@ -126,6 +169,22 @@ export function DatabasePage() {
       setError(err instanceof Error ? err.message : 'Failed to load table information');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const loadViewInfo = async () => {
+    try {
+      const { data: viewsData, error: viewsError } = await supabase
+        .rpc('get_all_views_with_info');
+      
+      if (viewsError) {
+        console.error('Error loading views:', viewsError);
+        return;
+      }
+      
+      setViews(viewsData || []);
+    } catch (err) {
+      console.error('Error loading views:', err);
     }
   };
 
@@ -213,6 +272,18 @@ export function DatabasePage() {
     
     return filtered;
   };
+  
+  // Get views for the selected prefix
+  const getViewsForPrefix = () => {
+    if (!selectedPrefix) return [];
+    
+    return views.filter(view => {
+      if (selectedPrefix === '_other') {
+        return view.suggested_prefix === 'other';
+      }
+      return view.suggested_prefix === selectedPrefix;
+    });
+  };
 
   // Calculate statistics
   const totalTables = tables.length;
@@ -221,6 +292,13 @@ export function DatabasePage() {
   const tablesWithErrors = tables.filter(t => t.error).length;
   const totalRecords = tables.reduce((sum, t) => sum + t.row_count, 0);
   const totalSize = tables.reduce((sum, t) => sum + (t.size_bytes || 0), 0);
+  
+  // Calculate newest and oldest table dates
+  const tableDates = tables
+    .filter(t => t.created_date)
+    .map(t => new Date(t.created_date!).getTime());
+  const oldestTableDate = tableDates.length > 0 ? new Date(Math.min(...tableDates)) : null;
+  const newestTableDate = tableDates.length > 0 ? new Date(Math.max(...tableDates)) : null;
 
   return (
     <DashboardLayout>
@@ -239,7 +317,7 @@ export function DatabasePage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100">
             <div className="text-2xl font-bold text-green-900">{totalTables}</div>
             <div className="text-sm text-green-600 mt-1">Total Tables</div>
@@ -268,6 +346,27 @@ export function DatabasePage() {
           </div>
         </div>
 
+        {/* Table Age Information */}
+        {(oldestTableDate || newestTableDate) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-blue-700">
+                <span className="font-medium">Database Timeline:</span>
+                {oldestTableDate && (
+                  <span className="ml-3">
+                    Oldest table created on <span className="font-medium">{oldestTableDate.toLocaleDateString()}</span>
+                  </span>
+                )}
+                {newestTableDate && oldestTableDate && newestTableDate.getTime() !== oldestTableDate.getTime() && (
+                  <span className="ml-3">
+                    • Most recent table created on <span className="font-medium">{newestTableDate.toLocaleDateString()}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Prefix Filter Pills */}
         <div className="mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
@@ -281,20 +380,26 @@ export function DatabasePage() {
             >
               All Tables ({tables.length})
             </button>
-            {getPrefixInfo().map(({ prefix, label, count }) => (
-              <button
-                key={prefix}
-                onClick={() => setSelectedPrefix(prefix)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedPrefix === prefix
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-                title={label}
-              >
-                {label} ({count})
-              </button>
-            ))}
+            {getPrefixInfo().map(({ prefix, label, count }) => {
+              const viewCount = views.filter(v => 
+                prefix === '_other' ? v.suggested_prefix === 'other' : v.suggested_prefix === prefix
+              ).length;
+              
+              return (
+                <button
+                  key={prefix}
+                  onClick={() => setSelectedPrefix(prefix)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedPrefix === prefix
+                      ? 'bg-green-600 text-white'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  }`}
+                  title={`${label} - ${count} tables${viewCount > 0 ? `, ${viewCount} views` : ''}`}
+                >
+                  {label} ({count}{viewCount > 0 && `+${viewCount}v`})
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -396,7 +501,7 @@ export function DatabasePage() {
               <thead className="bg-green-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                    Table Name
+                    Table Name <span className="text-xs text-gray-500 normal-case">(click for details)</span>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                     Row Count
@@ -417,13 +522,31 @@ export function DatabasePage() {
               </thead>
               <tbody className="bg-white divide-y divide-green-100">
                 {getFilteredTables().map((table) => (
-                  <tr key={table.table_name} className="hover:bg-green-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr 
+                    key={table.table_name} 
+                    className="hover:bg-green-50 cursor-pointer"
+                    onClick={() => {
+                      setSelectedTable(table);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-green-900">{table.table_name}</div>
                         {table.description && (
-                          <div className="text-xs text-gray-500 mt-1">{table.description}</div>
+                          <div className="text-xs text-gray-600 mt-1">{table.description}</div>
                         )}
+                        {table.purpose && (
+                          <div className="text-xs text-gray-500 mt-0.5 italic">{table.purpose}</div>
+                        )}
+                        <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                          {table.created_date && (
+                            <span>Created: {new Date(table.created_date).toLocaleDateString()}</span>
+                          )}
+                          {table.created_by && (
+                            <span>by {table.created_by}</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -492,6 +615,99 @@ export function DatabasePage() {
           </div>
         </div>
 
+        {/* Views Section - Only show when a prefix is selected */}
+        {selectedPrefix && getViewsForPrefix().length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-green-900">
+                Views for {selectedPrefix === '_other' ? 'Other' : selectedPrefix} prefix
+              </h2>
+              {getViewsForPrefix().some(v => !v.has_rls) && (
+                <div className="text-sm text-yellow-700 bg-yellow-50 px-3 py-1 rounded-lg">
+                  ⚠️ Some views show no RLS, but their dependent tables may have RLS policies
+                </div>
+              )}
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-green-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-green-100">
+                  <thead className="bg-green-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                        View Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                        Features
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                        Dependencies
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                        Security
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-green-100">
+                    {getViewsForPrefix().map((view) => (
+                      <tr key={view.view_name} className="hover:bg-green-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-green-900">
+                            {view.view_schema}.{view.view_name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex gap-1">
+                            {view.is_insertable && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                Insertable
+                              </span>
+                            )}
+                            {view.is_updatable && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                Updatable
+                              </span>
+                            )}
+                            {!view.is_insertable && !view.is_updatable && (
+                              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                                Read-only
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-xs text-gray-600">
+                            {view.table_dependencies.length > 0 ? (
+                              <div>
+                                {view.table_dependencies.slice(0, 3).join(', ')}
+                                {view.table_dependencies.length > 3 && (
+                                  <span className="text-gray-400"> +{view.table_dependencies.length - 3} more</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">No dependencies</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {view.has_rls ? (
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                              RLS Enabled
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                              No RLS
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && tables.length === 0 && (
           <div className="text-center py-12">
@@ -503,6 +719,18 @@ export function DatabasePage() {
               Loading database information...
             </div>
           </div>
+        )}
+
+        {/* Table Details Modal */}
+        {selectedTable && (
+          <TableDetailsModal
+            table={selectedTable}
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedTable(null);
+            }}
+          />
         )}
       </div>
     </DashboardLayout>

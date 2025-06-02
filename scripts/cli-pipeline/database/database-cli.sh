@@ -57,6 +57,7 @@ show_help() {
   echo "  * table-records        List tables with their record counts (13 uses)"
   echo "  * empty-tables         List tables with no records (5 uses)"
   echo "    database-functions   List database functions (3 uses)"
+  echo "    list-views           List database views grouped by prefix (0 uses)"
   echo "    table-structure      Get detailed information about a table structure (3 uses)"
   echo "    find-tables          Search for specific tables in the database"
   echo ""
@@ -157,6 +158,11 @@ empty_tables() {
 
 database_functions() {
   track_command "database-functions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/database-functions.ts $@"
+}
+
+list_views() {
+  echo "🔍 Listing database views..."
+  track_command "list-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-views.ts $@"
 }
 
 # Helper function was moved up earlier in the file
@@ -349,6 +355,9 @@ case "$1" in
     ;;
   "database-functions")
     database_functions "${@:2}"
+    ;;
+  "list-views")
+    list_views "${@:2}"
     ;;
   "table-structure")
     table_structure "${@:2}"
