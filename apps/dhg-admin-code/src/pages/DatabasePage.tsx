@@ -46,6 +46,7 @@ export function DatabasePage() {
     
     try {
       // Use the new dynamic function to get all tables
+      // Only get public schema tables and auth.users
       const { data: tablesData, error: tablesError } = await supabase
         .rpc('get_all_tables_with_metadata');
 
@@ -55,8 +56,20 @@ export function DatabasePage() {
 
       const tableInfoList: TableInfo[] = [];
 
+      // Filter to only include public schema tables and auth.users
+      const filteredTables = (tablesData || []).filter((table: any) => {
+        // Include all public schema tables
+        if (table.table_schema === 'public') return true;
+        
+        // Only include auth.users from auth schema
+        if (table.table_schema === 'auth' && table.table_name === 'users') return true;
+        
+        // Exclude all other auth schema tables
+        return false;
+      });
+
       // Process each table from the dynamic function
-      for (const table of tablesData || []) {
+      for (const table of filteredTables) {
         try {
           // Get column information for each table
           const { data: columnsData, error: columnsError } = await supabase
@@ -142,11 +155,16 @@ export function DatabasePage() {
     
     // Count tables by prefix
     tables.forEach(table => {
-      const prefix = Object.keys(prefixDescriptions).find(p => 
-        p !== '_other' && table.table_name.startsWith(p)
-      ) || '_other';
-      
-      prefixMap.set(prefix, (prefixMap.get(prefix) || 0) + 1);
+      // Special handling for auth.users - count it with auth_ prefix
+      if (table.table_schema === 'auth' && table.table_name === 'users') {
+        prefixMap.set('auth_', (prefixMap.get('auth_') || 0) + 1);
+      } else {
+        const prefix = Object.keys(prefixDescriptions).find(p => 
+          p !== '_other' && table.table_name.startsWith(p)
+        ) || '_other';
+        
+        prefixMap.set(prefix, (prefixMap.get(prefix) || 0) + 1);
+      }
     });
     
     // Convert to array and sort
