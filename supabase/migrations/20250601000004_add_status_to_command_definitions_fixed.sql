@@ -22,6 +22,9 @@ ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMP WITH TIME ZONE DEFAULT CURRE
 CREATE INDEX IF NOT EXISTS idx_command_definitions_status ON command_definitions(status);
 CREATE INDEX IF NOT EXISTS idx_command_definitions_hidden ON command_definitions(is_hidden);
 
+-- Drop existing function if it exists
+DROP FUNCTION IF EXISTS get_active_pipeline_commands(UUID);
+
 -- Update function to get only active commands for a pipeline
 CREATE OR REPLACE FUNCTION get_active_pipeline_commands(p_pipeline_id UUID)
 RETURNS TABLE (
@@ -81,6 +84,9 @@ BEGIN
     RETURN v_deprecated_count;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Drop and recreate the pipeline statistics function to include new fields
+DROP FUNCTION IF EXISTS get_pipeline_statistics(UUID);
 
 -- Update the pipeline statistics function to only count active commands
 CREATE OR REPLACE FUNCTION get_pipeline_statistics(p_pipeline_id UUID DEFAULT NULL)

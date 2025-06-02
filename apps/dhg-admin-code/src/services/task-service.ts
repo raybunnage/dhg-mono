@@ -5,7 +5,7 @@ export interface DevTask {
   title: string;
   description: string;
   task_type: 'bug' | 'feature' | 'refactor' | 'question';
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'testing' | 'revision' | 'completed' | 'merged' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
   app?: string;
   claude_request?: string;
@@ -14,6 +14,20 @@ export interface DevTask {
   updated_at: string;
   completed_at?: string;
   created_by?: string;
+  // Git integration fields
+  git_branch?: string;
+  git_commit_start?: string;
+  git_commit_current?: string;
+  git_commits_count?: number;
+  parent_task_id?: string;
+  is_subtask?: boolean;
+  testing_notes?: string;
+  revision_count?: number;
+  // Worktree fields
+  worktree_path?: string;
+  worktree_active?: boolean;
+  work_mode?: 'single-file' | 'feature' | 'exploration' | 'cross-repo';
+  requires_branch?: boolean;
 }
 
 export interface DevTaskTag {
@@ -29,6 +43,28 @@ export interface DevTaskFile {
   file_path: string;
   action: 'created' | 'modified' | 'deleted';
   created_at: string;
+}
+
+export interface DevTaskCommit {
+  id: string;
+  task_id: string;
+  commit_hash: string;
+  commit_message?: string;
+  files_changed?: number;
+  insertions?: number;
+  deletions?: number;
+  created_at: string;
+}
+
+export interface DevTaskWorkSession {
+  id: string;
+  task_id: string;
+  claude_session_id?: string;
+  started_at: string;
+  ended_at?: string;
+  summary?: string;
+  commands_used?: string[];
+  files_modified?: string[];
 }
 
 export class TaskService {
@@ -90,14 +126,34 @@ export class TaskService {
   }
 
   static async updateTask(id: string, updates: Partial<DevTask>) {
+    console.log('Updating task:', id, updates);
+    
+    // Check auth status
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('Auth status in updateTask:', user ? `Authenticated as ${user.email}` : 'Not authenticated');
+    
     const { data, error } = await supabase
       .from('dev_tasks')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating task:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Failed to update task: ${error.message}`);
+    }
+    
+    console.log('Task updated successfully:', data);
     return data as DevTask;
   }
 
@@ -174,6 +230,29 @@ export class TaskService {
     if (error) throw error;
   }
 
+  // Git integration methods
+  static async getTaskCommits(taskId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_commits')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as DevTaskCommit[];
+  }
+
+  static async getTaskWorkSessions(taskId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('started_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession[];
+  }
+
   // Helper to format task for Claude
   static formatForClaude(task: DevTask, tags: string[] = []): string {
     const tagString = tags.length > 0 ? `Tags: ${tags.join(', ')}\n` : '';
@@ -193,10 +272,65 @@ Created: ${new Date(task.created_at).toLocaleDateString()}`;
 
   // Mark task as complete with Claude response
   static async completeTask(id: string, claudeResponse: string) {
-    return this.updateTask(id, {
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-      claude_response: claudeResponse
-    });
+    console.log('Completing task:', id, 'with response length:', claudeResponse?.length);
+    
+    try {
+      const result = await this.updateTask(id, {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        claude_response: claudeResponse
+      });
+      
+      console.log('Task completed successfully');
+      return result;
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+      throw error;
+    }
+  }
+
+  // Work session management
+  static async startWorkSession(taskId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .insert({
+        task_id: taskId,
+        started_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession;
+  }
+
+  static async endWorkSession(sessionId: string, summary: string, filesModified?: string[]) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .update({
+        ended_at: new Date().toISOString(),
+        summary,
+        files_modified: filesModified
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession;
+  }
+
+  static async updateWorkSessionClaude(sessionId: string, claudeSessionId: string) {
+    const { data, error } = await supabase
+      .from('dev_task_work_sessions')
+      .update({
+        claude_session_id: claudeSessionId
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as DevTaskWorkSession;
   }
 }

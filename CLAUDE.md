@@ -143,6 +143,13 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - New learning feature → `learn_quiz_results`
    
    Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
+   
+   **Table Creation Dates**: When creating new tables, always add an entry to `sys_table_definitions` with the creation date:
+   ```sql
+   -- After creating your table, add its metadata
+   INSERT INTO sys_table_definitions (table_schema, table_name, description, purpose, created_date)
+   VALUES ('public', 'your_new_table', 'Brief description', 'Purpose/use case', CURRENT_DATE);
+   ```
 
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
@@ -169,11 +176,53 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - ⚠️ **ALWAYS implement command tracking** for new CLI commands
    - Add to shell script wrapper using `track_command` function
    - Copy structure from existing pipelines (e.g., google-sync-cli.sh)
+   - ⚠️ **After adding new commands, ALWAYS run**:
+     ```bash
+     ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh populate-command-registry
+     ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh sync-command-status
+     ```
+     This ensures new commands are registered and tracking is enabled
 
 3. **Implementation Standards**:
    - Implement full functionality, not placeholder code
    - Include proper error handling and logging
    - Test commands with real data before submitting
+
+## CLI Command Registry
+
+**Before creating new CLI commands**, check the existing command registry:
+```sql
+-- Check existing commands in a specific pipeline
+SELECT cp.name as pipeline_name, cd.command_name, cd.description 
+FROM command_pipelines cp
+JOIN command_definitions cd ON cd.pipeline_id = cp.id
+WHERE cp.name = 'google_sync' 
+ORDER BY cd.command_name;
+
+-- Check all active pipelines and their commands
+SELECT cp.name as pipeline_name, cp.display_name, 
+       COUNT(cd.id) as command_count, cp.status
+FROM command_pipelines cp
+LEFT JOIN command_definitions cd ON cd.pipeline_id = cp.id
+WHERE cp.status = 'active'
+GROUP BY cp.id, cp.name, cp.display_name, cp.status
+ORDER BY cp.name;
+
+-- Check which tables a pipeline uses
+SELECT cpt.table_name, cpt.operation_type, cpt.description
+FROM command_pipeline_tables cpt
+JOIN command_pipelines cp ON cp.id = cpt.pipeline_id
+WHERE cp.name = 'google_sync'
+ORDER BY cpt.table_name;
+```
+
+**Key Registry Tables**:
+- `command_pipelines` - CLI pipeline scripts (e.g., google-sync-cli.sh)
+- `command_definitions` - Individual commands within each pipeline
+- `command_pipeline_tables` - Database tables used by each pipeline
+- `scripts_registry` - Individual script files (separate from CLI commands)
+
+**Note**: CLI commands (in pipelines) and individual scripts are tracked separately. Focus on the command_* tables for CLI pipeline work.
 
 ## Development Workflow
 
@@ -183,13 +232,20 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - Verify no hardcoded credentials exist in code
    - Ensure CLI commands are properly integrated into pipeline structure
 
-2. **Safe Refactoring**:
+2. **Database Migration Workflow**:
+   - ✅ **Types.ts is automatically regenerated after successful migrations**
+   - The run-staged command now automatically runs: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - This ensures TypeScript interfaces always match the updated database schema
+   - If type generation fails, the command provides manual instructions
+   - Consider committing the updated types.ts file along with your migration
+
+3. **Safe Refactoring**:
    - ⚠️ **Never break existing functionality**
    - Make small, incremental changes and test after each step
    - When moving code to shared services: make it work first, then extract, then replace
    - Ask for permission before major architectural changes
 
-3. **Document Solutions After Struggles**:
+4. **Document Solutions After Struggles**:
    - ⚠️ **After overcoming significant challenges, update this CLAUDE.md file**
    - Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions
@@ -211,6 +267,15 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 - `packages/shared/services/` - Reusable services (preferred for new functionality)
 - `scripts/cli-pipeline/{domain}/` - CLI commands (ONLY place for new scripts)
 - `supabase/types.ts` - Database schema (single source of truth)
+
+## Database Migration Workflow
+
+When creating database migrations, use the CLI pipeline commands:
+1. **Validate**: `./scripts/cli-pipeline/database/database-cli.sh migration validate [migration.sql]`
+2. **Test**: `./scripts/cli-pipeline/database/database-cli.sh migration test [migration.sql]`
+3. **Apply**: `./scripts/cli-pipeline/database/database-cli.sh migration run-staged [migration.sql]`
+
+This ensures migrations are properly tested before applying to the database.
 
 ## Common Issues to Avoid
 
@@ -235,6 +300,19 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 5. **Standalone scripts**: 
    - ❌ NEVER create standalone `ts-node` scripts
    - ✅ ALWAYS integrate into shell script CLI pipelines
+
+6. **SQL Function Column Ambiguity**:
+   - ❌ **Problem**: "column reference is ambiguous" errors in PostgreSQL functions
+   - ✅ **Solution**: Always qualify column names with table alias in ORDER BY/WHERE clauses
+   - Example fix:
+     ```sql
+     -- ❌ WRONG: Ambiguous column reference
+     SELECT * FROM table_info ORDER BY table_name;
+     
+     -- ✅ CORRECT: Qualified column reference
+     SELECT * FROM table_info ORDER BY table_info.table_name;
+     ```
+   - This commonly occurs when RETURNS TABLE has columns with same names as query columns
 
 ## Debugging in a Monorepo Context
 

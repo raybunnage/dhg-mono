@@ -35,7 +35,6 @@ export const DocumentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<DocumentFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [syncing, setSyncing] = useState(false);
 
   const handleDocumentSelect = async (doc: DocFile) => {
     setSelectedDocument(doc);
@@ -45,19 +44,29 @@ export const DocumentsPage: React.FC = () => {
   };
 
   const handleSync = async () => {
-    setSyncing(true);
+    // Show instructions for running the sync command
+    const message = `To sync documents, run one of these commands from the project root:
+
+Option 1 (recommended):
+./scripts/cli-pipeline/document/doc-cli.sh sync-docs
+
+Option 2:
+./scripts/cli-pipeline/document/sync-markdown-files.sh
+
+This will:
+- Scan the repository for markdown files
+- Add new files to the database
+- Mark deleted files as is_deleted = true
+- Update file metadata and hashes`;
     
+    alert(message);
+    
+    // Copy the command to clipboard for convenience
     try {
-      // In a real implementation, this would call your backend API
-      const response = await fetch('/api/documents/sync', { method: 'POST' });
-      if (response.ok) {
-        // Refresh the document list
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('Sync failed:', error);
-    } finally {
-      setSyncing(false);
+      await navigator.clipboard.writeText('./scripts/cli-pipeline/document/doc-cli.sh sync-docs');
+      console.log('Command copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy command:', err);
     }
   };
 
@@ -66,6 +75,31 @@ export const DocumentsPage: React.FC = () => {
       // Copy file path to clipboard for easy opening in any editor
       navigator.clipboard.writeText(selectedDocument.file_path);
       alert(`File path copied to clipboard:\n${selectedDocument.file_path}`);
+    }
+  };
+
+  const handleFindNew = async () => {
+    // Show instructions for finding new files
+    const message = `To find and add new markdown files, run this command from the project root:
+
+./scripts/cli-pipeline/document/doc-cli.sh find-new
+
+Or to find new files in a specific directory:
+./scripts/cli-pipeline/document/doc-cli.sh find-new --dir docs
+
+This will:
+- Scan for markdown files not in the database
+- Add them to the doc_files table
+- Display a list of newly added files`;
+    
+    alert(message);
+    
+    // Copy the command to clipboard for convenience
+    try {
+      await navigator.clipboard.writeText('./scripts/cli-pipeline/document/doc-cli.sh find-new');
+      console.log('Command copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy command:', err);
     }
   };
 
@@ -143,15 +177,17 @@ export const DocumentsPage: React.FC = () => {
               
               <button
                 onClick={handleSync}
-                disabled={syncing}
-                className="flex items-center gap-1 px-3 py-1 hover:bg-gray-100 rounded disabled:opacity-50"
+                className="flex items-center gap-1 px-3 py-1 hover:bg-gray-100 rounded"
+                title="Show sync command instructions"
               >
-                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className="w-4 h-4" />
                 Sync
               </button>
               
               <button
+                onClick={handleFindNew}
                 className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                title="Find and add new markdown files"
               >
                 <Plus className="w-4 h-4" />
                 New

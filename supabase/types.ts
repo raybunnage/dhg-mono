@@ -634,42 +634,54 @@ export type Database = {
         Row: {
           command_name: string
           created_at: string | null
+          deprecated_at: string | null
           description: string | null
           display_order: number | null
           example_usage: string | null
           id: string
           is_dangerous: boolean | null
+          is_hidden: boolean | null
+          last_verified_at: string | null
           pipeline_id: string
           requires_auth: boolean | null
           requires_google_api: boolean | null
+          status: string | null
           updated_at: string | null
           usage_pattern: string | null
         }
         Insert: {
           command_name: string
           created_at?: string | null
+          deprecated_at?: string | null
           description?: string | null
           display_order?: number | null
           example_usage?: string | null
           id?: string
           is_dangerous?: boolean | null
+          is_hidden?: boolean | null
+          last_verified_at?: string | null
           pipeline_id: string
           requires_auth?: boolean | null
           requires_google_api?: boolean | null
+          status?: string | null
           updated_at?: string | null
           usage_pattern?: string | null
         }
         Update: {
           command_name?: string
           created_at?: string | null
+          deprecated_at?: string | null
           description?: string | null
           display_order?: number | null
           example_usage?: string | null
           id?: string
           is_dangerous?: boolean | null
+          is_hidden?: boolean | null
+          last_verified_at?: string | null
           pipeline_id?: string
           requires_auth?: boolean | null
           requires_google_api?: boolean | null
+          status?: string | null
           updated_at?: string | null
           usage_pattern?: string | null
         }
@@ -941,6 +953,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_task_commits: {
+        Row: {
+          commit_hash: string
+          commit_message: string | null
+          created_at: string | null
+          deletions: number | null
+          files_changed: number | null
+          id: string
+          insertions: number | null
+          task_id: string | null
+        }
+        Insert: {
+          commit_hash: string
+          commit_message?: string | null
+          created_at?: string | null
+          deletions?: number | null
+          files_changed?: number | null
+          id?: string
+          insertions?: number | null
+          task_id?: string | null
+        }
+        Update: {
+          commit_hash?: string
+          commit_message?: string | null
+          created_at?: string | null
+          deletions?: number | null
+          files_changed?: number | null
+          id?: string
+          insertions?: number | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dev_task_files: {
         Row: {
           action: string | null
@@ -969,6 +1029,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
             referencedColumns: ["id"]
           },
         ]
@@ -1000,6 +1067,61 @@ export type Database = {
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_task_work_sessions: {
+        Row: {
+          claude_session_id: string | null
+          commands_used: string[] | null
+          ended_at: string | null
+          files_modified: string[] | null
+          id: string
+          started_at: string | null
+          summary: string | null
+          task_id: string | null
+        }
+        Insert: {
+          claude_session_id?: string | null
+          commands_used?: string[] | null
+          ended_at?: string | null
+          files_modified?: string[] | null
+          id?: string
+          started_at?: string | null
+          summary?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          claude_session_id?: string | null
+          commands_used?: string[] | null
+          ended_at?: string | null
+          files_modified?: string[] | null
+          id?: string
+          started_at?: string | null
+          summary?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dev_tasks: {
@@ -1011,12 +1133,24 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string
+          git_branch: string | null
+          git_commit_current: string | null
+          git_commit_start: string | null
+          git_commits_count: number | null
           id: string
+          is_subtask: boolean | null
+          parent_task_id: string | null
           priority: string | null
+          requires_branch: boolean | null
+          revision_count: number | null
           status: string | null
           task_type: string | null
+          testing_notes: string | null
           title: string
           updated_at: string | null
+          work_mode: string | null
+          worktree_active: boolean | null
+          worktree_path: string | null
         }
         Insert: {
           app?: string | null
@@ -1026,12 +1160,24 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description: string
+          git_branch?: string | null
+          git_commit_current?: string | null
+          git_commit_start?: string | null
+          git_commits_count?: number | null
           id?: string
+          is_subtask?: boolean | null
+          parent_task_id?: string | null
           priority?: string | null
+          requires_branch?: boolean | null
+          revision_count?: number | null
           status?: string | null
           task_type?: string | null
+          testing_notes?: string | null
           title: string
           updated_at?: string | null
+          work_mode?: string | null
+          worktree_active?: boolean | null
+          worktree_path?: string | null
         }
         Update: {
           app?: string | null
@@ -1041,14 +1187,41 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string
+          git_branch?: string | null
+          git_commit_current?: string | null
+          git_commit_start?: string | null
+          git_commits_count?: number | null
           id?: string
+          is_subtask?: boolean | null
+          parent_task_id?: string | null
           priority?: string | null
+          requires_branch?: boolean | null
+          revision_count?: number | null
           status?: string | null
           task_type?: string | null
+          testing_notes?: string | null
           title?: string
           updated_at?: string | null
+          work_mode?: string | null
+          worktree_active?: boolean | null
+          worktree_path?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       doc_files: {
         Row: {
@@ -2589,6 +2762,50 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_tasks_with_git: {
+        Row: {
+          app: string | null
+          claude_request: string | null
+          claude_response: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          git_branch: string | null
+          git_commit_current: string | null
+          git_commit_start: string | null
+          git_commits_count: number | null
+          id: string | null
+          is_subtask: boolean | null
+          last_worked_on: string | null
+          parent_task_id: string | null
+          priority: string | null
+          revision_count: number | null
+          status: string | null
+          task_type: string | null
+          testing_notes: string | null
+          title: string | null
+          total_commits: number | null
+          total_sessions: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_classifications_view: {
         Row: {
           category: string | null
@@ -2792,6 +3009,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      deprecate_missing_commands: {
+        Args: { p_pipeline_id: string; p_current_commands: string[] }
+        Returns: number
+      }
       discover_pipeline_commands: {
         Args: { p_pipeline_name: string; p_script_content: string }
         Returns: Json
@@ -2848,6 +3069,17 @@ export type Database = {
         Args: { p_table_name: string }
         Returns: string
       }
+      get_active_pipeline_commands: {
+        Args: { p_pipeline_id: string }
+        Returns: {
+          id: string
+          command_name: string
+          description: string
+          usage_pattern: string
+          example_usage: string
+          display_order: number
+        }[]
+      }
       get_all_foreign_keys: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -2856,6 +3088,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           create_statement: string
+        }[]
+      }
+      get_all_tables_with_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          table_schema: string
+          table_type: string
+          row_count: number
+          size_pretty: string
+          size_bytes: number
+          column_count: number
+          has_primary_key: boolean
+          has_rls: boolean
+          created_at: string
+          updated_at: string
+          description: string
         }[]
       }
       get_auth_audit_log_count: {
@@ -2914,6 +3163,18 @@ export type Database = {
           category_name: string
           usage_count: number
           success_rate: number
+        }[]
+      }
+      get_command_usage_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          pipeline_name: string
+          command_name: string
+          execution_count: number
+          success_count: number
+          failure_count: number
+          last_executed: string
+          avg_duration_ms: number
         }[]
       }
       get_document_type_counts: {
@@ -3027,6 +3288,8 @@ export type Database = {
           pipeline_id: string
           pipeline_name: string
           total_commands: number
+          active_commands: number
+          deprecated_commands: number
           tables_accessed: number
           last_used: string
           total_executions: number
@@ -3043,6 +3306,7 @@ export type Database = {
           data_type: string
           is_nullable: string
           column_default: string
+          ordinal_position: number
         }[]
       }
       get_table_columns_plus: {
@@ -3114,6 +3378,10 @@ export type Database = {
       get_table_metadata: {
         Args: { p_target_table: string }
         Returns: Json
+      }
+      get_table_row_count: {
+        Args: { p_table_name: string }
+        Returns: number
       }
       get_triggers: {
         Args: { schema_name: string }

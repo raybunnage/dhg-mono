@@ -13,13 +13,15 @@ const supabase = SupabaseClientService.getInstance().getClient();
 
 async function showTask(taskId: string) {
   try {
-    // Get task with related data
+    // Get task with related data and git info
     const { data: task, error } = await supabase
       .from('dev_tasks')
       .select(`
         *,
         dev_task_tags (tag),
-        dev_task_files (file_path, action, created_at)
+        dev_task_files (file_path, action, created_at),
+        dev_task_commits (count),
+        dev_task_work_sessions (count)
       `)
       .eq('id', taskId)
       .single();
@@ -61,6 +63,23 @@ async function showTask(taskId: string) {
       console.log(`   Tags: ${tags}`);
     }
     
+    // Git information
+    if (task.git_branch) {
+      console.log(`\n🌿 Git Information`);
+      console.log(`   Branch: ${task.git_branch}`);
+      if (task.git_commits_count > 0) {
+        console.log(`   Commits: ${task.git_commits_count}`);
+      }
+      const commitCount = task.dev_task_commits?.[0]?.count || 0;
+      const sessionCount = task.dev_task_work_sessions?.[0]?.count || 0;
+      if (commitCount > 0) {
+        console.log(`   Total Commits: ${commitCount}`);
+      }
+      if (sessionCount > 0) {
+        console.log(`   Work Sessions: ${sessionCount}`);
+      }
+    }
+    
     // Description
     console.log(`\n📝 Description`);
     console.log('─'.repeat(60));
@@ -96,15 +115,34 @@ async function showTask(taskId: string) {
     console.log(`\n🎯 Next Actions`);
     console.log('─'.repeat(60));
     if (task.status === 'pending') {
-      console.log('1. Copy the request to Claude:');
-      console.log(`   ./dev-tasks-cli.sh copy-request ${task.id}`);
-      console.log('2. Update status to in_progress:');
-      console.log(`   ./dev-tasks-cli.sh update ${task.id} --status in_progress`);
+      if (task.git_branch) {
+        console.log('1. Start work session:');
+        console.log(`   ./dev-tasks-cli.sh start-session ${task.id}`);
+      } else {
+        console.log('1. Copy the request to Claude:');
+        console.log(`   ./dev-tasks-cli.sh copy-request ${task.id}`);
+        console.log('2. Update status to in_progress:');
+        console.log(`   ./dev-tasks-cli.sh update ${task.id} --status in_progress`);
+      }
     } else if (task.status === 'in_progress') {
-      console.log('1. Add affected files:');
-      console.log(`   ./dev-tasks-cli.sh add-file ${task.id} --path "path/to/file" --action modified`);
-      console.log('2. Complete the task:');
-      console.log(`   ./dev-tasks-cli.sh complete ${task.id} --response "Claude's response..."`);
+      if (task.git_branch) {
+        console.log('1. End work session:');
+        console.log(`   ./dev-tasks-cli.sh end-session ${task.id} --summary "Description of work"`);
+        console.log('2. Show git details:');
+        console.log(`   ./dev-tasks-cli.sh show-git-info ${task.id}`);
+      } else {
+        console.log('1. Add affected files:');
+        console.log(`   ./dev-tasks-cli.sh add-file ${task.id} --path "path/to/file" --action modified`);
+        console.log('2. Complete the task:');
+        console.log(`   ./dev-tasks-cli.sh complete ${task.id} --response "Claude's response..."`);
+      }
+    } else if (task.status === 'testing') {
+      console.log('1. Update testing notes:');
+      console.log(`   ./dev-tasks-cli.sh update ${task.id} --testing-notes "Testing results..."`);
+      console.log('2. Mark as completed or revision needed');
+    } else if (task.status === 'completed' && task.git_branch) {
+      console.log('1. Merge task branch:');
+      console.log(`   ./dev-tasks-cli.sh merge-task ${task.id}`);
     } else {
       console.log('Task is completed! 🎉');
     }
