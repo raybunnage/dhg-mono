@@ -47,6 +47,7 @@ export function DatabasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'with-data' | 'empty'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrefix, setSelectedPrefix] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -270,6 +271,24 @@ export function DatabasePage() {
       filtered = filtered.filter(table => table.row_count === 0);
     }
     
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      if (dateFilter === 'week') {
+        cutoffDate.setDate(now.getDate() - 7);
+      } else if (dateFilter === 'month') {
+        cutoffDate.setMonth(now.getMonth() - 1);
+      }
+      
+      filtered = filtered.filter(table => {
+        if (!table.created_date) return false;
+        const tableDate = new Date(table.created_date);
+        return tableDate >= cutoffDate;
+      });
+    }
+    
     return filtered;
   };
   
@@ -452,6 +471,40 @@ export function DatabasePage() {
               
               <div className="border-l border-green-300 mx-2"></div>
               
+              {/* Date filter toggles */}
+              <button
+                onClick={() => setDateFilter('all')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  dateFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-blue-300 text-blue-700 hover:bg-blue-50'
+                }`}
+              >
+                All Dates
+              </button>
+              <button
+                onClick={() => setDateFilter('week')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  dateFilter === 'week'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-blue-300 text-blue-700 hover:bg-blue-50'
+                }`}
+              >
+                Last Week
+              </button>
+              <button
+                onClick={() => setDateFilter('month')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  dateFilter === 'month'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-blue-300 text-blue-700 hover:bg-blue-50'
+                }`}
+              >
+                Last Month
+              </button>
+              
+              <div className="border-l border-green-300 mx-2"></div>
+              
               <button
                 onClick={loadTableInfo}
                 disabled={loading}
@@ -483,6 +536,8 @@ export function DatabasePage() {
             {selectedPrefix && ` with prefix "${selectedPrefix === '_other' ? 'other' : selectedPrefix}"`}
             {filterMode === 'with-data' && ' with data'}
             {filterMode === 'empty' && ' that are empty'}
+            {dateFilter === 'week' && ' created in the last week'}
+            {dateFilter === 'month' && ' created in the last month'}
             {searchTerm && ` matching "${searchTerm}"`}
           </div>
         </div>
@@ -524,7 +579,9 @@ export function DatabasePage() {
                 {getFilteredTables().map((table) => (
                   <tr 
                     key={table.table_name} 
-                    className="hover:bg-green-50 cursor-pointer"
+                    className={`hover:bg-green-50 cursor-pointer ${
+                      table.table_type === 'VIEW' ? 'bg-blue-50/30 border-l-2 border-l-blue-300' : ''
+                    }`}
                     onClick={() => {
                       setSelectedTable(table);
                       setIsModalOpen(true);
@@ -532,7 +589,18 @@ export function DatabasePage() {
                   >
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-green-900">{table.table_name}</div>
+                        <div className="text-sm font-medium text-green-900 flex items-center gap-2">
+                          <span>{table.table_name}</span>
+                          {table.table_type === 'VIEW' && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700" title="Database View">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              VIEW
+                            </span>
+                          )}
+                        </div>
                         {table.description && (
                           <div className="text-xs text-gray-600 mt-1">{table.description}</div>
                         )}
