@@ -156,8 +156,6 @@ export function GitManagement() {
       } finally {
         setLoading(false);
       }
-    }
-
   };
 
   // Load data on mount
