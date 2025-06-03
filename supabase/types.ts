@@ -953,6 +953,139 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_merge_checklist: {
+        Row: {
+          check_type: string
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          merge_queue_id: string | null
+          result: Json | null
+          status: string | null
+        }
+        Insert: {
+          check_type: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Update: {
+          check_type?: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_checklist_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_dependencies: {
+        Row: {
+          created_at: string | null
+          dependency_type: string | null
+          depends_on_branch: string
+          id: string
+          merge_queue_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch?: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_dependencies_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_queue: {
+        Row: {
+          branch_name: string
+          conflict_details: Json | null
+          conflicts_detected: boolean | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_updated_from_source: string | null
+          merge_commit_sha: string | null
+          merge_completed_at: string | null
+          merge_started_at: string | null
+          merge_status: string | null
+          notes: string | null
+          priority: number | null
+          source_branch: string | null
+          task_ids: string[] | null
+          tests_passed: boolean | null
+          updated_at: string | null
+          worktree_path: string | null
+        }
+        Insert: {
+          branch_name: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Update: {
+          branch_name?: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Relationships: []
+      }
       dev_task_commits: {
         Row: {
           commit_hash: string
@@ -3415,6 +3548,15 @@ export type Database = {
           queue_id: string
           file_id: string
           file_path: string
+        }[]
+      }
+      get_next_merge_candidate: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          branch_name: string
+          priority: number
+          pending_dependencies: number
         }[]
       }
       get_or_create_page: {
