@@ -48,6 +48,7 @@ export default function CreateTaskPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customBranchName, setCustomBranchName] = useState<string>('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -56,8 +57,7 @@ export default function CreateTaskPage() {
     priority: 'medium' as 'low' | 'medium' | 'high',
     app: '',
     tags: '',
-    work_mode: 'single-file' as 'single-file' | 'feature' | 'exploration' | 'cross-repo',
-    requires_branch: false
+    work_mode: 'single-file' as 'single-file' | 'feature' | 'exploration' | 'cross-repo'
   });
 
   // Generate branch name from title and type
@@ -88,9 +88,10 @@ export default function CreateTaskPage() {
       setLoading(true);
       setError(null);
       
-      // Generate git branch name if requires_branch is enabled
-      const gitBranch = formData.requires_branch 
-        ? generateBranchName(formData.title, formData.task_type)
+      // Use custom branch name if provided, otherwise use generated name
+      const needsBranch = formData.work_mode === 'feature' || formData.work_mode === 'exploration';
+      const gitBranch = needsBranch 
+        ? (customBranchName || generateBranchName(formData.title, formData.task_type))
         : undefined;
 
       // Create the task
@@ -103,7 +104,7 @@ export default function CreateTaskPage() {
         status: 'pending',
         git_branch: gitBranch,
         work_mode: formData.work_mode,
-        requires_branch: formData.requires_branch
+        requires_branch: needsBranch
       });
 
       // Add tags if provided
@@ -154,7 +155,15 @@ export default function CreateTaskPage() {
               id="title"
               type="text"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => {
+                const newTitle = e.target.value;
+                setFormData({ ...formData, title: newTitle });
+                // Auto-update branch name if user hasn't customized it
+                if ((formData.work_mode === 'feature' || formData.work_mode === 'exploration') && 
+                    (!customBranchName || customBranchName === generateBranchName(formData.title, formData.task_type))) {
+                  setCustomBranchName(generateBranchName(newTitle, formData.task_type));
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="Brief description of the task"
               disabled={loading}
@@ -190,10 +199,14 @@ export default function CreateTaskPage() {
                 const mode = e.target.value as typeof formData.work_mode;
                 setFormData({ 
                   ...formData, 
-                  work_mode: mode,
-                  // Auto-enable branch for feature mode
-                  requires_branch: mode === 'feature' ? true : formData.requires_branch
+                  work_mode: mode
                 });
+                // Reset custom branch name when changing work mode
+                if (mode === 'feature' || mode === 'exploration') {
+                  setCustomBranchName(generateBranchName(formData.title, formData.task_type));
+                } else {
+                  setCustomBranchName('');
+                }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               disabled={loading}
@@ -203,12 +216,15 @@ export default function CreateTaskPage() {
               <option value="exploration">Exploration - Research or experimentation</option>
               <option value="cross-repo">Cross-Repo - Spans multiple repositories</option>
             </select>
-            <p className="mt-1 text-sm text-gray-500">
-              {formData.work_mode === 'single-file' && 'Quick fixes that don\'t need a branch'}
-              {formData.work_mode === 'feature' && 'New features that need isolated development'}
-              {formData.work_mode === 'exploration' && 'Research tasks that may need temporary branches'}
-              {formData.work_mode === 'cross-repo' && 'Tasks that span multiple repositories'}
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-sm text-gray-500">
+                {formData.work_mode === 'single-file' && 'Quick fixes that don\'t need a branch'}
+                {formData.work_mode === 'feature' && 'New features that need isolated development (branch will be created)'}
+                {formData.work_mode === 'exploration' && 'Research tasks (branch will be created for isolation)'}
+                {formData.work_mode === 'cross-repo' && 'Tasks that span multiple repositories'}
+              </p>
+              {/* Removed inline branch display - will show in dedicated section */}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -291,35 +307,51 @@ export default function CreateTaskPage() {
             />
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4">
-            <label className="flex items-start">
-              <input
-                type="checkbox"
-                checked={formData.requires_branch}
-                onChange={(e) => setFormData({ ...formData, requires_branch: e.target.checked })}
-                className="mt-1 mr-3"
-                disabled={loading || formData.work_mode === 'feature'} // Always on for features
-              />
-              <div>
-                <span className="text-sm font-medium text-gray-700">
-                  Create Git branch
-                  {formData.work_mode === 'feature' && (
-                    <span className="text-xs text-gray-500 ml-2">(required for features)</span>
-                  )}
-                </span>
-                <p className="text-sm text-gray-500 mt-1">
-                  Create a dedicated git branch for this task. Recommended for features and larger changes.
-                  {formData.title && formData.requires_branch && (
-                    <span className="block mt-1">
-                      Branch name: <code className="bg-gray-200 px-1 rounded">
-                        {generateBranchName(formData.title, formData.task_type)}
-                      </code>
-                    </span>
-                  )}
-                </p>
+          {/* Branch Configuration - Only show when branch will be created */}
+          {(formData.work_mode === 'feature' || formData.work_mode === 'exploration') && (
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">🌿 Git Branch Configuration</h4>
+              <p className="text-sm text-blue-800 mb-3">
+                A git branch will be created for this task. You can customize the branch name below.
+              </p>
+              
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="branchName" className="block text-xs font-medium text-gray-700 mb-1">
+                    Branch Name
+                  </label>
+                  <input
+                    id="branchName"
+                    type="text"
+                    value={customBranchName || generateBranchName(formData.title || 'untitled', formData.task_type)}
+                    onChange={(e) => setCustomBranchName(e.target.value)}
+                    onFocus={(e) => {
+                      // Set custom branch name if not already set when focusing
+                      if (!customBranchName && formData.title) {
+                        setCustomBranchName(generateBranchName(formData.title, formData.task_type));
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-blue-300 rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="feature/branch-name"
+                    disabled={loading}
+                  />
+                  <p className="mt-1 text-xs text-gray-600">
+                    Tip: Use format like feature/description-abc123 or bugfix/issue-name
+                  </p>
+                </div>
+                
+                {customBranchName && customBranchName !== generateBranchName(formData.title || '', formData.task_type) && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomBranchName(generateBranchName(formData.title || 'untitled', formData.task_type))}
+                    className="text-xs text-blue-700 hover:text-blue-900 underline"
+                  >
+                    Reset to auto-generated name
+                  </button>
+                )}
               </div>
-            </label>
-          </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-4">
             <Link
