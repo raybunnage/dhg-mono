@@ -1,0 +1,29 @@
+{
+  "name": "@dhg/documentation-pipeline",
+  "version": "1.0.0",
+  "description": "Documentation archiving and continuous update pipeline",
+  "type": "module",
+  "scripts": {
+    "archive-reports": "ts-node archive-script-reports.ts",
+    "archive-specs": "ts-node archive-technical-specs.ts",
+    "archive-solutions": "ts-node archive-solution-guides.ts",
+    "watch-continuous": "ts-node watch-continuous-docs.ts",
+    "add-continuous": "ts-node add-continuous-tracking.ts",
+    "list-continuous": "ts-node list-continuous-docs.ts",
+    "update-continuous": "ts-node update-continuous-docs.ts",
+    "analyze-relevance": "ts-node analyze-document-relevance.ts",
+    "clean-archived": "ts-node clean-old-archives.ts"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "glob": "^10.3.10",
+    "fs-extra": "^11.2.0",
+    "date-fns": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/fs-extra": "^11.0.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.0"
+  }
+}

@@ -6,6 +6,7 @@ import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCir
 import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskWorkflowPanel } from '../components/TaskWorkflowPanel';
 import { TaskIterationTracker } from '../components/TaskIterationTracker';
+import { MergeQueueView } from '../components/MergeQueueView';
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,8 @@ export default function TaskDetailPage() {
   const [newTag, setNewTag] = useState('');
   const [newFile, setNewFile] = useState({ path: '', action: 'modified' as const });
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
+  const [showWorktreeDialog, setShowWorktreeDialog] = useState(false);
+  const [worktreeName, setWorktreeName] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -166,15 +169,23 @@ export default function TaskDetailPage() {
   const handleCreateWorktree = async () => {
     if (!task || !id || !task.git_branch) return;
     
+    // Set default worktree name and show dialog
+    const defaultName = task.git_branch.replace(/\//g, '-');
+    setWorktreeName(defaultName);
+    setShowWorktreeDialog(true);
+  };
+
+  const handleConfirmWorktree = async () => {
+    if (!task || !id || !task.git_branch || !worktreeName.trim()) return;
+    
     try {
-      // Generate worktree path
-      const worktreeName = task.git_branch.replace(/\//g, '-');
+      // Use the edited worktree name
       const worktreePath = `../dhg-mono-${worktreeName}`;
       
       // Copy git commands to clipboard
       const commands = `# Create worktree for task: ${task.title}
 cd ~/Documents/github/dhg-mono
-git worktree add ${worktreePath} ${task.git_branch}
+git worktree add -b ${task.git_branch} ${worktreePath}
 cd ${worktreePath}
 pnpm install
 cursor .`;
@@ -188,6 +199,7 @@ cursor .`;
       });
       
       await loadTask();
+      setShowWorktreeDialog(false);
       alert('Worktree commands copied to clipboard! Paste in terminal to create worktree.');
     } catch (err) {
       console.error('Failed to create worktree:', err);
@@ -713,8 +725,79 @@ cursor .`;
         onEndSession={handleEndWorkSession}
         currentSessionId={currentSessionId}
       />
+      
+      {task.git_branch && (
+        <MergeQueueView 
+          taskId={task.id}
+          onMergeComplete={loadTask}
+        />
+      )}
     </div>
   </div>
+
+  {/* Worktree Name Dialog */}
+  {showWorktreeDialog && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">Create Worktree</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Customize the worktree directory name or use the default based on the branch name.
+        </p>
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Worktree Directory Name
+          </label>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">../dhg-mono-</span>
+            <input
+              type="text"
+              value={worktreeName}
+              onChange={(e) => setWorktreeName(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="worktree-name"
+              autoFocus
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Full path: ../dhg-mono-{worktreeName || '[name]'}
+          </p>
+        </div>
+
+        <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <p className="text-sm font-medium text-gray-700 mb-1">Commands to be copied:</p>
+          <pre className="text-xs bg-white p-2 rounded border border-gray-300 overflow-x-auto">
+{`cd ~/Documents/github/dhg-mono
+git worktree add -b ${task?.git_branch} ../dhg-mono-${worktreeName || '[name]'}
+# If branch already exists, use: git worktree add ../dhg-mono-${worktreeName || '[name]'} ${task?.git_branch}
+cd ../dhg-mono-${worktreeName || '[name]'}
+pnpm install
+cursor .`}
+          </pre>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleConfirmWorktree}
+            disabled={!worktreeName.trim()}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            Copy Commands & Create
+          </button>
+          <button
+            onClick={() => {
+              setShowWorktreeDialog(false);
+              setWorktreeName('');
+            }}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
     </DashboardLayout>
   );
 }

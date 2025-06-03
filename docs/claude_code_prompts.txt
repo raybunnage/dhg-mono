@@ -49,6 +49,32 @@ making a video viewer
 refactoring the sync commands into pieces
 
 
+create a new page for the prompt-service on the dhg-admin-code app
+
+but first you need to complete and test the commands for the prompt-service cli pipeline and get them all solid - then you can add a ui page for the prompt-service - implement phase 1 iand phase 2 in docs/technical-specs/prompt-service-pragmatic-implementation.md to start with.  Test commands on various document classifiations - we are going to want document_types and mime_types mapped to prompts, pluse we are going to want the json exports required by the prompts to be part of this - if we are not aleady doing so. Evaluate the  ai and prompt related tables we have and carefully evaluate them for how they fit into this.  Add fields if necessary. Read claude.md
+
+
+# Create worktree for task: create a new page for the prompt-service on the dhg-admin-code app
+cd ~/Documents/github/dhg-mono
+git worktree add ../dhg-mono-feature-improve-prompt-service-add-page feature/improve-prompt-service-add-page
+cd ../dhg-mono-feature-improve-prompt-service-add-page
+pnpm install
+cursor .
+
+
+# Create worktree for task: create a new page for the prompt-service on the dhg-admin-code app
+cd ~/Documents/github/dhg-mono
+git worktree add -b feature/improve-prompt-service-add-page ../dhg-mono-feature-improve-prompt-service-add-page
+cd ../dhg-mono-feature-improve-prompt-service-add-page
+pnpm install
+cursor .
+
+review the cli pipeline for media processing, look at the history of usage for the media commands
+
+come up with a plan that checks he various media processing commands and figure out how to streamline them - also, the hard problem to solve is I don't want to copy mp4 files from the google drive over to my local machine when I can just quickly copy the mp4 files I need for video and audio processing from my local google drive. so I can up with a clumsy but somehwat effective strategy where I copied at batch of mp4 files from my local google drive into a folder in  file_types/mp4 - files that are in the gitignore, processed them for extraction and then deleted them after I had the video sent off and transcribed by modal and returned by ai.  However, now I want to take the m4a files from the ffmpeg splitting and also actually copy them back to the google drive so in the future I can stream them. You can read about this audio processing proposal in docs/technical-specs/mp4-to-m4a-audio-extraction-pipeline.md. but I need you to think hard about the best ways to process the mp4 files locallyh in that they are temporarily stored locally, sent off to modal and then their results are processed by modal, then summarized by ai then added to the supbase tabe tracking them called gooble_expert_documents.   Write up a vision for this with all possibitities, then critique it for complexity and priority and then write up a revised implementatoin that starts with phases - basics and low hanging fruit first, then up to higher complexity.   Put it in technical-specs off docs folder
+
+
+
 Best Practice Recommendations
 
   🎯 Recommended Approach for AI Assistants

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { DevTask } from '../services/task-service';
 import { 
-  GitBranch, 
   FolderOpen, 
   CheckCircle, 
   AlertCircle, 
@@ -14,7 +13,6 @@ import {
   GitMerge,
   XCircle,
   Trash2,
-  Copy,
   Terminal,
   HelpCircle
 } from 'lucide-react';
@@ -103,7 +101,7 @@ export const TaskWorkflowPanel: React.FC<TaskWorkflowPanelProps> = ({
         </div>
         
         {/* Revision Counter */}
-        {task.revision_count !== null && task.revision_count > 0 && (
+        {task.revision_count !== null && task.revision_count !== undefined && task.revision_count > 0 && (
           <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
             <div className="flex items-center gap-2">
               <RotateCcw className="w-5 h-5 text-orange-600" />
@@ -221,10 +219,17 @@ export const TaskWorkflowPanel: React.FC<TaskWorkflowPanelProps> = ({
             </div>
           </div>
         ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-sm text-yellow-800">
-              A Git branch is required to create a worktree. Start working on this task to generate a branch.
-            </p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-700 font-medium">No isolated workspace needed</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  This task was created without a branch requirement. You can work directly on your current branch, 
+                  or change the work mode in task settings if you need an isolated workspace.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>
