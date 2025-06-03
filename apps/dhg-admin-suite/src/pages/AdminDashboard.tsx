@@ -6,11 +6,12 @@ import { AllowedEmailsManagement } from '../components/AllowedEmailsManagement';
 import { LoginStatistics } from '../components/LoginStatistics';
 import { DriveFilterManagement } from '../components/DriveFilterManagement';
 import { TestAuthAuditLog } from '../components/TestAuthAuditLog';
+import { MergeQueueDashboard } from '../components/MergeQueueDashboard';
 
 export const AdminDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'stats' | 'filters'>('emails');
+  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'stats' | 'filters' | 'merge'>('emails');
 
   const handleSignOut = async () => {
     await signOut();
@@ -110,6 +111,18 @@ export const AdminDashboard: React.FC = () => {
             >
               Drive Filters
             </button>
+            <button
+              onClick={() => setActiveTab('merge')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'merge'
+                  ? 'border-blue-500 text-blue-700 font-medium'
+                  : 'border-transparent text-blue-600 hover:text-blue-800 hover:border-blue-300'
+                }
+              `}
+            >
+              Merge Queue
+            </button>
           </nav>
         </div>
         
@@ -120,8 +133,10 @@ export const AdminDashboard: React.FC = () => {
           <UserManagement />
         ) : activeTab === 'stats' ? (
           <LoginStatistics />
-        ) : (
+        ) : activeTab === 'filters' ? (
           <DriveFilterManagement />
+        ) : (
+          <MergeQueueDashboard />
         )}
       </main>
     </div>

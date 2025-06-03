@@ -6,6 +6,7 @@ import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCir
 import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskWorkflowPanel } from '../components/TaskWorkflowPanel';
 import { TaskIterationTracker } from '../components/TaskIterationTracker';
+import { MergeQueueView } from '../components/MergeQueueView';
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -724,6 +725,13 @@ cursor .`;
         onEndSession={handleEndWorkSession}
         currentSessionId={currentSessionId}
       />
+      
+      {task.git_branch && (
+        <MergeQueueView 
+          taskId={task.id}
+          onMergeComplete={loadTask}
+        />
+      )}
     </div>
   </div>
 
