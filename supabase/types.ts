@@ -953,6 +953,139 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_merge_checklist: {
+        Row: {
+          check_type: string
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          merge_queue_id: string | null
+          result: Json | null
+          status: string | null
+        }
+        Insert: {
+          check_type: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Update: {
+          check_type?: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_checklist_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_dependencies: {
+        Row: {
+          created_at: string | null
+          dependency_type: string | null
+          depends_on_branch: string
+          id: string
+          merge_queue_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch?: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_dependencies_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_queue: {
+        Row: {
+          branch_name: string
+          conflict_details: Json | null
+          conflicts_detected: boolean | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_updated_from_source: string | null
+          merge_commit_sha: string | null
+          merge_completed_at: string | null
+          merge_started_at: string | null
+          merge_status: string | null
+          notes: string | null
+          priority: number | null
+          source_branch: string | null
+          task_ids: string[] | null
+          tests_passed: boolean | null
+          updated_at: string | null
+          worktree_path: string | null
+        }
+        Insert: {
+          branch_name: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Update: {
+          branch_name?: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Relationships: []
+      }
       dev_task_commits: {
         Row: {
           commit_hash: string
@@ -2542,6 +2675,116 @@ export type Database = {
           },
         ]
       }
+      media_processing_status: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          drive_id: string
+          duration_seconds: number | null
+          error_count: number | null
+          error_message: string | null
+          expert_document_id: string | null
+          file_size_bytes: number | null
+          filename: string
+          id: string
+          last_error_at: string | null
+          m4a_drive_id: string | null
+          m4a_path: string | null
+          m4a_uploaded_at: string | null
+          mime_type: string
+          mp4_path: string | null
+          processing_accelerator: string | null
+          processing_model: string | null
+          source_id: string | null
+          started_at: string | null
+          status: string
+          summary_path: string | null
+          transcript_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          drive_id: string
+          duration_seconds?: number | null
+          error_count?: number | null
+          error_message?: string | null
+          expert_document_id?: string | null
+          file_size_bytes?: number | null
+          filename: string
+          id?: string
+          last_error_at?: string | null
+          m4a_drive_id?: string | null
+          m4a_path?: string | null
+          m4a_uploaded_at?: string | null
+          mime_type: string
+          mp4_path?: string | null
+          processing_accelerator?: string | null
+          processing_model?: string | null
+          source_id?: string | null
+          started_at?: string | null
+          status?: string
+          summary_path?: string | null
+          transcript_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          drive_id?: string
+          duration_seconds?: number | null
+          error_count?: number | null
+          error_message?: string | null
+          expert_document_id?: string | null
+          file_size_bytes?: number | null
+          filename?: string
+          id?: string
+          last_error_at?: string | null
+          m4a_drive_id?: string | null
+          m4a_path?: string | null
+          m4a_uploaded_at?: string | null
+          mime_type?: string
+          mp4_path?: string | null
+          processing_accelerator?: string | null
+          processing_model?: string | null
+          source_id?: string | null
+          started_at?: string | null
+          status?: string
+          summary_path?: string | null
+          transcript_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_processing_status_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "google_expert_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_processing_status_expert_document_id_fkey"
+            columns: ["expert_document_id"]
+            isOneToOne: false
+            referencedRelation: "media_content_view"
+            referencedColumns: ["expert_document_id"]
+          },
+          {
+            foreignKeyName: "media_processing_status_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "google_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_processing_status_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "media_content_view"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
       scripts_registry: {
         Row: {
           ai_assessment: Json | null
@@ -2668,6 +2911,42 @@ export type Database = {
           is_supported?: boolean | null
           mime_type?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sys_table_definitions: {
+        Row: {
+          created_by: string | null
+          created_date: string | null
+          description: string | null
+          id: string
+          last_modified: string | null
+          notes: string | null
+          purpose: string | null
+          table_name: string
+          table_schema: string
+        }
+        Insert: {
+          created_by?: string | null
+          created_date?: string | null
+          description?: string | null
+          id?: string
+          last_modified?: string | null
+          notes?: string | null
+          purpose?: string | null
+          table_name: string
+          table_schema?: string
+        }
+        Update: {
+          created_by?: string | null
+          created_date?: string | null
+          description?: string | null
+          id?: string
+          last_modified?: string | null
+          notes?: string | null
+          purpose?: string | null
+          table_name?: string
+          table_schema?: string
         }
         Relationships: []
       }
@@ -3107,6 +3386,18 @@ export type Database = {
           description: string
         }[]
       }
+      get_all_views_with_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          view_name: string
+          view_schema: string
+          is_updatable: boolean
+          is_insertable: boolean
+          has_rls: boolean
+          table_dependencies: string[]
+          suggested_prefix: string
+        }[]
+      }
       get_auth_audit_log_count: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -3177,6 +3468,19 @@ export type Database = {
           avg_duration_ms: number
         }[]
       }
+      get_database_views_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          view_name: string
+          view_schema: string
+          view_definition: string
+          is_insertable: boolean
+          is_updatable: boolean
+          is_deletable: boolean
+          has_rls: boolean
+          table_dependencies: string[]
+        }[]
+      }
       get_document_type_counts: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3220,6 +3524,15 @@ export type Database = {
         Args: { schema_name: string }
         Returns: Json
       }
+      get_media_processing_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          status: string
+          count: number
+          avg_duration_seconds: number
+          total_size_gb: number
+        }[]
+      }
       get_most_used_commands: {
         Args: { time_period?: unknown; limit_count?: number }
         Returns: {
@@ -3235,6 +3548,15 @@ export type Database = {
           queue_id: string
           file_id: string
           file_path: string
+        }[]
+      }
+      get_next_merge_candidate: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          branch_name: string
+          priority: number
+          pending_dependencies: number
         }[]
       }
       get_or_create_page: {
@@ -3375,6 +3697,22 @@ export type Database = {
           check_constraint: string
         }[]
       }
+      get_table_info_with_definitions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_schema: string
+          table_name: string
+          table_type: string
+          row_count: number
+          size_pretty: string
+          total_size_pretty: string
+          description: string
+          purpose: string
+          created_date: string
+          created_by: string
+          notes: string
+        }[]
+      }
       get_table_metadata: {
         Args: { p_target_table: string }
         Returns: Json
@@ -3504,6 +3842,14 @@ export type Database = {
           p_ai_generated_tags: string[]
         }
         Returns: undefined
+      }
+      update_media_processing_status: {
+        Args: {
+          p_source_id: string
+          p_new_status: string
+          p_error_message?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
