@@ -8,6 +8,7 @@
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { glob } from 'glob';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -111,42 +112,18 @@ async function syncAllScripts() {
   
   console.log('🔄 Starting comprehensive script synchronization...');
   
-  // Find all script files using recursive file walker  
-  const projectRoot = path.resolve(__dirname, '../../..');
-  const scriptsDir = path.join(projectRoot, 'scripts');
+  // Find all script files
+  const patterns = ['**/*.ts', '**/*.js', '**/*.sh', '**/*.py'];
   const scriptFiles: string[] = [];
   
-  async function findScriptFiles(dir: string, relativePath = ''): Promise<void> {
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-      
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        const relativeEntryPath = path.join(relativePath, entry.name);
-        
-        // Skip certain directories
-        if (entry.isDirectory()) {
-          if (['node_modules', '.git', '.archive', '.archived_scripts'].includes(entry.name)) {
-            continue;
-          }
-          await findScriptFiles(fullPath, relativeEntryPath);
-        } else if (entry.isFile()) {
-          // Include script files, exclude test/spec files
-          const ext = path.extname(entry.name);
-          const isScriptFile = ['.ts', '.js', '.sh', '.py'].includes(ext);
-          const isTestFile = entry.name.includes('.test.') || entry.name.includes('.spec.') || entry.name.endsWith('.d.ts');
-          
-          if (isScriptFile && !isTestFile) {
-            scriptFiles.push(relativeEntryPath);
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Error reading directory ${dir}:`, error);
-    }
+  for (const pattern of patterns) {
+    const files = await glob(pattern, {
+      cwd: path.join(process.cwd(), 'scripts'),
+      ignore: ['**/node_modules/**', '**/*.test.*', '**/*.spec.*', '**/*.d.ts'],
+      absolute: false
+    });
+    scriptFiles.push(...files);
   }
-  
-  await findScriptFiles(scriptsDir);
   
   console.log(`📁 Found ${scriptFiles.length} script files`);
   

@@ -32,7 +32,6 @@ const pipelines: PipelineInfo[] = [
   { name: 'experts', description: 'Expert profile management', path: 'experts' },
   { name: 'google_sync', description: 'Google Drive synchronization', path: 'google_sync' },
   { name: 'media-processing', description: 'Media file processing and transcription', path: 'media-processing' },
-  { name: 'merge', description: 'Feature branch merge management', path: 'merge' },
   { name: 'mime_types', description: 'MIME type configuration', path: 'mime_types' },
   { name: 'monitoring', description: 'System monitoring and health checks', path: 'monitoring' },
   { name: 'presentations', description: 'Presentation management and processing', path: 'presentations' },

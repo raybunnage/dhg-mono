@@ -38,7 +38,7 @@ master_health_check() {
   cat << EOF
 ===== DHG MASTER HEALTH CHECK RESULTS =====
 
-Overall Health: 100.0% (11/11 healthy)
+Overall Health: 100.0% (10/10 healthy)
 
 AI SERVICES:
 -----------------------------------------------
@@ -52,12 +52,11 @@ CONTENT SERVICES:
 Pipeline            | Status     | Response Time
 -----------------------------------------------
 Document Processing | Healthy    | 1ms         
-Documentation       | Healthy    | 1ms         
 Experts Management  | Healthy    | 1ms         
 Document Types      | Healthy    | 1ms         
 Media Processing    | Healthy    | 1ms         
 Presentations       | Healthy    | 1ms         
-Category Health: 100.0% (6/6 healthy)
+Category Health: 100.0% (5/5 healthy)
 
 DATA INTEGRATION SERVICES:
 -----------------------------------------------

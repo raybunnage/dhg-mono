@@ -30,7 +30,7 @@ track_command() {
 }
 
 function display_help() {
-  echo "Media Processing CLI - Unified media processing pipeline"
+  echo "Media Processing CLI - Processes media files from MP4 through transcription"
   echo ""
   echo "Usage:"
   echo "  media-processing-cli.sh [command] [options]"
@@ -38,24 +38,17 @@ function display_help() {
   echo "COMMANDS:"
   echo "  (* = frequently used commands based on usage statistics)"
   echo ""
-  echo "UNIFIED PROCESSING (NEW):"
-  echo "  * process                      Unified media processing - automatically detects what needs to be done"
-  echo "    find-media                   Find media files needing processing (replaces find-missing-*, find-processable-videos)"
-  echo "    convert                      Convert MP4 to M4A format"
-  echo "    transcribe                   Transcribe audio files (unified transcription command)"
-  echo "    upload-m4a                   Upload M4A files back to Google Drive"
-  echo ""
-  echo "LEGACY COMMANDS (being phased out):"
-  echo "    process-local-mp4-files      Process MP4 files from file_types/mp4/ directory"
+  echo "CORE PROCESSING COMMANDS:"
+  echo "  * process-local-mp4-files      Process MP4 files from file_types/mp4/ directory (8 uses)"
   echo "    process-video [fileId]       Full pipeline: convert + transcribe (for single files)"
   echo "    batch-process-media          Complete workflow: find, copy, rename, register, convert, and transcribe"
   echo "    batch-transcribe             Process multiple files for transcription"
   echo ""
   echo "MEDIA CONVERSION:"
-  echo "    extract-video-metadata       Extract metadata (duration, etc.) from MP4 video files"
-  echo "    convert-mp4 [fileId|path]    Legacy: Convert MP4 file to M4A"
-  echo "    transcribe-audio [fileId]    Legacy: Transcribe audio file using Whisper"
-  echo "    transcribe-with-summary      Legacy: Transcribe and generate summary"
+  echo "  * extract-video-metadata       Extract metadata (duration, etc.) from MP4 video files (8 uses)"
+  echo "    convert [fileId|path]        Convert MP4 file to M4A for processing (audio extraction only)"
+  echo "  * transcribe [fileId|path]     Transcribe audio file using Whisper (5 uses)"
+  echo "    transcribe-with-summary      Transcribe and generate summary of audio file"
   echo ""
   echo "FILE MANAGEMENT:"
   echo "    rename-mp4-files             Rename MP4 files to match database records"
@@ -78,7 +71,6 @@ function display_help() {
   echo ""
   echo "MAINTENANCE & CHECKS:"
   echo "  * health-check                 Check the health of media processing infrastructure (26 uses)"
-  echo "    cache-stats                  Show cache statistics and cleanup old files"
   echo "    check-media-files            Check for missing/orphaned MP4 and M4A files"
   echo "    find-missing-media           Find missing MP4 files in Google Drive"
   echo "    purge-processed-media        Find and remove MP4/M4A files that have been successfully processed"
@@ -86,31 +78,19 @@ function display_help() {
   echo "COMMON OPTIONS:"
   echo "  --dry-run                    Show what would happen without making changes"
   echo "  --limit [n]                  Process max n files"
-  echo "  --stage [stage]              Run specific stage: find|convert|transcribe|upload|all"
-  echo "  --config [path]              Path to configuration file (default: config/media-processing.yaml)"
-  echo "  --model [model]              Specify Whisper model (default: from config)"
-  echo "  --accelerator [T4|A10G|A100] Specify GPU accelerator (default: from config)"
-  echo "  --max-parallel [n]           Maximum number of parallel processes (default: from config)"
+  echo "  --model [tiny|base|small]    Specify Whisper model (default: base)"
+  echo "  --accelerator [T4|A10G|A100] Specify GPU accelerator (default: T4)"
+  echo "  --max-parallel [n]           Maximum number of parallel processes (default: 3)"
   echo "  --force                      Process even if already processed"
   echo ""
   echo "EXAMPLES:"
   echo ""
-  echo "UNIFIED PROCESSING (RECOMMENDED):"
-  echo "  # Automatically process files needing attention"
-  echo "  media-processing-cli.sh process --limit 5"
-  echo ""
-  echo "  # Run specific stage only"
-  echo "  media-processing-cli.sh process --stage transcribe --limit 10"
-  echo ""
-  echo "  # Find media files needing processing"
-  echo "  media-processing-cli.sh find-media --limit 20"
-  echo ""
-  echo "  # Upload M4A files to Google Drive"
-  echo "  media-processing-cli.sh upload-m4a --dry-run"
-  echo ""
-  echo "LEGACY PROCESSING:"
+  echo "CORE PROCESSING:"
   echo "  # Process MP4 files from file_types/mp4/ directory"
   echo "  media-processing-cli.sh process-local-mp4-files --limit 5"
+  echo ""
+  echo "  # Full processing of a specific video by ID"
+  echo "  media-processing-cli.sh process-video <file-id>"
   echo ""
   echo "MEDIA CONVERSION:"
   echo "  # Extract metadata from MP4 files" 
@@ -141,31 +121,14 @@ COMMAND="$1"
 shift
 
 case "$COMMAND" in
-  # NEW UNIFIED COMMANDS
-  process)
-    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/process.ts $*"
-    ;;
-  find-media)
-    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-media.ts $*"
-    ;;
+  # Core commands
   convert)
-    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/convert.ts $*"
-    ;;
-  transcribe)
-    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/transcribe.ts $*"
-    ;;
-  upload-m4a)
-    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/upload-m4a.ts $*"
-    ;;
-    
-  # LEGACY COMMANDS (keeping for backward compatibility)
-  convert-mp4)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/convert-mp4.ts $*"
     ;;
   find-processable-videos)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/find-processable-videos.ts $*"
     ;;
-  transcribe-audio)
+  transcribe)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/transcribe-audio.ts $*"
     ;;
   transcribe-with-summary)
@@ -247,10 +210,7 @@ case "$COMMAND" in
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/extract-video-metadata.ts $*"
     ;;
     
-  # Maintenance commands
-  cache-stats)
-    track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/cache-stats.ts $*"
-    ;;
+  # Health check command
   health-check)
     track_command "$COMMAND" "ts-node $SCRIPT_DIR/commands/health-check.ts $*"
     ;;

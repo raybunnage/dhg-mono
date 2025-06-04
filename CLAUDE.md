@@ -602,49 +602,6 @@ const extractDriveId = (url: string | null): string | null => {
   - Images: Centered with max dimensions
 - The preview endpoint works for all file types without CSP restrictions
 
-## Merging Between Git Worktrees
-
-### Understanding Worktree Merge Limitations
-
-When working with git worktrees in this project, you may encounter the error:
-```
-fatal: 'development' is already checked out at '/path/to/other/worktree'
-```
-
-This happens because git prevents checking out the same branch in multiple worktrees simultaneously.
-
-**✅ Solution: Use a temporary branch for merging**
-
-```bash
-# Instead of trying to checkout development directly:
-# git checkout development  # This will fail!
-
-# Create a temporary branch from the target branch:
-git checkout -b temp-merge-to-development origin/development
-
-# Perform your merge:
-git merge feature/your-feature-branch
-
-# Push directly to the target branch:
-git push origin temp-merge-to-development:development
-
-# Clean up:
-git checkout feature/your-feature-branch
-git branch -d temp-merge-to-development
-```
-
-**Key Points:**
-- You CAN merge between worktrees, just not by checking out the branch directly
-- Always create a temporary branch from the remote target branch
-- Push using the syntax `local-branch:remote-branch` to update the target
-- This method works for any branch that's checked out in another worktree
-
-**Common Worktree Locations in This Project:**
-- `/Users/raybunnage/Documents/github/dhg-mono` - development branch
-- `/Users/raybunnage/Documents/github/dhg-mono-admin-code` - feature branches
-- `/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-audio` - audio-related work
-- Always check `git worktree list` to see current worktree setup
-
 ## Key Points Summary
 
 This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:

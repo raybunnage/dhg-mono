@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask } from '../services/task-service';
-import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen, GitMerge } from 'lucide-react';
+import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { useMergeQueue } from '../hooks/useMergeQueue';
-import { MergeStatusBadge } from '../components/MergeStatusBadge';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<DevTask[]>([]);
@@ -16,8 +14,6 @@ export default function TasksPage() {
   const [appFilter, setAppFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCompleted, setShowCompleted] = useState(false); // Default to hiding completed tasks
-  
-  const { items: mergeQueueItems, getNextCandidate } = useMergeQueue();
 
   useEffect(() => {
     loadTasks();
@@ -265,57 +261,6 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Merge Queue Summary */}
-      {mergeQueueItems.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <GitMerge className="w-5 h-5 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Merge Queue</h2>
-              <span className="text-sm text-gray-600">({mergeQueueItems.length} branches)</span>
-            </div>
-            <Link
-              to="/merge-queue"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View Full Queue →
-            </Link>
-          </div>
-          
-          <div className="mt-3 flex flex-wrap gap-2">
-            {mergeQueueItems.slice(0, 5).map((item) => (
-              <div key={item.id} className="flex items-center space-x-2 bg-white rounded-lg px-3 py-2 shadow-sm">
-                <GitBranch className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-mono text-gray-700">{item.branch_name}</span>
-                <MergeStatusBadge status={item.merge_status} size="sm" showIcon={false} />
-              </div>
-            ))}
-            {mergeQueueItems.length > 5 && (
-              <div className="flex items-center px-3 py-2">
-                <span className="text-sm text-gray-500">+{mergeQueueItems.length - 5} more</span>
-              </div>
-            )}
-          </div>
-          
-          {(() => {
-            const nextCandidate = getNextCandidate();
-            return nextCandidate ? (
-              <div className="mt-3 p-3 bg-green-100 rounded-lg">
-                <p className="text-sm text-green-800">
-                  <span className="font-medium">Next to merge:</span> {nextCandidate.branch_name}
-                </p>
-              </div>
-            ) : (
-              <div className="mt-3 p-3 bg-yellow-100 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  No branches ready to merge. Run prepare-merge on pending branches.
-                </p>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
       {/* Task List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {(() => {
@@ -379,21 +324,10 @@ export default function TasksPage() {
                           </span>
                         )}
                         {task.git_branch && (
-                          <>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              <GitBranch className="w-3 h-3" />
-                              {task.git_branch}
-                            </span>
-                            {(() => {
-                              const queueItem = mergeQueueItems.find(item => 
-                                item.branch_name === task.git_branch || 
-                                (item.task_ids && item.task_ids.includes(task.id))
-                              );
-                              return queueItem ? (
-                                <MergeStatusBadge status={queueItem.merge_status} size="sm" />
-                              ) : null;
-                            })()}
-                          </>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                            <GitBranch className="w-3 h-3" />
+                            {task.git_branch}
+                          </span>
                         )}
                         {task.worktree_active && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700" title={`Worktree: ${task.worktree_path}`}>

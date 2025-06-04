@@ -8,9 +8,6 @@ import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { HiMomPage } from './pages/HiMomPage';
-import { PromptService } from './pages/PromptService';
-import { DocumentTypes } from './pages/DocumentTypes';
-import { ScriptsManagement } from './pages/ScriptsManagement';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -99,30 +96,6 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <HiMomPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/prompts" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <PromptService />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/document-types" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <DocumentTypes />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/scripts" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <ScriptsManagement />
             </ProtectedRoute>
           } 
         />

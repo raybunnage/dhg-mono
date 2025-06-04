@@ -16,8 +16,6 @@ import { createTemplateCommand } from './commands/create-template';
 import { listTemplatesCommand } from './commands/list-templates';
 import { associateTemplateCommand } from './commands/associate-template';
 import { listTemplateAssociationsCommand } from './commands/list-template-associations';
-// Temporarily using stubs until migration is applied
-import { executePromptCommand, selectPromptCommand, setPromptMappingsCommand, promptStatsCommand } from './commands/test-stubs';
 
 const program = new Command();
 
@@ -128,59 +126,6 @@ program.command('list-template-associations')
   .argument('<prompt-name>', 'Name of the prompt')
   .option('-f, --format <format>', 'Output format (table, json)', 'table')
   .action(listTemplateAssociationsCommand);
-
-// Execute prompt command (using stub for now)
-program.command('execute')
-  .description('Execute a prompt with tracking and performance metrics')
-  .argument('<prompt-name>', 'Name of the prompt to execute')
-  .option('-d, --document-id <id>', 'Document ID to include in context')
-  .option('-c, --context <json>', 'JSON context data')
-  .option('-j, --json-file <path>', 'Path to JSON file with context data')
-  .option('-v, --verbose', 'Show verbose output')
-  .option('--no-track', 'Disable execution tracking')
-  .action((promptName, options) => {
-    console.log('⚠️  This command requires database migration to be applied first');
-    console.log('Run: ./scripts/cli-pipeline/database/database-cli.sh migration run-staged supabase/migrations/20250603000000_add_prompt_execution_tracking.sql');
-  });
-
-// Select prompt command (using stub for now)
-program.command('select-prompt')
-  .description('Select the best prompt based on document characteristics')
-  .option('-t, --document-type <type>', 'Document type name')
-  .option('-m, --mime-type <mime>', 'MIME type')
-  .option('-s, --file-size <size>', 'File size in bytes', parseInt)
-  .option('-a, --show-all', 'Show all matching prompts, not just the best')
-  .option('-f, --format <format>', 'Output format (table, json)', 'table')
-  .action(() => {
-    console.log('⚠️  This command requires database migration to be applied first');
-    console.log('Run: ./scripts/cli-pipeline/database/database-cli.sh migration run-staged supabase/migrations/20250603000000_add_prompt_execution_tracking.sql');
-  });
-
-// Set prompt mappings command (using stub for now)
-program.command('set-mappings')
-  .description('Set document type and MIME type mappings for a prompt')
-  .argument('<prompt-name>', 'Name of the prompt')
-  .option('-d, --document-types <types...>', 'Document types this prompt supports')
-  .option('-m, --mime-types <types...>', 'MIME types this prompt supports')
-  .option('-p, --priority <priority>', 'Priority for prompt selection', parseInt)
-  .option('-a, --append', 'Append to existing mappings instead of replacing')
-  .option('--dry-run', 'Show what would be updated without making changes')
-  .action(() => {
-    console.log('⚠️  This command requires database migration to be applied first');
-    console.log('Run: ./scripts/cli-pipeline/database/database-cli.sh migration run-staged supabase/migrations/20250603000000_add_prompt_execution_tracking.sql');
-  });
-
-// Prompt stats command (using stub for now)
-program.command('stats')
-  .description('View prompt execution statistics and performance metrics')
-  .option('-l, --limit <n>', 'Limit number of results', parseInt)
-  .option('-s, --sort-by <field>', 'Sort by field (executions, avg-time, avg-tokens, last-used)', 'executions')
-  .option('-r, --show-recent', 'Show recent execution details')
-  .option('-f, --format <format>', 'Output format (table, json)', 'table')
-  .action(() => {
-    console.log('⚠️  This command requires database migration to be applied first');
-    console.log('Run: ./scripts/cli-pipeline/database/database-cli.sh migration run-staged supabase/migrations/20250603000000_add_prompt_execution_tracking.sql');
-  });
 
 // Parse the arguments
 program.parse(process.argv);

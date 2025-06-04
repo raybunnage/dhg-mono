@@ -1,17 +1,27 @@
- pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
-
-cd sc
-   pnpm run markdown-server     for the viewer
-
-
-
 write up this latest ai-work_summary and add it using and be careful about how you handle quotes to try to get it right the first time
 ./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto \
     "Clear title" \
     "Detailed description" \
     "command1,command2" \
     "tag1,tag2"
+
+now first make sure all files are checked in then carefully merge this branch into development branch - read claude.md    
+ and after you have successfully done that (and only then )  bring the updated development branch with all its changes and update the branch in this worktree carefully - read claude.md
+
+use the copy-env commands to copy the .env.development file from root of dhg-mono as well as the .env.development file from dhg-mono for the dhg-admin-suite app and copy into the  proper location in this worktree 
+
+
+
+ pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+ 
+integration/post-merge-fixes
+
+
+cd sc
+   pnpm run markdown-server     for the viewer
+
+
 
 
 now I need to revisit the media processing commands.
