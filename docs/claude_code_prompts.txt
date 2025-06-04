@@ -6,8 +6,10 @@ write up this latest ai-work_summary and add it using and be careful about how y
     "command1,command2" \
     "tag1,tag2"
 
-now first make sure all files are checked in then carefully merge this branch into development branch - read claude.md    
- and after you have successfully done that (and only then )  bring the updated development branch with all its changes and update the branch in this worktree carefully - read claude.md
+Now first make sure all files are checked in, then carefully merge this branch into development branch (read CLAUDE.md, especially the pnpm-lock.yaml section). If
+  pnpm-lock.yaml conflicts arise, accept the incoming version with 'git checkout --theirs pnpm-lock.yaml' and run 'pnpm install' to regenerate. After successfully merging (and
+  only then), bring the updated development branch with all its changes into this worktree, again handling pnpm-lock.yaml by accepting remote and regenerating with 'pnpm
+  install'.
 
 use the copy-env commands to copy the .env.development file from root of dhg-mono as well as the .env.development file from dhg-mono for the dhg-admin-suite app and copy into the  proper location in this worktree 
 
