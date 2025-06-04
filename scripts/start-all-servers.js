@@ -43,7 +43,7 @@ const SERVERS = [
     name: 'Git Server (dhg-admin-code)',
     port: 3005,
     command: 'node',
-    args: ['git-server.js'],
+    args: ['git-server.cjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
     description: 'Git worktree management'
   },
@@ -63,6 +63,14 @@ const SERVERS = [
     args: ['md-server.mjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-improve-experts'),
     description: 'Markdown server for dhg-improve-experts'
+  },
+  {
+    name: 'Continuous Docs Server',
+    port: 3008,
+    command: 'node',
+    args: ['continuous-docs-server.cjs'],
+    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+    description: 'Continuous documentation tracking'
   }
 ];
 

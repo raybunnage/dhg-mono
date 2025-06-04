@@ -25,7 +25,8 @@ After reviewing the complete schema in Supabase, we identified the following key
 | audio_processing_stages | Tracks individual stages of processing | Well-designed with appropriate fields |
 | speaker_profiles | Manages speaker identification | Well-designed with appropriate fields |
 | ai_processing_attempts | Tracks individual AI processing attempts | Well-designed with detailed metrics |
-Field Consolidation Recommendations
+Field Consolidati
+on Recommendations
 We identified two key areas for field consolidation to improve schema clarity:
 1. Consolidation in expert_documents
 Recommendation: Keep ai_processing_details and remove processing_metadata
