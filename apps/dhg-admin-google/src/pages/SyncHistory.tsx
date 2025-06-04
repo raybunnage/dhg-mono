@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { supabase } from '../utils/supabase-adapter';
 import { format } from 'date-fns';
 import { Clock, CheckCircle, AlertCircle, XCircle, Loader, RefreshCw } from 'lucide-react';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 interface SyncHistoryEntry {
   id: string;
@@ -32,8 +33,6 @@ export default function SyncHistory() {
   const [statistics, setStatistics] = useState<SyncStatistics | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [limit, setLimit] = useState(50);
-
-  const supabase = SupabaseClientService.getInstance().getClient();
 
   useEffect(() => {
     fetchSyncHistory();
@@ -169,11 +168,12 @@ export default function SyncHistory() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Google Drive Sync History</h1>
-        <p className="text-gray-600">View and monitor sync operations with Google Drive</p>
-      </div>
+    <DashboardLayout>
+      <div className="container mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Google Drive Sync History</h1>
+          <p className="text-gray-600">View and monitor sync operations with Google Drive</p>
+        </div>
 
       {/* Statistics Cards */}
       {statistics && (
@@ -318,5 +318,6 @@ export default function SyncHistory() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }

@@ -4,7 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { 
   FolderOpen, 
   RefreshCw, 
-  BarChart3, 
+  BarChart3,
+  Filter,
+  History,
   LogOut
 } from 'lucide-react';
 
@@ -28,26 +30,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { id: 'explorer', label: 'Drive Explorer', path: '/explorer', icon: FolderOpen },
     { id: 'sync', label: 'Sync Status', path: '/sync-status', icon: RefreshCw },
     { id: 'statistics', label: 'Statistics', path: '/statistics', icon: BarChart3 },
+    { id: 'filters', label: 'Drive Filters', path: '/filters', icon: Filter },
+    { id: 'history', label: 'Sync History', path: '/sync-history', icon: History },
   ];
 
   const activeTab = tabs.find(tab => location.pathname === tab.path)?.id || 'explorer';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-100">
+    <div className="min-h-screen bg-purple-50">
+      <header className="bg-white shadow-sm border-b border-purple-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">DHG Admin Google</h1>
+            <h1 className="text-2xl font-bold text-purple-900">DHG Admin Google</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-purple-700">
                 {user?.email}
-                <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
+                <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
                   Admin
                 </span>
               </span>
               <button
                 onClick={handleSignOut}
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+                className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-800"
               >
                 <LogOut className="h-4 w-4" />
                 Sign out
@@ -59,7 +63,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
       <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-purple-200 mb-8">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             {tabs.map(tab => {
               const Icon = tab.icon;
@@ -70,8 +74,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   className={`
                     py-2 px-1 border-b-2 font-medium text-sm inline-flex items-center gap-2
                     ${activeTab === tab.id
-                      ? 'border-green-500 text-green-700 font-medium'
-                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                      ? 'border-purple-500 text-purple-700 font-medium'
+                      : 'border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300'
                     }
                   `}
                 >
