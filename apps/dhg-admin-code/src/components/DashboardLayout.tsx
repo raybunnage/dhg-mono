@@ -193,6 +193,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               Scripts
             </button>
             <button
+              onClick={() => navigate('/continuous-docs')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'continuous-docs'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Continuous Docs
+            </button>
+            <button
               onClick={() => navigate('/git')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm

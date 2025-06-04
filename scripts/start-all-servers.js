@@ -63,6 +63,14 @@ const SERVERS = [
     args: ['md-server.mjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-improve-experts'),
     description: 'Markdown server for dhg-improve-experts'
+  },
+  {
+    name: 'Continuous Docs Server',
+    port: 3008,
+    command: 'node',
+    args: ['continuous-docs-server.cjs'],
+    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+    description: 'Continuous documentation tracking'
   }
 ];
 

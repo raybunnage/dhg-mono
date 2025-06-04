@@ -95,6 +95,192 @@ app.get('/api/git/worktrees', async (req, res) => {
   }
 });
 
+// Get all branches with detailed information
+app.get('/api/git/branches', async (req, res) => {
+  try {
+    // Get all branches with their last commit info
+    const { stdout: branchList } = await execAsync('git branch -a --format="%(refname:short)|%(committerdate:iso)|%(committername)|%(subject)"');
+    
+    // Get current branch
+    const { stdout: currentBranch } = await execAsync('git branch --show-current');
+    const current = currentBranch.trim();
+    
+    // Get merged branches
+    const { stdout: mergedBranches } = await execAsync('git branch --merged');
+    const merged = mergedBranches.split('\n').map(b => b.trim().replace('* ', ''));
+    
+    // Process branch data
+    const branches = branchList
+      .trim()
+      .split('\n')
+      .filter(line => line && !line.includes('HEAD'))
+      .map(line => {
+        const [name, date, author, message] = line.split('|');
+        const cleanName = name.replace('remotes/origin/', '');
+        const isRemote = name.startsWith('remotes/');
+        const isCurrent = cleanName === current;
+        const isMerged = merged.includes(cleanName);
+        
+        return {
+          name: cleanName,
+          fullName: name,
+          isRemote,
+          isCurrent,
+          isMerged,
+          lastCommit: {
+            date,
+            author,
+            message
+          }
+        };
+      });
+    
+    // Get additional info for local branches
+    const localBranches = branches.filter(b => !b.isRemote);
+    const enhancedBranches = await Promise.all(localBranches.map(async (branch) => {
+      try {
+        // Check if branch has upstream
+        const { stdout: upstream } = await execAsync(`git rev-parse --abbrev-ref ${branch.name}@{upstream} 2>/dev/null || echo ""`);
+        const hasUpstream = upstream.trim() !== '';
+        
+        // Get ahead/behind if has upstream
+        let ahead = 0, behind = 0;
+        if (hasUpstream) {
+          const { stdout: counts } = await execAsync(`git rev-list --left-right --count ${branch.name}...${branch.name}@{upstream} 2>/dev/null || echo "0\t0"`);
+          [ahead, behind] = counts.trim().split('\t').map(n => parseInt(n) || 0);
+        }
+        
+        // Calculate age in days
+        const lastCommitDate = new Date(branch.lastCommit.date);
+        const ageInDays = Math.floor((Date.now() - lastCommitDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Determine if branch can be deleted safely
+        const canDelete = branch.isMerged && !branch.isCurrent && branch.name !== 'main' && branch.name !== 'master' && branch.name !== 'development';
+        
+        // Suggest cleanup if old and merged, or very old
+        const suggestCleanup = (branch.isMerged && ageInDays > 30) || (!branch.isMerged && ageInDays > 90);
+        
+        return {
+          ...branch,
+          hasUpstream,
+          ahead,
+          behind,
+          ageInDays,
+          canDelete,
+          suggestCleanup
+        };
+      } catch (error) {
+        return branch;
+      }
+    }));
+    
+    res.json({ 
+      branches: enhancedBranches,
+      remoteBranches: branches.filter(b => b.isRemote),
+      currentBranch: current
+    });
+  } catch (error) {
+    console.error('Failed to get branches:', error);
+    res.status(500).json({ 
+      error: 'Failed to get branches',
+      details: error.message
+    });
+  }
+});
+
+// Delete a branch
+app.delete('/api/git/branches/:branchName', async (req, res) => {
+  try {
+    const { branchName } = req.params;
+    const { force = false } = req.body;
+    
+    // Safety checks
+    const protectedBranches = ['main', 'master', 'development', 'production'];
+    if (protectedBranches.includes(branchName)) {
+      return res.status(400).json({ error: 'Cannot delete protected branch' });
+    }
+    
+    // Check if branch exists
+    const { stdout: branchExists } = await execAsync(`git show-ref --verify --quiet refs/heads/${branchName} && echo "exists" || echo "not found"`);
+    if (branchExists.trim() === 'not found') {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    
+    // Delete the branch
+    const deleteCommand = force ? `git branch -D ${branchName}` : `git branch -d ${branchName}`;
+    const { stdout, stderr } = await execAsync(deleteCommand);
+    
+    if (stderr && stderr.includes('not fully merged')) {
+      return res.status(400).json({ 
+        error: 'Branch not fully merged',
+        details: 'Use force delete if you are sure you want to delete this branch'
+      });
+    }
+    
+    res.json({ 
+      success: true,
+      message: `Branch ${branchName} deleted successfully`,
+      output: stdout
+    });
+  } catch (error) {
+    console.error('Failed to delete branch:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete branch',
+      details: error.message
+    });
+  }
+});
+
+// Cleanup suggested branches
+app.post('/api/git/cleanup-branches', async (req, res) => {
+  try {
+    const { branches = [], dryRun = true } = req.body;
+    
+    if (!Array.isArray(branches) || branches.length === 0) {
+      return res.status(400).json({ error: 'No branches provided for cleanup' });
+    }
+    
+    const results = [];
+    
+    for (const branchName of branches) {
+      try {
+        // Skip protected branches
+        const protectedBranches = ['main', 'master', 'development', 'production'];
+        if (protectedBranches.includes(branchName)) {
+          results.push({ branch: branchName, status: 'skipped', reason: 'Protected branch' });
+          continue;
+        }
+        
+        if (dryRun) {
+          results.push({ branch: branchName, status: 'would-delete', reason: 'Dry run mode' });
+        } else {
+          const { stdout } = await execAsync(`git branch -d ${branchName}`);
+          results.push({ branch: branchName, status: 'deleted', output: stdout.trim() });
+        }
+      } catch (error) {
+        results.push({ branch: branchName, status: 'error', error: error.message });
+      }
+    }
+    
+    res.json({ 
+      dryRun,
+      results,
+      summary: {
+        total: branches.length,
+        deleted: results.filter(r => r.status === 'deleted').length,
+        skipped: results.filter(r => r.status === 'skipped').length,
+        errors: results.filter(r => r.status === 'error').length
+      }
+    });
+  } catch (error) {
+    console.error('Failed to cleanup branches:', error);
+    res.status(500).json({ 
+      error: 'Failed to cleanup branches',
+      details: error.message
+    });
+  }
+});
+
 // Execute git command endpoint (for future use)
 app.post('/api/git/execute', async (req, res) => {
   const { command } = req.body;
@@ -126,6 +312,9 @@ app.post('/api/git/execute', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Git server running on http://localhost:${PORT}`);
   console.log('Available endpoints:');
-  console.log('  GET  /api/git/worktrees - Get list of git worktrees');
-  console.log('  POST /api/git/execute   - Execute whitelisted git commands');
+  console.log('  GET    /api/git/worktrees      - Get list of git worktrees with status');
+  console.log('  GET    /api/git/branches       - Get all branches with detailed info');
+  console.log('  DELETE /api/git/branches/:name - Delete a specific branch');
+  console.log('  POST   /api/git/cleanup-branches - Cleanup multiple branches');
+  console.log('  POST   /api/git/execute        - Execute whitelisted git commands');
 });

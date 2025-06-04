@@ -13,6 +13,7 @@ This document lists all development servers in the monorepo and their assigned p
 | 3005 | Git Server | `/apps/dhg-admin-code/git-server.js` | Git worktree management |
 | 3006 | Audio Proxy Server | `/apps/dhg-audio/server.js` | Google Drive proxy for audio files |
 | 3007 | Experts Markdown Server | `/apps/dhg-improve-experts/md-server.mjs` | Markdown server for dhg-improve-experts |
+| 3008 | Continuous Docs Server | `/apps/dhg-admin-code/continuous-docs-server.cjs` | Continuous documentation tracking |
 
 ## Starting All Servers
 

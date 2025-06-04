@@ -57,7 +57,26 @@ interface DevTask {
   status: string;
 }
 
-type TabType = 'worktrees' | 'merge-queue' | 'merge-history';
+interface Branch {
+  name: string;
+  fullName: string;
+  isRemote: boolean;
+  isCurrent: boolean;
+  isMerged: boolean;
+  lastCommit: {
+    date: string;
+    author: string;
+    message: string;
+  };
+  hasUpstream?: boolean;
+  ahead?: number;
+  behind?: number;
+  ageInDays?: number;
+  canDelete?: boolean;
+  suggestCleanup?: boolean;
+}
+
+type TabType = 'worktrees' | 'branches' | 'merge-queue' | 'merge-history';
 
 export function GitManagement() {
   const [activeTab, setActiveTab] = useState<TabType>('worktrees');
@@ -71,6 +90,10 @@ export function GitManagement() {
   const [mergeChecklist, setMergeChecklist] = useState<MergeChecklistItem[]>([]);
   const [showAddToQueue, setShowAddToQueue] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranches, setSelectedBranches] = useState<Set<string>>(new Set());
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+  const [branchFilter, setBranchFilter] = useState<'all' | 'cleanup' | 'merged' | 'unmerged'>('all');
 
   // Function to execute CLI commands
   const executeCliCommand = async (command: string): Promise<string> => {
@@ -205,6 +228,121 @@ export function GitManagement() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Load branches function
+  const loadBranches = async () => {
+    setIsLoadingBranches(true);
+    try {
+      const response = await fetch('http://localhost:3005/api/git/branches');
+      if (!response.ok) {
+        throw new Error('Failed to fetch branches');
+      }
+      
+      const data = await response.json();
+      setBranches(data.branches || []);
+    } catch (error) {
+      console.error('Failed to load branches:', error);
+      setError('Failed to load branches. Make sure the git server is running.');
+    } finally {
+      setIsLoadingBranches(false);
+    }
+  };
+
+  // Load branches when branches tab is active
+  useEffect(() => {
+    if (activeTab === 'branches' && branches.length === 0) {
+      loadBranches();
+    }
+  }, [activeTab]);
+
+  // Delete branch function
+  const handleDeleteBranch = async (branchName: string, force: boolean = false) => {
+    if (!confirm(`Are you sure you want to delete branch: ${branchName}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3005/api/git/branches/${encodeURIComponent(branchName)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete branch');
+      }
+
+      // Refresh branches
+      await loadBranches();
+      alert(`Branch ${branchName} deleted successfully`);
+    } catch (error: any) {
+      if (error.message.includes('not fully merged')) {
+        if (confirm('Branch is not fully merged. Force delete?')) {
+          await handleDeleteBranch(branchName, true);
+        }
+      } else {
+        alert(`Failed to delete branch: ${error.message}`);
+      }
+    }
+  };
+
+  // Cleanup multiple branches
+  const handleCleanupBranches = async (dryRun: boolean = true) => {
+    const branchesToCleanup = Array.from(selectedBranches);
+    
+    if (branchesToCleanup.length === 0) {
+      alert('No branches selected for cleanup');
+      return;
+    }
+
+    const message = dryRun 
+      ? `Preview cleanup of ${branchesToCleanup.length} branches?`
+      : `Delete ${branchesToCleanup.length} branches?`;
+    
+    if (!confirm(message)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3005/api/git/cleanup-branches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ branches: branchesToCleanup, dryRun })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cleanup branches');
+      }
+
+      const result = await response.json();
+      
+      if (dryRun) {
+        const wouldDelete = result.results.filter((r: any) => r.status === 'would-delete').length;
+        alert(`Dry run complete:\n${wouldDelete} branches would be deleted\n${result.summary.skipped} branches would be skipped`);
+      } else {
+        alert(`Cleanup complete:\n${result.summary.deleted} branches deleted\n${result.summary.skipped} branches skipped\n${result.summary.errors} errors`);
+        setSelectedBranches(new Set());
+        await loadBranches();
+      }
+    } catch (error: any) {
+      alert(`Failed to cleanup branches: ${error.message}`);
+    }
+  };
+
+  // Filter branches based on current filter
+  const getFilteredBranches = () => {
+    switch (branchFilter) {
+      case 'cleanup':
+        return branches.filter(b => b.suggestCleanup);
+      case 'merged':
+        return branches.filter(b => b.isMerged);
+      case 'unmerged':
+        return branches.filter(b => !b.isMerged);
+      default:
+        return branches;
+    }
+  };
 
   // Load merge checklist when a merge is selected
   useEffect(() => {
@@ -363,6 +501,16 @@ export function GitManagement() {
             Worktrees ({worktrees.length})
           </button>
           <button
+            onClick={() => setActiveTab('branches')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'branches'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Branches ({branches.length})
+          </button>
+          <button
             onClick={() => setActiveTab('merge-queue')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'merge-queue'
@@ -489,6 +637,189 @@ export function GitManagement() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Branches Tab */}
+      {activeTab === 'branches' && (
+        <div>
+          {/* Branch Filters and Actions */}
+          <div className="mb-6 flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Branches ({branches.length})</option>
+                <option value="cleanup">Suggested Cleanup ({branches.filter(b => b.suggestCleanup).length})</option>
+                <option value="merged">Merged ({branches.filter(b => b.isMerged).length})</option>
+                <option value="unmerged">Unmerged ({branches.filter(b => !b.isMerged).length})</option>
+              </select>
+              
+              {selectedBranches.size > 0 && (
+                <span className="text-sm text-gray-600">
+                  {selectedBranches.size} selected
+                </span>
+              )}
+            </div>
+            
+            <div className="flex space-x-3">
+              {selectedBranches.size > 0 && (
+                <>
+                  <button
+                    onClick={() => handleCleanupBranches(true)}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                  >
+                    Preview Cleanup
+                  </button>
+                  <button
+                    onClick={() => handleCleanupBranches(false)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    Delete Selected
+                  </button>
+                </>
+              )}
+              <button
+                onClick={loadBranches}
+                disabled={isLoadingBranches}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isLoadingBranches ? '🔄 Loading...' : '🔄 Refresh'}
+              </button>
+            </div>
+          </div>
+
+          {/* Branch Cleanup Suggestions */}
+          {branchFilter === 'all' && branches.some(b => b.suggestCleanup) && (
+            <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <span className="text-yellow-600 mr-2">💡</span>
+                <div>
+                  <h3 className="text-sm font-medium text-yellow-800">Branch Cleanup Suggestions</h3>
+                  <p className="mt-1 text-sm text-yellow-700">
+                    {branches.filter(b => b.suggestCleanup).length} branches are suggested for cleanup:
+                    merged branches older than 30 days or unmerged branches older than 90 days.
+                  </p>
+                  <button
+                    onClick={() => setBranchFilter('cleanup')}
+                    className="mt-2 text-sm text-yellow-800 underline hover:text-yellow-900"
+                  >
+                    View cleanup suggestions
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Branches List */}
+          <div className="space-y-2">
+            {getFilteredBranches().map((branch) => (
+              <div 
+                key={branch.name} 
+                className={`bg-white p-4 rounded-lg border ${
+                  branch.suggestCleanup ? 'border-yellow-200' : 'border-gray-200'
+                } ${branch.isCurrent ? 'ring-2 ring-blue-500' : ''}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    {branch.canDelete && (
+                      <input
+                        type="checkbox"
+                        checked={selectedBranches.has(branch.name)}
+                        onChange={(e) => {
+                          const newSelected = new Set(selectedBranches);
+                          if (e.target.checked) {
+                            newSelected.add(branch.name);
+                          } else {
+                            newSelected.delete(branch.name);
+                          }
+                          setSelectedBranches(newSelected);
+                        }}
+                        className="mt-1"
+                      />
+                    )}
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {branch.name}
+                        </h3>
+                        {branch.isCurrent && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                            Current
+                          </span>
+                        )}
+                        {branch.isMerged && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">
+                            Merged
+                          </span>
+                        )}
+                        {branch.suggestCleanup && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                            Cleanup suggested
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="mt-1 text-sm text-gray-600">
+                        Last commit: {branch.lastCommit.message}
+                        <span className="text-gray-500 ml-2">
+                          ({branch.ageInDays} days ago by {branch.lastCommit.author})
+                        </span>
+                      </div>
+                      
+                      {branch.hasUpstream && (branch.ahead > 0 || branch.behind > 0) && (
+                        <div className="mt-1 flex space-x-3 text-xs">
+                          {branch.ahead > 0 && (
+                            <span className="text-blue-600">
+                              ⬆️ {branch.ahead} ahead
+                            </span>
+                          )}
+                          {branch.behind > 0 && (
+                            <span className="text-red-600">
+                              ⬇️ {branch.behind} behind
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {branch.canDelete && (
+                    <button
+                      onClick={() => handleDeleteBranch(branch.name)}
+                      className="ml-4 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                      title="Delete branch"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* No branches message */}
+          {getFilteredBranches().length === 0 && (
+            <div className="bg-white p-8 rounded-lg border border-gray-200 text-center">
+              <div className="text-gray-500">
+                {isLoadingBranches ? 'Loading branches...' : 'No branches found'}
+              </div>
+            </div>
+          )}
+
+          {/* Branch Management Help */}
+          <div className="mt-6 text-sm text-gray-600">
+            <p className="font-medium mb-2">Branch Management Tips:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><strong>Cleanup suggestions</strong> are based on branch age and merge status</li>
+              <li><strong>Protected branches</strong> (main, master, development) cannot be deleted</li>
+              <li><strong>Current branch</strong> is highlighted and cannot be deleted</li>
+              <li>Use <strong>Preview Cleanup</strong> to see what would be deleted before committing</li>
+            </ul>
+          </div>
         </div>
       )}
 
