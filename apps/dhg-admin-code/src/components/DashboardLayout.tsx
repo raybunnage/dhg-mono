@@ -19,6 +19,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/cli-commands')) return 'commands';
     if (location.pathname.startsWith('/database')) return 'database';
     if (location.pathname.startsWith('/documents')) return 'documents';
+    if (location.pathname.startsWith('/prompts')) return 'prompts';
+    if (location.pathname.startsWith('/document-types')) return 'document-types';
+    if (location.pathname.startsWith('/scripts')) return 'scripts';
+    if (location.pathname.startsWith('/git')) return 'git';
     if (location.pathname.startsWith('/hi-mom')) return 'hi-mom';
     return 'tasks'; // default
   };
@@ -151,6 +155,66 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Documents
+            </button>
+            <button
+              onClick={() => navigate('/prompts')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'prompts'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Prompts
+            </button>
+            <button
+              onClick={() => navigate('/document-types')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'document-types'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Doc Types
+            </button>
+            <button
+              onClick={() => navigate('/scripts')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'scripts'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Scripts
+            </button>
+            <button
+              onClick={() => navigate('/continuous-docs')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'continuous-docs'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Continuous Docs
+            </button>
+            <button
+              onClick={() => navigate('/git')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'git'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Git
             </button>
             <button
               onClick={() => navigate('/hi-mom')}
