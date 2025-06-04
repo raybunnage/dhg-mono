@@ -10,6 +10,7 @@ This document provides information about the CLI pipeline scripts available in t
 - [Media Processing Commands](#media-processing-commands)
 - [Script Analysis Commands](#script-analysis-commands)
 - [Document Pipeline Commands](#document-pipeline-commands)
+- [Git Management Pipeline Commands](#git-management-pipeline-commands)
 
 ## Overview
 
@@ -285,6 +286,200 @@ To validate the AI components:
 To generate documentation about scripts:
 
 1. Run `script-report.sh` to create a comprehensive script report
+
+## Git Management Pipeline Commands
+
+The Git Management pipeline provides commands for managing git worktrees, merge queues, and git operations in a monorepo environment.
+
+### list-worktrees
+
+Lists all git worktrees with information about their active tasks.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh list-worktrees
+```
+
+**Details**:
+- Shows all git worktrees in the repository
+- Displays the branch checked out in each worktree
+- Shows count of active tasks (from dev_tasks table) for each worktree
+- Provides path to each worktree directory
+
+### worktree-status
+
+Shows detailed status of all worktrees including clean/dirty state and ahead/behind information.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh worktree-status
+```
+
+**Details**:
+- Checks git status for each worktree
+- Shows if working directory is clean or has uncommitted changes
+- Displays ahead/behind status relative to remote branch
+- Color-coded output for easy status identification
+
+### create-worktree
+
+Creates a new git worktree for a specified branch.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh create-worktree --branch <branch-name> [--path <path>]
+```
+
+**Options**:
+- `--branch <name>` - Name of the branch to check out in the new worktree (required)
+- `--path <path>` - Path where the worktree should be created (optional, auto-generated if not provided)
+
+### remove-worktree
+
+Removes an existing git worktree.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh remove-worktree --path <worktree-path>
+```
+
+**Options**:
+- `--path <path>` - Path to the worktree to remove (required)
+
+### merge-queue-add
+
+Adds a branch to the merge queue with specified priority.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh merge-queue-add --branch <branch-name> --priority <1-5> [--notes <notes>]
+```
+
+**Options**:
+- `--branch <name>` - Branch name to add to merge queue (defaults to current branch if not specified)
+- `--priority <1-5>` - Priority level (1=highest, 5=lowest)
+- `--notes <text>` - Optional notes about the merge request
+
+**Details**:
+- Creates entry in dev_merge_queue table
+- Automatically captures current branch if not specified
+- Sets initial status to 'pending'
+- Records submitter information
+
+### merge-queue-list
+
+Displays all branches currently in the merge queue.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh merge-queue-list [--status <status>]
+```
+
+**Options**:
+- `--status <status>` - Filter by status (pending, ready, merging, completed, failed)
+
+**Details**:
+- Shows branches ordered by priority and creation date
+- Displays status, priority, submitter, and notes
+- Color-coded status indicators
+- Shows merge checklist completion for each item
+
+### merge-queue-status
+
+Shows detailed status of the merge queue including checklist items.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh merge-queue-status --branch <branch-name>
+```
+
+**Options**:
+- `--branch <name>` - Branch name to check status for
+
+**Details**:
+- Shows current merge queue position and status
+- Displays merge checklist with pass/fail status
+- Shows any error messages or notes
+- Indicates readiness for merge
+
+### run-merge-checks
+
+Runs automated checks on a branch to verify merge readiness.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh run-merge-checks --branch <branch-name>
+```
+
+**Options**:
+- `--branch <name>` - Branch to run checks on (defaults to current branch)
+
+**Details**:
+- Checks for merge conflicts with target branch
+- Runs test suite if configured
+- Verifies code quality checks (linting, type checking)
+- Updates merge checklist in database
+- Reports pass/fail status for each check
+
+### start-merge
+
+Initiates the merge process for a branch in the queue.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh start-merge --branch <branch-name> [--strategy <strategy>]
+```
+
+**Options**:
+- `--branch <name>` - Branch to merge
+- `--strategy <strategy>` - Merge strategy (merge, squash, rebase) (default: merge)
+
+**Details**:
+- Verifies all merge checks have passed
+- Updates queue status to 'merging'
+- Performs the actual git merge operation
+- Updates status to 'completed' or 'failed' based on result
+
+### update-from-source
+
+Updates a branch with latest changes from its source branch.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh update-from-source --branch <branch-name> [--source <source-branch>]
+```
+
+**Options**:
+- `--branch <name>` - Branch to update
+- `--source <name>` - Source branch to pull from (default: main/master)
+
+### check-conflicts
+
+Checks if a branch has conflicts with target branch.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh check-conflicts --branch <branch-name> [--target <target-branch>]
+```
+
+**Options**:
+- `--branch <name>` - Branch to check
+- `--target <name>` - Target branch to check against (default: main/master)
+
+### health-check
+
+Verifies git CLI functionality and database connections.
+
+**Usage**:
+```bash
+./scripts/cli-pipeline/git/git-cli.sh health-check
+```
+
+**Details**:
+- Tests git command availability
+- Verifies database connectivity
+- Checks required tables exist (dev_tasks, dev_merge_queue, etc.)
+- Reports overall health status
 
 ---
 
