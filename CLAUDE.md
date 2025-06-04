@@ -602,6 +602,27 @@ const extractDriveId = (url: string | null): string | null => {
   - Images: Centered with max dimensions
 - The preview endpoint works for all file types without CSP restrictions
 
+## Handling pnpm-lock.yaml in Worktree Merges
+
+When working with multiple worktrees and merging branches, `pnpm-lock.yaml` conflicts are common. Follow these guidelines:
+
+**❌ Problem**: Manual merge conflict resolution in pnpm-lock.yaml leads to inconsistent dependencies
+**✅ Solution**: Always accept incoming version and regenerate the lock file
+
+### Standard Merge Process with Lock File Handling:
+```bash
+# If pnpm-lock.yaml conflicts arise during merge:
+git checkout --theirs pnpm-lock.yaml  # Accept incoming version
+git add pnpm-lock.yaml
+pnpm install                           # Regenerate with all dependencies
+```
+
+### Key Principles:
+- **Never manually edit** pnpm-lock.yaml during merge conflicts
+- **Always regenerate** after accepting changes to ensure consistency
+- **Keep backups** before major merge operations: `cp pnpm-lock.yaml pnpm-lock.yaml.backup`
+- If `pnpm install` fails, delete both `node_modules/` and `pnpm-lock.yaml`, then reinstall
+
 ## Key Points Summary
 
 This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:
@@ -615,6 +636,7 @@ This document provides the essential guidelines for working with Claude Code v1.
 7. **Leverage the monorepo** - when debugging, compare with working apps for patterns
 8. **Test incrementally** - especially during cleanup or refactoring
 9. **Configure Google Drive access** - ensure `.service-account.json` exists for Drive commands
+10. **Handle pnpm-lock.yaml properly** - accept incoming and regenerate during merges
 
 When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
 
