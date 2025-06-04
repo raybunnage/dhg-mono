@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 interface Script {
   id: string;
@@ -235,7 +236,8 @@ export function ScriptsManagement() {
   const archivedScripts = scripts.filter(s => s.metadata?.is_archived).length;
 
   return (
-    <div className="p-8">
+    <DashboardLayout>
+      <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Scripts Management</h1>
         
@@ -457,5 +459,6 @@ export function ScriptsManagement() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }

@@ -456,10 +456,10 @@ export class FilterService {
       if (sourceIds.length > maxSourceIds) {
         console.log(`FilterService: Limiting to ${maxSourceIds} source IDs due to URL length constraints`);
         const limitedSourceIds = sourceIds.slice(0, maxSourceIds);
-        return query.in('video_source_id', limitedSourceIds);
+        return query.in('id', limitedSourceIds);
       }
       
-      return query.in('video_source_id', sourceIds);
+      return query.in('id', sourceIds);
     } catch (err) {
       console.error('FilterService: Error in applyFilterToQuery:', err);
       return query; // Return unfiltered query on any error

@@ -1,0 +1,12 @@
+{
+  "name": "git-workflow-cli",
+  "version": "1.0.0",
+  "description": "Git workflow and promotion pipeline",
+  "type": "module",
+  "dependencies": {
+    "commander": "11.0.0",
+    "dotenv": "^16.3.1",
+    "cli-table3": "^0.6.3",
+    "chalk": "^5.3.0"
+  }
+}

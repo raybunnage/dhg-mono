@@ -953,6 +953,139 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_merge_checklist: {
+        Row: {
+          check_type: string
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          merge_queue_id: string | null
+          result: Json | null
+          status: string | null
+        }
+        Insert: {
+          check_type: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Update: {
+          check_type?: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_checklist_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_dependencies: {
+        Row: {
+          created_at: string | null
+          dependency_type: string | null
+          depends_on_branch: string
+          id: string
+          merge_queue_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch?: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_dependencies_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_queue: {
+        Row: {
+          branch_name: string
+          conflict_details: Json | null
+          conflicts_detected: boolean | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_updated_from_source: string | null
+          merge_commit_sha: string | null
+          merge_completed_at: string | null
+          merge_started_at: string | null
+          merge_status: string | null
+          notes: string | null
+          priority: number | null
+          source_branch: string | null
+          task_ids: string[] | null
+          tests_passed: boolean | null
+          updated_at: string | null
+          worktree_path: string | null
+        }
+        Insert: {
+          branch_name: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Update: {
+          branch_name?: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Relationships: []
+      }
       dev_task_commits: {
         Row: {
           commit_hash: string
@@ -1219,6 +1352,108 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks_with_git"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doc_continuous_tracking: {
+        Row: {
+          category: string
+          created_at: string | null
+          document_name: string
+          enabled: boolean | null
+          file_path: string
+          id: string
+          last_updated_at: string | null
+          metadata: Json | null
+          next_update_at: string | null
+          source_paths: string[] | null
+          update_frequency: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          document_name: string
+          enabled?: boolean | null
+          file_path: string
+          id?: string
+          last_updated_at?: string | null
+          metadata?: Json | null
+          next_update_at?: string | null
+          source_paths?: string[] | null
+          update_frequency?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          document_name?: string
+          enabled?: boolean | null
+          file_path?: string
+          id?: string
+          last_updated_at?: string | null
+          metadata?: Json | null
+          next_update_at?: string | null
+          source_paths?: string[] | null
+          update_frequency?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      doc_continuous_updates: {
+        Row: {
+          changes_detected: boolean | null
+          changes_summary: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          sections_updated: string[] | null
+          started_at: string | null
+          tracking_id: string | null
+          update_status: string
+          update_type: string
+        }
+        Insert: {
+          changes_detected?: boolean | null
+          changes_summary?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sections_updated?: string[] | null
+          started_at?: string | null
+          tracking_id?: string | null
+          update_status: string
+          update_type: string
+        }
+        Update: {
+          changes_detected?: boolean | null
+          changes_summary?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sections_updated?: string[] | null
+          started_at?: string | null
+          tracking_id?: string | null
+          update_status?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_continuous_updates_tracking_id_fkey"
+            columns: ["tracking_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doc_continuous_updates_tracking_id_fkey"
+            columns: ["tracking_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_tracking"
             referencedColumns: ["id"]
           },
         ]
@@ -2952,6 +3187,48 @@ export type Database = {
           },
         ]
       }
+      doc_continuous_status: {
+        Row: {
+          category: string | null
+          document_name: string | null
+          enabled: boolean | null
+          file_path: string | null
+          id: string | null
+          last_check_at: string | null
+          last_updated_at: string | null
+          next_update_at: string | null
+          status: string | null
+          total_updates_with_changes: number | null
+          update_frequency: string | null
+        }
+        Insert: {
+          category?: string | null
+          document_name?: string | null
+          enabled?: boolean | null
+          file_path?: string | null
+          id?: string | null
+          last_check_at?: never
+          last_updated_at?: string | null
+          next_update_at?: string | null
+          status?: never
+          total_updates_with_changes?: never
+          update_frequency?: string | null
+        }
+        Update: {
+          category?: string | null
+          document_name?: string | null
+          enabled?: boolean | null
+          file_path?: string | null
+          id?: string | null
+          last_check_at?: never
+          last_updated_at?: string | null
+          next_update_at?: string | null
+          status?: never
+          total_updates_with_changes?: never
+          update_frequency?: string | null
+        }
+        Relationships: []
+      }
       document_classifications_view: {
         Row: {
           category: string | null
@@ -3123,6 +3400,10 @@ export type Database = {
           p_dependencies?: Json
         }
         Returns: boolean
+      }
+      calculate_next_update: {
+        Args: { last_update: string; frequency: string }
+        Returns: string
       }
       check_auth_user_exists: {
         Args: { target_email: string }
@@ -3355,6 +3636,18 @@ export type Database = {
           count: number
         }[]
       }
+      get_documents_due_for_update: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          file_path: string
+          document_name: string
+          category: string
+          update_frequency: string
+          last_updated_at: string
+          source_paths: string[]
+        }[]
+      }
       get_domain_id_by_name: {
         Args: { domain_name_input: string }
         Returns: string
@@ -3415,6 +3708,15 @@ export type Database = {
           queue_id: string
           file_id: string
           file_path: string
+        }[]
+      }
+      get_next_merge_candidate: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          branch_name: string
+          priority: number
+          pending_dependencies: number
         }[]
       }
       get_or_create_page: {
@@ -3619,6 +3921,18 @@ export type Database = {
       }
       queue_documentation_file_for_processing: {
         Args: { file_id: string; priority?: number }
+        Returns: string
+      }
+      record_documentation_update: {
+        Args: {
+          p_tracking_id: string
+          p_update_type: string
+          p_changes_detected?: boolean
+          p_changes_summary?: string
+          p_sections_updated?: string[]
+          p_status?: string
+          p_error_message?: string
+        }
         Returns: string
       }
       refresh_schema_and_fix_metadata: {
