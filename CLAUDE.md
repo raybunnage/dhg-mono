@@ -602,6 +602,86 @@ const extractDriveId = (url: string | null): string | null => {
   - Images: Centered with max dimensions
 - The preview endpoint works for all file types without CSP restrictions
 
+## Port Management for Servers and Apps
+
+### Port Allocation Strategy
+
+To avoid port collisions in the monorepo, follow these standardized port ranges:
+
+**Port Ranges**:
+- **3000-3099**: Backend/API servers
+- **5000-5999**: Vite development servers  
+- **4000-4999**: Vite preview servers
+
+**Reserved Ports**:
+| Port | Service | Location |
+|------|---------|----------|
+| 3001 | Markdown Server | `scripts/cli-pipeline/viewers/simple-md-server.js` |
+| 3002 | Script Server | `scripts/cli-pipeline/viewers/simple-script-server.js` |
+| 3003 | Docs Archive Server | `scripts/cli-pipeline/viewers/docs-archive-server.js` |
+| 3004 | (Available) | - |
+| 3005 | Git Server | `apps/dhg-admin-code/git-server.cjs` |
+| 3006 | Audio Proxy Server | `apps/dhg-audio/server.js` |
+| 3007 | Experts Markdown Server | `apps/dhg-improve-experts/md-server.mjs` |
+| 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
+| 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
+
+**Vite App Ports**:
+| Port | App | Status |
+|------|-----|--------|
+| 5173 | dhg-a, dhg-hub-lovable | Shared (don't run together) |
+| 5174 | dhg-b, dhg-hub, dhg-admin-google | Shared (don't run together) |
+| 5175 | dhg-admin-suite | Dedicated |
+| 5177 | dhg-admin-code | Dedicated |
+| 5194 | dhg-audio | Dedicated |
+| 8080 | dhg-improve-experts | Dedicated |
+
+### Starting All Servers
+
+Use the centralized server management script:
+```bash
+# Start all backend servers with proper port assignments
+pnpm servers
+
+# Or manually with:
+node scripts/start-all-servers.js
+```
+
+This script automatically:
+- Assigns unique ports using environment variables
+- Prevents port collisions
+- Shows status of all running servers
+- Handles graceful shutdown
+
+### Adding New Servers
+
+When creating a new server:
+
+1. **Check available ports** in the 3000-3099 range
+2. **Update `start-all-servers.js`** to include your server
+3. **Use environment variables** for port configuration:
+   ```javascript
+   const PORT = process.env.YOUR_SERVER_PORT || 3009;
+   ```
+4. **Update this documentation** with the new port assignment
+
+### Troubleshooting Port Issues
+
+If you encounter "address already in use" errors:
+
+1. **Check running processes**:
+   ```bash
+   # Find what's using a port
+   lsof -i :3001
+   
+   # Kill process using a port
+   kill -9 $(lsof -t -i:3001)
+   ```
+
+2. **Use the start-all-servers script** which handles port assignments automatically
+
+3. **For Vite apps**, ensure you're not running multiple apps on the same port
+
 ## Merging Between Git Worktrees
 
 ### Understanding Worktree Merge Limitations

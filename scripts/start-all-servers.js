@@ -71,6 +71,15 @@ const SERVERS = [
     args: ['continuous-docs-server.cjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
     description: 'Continuous documentation tracking'
+  },
+  {
+    name: 'Git API Server (dhg-admin-code)',
+    port: 3009,
+    command: 'node',
+    args: ['git-api-server.cjs'],
+    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+    env: { GIT_API_PORT: '3009' },
+    description: 'Git branch management API'
   }
 ];
 
@@ -97,7 +106,7 @@ function startServer(serverConfig) {
     return null;
   }
 
-  const env = { ...process.env, ...serverConfig.env };
+  const env = { ...process.env, ...(serverConfig.env || {}) };
   const child = spawn(serverConfig.command, serverConfig.args, {
     cwd: serverConfig.cwd,
     env,
