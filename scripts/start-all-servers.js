@@ -43,7 +43,7 @@ const SERVERS = [
     name: 'Git Server (dhg-admin-code)',
     port: 3005,
     command: 'node',
-    args: ['git-server.js'],
+    args: ['git-server.cjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
     description: 'Git worktree management'
   },

@@ -6,7 +6,17 @@ import { DashboardLayout } from '../components/DashboardLayout';
 interface Worktree {
   path: string;
   branch: string;
-  lastActivity?: string;
+  commit?: string;
+  lastCommit?: {
+    hash: string;
+    message: string;
+    relativeTime: string;
+    author: string;
+  };
+  uncommittedChanges?: number;
+  ahead?: number;
+  behind?: number;
+  needsAttention?: boolean;
   activeTasks?: number;
 }
 
@@ -120,6 +130,7 @@ export function GitManagement() {
     { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-admin-google', branch: 'feature/dhg-admin-google-next-task' },
     { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-audio', branch: 'feature/audio-improvement' },
     { path: '/Users/raybunnage/Documents/github/dhg-mono-feature/dhg-mono-docs', branch: 'feature/continuous-documentation-archiving' },
+    { path: '/Users/raybunnage/Documents/github/dhg-mono-gmail-cli-pipeline-research-app', branch: 'gmail-cli-pipeline-research-app' },
     { path: '/Users/raybunnage/Documents/github/dhg-mono-improve-cli-pipelines', branch: 'improve-cli-pipelines' },
     { path: '/Users/raybunnage/Documents/github/dhg-mono-integration-bug-fixes-tweaks', branch: 'integration/bug-fixes-tweaks' },
   ];
@@ -160,8 +171,22 @@ export function GitManagement() {
         if (tasksError) throw tasksError;
         setActiveTasks(tasksData || []);
 
+        // Try to fetch worktrees from git server first
+        let worktreesToUse = defaultWorktrees;
+        try {
+          const response = await fetch('http://localhost:3005/api/git/worktrees');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.worktrees && data.worktrees.length > 0) {
+              worktreesToUse = data.worktrees;
+            }
+          }
+        } catch (fetchError) {
+          console.log('Git server not available, using default worktrees');
+        }
+
         // Enhance worktrees with task counts
-        const enhancedWorktrees = defaultWorktrees.map(wt => ({
+        const enhancedWorktrees = worktreesToUse.map(wt => ({
           ...wt,
           activeTasks: tasksData?.filter(task => 
             task.worktree_path?.includes(wt.path.split('/').pop() || '')
@@ -384,9 +409,42 @@ export function GitManagement() {
                         {worktree.activeTasks} active task{worktree.activeTasks > 1 ? 's' : ''}
                       </span>
                     )}
+                    {worktree.needsAttention && (
+                      <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+                        ⚠️ Needs attention
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-600">
                     {worktree.path}
+                  </div>
+                  
+                  {/* Git status information */}
+                  <div className="mt-3 space-y-1 text-sm">
+                    {worktree.lastCommit && (
+                      <div className="text-gray-700">
+                        <span className="font-medium">Last commit:</span> {worktree.lastCommit.message}
+                        <span className="text-gray-500 ml-2">({worktree.lastCommit.relativeTime} by {worktree.lastCommit.author})</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex space-x-4 text-sm">
+                      {worktree.uncommittedChanges > 0 && (
+                        <span className="text-orange-600">
+                          📝 {worktree.uncommittedChanges} uncommitted change{worktree.uncommittedChanges > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {worktree.ahead > 0 && (
+                        <span className="text-blue-600">
+                          ⬆️ {worktree.ahead} commit{worktree.ahead > 1 ? 's' : ''} ahead
+                        </span>
+                      )}
+                      {worktree.behind > 0 && (
+                        <span className="text-red-600">
+                          ⬇️ {worktree.behind} commit{worktree.behind > 1 ? 's' : ''} behind
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Active tasks in this worktree */}

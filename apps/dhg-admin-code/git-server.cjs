@@ -15,7 +15,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Get worktrees endpoint
+// Get worktrees endpoint with enhanced info
 app.get('/api/git/worktrees', async (req, res) => {
   try {
     const { stdout, stderr } = await execAsync('git worktree list');
@@ -42,7 +42,50 @@ app.get('/api/git/worktrees', async (req, res) => {
       })
       .filter(Boolean);
 
-    res.json({ worktrees });
+    // Enhance with additional info for each worktree
+    const enhancedWorktrees = await Promise.all(worktrees.map(async (wt) => {
+      try {
+        // Get last commit info
+        const { stdout: lastCommit } = await execAsync(
+          `cd "${wt.path}" && git log -1 --format="%h|%s|%ar|%an" 2>/dev/null || echo ""`
+        );
+        
+        const [commitHash, message, relativeTime, author] = lastCommit.trim().split('|');
+        
+        // Check for uncommitted changes
+        const { stdout: statusOutput } = await execAsync(
+          `cd "${wt.path}" && git status --porcelain 2>/dev/null | wc -l || echo "0"`
+        );
+        
+        const uncommittedChanges = parseInt(statusOutput.trim()) || 0;
+        
+        // Check if branch is ahead/behind
+        const { stdout: branchStatus } = await execAsync(
+          `cd "${wt.path}" && git rev-list --left-right --count HEAD...@{u} 2>/dev/null || echo "0\t0"`
+        );
+        
+        const [ahead, behind] = branchStatus.trim().split('\t').map(n => parseInt(n) || 0);
+        
+        return {
+          ...wt,
+          lastCommit: commitHash ? {
+            hash: commitHash,
+            message,
+            relativeTime,
+            author
+          } : null,
+          uncommittedChanges,
+          ahead,
+          behind,
+          needsAttention: uncommittedChanges > 0 || ahead > 0 || behind > 0
+        };
+      } catch (error) {
+        console.error(`Error getting info for worktree ${wt.path}:`, error);
+        return wt; // Return basic info if enhanced info fails
+      }
+    }));
+
+    res.json({ worktrees: enhancedWorktrees });
   } catch (error) {
     console.error('Failed to get worktrees:', error);
     res.status(500).json({ 
