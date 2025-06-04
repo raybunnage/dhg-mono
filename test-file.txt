@@ -1,7 +1,0 @@
-This is a test file created by Claude.
-Created on: Saturday, May 24, 2025
-
-This file was written to verify that the file system access is working correctly
-for the dhg-mono repository.
-
-Feel free to delete this file once you've confirmed it was created successfully!
