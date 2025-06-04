@@ -75,7 +75,9 @@
     "a": "cd apps/dhg-a && pnpm dev",
     "b": "cd apps/dhg-b && pnpm dev",
     "hub-lovable": "cd apps/dhg-hub-lovable && pnpm dev",
-    "improve": "cd apps/dhg-improve-experts && pnpm dev"
+    "improve": "cd apps/dhg-improve-experts && pnpm dev",
+    "servers": "node scripts/start-all-servers.js",
+    "servers:start": "node scripts/start-all-servers.js"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"

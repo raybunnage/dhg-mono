@@ -83,15 +83,30 @@ export function GitManagement() {
     }
   };
 
-  // Refresh worktrees using CLI
+  // Refresh worktrees using git server
   const handleRefreshWorktrees = async () => {
     setIsRefreshing(true);
     try {
-      // For now, we'll just reload the data
-      // In a full implementation, this would call the git CLI
-      await loadData();
+      const response = await fetch('http://localhost:3005/api/git/worktrees');
+      if (!response.ok) {
+        throw new Error('Failed to fetch worktrees');
+      }
+      
+      const data = await response.json();
+      if (data.worktrees) {
+        // Update worktrees with the fetched data
+        const enhancedWorktrees = data.worktrees.map((wt: any) => ({
+          ...wt,
+          activeTasks: activeTasks?.filter(task => 
+            task.worktree_path?.includes(wt.path.split('/').pop() || '')
+          ).length || 0
+        }));
+        setWorktrees(enhancedWorktrees);
+      }
     } catch (error) {
       console.error('Failed to refresh worktrees:', error);
+      // Fall back to hardcoded data if server is not running
+      await loadData();
     } finally {
       setIsRefreshing(false);
     }
@@ -101,10 +116,12 @@ export function GitManagement() {
   const defaultWorktrees: Worktree[] = [
     { path: '/Users/raybunnage/Documents/github/dhg-mono', branch: 'development' },
     { path: '/Users/raybunnage/Documents/github/dhg-mono-admin-code', branch: 'feature/improve-prompt-service-add-page' },
-    { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-admin-google', branch: 'feature/improve-media-processing-commands-ui' },
-    { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-audio', branch: 'development' },
-    { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-integration-post-merge-fixes', branch: 'integration/post-merge-fixes' },
+    { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-hub', branch: 'feature/improve-dhg-hub' },
+    { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-admin-google', branch: 'feature/dhg-admin-google-next-task' },
+    { path: '/Users/raybunnage/Documents/github/dhg-mono-dhg-mono-audio', branch: 'feature/audio-improvement' },
     { path: '/Users/raybunnage/Documents/github/dhg-mono-feature/dhg-mono-docs', branch: 'feature/continuous-documentation-archiving' },
+    { path: '/Users/raybunnage/Documents/github/dhg-mono-improve-cli-pipelines', branch: 'improve-cli-pipelines' },
+    { path: '/Users/raybunnage/Documents/github/dhg-mono-integration-bug-fixes-tweaks', branch: 'integration/bug-fixes-tweaks' },
   ];
 
   // Load data function

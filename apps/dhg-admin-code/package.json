@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:full": "pnpm run markdown-server & pnpm run dev",
+    "dev:full": "pnpm run markdown-server & pnpm run git-server & pnpm run dev",
     "markdown-server": "node ../../scripts/cli-pipeline/viewers/simple-md-server.js",
+    "git-server": "node git-server.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
