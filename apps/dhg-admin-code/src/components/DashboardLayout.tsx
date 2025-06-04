@@ -22,6 +22,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/prompts')) return 'prompts';
     if (location.pathname.startsWith('/document-types')) return 'document-types';
     if (location.pathname.startsWith('/scripts')) return 'scripts';
+    if (location.pathname.startsWith('/git-branches')) return 'git-branches';
     if (location.pathname.startsWith('/git')) return 'git';
     if (location.pathname.startsWith('/hi-mom')) return 'hi-mom';
     return 'tasks'; // default
@@ -215,6 +216,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Git
+            </button>
+            <button
+              onClick={() => navigate('/git-branches')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'git-branches'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Git Branches
             </button>
             <button
               onClick={() => navigate('/hi-mom')}
