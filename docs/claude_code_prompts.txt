@@ -15,6 +15,143 @@ use the copy-env commands to copy the .env.development file from root of dhg-mon
 
 
 
+
+CREATE TABLE "all_email_urls" (
+        all_email_url_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email_id INTEGER,
+        url TEXT, created_at DATETIME,
+        FOREIGN KEY (email_id) REFERENCES emails (email_id)
+    )
+
+    CREATE TABLE attachments (
+        attachment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email_id INTEGER,
+        filename TEXT,
+        size INTEGER,
+        newpdf_id INTEGER
+    , created_at DATETIME)
+
+    CREATE TABLE "email_concepts" (
+            email_concept_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email_id INTEGER,
+            email_content_id INTEGER,
+            concept TEXT,
+            category TEXT,
+            summary TEXT,
+            example TEXT,
+            url TEXT,
+            date TEXT,
+            citation TEXT,
+            section_info TEXT,
+            reference_info TEXT,
+            source_name TEXT,
+            actual_quote TEXT,
+            quote_author TEXT, created_at DATETIME, backup_category TEXT, master_category TEXT, is_valid INTEGER, auto_learning_grade INTEGER, subject_classifications TEXT, year INTEGER,
+            FOREIGN KEY (email_id) REFERENCES emails (email_id),
+            FOREIGN KEY (email_content_id) REFERENCES email_contents (email_content_id)
+        )
+
+        CREATE TABLE "email_contents" (
+            email_content_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email_id INTEGER,
+            how_many_participants INTEGER,
+            participants TEXT,
+            summary_of_the_email TEXT,
+            is_science_discussion INTEGER,
+            is_science_material INTEGER,
+            is_meeting_focused INTEGER,
+            good_quotes TEXT
+        )
+
+
+        CREATE TABLE emails (
+        email_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date DATETIME,
+        sender TEXT,
+        subject TEXT,
+        to_recipients TEXT,
+        content TEXT,
+        attachment_cnt INTEGER,
+        url_cnt INTEGER
+    , is_ai_process_for_concepts INTEGER, contents_length INTEGER, is_in_contents INTEGER, is_in_concepts INTEGER, created_at TIMESTAMP, is_valid INTEGER)
+
+    CREATE TABLE important_email_addresses (
+        important_email_address_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email_address TEXT NOT NULL,
+        is_important BOOLEAN)
+
+        CREATE TABLE "rolled_up_emails" (
+	"rolled_up_email_id"	INTEGER,
+	"subject"	TEXT,
+	"count"	INTEGER,
+	"first_date"	TEXT,
+	"last_date"	TEXT,
+	"senders"	TEXT,
+	"total_attachments"	INTEGER,
+	"total_urls"	INTEGER,
+	"is_likely_url"	INTEGER, email_ids TEXT, content_lengths TEXT,
+	PRIMARY KEY("rolled_up_email_id" AUTOINCREMENT)
+)
+
+CREATE TABLE "urls" (
+	"url_id"	INTEGER,
+	"url"	TEXT UNIQUE,
+	"email_ids_count"	INTEGER,
+	"email_ids_text"	TEXT,
+	"earliest_id_datetime"	DATETIME,
+	"latest_id_datetime"	DATETIME,
+	"email_senders"	TEXT,
+	"email_subjects"	TEXT,
+	"is_process_concepts_with_ai"	INTEGER,
+	"is_openable_url"	INTEGER,
+	"article_year"	INTEGER,
+	"article_month"	INTEGER,
+	"article_day"	INTEGER,
+	"title"	TEXT,
+	"authors"	TEXT,
+	"summary"	TEXT,
+	"keywords"	TEXT,
+	"url_source"	TEXT,
+	"url_type"	TEXT,
+	"created_at"	TIMESTAMP,
+	"is_in_source"	INTEGER,
+	"is_extract_concepts_from_url"	INTEGER,
+	PRIMARY KEY("url_id" AUTOINCREMENT)
+)
+
+CREATE TABLE "web_concepts"(
+  web_concept_id INT,
+  url_id INT,
+  concept TEXT,
+  category TEXT,
+  summary TEXT,
+  example TEXT,
+  url TEXT,
+  date TEXT,
+  citation TEXT,
+  section TEXT,
+  header TEXT,
+  reference_info TEXT,
+  source_name TEXT,
+  quote TEXT,
+  learning_grade INT,
+  created_at NUM,
+  quote_author TEXT,
+  subject_classifications TEXT,
+  auto_learning_grade INT,
+  learning_grade_reason TEXT,
+  master_category TEXT,
+  is_valid INT,
+  mixed_case_category TEXT,
+  backup_category TEXT,
+  year INT
+)
+
+
+
+
+
+
  pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
  
 integration/post-merge-fixes
