@@ -16,10 +16,7 @@ export default defineConfig({
     host: true, // Listen on all addresses
     hmr: {
       overlay: false, // Disable error overlay if it's causing issues
-      protocol: 'ws',
-      host: 'localhost',
-      port: 5177,
-      clientPort: 5177
+      port: 5178 // Use a different port for HMR WebSocket
     },
     proxy: {
       // Proxy markdown file requests to the markdown server

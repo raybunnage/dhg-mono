@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import { AudioList } from '@/components';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
+import { supabaseBrowser } from '@/services/supabase-browser-adapter';
+import { FilterService } from '@shared/services/filter-service/filter-service';
+import { DriveFilterCombobox } from '@shared/components/filter';
 
 export const HomePage = () => {
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Create filter service instance
+  const filterService = new FilterService(supabaseBrowser.getClient() as any);
 
   useEffect(() => {
     const fetchAudioFiles = async () => {
@@ -39,10 +46,37 @@ export const HomePage = () => {
     };
 
     fetchAudioFiles();
-  }, []);
+  }, [refreshTrigger]);
+
+  const handleFilterChange = (profileId: string | null, profile: any) => {
+    console.log('Filter changed:', { profileId, profileName: profile?.name });
+    // Trigger a refresh of the audio files
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <div>
+      {/* Drive Filter Selection - Prominent at the top */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Select Drive:</span>
+          <div className="flex-1 max-w-md">
+            <DriveFilterCombobox
+              filterService={filterService}
+              onFilterChange={handleFilterChange}
+              showSuccessMessages={false}
+              showErrorMessages={true}
+              showCurrentFilterInfo={false}
+              label=""
+              className="w-full"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Choose a drive filter to view audio files from specific collections
+        </p>
+      </div>
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Audio Learning</h1>
         <p className="text-gray-600">

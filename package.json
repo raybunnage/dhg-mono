@@ -66,13 +66,25 @@
     "db:export-functions": "./scripts/export-db-functions.js",
     "db:search-functions": "./scripts/search-db-functions.js",
     "db:generate-function-types": "./scripts/generate-function-types.js",
-    "db:check-export-function": "./scripts/check-export-function.js"
+    "db:check-export-function": "./scripts/check-export-function.js",
+    "code": "cd apps/dhg-admin-code && pnpm dev",
+    "hub": "cd apps/dhg-hub && pnpm dev",
+    "audio": "cd apps/dhg-audio && pnpm dev",
+    "google": "cd apps/dhg-admin-google && pnpm dev",
+    "suite": "cd apps/dhg-admin-suite && pnpm dev",
+    "a": "cd apps/dhg-a && pnpm dev",
+    "b": "cd apps/dhg-b && pnpm dev",
+    "hub-lovable": "cd apps/dhg-hub-lovable && pnpm dev",
+    "improve": "cd apps/dhg-improve-experts && pnpm dev",
+    "servers": "node scripts/start-all-servers.js",
+    "servers:start": "node scripts/start-all-servers.js"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "^1.0.1",
+    "@types/glob": "^8.1.0",
     "gray-matter": "^4.0.3",
     "netlify-cli": "18.0.4",
     "supabase": "2.12.1",
@@ -83,6 +95,7 @@
     "axios": "^1.8.4",
     "cli-table3": "^0.6.5",
     "csv-parse": "^5.6.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "extract-zip": "^2.0.1",
     "googleapis": "^148.0.0",
@@ -96,6 +109,7 @@
     "pptx-text-parser": "^1.1.1",
     "react-json-pretty": "^2.2.0",
     "uuid": "^11.1.0",
-    "which": "^5.0.0"
+    "which": "^5.0.0",
+    "winston": "^3.17.0"
   }
 }

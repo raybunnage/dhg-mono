@@ -120,8 +120,8 @@ async function listScripts(options: ListOptions = {}) {
   }
   
   if (!options.archived) {
-    // By default, exclude archived scripts
-    query = query.not('metadata->>is_archived', 'eq', 'true');
+    // By default, exclude archived scripts - but include scripts without metadata
+    query = query.or('metadata->>is_archived.is.null,metadata->>is_archived.neq.true');
   }
   
   const { data: scripts, error } = await query;
@@ -136,9 +136,15 @@ async function listScripts(options: ListOptions = {}) {
     return;
   }
   
+  // Extract pipeline from file path if not in metadata
+  const extractPipelineFromPath = (filePath: string): string => {
+    const match = filePath.match(/scripts\/cli-pipeline\/([^/]+)\//);
+    return match ? match[1] : 'root';
+  };
+
   // Group by pipeline
   const byPipeline = scripts.reduce((acc, script) => {
-    const pipeline = script.metadata?.cli_pipeline || 'root';
+    const pipeline = script.metadata?.cli_pipeline || extractPipelineFromPath(script.file_path);
     if (!acc[pipeline]) acc[pipeline] = [];
     acc[pipeline].push(script);
     return acc;
