@@ -66,7 +66,16 @@
     "db:export-functions": "./scripts/export-db-functions.js",
     "db:search-functions": "./scripts/search-db-functions.js",
     "db:generate-function-types": "./scripts/generate-function-types.js",
-    "db:check-export-function": "./scripts/check-export-function.js"
+    "db:check-export-function": "./scripts/check-export-function.js",
+    "code": "cd apps/dhg-admin-code && pnpm dev",
+    "hub": "cd apps/dhg-hub && pnpm dev",
+    "audio": "cd apps/dhg-audio && pnpm dev",
+    "google": "cd apps/dhg-admin-google && pnpm dev",
+    "suite": "cd apps/dhg-admin-suite && pnpm dev",
+    "a": "cd apps/dhg-a && pnpm dev",
+    "b": "cd apps/dhg-b && pnpm dev",
+    "hub-lovable": "cd apps/dhg-hub-lovable && pnpm dev",
+    "improve": "cd apps/dhg-improve-experts && pnpm dev"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"

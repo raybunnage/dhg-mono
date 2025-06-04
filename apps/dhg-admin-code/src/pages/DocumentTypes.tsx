@@ -77,6 +77,7 @@ export function DocumentTypes() {
     prompt_id: '',
     expected_json_schema: ''
   });
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     fetchDocumentTypes();
@@ -131,7 +132,7 @@ export function DocumentTypes() {
           name: category,
           generalType: null,
           specificTypes: [],
-          isExpanded: true
+          isExpanded: false
         };
       }
 
@@ -171,6 +172,7 @@ export function DocumentTypes() {
       prompt_id: '',
       expected_json_schema: ''
     });
+    setNewCategoryName(''); // Reset new category name when creating
     setShowCreateModal(true);
   };
 
@@ -187,6 +189,7 @@ export function DocumentTypes() {
       prompt_id: type.prompt_id || '',
       expected_json_schema: type.expected_json_schema ? JSON.stringify(type.expected_json_schema, null, 2) : ''
     });
+    setNewCategoryName(''); // Reset new category name when editing
     setShowEditModal(true);
   };
 
@@ -228,9 +231,12 @@ export function DocumentTypes() {
         }
       }
 
+      // Handle new category case
+      const categoryValue = formData.category === '__new__' ? newCategoryName.trim() : formData.category.trim();
+      
       const data = {
         name: formData.name.trim(),
-        category: formData.category.trim() || null,
+        category: categoryValue || null,
         description: formData.description.trim() || null,
         is_general_type: formData.is_general_type,
         is_ai_generated: formData.is_ai_generated,
@@ -260,6 +266,7 @@ export function DocumentTypes() {
       setShowCreateModal(false);
       setShowEditModal(false);
       setEditingType(null);
+      setNewCategoryName('');
     } catch (error) {
       console.error('Error saving document type:', error);
       alert('Error saving document type. Please check the console for details.');
@@ -277,6 +284,7 @@ export function DocumentTypes() {
       prompt_id: type.prompt_id || '',
       expected_json_schema: type.expected_json_schema ? JSON.stringify(type.expected_json_schema, null, 2) : ''
     });
+    setNewCategoryName(''); // Reset new category name when duplicating
     setShowCreateModal(true);
   };
 
@@ -396,8 +404,9 @@ export function DocumentTypes() {
             <div key={group.name} className="bg-white rounded-lg shadow-sm border border-gray-100">
               {/* Category Header */}
               <div 
-                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors relative group"
                 onClick={() => toggleCategory(group.name)}
+                title={!group.isExpanded && group.generalType?.description ? group.generalType.description : undefined}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -445,6 +454,13 @@ export function DocumentTypes() {
                   <p className="mt-2 ml-8 text-sm text-gray-600">
                     {group.generalType.description}
                   </p>
+                )}
+                {/* Tooltip for collapsed state */}
+                {!group.isExpanded && group.generalType?.description && (
+                  <div className="absolute z-10 invisible group-hover:visible bg-gray-900 text-white text-sm rounded-lg p-3 max-w-md mt-1 left-4 top-full shadow-lg">
+                    <div className="absolute -top-2 left-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-gray-900"></div>
+                    {group.generalType.description}
+                  </div>
                 )}
               </div>
 
@@ -548,6 +564,7 @@ export function DocumentTypes() {
                       setShowCreateModal(false);
                       setShowEditModal(false);
                       setEditingType(null);
+                      setNewCategoryName('');
                     }}
                     className="text-gray-500 hover:text-gray-700"
                   >
@@ -573,14 +590,29 @@ export function DocumentTypes() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Category *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
-                        placeholder="e.g., Academic Biography"
                         required
-                      />
+                      >
+                        <option value="">Select a category...</option>
+                        {categories.sort().map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                        <option value="__new__">+ Add new category</option>
+                      </select>
+                      {formData.category === '__new__' && (
+                        <input
+                          type="text"
+                          value={newCategoryName}
+                          placeholder="Enter new category name"
+                          className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          autoFocus
+                          required
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -666,6 +698,7 @@ export function DocumentTypes() {
                         setShowCreateModal(false);
                         setShowEditModal(false);
                         setEditingType(null);
+                        setNewCategoryName('');
                       }}
                       className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                     >
