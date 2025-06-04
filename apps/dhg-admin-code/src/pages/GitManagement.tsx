@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { format } from 'date-fns';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 interface Worktree {
   path: string;
@@ -285,7 +286,8 @@ export function GitManagement() {
   }
 
   return (
-    <div className="p-8">
+    <DashboardLayout>
+      <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Git Management</h1>
         
@@ -690,5 +692,6 @@ export function GitManagement() {
         </div>
       )}
     </div>
+    </DashboardLayout>
   );
 }
