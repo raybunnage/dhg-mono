@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import { format } from 'date-fns';
 import { DashboardLayout } from '../components/DashboardLayout';
 
@@ -162,7 +162,7 @@ export function GitManagement() {
   const loadData = async () => {
       try {
         setLoading(true);
-        const supabase = createSupabaseAdapter();
+        // Use the imported supabase client
 
         // Load merge queue
         const { data: queueData, error: queueError } = await supabase
@@ -352,7 +352,7 @@ export function GitManagement() {
     }
 
     async function loadChecklist() {
-      const supabase = createSupabaseAdapter();
+      // Use the imported supabase client
       const { data, error } = await supabase
         .from('dev_merge_checklist')
         .select('*')
