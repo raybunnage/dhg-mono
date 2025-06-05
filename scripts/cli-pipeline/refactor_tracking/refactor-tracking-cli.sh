@@ -48,6 +48,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  status [--pipeline <name>] Show refactoring status (filter by pipeline)"
   echo "  list [--type <type>] [--pipeline <name>]  List commands (filter by type/pipeline)"
   echo "  update <name> <status>    Update command status"
+  echo "  health-check              Run health check for refactor tracking pipeline"
   echo "  test-complete <name>      Mark command as tested with results"
   echo "  sign-off <name>          Sign off on a command"
   echo "  show <name>              Show details for a command"
@@ -98,6 +99,10 @@ case "$1" in
   "add-note")
     shift
     track_command "refactor-add-note" "ts-node $SCRIPT_DIR/add-note.ts $*"
+    ;;
+    
+  "health-check")
+    track_command "refactor-health-check" "$SCRIPT_DIR/health-check.sh"
     ;;
     
   *)

@@ -34,61 +34,8 @@ track_command() {
 
 # Command handler for master-health-check
 master_health_check() {
-  # Generate a successful health check report directly
-  cat << EOF
-===== DHG MASTER HEALTH CHECK RESULTS =====
-
-Overall Health: 100.0% (10/10 healthy)
-
-AI SERVICES:
------------------------------------------------
-Pipeline            | Status     | Response Time
------------------------------------------------
-Prompt Service      | Healthy    | 1ms         
-Category Health: 100.0% (1/1 healthy)
-
-CONTENT SERVICES:
------------------------------------------------
-Pipeline            | Status     | Response Time
------------------------------------------------
-Document Processing | Healthy    | 1ms         
-Experts Management  | Healthy    | 1ms         
-Document Types      | Healthy    | 1ms         
-Media Processing    | Healthy    | 1ms         
-Presentations       | Healthy    | 1ms         
-Category Health: 100.0% (5/5 healthy)
-
-DATA INTEGRATION SERVICES:
------------------------------------------------
-Pipeline            | Status     | Response Time
------------------------------------------------
-Google Sync         | Healthy    | 1ms         
-Category Health: 100.0% (1/1 healthy)
-
-INFRASTRUCTURE SERVICES:
------------------------------------------------
-Pipeline            | Status     | Response Time
------------------------------------------------
-Supabase            | Healthy    | 1ms         
-Database            | Healthy    | 1ms         
-Category Health: 100.0% (2/2 healthy)
-
-SYSTEM SERVICES:
------------------------------------------------
-Pipeline            | Status     | Response Time
------------------------------------------------
-Scripts Management  | Healthy    | 1ms         
-Category Health: 100.0% (1/1 healthy)
-
-System Status: HEALTHY
-
-=========================================
-EOF
-  
-  # Log the command to the tracking service without running the actual check
-  if [ -f "$TRACKER_TS" ]; then
-    npx ts-node "$TRACKER_TS" "all_pipelines" "master-health-check" "Manually overridden health check (all healthy)" &>/dev/null
-  fi
+  # Run the shell-based master health check script
+  track_command "master-health-check" "$SCRIPT_DIR/run-all-health-checks.sh $@"
 }
 
 # Command handler for usage-report

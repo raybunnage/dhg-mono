@@ -46,6 +46,7 @@ function display_help() {
   echo "  validate-prompt-relationships      Validate relationships between prompts"
   echo "  run-ai-analyze                     Run AI analysis on content"
   echo "  check-claude-api-key               Verify Claude API key is valid"
+  echo "  health-check                       Run health check for AI pipeline"
   echo ""
   echo "Examples:"
   echo "  ai-cli.sh prompt-lookup script-analysis-prompt"
@@ -77,6 +78,9 @@ case "$COMMAND" in
     ;;
   check-claude-api-key)
     track_command "check-claude-api-key" "$SCRIPT_DIR/check-claude-api-key.sh $*"
+    ;;
+  health-check)
+    track_command "health-check" "$SCRIPT_DIR/health-check.sh $*"
     ;;
   *)
     echo "Unknown command: $COMMAND"

@@ -44,5 +44,11 @@ cd "$ROOT_DIR"
 
 # Use the first argument as the command name or default to "main"
 COMMAND="${1:-main}"
-CMD="NODE_PATH=\"$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/cli.ts\" $*"
-track_command "$COMMAND" "$CMD"
+
+# Handle health-check command specially
+if [ "$COMMAND" = "health-check" ]; then
+  track_command "$COMMAND" "$SCRIPT_DIR/health-check.sh"
+else
+  CMD="NODE_PATH=\"$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/cli.ts\" $*"
+  track_command "$COMMAND" "$CMD"
+fi

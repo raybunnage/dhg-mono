@@ -19,6 +19,12 @@ track_command() {
 }
 
 case "$1" in
+    # Health Check
+    "health-check"|"health")
+        track_command "health-check"
+        cd "$SCRIPT_DIR" && npx ts-node health-check.ts ${@:2}
+        ;;
+    
     # Git Information Commands
     "info"|"git-info")
         track_command "git-info"
