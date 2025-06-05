@@ -102,7 +102,7 @@ export class SupabaseClientAdapter {
         
         // Fall back to document_types table which should always be accessible
         console.log('Trying document_types table as fallback...');
-        const { error } = await client
+        const { data, error } = await client
           .from('document_types')
           .select('document_type')
           .limit(1);
@@ -218,7 +218,7 @@ export class SupabaseClientAdapter {
       }
       
       // Test database access with the current credentials (anonymous or authenticated)
-      const { error } = await client
+      const { data, error } = await client
         .from('document_types')
         .select('id')
         .limit(1);
@@ -247,5 +247,43 @@ export const getSupabaseClient = () => supabaseAdapter.getClient();
 // Export the client directly for ease of use
 export const supabase = getSupabaseClient();
 
-// Re-export helper functions from shared service
-export { SYSTEM_USER_ID, addUserReferences } from '../../../../packages/shared/services/supabase-helpers';
+// Export a system user ID for use when no authenticated user is available
+export const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+/**
+ * Helper function to add user references to database records
+ * If authenticated, uses the current user's ID; otherwise uses SYSTEM_USER_ID
+ */
+export async function addUserReferences<T extends Record<string, any>>(record: T): Promise<T> {
+  try {
+    // Try to get the current user session
+    const { data } = await supabase.auth.getSession();
+    const userId = data?.session?.user?.id || SYSTEM_USER_ID;
+    
+    // Add user reference fields if they don't exist
+    const recordWithRefs = { ...record };
+    
+    if (!('created_by' in recordWithRefs)) {
+      (recordWithRefs as any).created_by = userId;
+    }
+    
+    if (!('updated_by' in recordWithRefs)) {
+      (recordWithRefs as any).updated_by = userId;
+    }
+    
+    return recordWithRefs;
+  } catch (error) {
+    // If there's any error, fall back to the system user ID
+    const recordWithRefs = { ...record };
+    
+    if (!('created_by' in recordWithRefs)) {
+      (recordWithRefs as any).created_by = SYSTEM_USER_ID;
+    }
+    
+    if (!('updated_by' in recordWithRefs)) {
+      (recordWithRefs as any).updated_by = SYSTEM_USER_ID;
+    }
+    
+    return recordWithRefs;
+  }
+}

@@ -12,10 +12,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174, // Use a different port than other apps
+    port: 5178, // Unique port for dhg-hub
     host: true, // Listen on all addresses
     hmr: {
-      port: 5174,
+      port: 5178,
       host: 'localhost'
     }
   }

@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
     },
     server: {
-      port: 5173,      // Align with dhg-a port
+      port: 5179,      // Unique port for dhg-hub-lovable
       host: "::",      // Keep host setting from lovable
       ...baseConfig.server,
     },
