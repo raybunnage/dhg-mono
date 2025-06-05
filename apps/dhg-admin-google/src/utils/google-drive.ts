@@ -4,7 +4,7 @@
  * This file wraps the shared Google Drive browser service for backward compatibility
  */
 
-import { googleDriveBrowser } from '@shared/services/google-drive';
+import { googleDriveBrowser } from '@shared/services/google-drive/google-drive-browser-service';
 
 // Re-export functions with the same signatures for backward compatibility
 export const validateGoogleToken = async () => {

@@ -8,6 +8,24 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Polyfill Node.js globals for browser compatibility
+      if (typeof global === 'undefined') {
+        window.global = window;
+      }
+      if (typeof process === 'undefined') {
+        window.process = {
+          env: {},
+          stdout: { isTTY: false },
+          stderr: { isTTY: false },
+          stdin: { isTTY: false },
+          platform: 'browser',
+          version: 'v16.0.0',
+          versions: { node: '16.0.0' },
+          nextTick: function(callback) { setTimeout(callback, 0); }
+        };
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
