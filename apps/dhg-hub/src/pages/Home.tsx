@@ -590,14 +590,14 @@ export function Home() {
           }
         }
       
-        // Fetch expert information separately for each presentation using sources_google_experts
+        // Fetch expert information separately for each presentation using google_sources_experts
         const presentationsWithExperts = await Promise.all(
           (filteredPresentationsData || []).map(async (presentation) => {
             if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
           const { data: expertsData, error: expertsError } = await supabase
-            .from('sources_google_experts')
+            .from('google_sources_experts')
             .select(`
               expert_id,
               is_primary,
@@ -642,7 +642,7 @@ export function Home() {
 
         // Fetch all subject classifications for the filter
         const { data: subjectsData, error: subjectsError } = await supabase
-          .from('subject_classifications')
+          .from('learn_subject_classifications')
           .select('*')
           .order('subject');
 
@@ -736,7 +736,7 @@ export function Home() {
         
         // Fetch classifications for these videos
         const { data: classificationData, error: classificationError } = await supabase
-          .from('table_classifications')
+          .from('learn_document_classifications')
           .select(`
             entity_id,
             subject_classification_id
