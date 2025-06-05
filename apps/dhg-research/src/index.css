@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   * {
@@ -13,10 +13,10 @@
 
   body {
     @apply bg-background text-text-primary font-sans antialiased;
-    background-color: #00111a;
+    background-color: #fff7ed;
   }
 
-  /* Custom scrollbar for dark theme */
+  /* Custom scrollbar for light orange theme */
   ::-webkit-scrollbar {
     width: 12px;
     height: 12px;
@@ -41,7 +41,7 @@
   /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #003380 #001933;
+    scrollbar-color: #c2410c #fff7ed;
   }
 }
 
