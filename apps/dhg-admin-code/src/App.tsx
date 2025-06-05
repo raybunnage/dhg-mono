@@ -17,6 +17,7 @@ import { ContinuousDocumentsPage } from './pages/ContinuousDocumentsPage';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
+import ClipboardManager from './pages/ClipboardManager';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -150,6 +151,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <ContinuousDocumentsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/clipboard" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <ClipboardManager />
             </ProtectedRoute>
           } 
         />

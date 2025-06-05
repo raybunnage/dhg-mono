@@ -25,6 +25,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/git-branches')) return 'git-branches';
     if (location.pathname.startsWith('/git')) return 'git';
     if (location.pathname.startsWith('/hi-mom')) return 'hi-mom';
+    if (location.pathname.startsWith('/clipboard')) return 'clipboard';
+    if (location.pathname.startsWith('/continuous-docs')) return 'continuous-docs';
     return 'tasks'; // default
   };
   
@@ -240,6 +242,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Hi Mom! 💚
+            </button>
+            <button
+              onClick={() => navigate('/clipboard')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'clipboard'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Clipboard 📋
             </button>
           </nav>
         </div>
