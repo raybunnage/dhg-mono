@@ -5,8 +5,10 @@
 # Commands:
 #   create       Create a new development task
 #   create-with-branch  Create task with git branch
+#   dhg-research Create a research task for Claude Code
 #   start-session       Start work session on a task
 #   list         List tasks with filtering options
+
 #   update       Update task status or details
 #   complete     Mark task as complete with Claude's response
 #   add-file     Add file references to a task
@@ -34,6 +36,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "Commands:"
   echo "  create       Create a new development task"
   echo "  create-with-branch  Create task with git branch"
+  echo "  dhg-research Create a research task for Claude Code"
   echo "  start-session       Start work session on a task"
   echo "  list         List tasks with filtering options"
   echo "  update       Update task status or details"
@@ -130,6 +133,12 @@ case "$1" in
   "health-check")
     track_command "dev-tasks" "health-check"
     "$SCRIPT_DIR/health-check.sh"
+    ;;
+    
+  "dhg-research")
+    track_command "dev-tasks" "dhg-research"
+    shift
+    ts-node "$SCRIPT_DIR/dhg-research.ts" "$@"
     ;;
     
   *)
