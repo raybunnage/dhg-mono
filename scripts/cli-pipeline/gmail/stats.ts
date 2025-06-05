@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
 
-import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function showStats() {
   console.log('Gmail Pipeline Statistics\n');
 
   try {
-    const supabase = createSupabaseAdapter();
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Overall message count
     const { count: totalMessages } = await supabase
@@ -17,14 +17,19 @@ async function showStats() {
     console.log('=' .repeat(50));
     console.log(`Total messages: ${totalMessages || 0}`);
 
-    // Messages by importance
+    // Messages by importance (check if sender is in important addresses)
     const { data: importanceStats } = await supabase
       .from('email_messages')
-      .select('from_important_address')
-      .not('from_important_address', 'is', null);
+      .select('sender');
 
-    if (importanceStats) {
-      const importantCount = importanceStats.filter(m => m.from_important_address).length;
+    // Get list of important addresses to cross-reference
+    const { data: importantAddresses } = await supabase
+      .from('email_important_addresses')
+      .select('email_address');
+    
+    if (importanceStats && importantAddresses) {
+      const importantEmails = new Set(importantAddresses.map(addr => addr.email_address));
+      const importantCount = importanceStats.filter(m => m.sender && importantEmails.has(m.sender)).length;
       const regularCount = (totalMessages || 0) - importantCount;
       console.log(`From important addresses: ${importantCount}`);
       console.log(`From other addresses: ${regularCount}`);
@@ -84,12 +89,12 @@ async function showStats() {
     
     const { data: senders } = await supabase
       .from('email_messages')
-      .select('from_email');
+      .select('sender');
 
     if (senders && senders.length > 0) {
       const senderCounts = senders.reduce((acc: Record<string, number>, msg) => {
-        if (msg.from_email) {
-          acc[msg.from_email] = (acc[msg.from_email] || 0) + 1;
+        if (msg.sender) {
+          acc[msg.sender] = (acc[msg.sender] || 0) + 1;
         }
         return acc;
       }, {});
@@ -111,14 +116,14 @@ async function showStats() {
     
     const { data: recentMessages } = await supabase
       .from('email_messages')
-      .select('subject, from_email, date')
+      .select('subject, sender, date')
       .order('date', { ascending: false })
       .limit(5);
 
     if (recentMessages && recentMessages.length > 0) {
       recentMessages.forEach(msg => {
         const date = new Date(msg.date).toLocaleDateString();
-        console.log(`${date}: "${msg.subject}" from ${msg.from_email}`);
+        console.log(`${date}: "${msg.subject}" from ${msg.sender}`);
       });
     } else {
       console.log('No recent messages');

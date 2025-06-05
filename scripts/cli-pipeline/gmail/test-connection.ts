@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
 
-import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 async function testConnection() {
   console.log('Testing Gmail pipeline database connection...\n');
 
   try {
-    const supabase = createSupabaseAdapter();
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Test connection by checking email tables
     const tables = [
@@ -40,8 +40,7 @@ async function testConnection() {
     console.log('Important email addresses:');
     const { data: addresses, error: addrError } = await supabase
       .from('email_important_addresses')
-      .select('email_address, is_active')
-      .eq('is_active', true)
+      .select('email_address, importance_level')
       .order('email_address');
 
     if (addrError) {
@@ -50,8 +49,8 @@ async function testConnection() {
       console.log('⚠️  No important addresses configured');
       console.log('   Add some with: gmail-cli.sh manage-addresses add "email@example.com"');
     } else {
-      addresses.forEach(addr => {
-        console.log(`   - ${addr.email_address} (active: ${addr.is_active})`);
+      addresses.forEach((addr: any) => {
+        console.log(`   - ${addr.email_address} (importance: ${addr.importance_level || 1})`);
       });
     }
 
