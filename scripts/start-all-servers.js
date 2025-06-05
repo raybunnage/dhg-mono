@@ -80,6 +80,15 @@ const SERVERS = [
     cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
     env: { GIT_API_PORT: '3009' },
     description: 'Git branch management API'
+  },
+  {
+    name: 'Worktree Switcher',
+    port: 3010,
+    command: 'node',
+    args: ['scripts/cli-pipeline/viewers/worktree-switcher-server.js'],
+    cwd: process.cwd(),
+    env: { WORKTREE_SWITCHER_PORT: '3010' },
+    description: 'Visual worktree switcher for Cursor instances'
   }
 ];
 
