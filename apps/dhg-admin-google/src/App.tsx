@@ -12,6 +12,7 @@ import { SyncStatus } from './pages/SyncStatus';
 import { Statistics } from './pages/Statistics';
 import { Filters } from './pages/Filters';
 import SyncHistory from './pages/SyncHistory';
+import { ClassifyDocument } from './pages/ClassifyDocument';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -86,6 +87,11 @@ function App() {
           <Route path="/sync-history" element={
             <ProtectedRoute>
               <SyncHistory />
+            </ProtectedRoute>
+          } />
+          <Route path="/classify" element={
+            <ProtectedRoute>
+              <ClassifyDocument />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" />} />

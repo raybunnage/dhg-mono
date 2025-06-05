@@ -11,7 +11,7 @@ export default defineConfig({
     sourcemap: true, // Helps with debugging
   },
   server: {
-    port: 5174,      // Next available Vite port
+    port: 5176,      // Unique port for dhg-b
     ...baseConfig.server,
   },
   preview: {
