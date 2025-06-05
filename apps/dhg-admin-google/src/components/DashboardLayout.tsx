@@ -7,7 +7,9 @@ import {
   BarChart3,
   Filter,
   History,
-  LogOut
+  LogOut,
+  FileText,
+  Users
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -32,6 +34,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { id: 'statistics', label: 'Statistics', path: '/statistics', icon: BarChart3 },
     { id: 'filters', label: 'Drive Filters', path: '/filters', icon: Filter },
     { id: 'history', label: 'Sync History', path: '/sync-history', icon: History },
+    { id: 'classify', label: 'Classification', path: '/classify', icon: FileText },
+    { id: 'expert-profiles', label: 'Expert Profiles', path: '/expert-profiles', icon: Users },
   ];
 
   const activeTab = tabs.find(tab => location.pathname === tab.path)?.id || 'explorer';

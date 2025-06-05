@@ -25,7 +25,6 @@
     "admin-google": "pnpm --filter dhg-admin-google dev",
     "dev:hub": "pnpm --filter dhg-hub dev",
     "dev:audio": "pnpm --filter dhg-audio dev",
-    "dev:experts": "pnpm --filter dhg-improve-experts dev",
     "dev:admin-code": "pnpm --filter dhg-admin-code dev",
     "dev:admin-suite": "pnpm --filter dhg-admin-suite dev",
     "dev:admin-google": "pnpm --filter dhg-admin-google dev",

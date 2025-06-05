@@ -9,15 +9,24 @@ import GoogleAuthService from './google-auth-service';
 import GoogleDriveService from './google-drive-service';
 import GoogleDriveSyncService from './google-drive-sync-service';
 import SourcesGoogleUpdateService from './sources-google-update-service';
+import { GoogleDriveBrowserService, googleDriveBrowser } from './google-drive-browser-service';
 
 // Export services
-export { GoogleAuthService, GoogleDriveService, GoogleDriveSyncService, SourcesGoogleUpdateService };
+export { 
+  GoogleAuthService, 
+  GoogleDriveService, 
+  GoogleDriveSyncService, 
+  SourcesGoogleUpdateService,
+  GoogleDriveBrowserService,
+  googleDriveBrowser
+};
 
 // Export types
 export * from './google-auth-service';
 export * from './google-drive-service';
 export * from './google-drive-sync-service';
 export * from './sources-google-update-service';
+export * from './google-drive-browser-service';
 
 // Export a preconfigured auth instance for easier use
 export const defaultGoogleAuth = GoogleAuthService.getDefaultInstance();

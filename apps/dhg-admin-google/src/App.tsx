@@ -13,6 +13,7 @@ import { Statistics } from './pages/Statistics';
 import { Filters } from './pages/Filters';
 import SyncHistory from './pages/SyncHistory';
 import { ClassifyDocument } from './pages/ClassifyDocument';
+import { ExpertProfiles } from './pages/ExpertProfiles';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -92,6 +93,11 @@ function App() {
           <Route path="/classify" element={
             <ProtectedRoute>
               <ClassifyDocument />
+            </ProtectedRoute>
+          } />
+          <Route path="/expert-profiles" element={
+            <ProtectedRoute>
+              <ExpertProfiles />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" />} />
