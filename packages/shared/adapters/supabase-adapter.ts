@@ -38,7 +38,13 @@ export function createSupabaseAdapter(options: SupabaseAdapterOptions = {}): Sup
   if (isBrowser) {
     // Browser environment - use Vite prefixed variables
     // Use type assertion to handle import.meta in different environments
-    const env = (import.meta as any)?.env || {};
+    let env: any = {};
+    try {
+      env = (import.meta as any)?.env || {};
+    } catch (error) {
+      // Fallback for environments that don't support import.meta
+      env = {};
+    }
     supabaseUrl = env.VITE_SUPABASE_URL;
     
     if (options.useServiceRole) {
