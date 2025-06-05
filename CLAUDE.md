@@ -650,6 +650,7 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3007 | Experts Markdown Server | `apps/dhg-improve-experts/md-server.mjs` |
 | 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
 | 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
+| 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
 
 **Vite App Ports**:
 | Port | App | Status |
