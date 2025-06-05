@@ -48,6 +48,7 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  scan <folder>          Scan a folder for insights"
+    echo "  health-check           Run health check for monitoring pipeline"
     echo "  watch <folder>         Continuously monitor a folder"
     echo "  report <folder>        Generate detailed report with DB save"
     echo "  history <folder>       Show historical monitoring data"
@@ -116,6 +117,11 @@ case "$1" in
         echo -e "${BLUE}Running health checks...${NC}"
         # Run existing health check
         "$PROJECT_ROOT/scripts/cli-pipeline/maintenance-cli.sh" health-check
+        ;;
+        
+    health-check)
+        track_command "health-check" "$@"
+        "$SCRIPT_DIR/health-check.sh"
         ;;
         
     --help|help|-h)

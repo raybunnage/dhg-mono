@@ -1,24 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
 console.log('=== Supabase Client Setup ===');
-console.log('URL:', supabaseUrl);
-console.log('Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables!');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl);
-  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Not set');
-  throw new Error('Missing Supabase environment variables');
-}
+// Create Supabase client using the universal adapter
+// This automatically handles browser environment configuration
+export const supabase = createSupabaseAdapter();
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  realtime: {
-    params: {
-      eventsPerSecond: 0
-    }
-  }
-});
-console.log('Supabase client created successfully');
+console.log('Supabase client created successfully using universal adapter');

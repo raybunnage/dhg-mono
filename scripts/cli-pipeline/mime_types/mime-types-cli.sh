@@ -47,6 +47,7 @@ show_help() {
   echo ""
   echo "Commands:"
   echo "  sync                      Synchronize the mime_types table with MIME types from sources_google"
+  echo "  health-check              Run health check for MIME types pipeline"
   echo "  help                      Show this help message"
   echo ""
   echo "Options for sync:"
@@ -70,6 +71,9 @@ sync_mime_types() {
 case "$1" in
   "sync")
     sync_mime_types "${@:2}"
+    ;;
+  "health-check")
+    track_command "health-check" "$SCRIPT_DIR/health-check.sh"
     ;;
   "help" | "-h" | "--help")
     show_help
