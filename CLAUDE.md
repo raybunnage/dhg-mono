@@ -558,6 +558,71 @@ const supabase = createSupabaseAdapter({ env: import.meta.env as any });
 - CLI scripts and server-side code
 - Any situation where you need Supabase access across environments
 
+### Browser Compatibility for Node.js Dependencies
+
+**❌ Problem**: Browser apps importing shared services that use Node.js-specific modules
+- Error: `Module "node:events" has been externalized for browser compatibility`
+- Error: `Cannot read properties of undefined (reading 'isTTY')`
+- Error: `Class extends value undefined is not a constructor`
+- These occur when shared services import Node.js modules like `googleapis`, `google-auth-library`, or use Node.js globals
+
+**✅ Solution**: Create browser-safe imports and provide Node.js polyfills
+
+1. **Create Browser-Safe Export Files**:
+   ```typescript
+   // packages/shared/services/google-drive/browser-index.ts
+   export { GoogleDriveBrowserService, googleDriveBrowser } from './google-drive-browser-service';
+   // Only export browser-compatible services, exclude Node.js-specific ones
+   ```
+
+2. **Configure Vite Aliases**:
+   ```typescript
+   // vite.config.ts
+   resolve: {
+     alias: {
+       '@shared/services/google-drive': path.resolve(__dirname, '../../packages/shared/services/google-drive/browser-index.ts'),
+     }
+   }
+   ```
+
+3. **Add Node.js Polyfills in HTML**:
+   ```html
+   <!-- index.html - Add before main script -->
+   <script>
+     if (typeof global === 'undefined') window.global = window;
+     if (typeof process === 'undefined') {
+       window.process = {
+         env: {},
+         stdout: { isTTY: false },
+         stderr: { isTTY: false },
+         stdin: { isTTY: false },
+         platform: 'browser',
+         version: 'v16.0.0',
+         versions: { node: '16.0.0' }
+       };
+     }
+   </script>
+   ```
+
+4. **Add Required Environment Variables**:
+   ```env
+   # .env.development for browser apps
+   VITE_CLAUDE_API_KEY=your-api-key
+   VITE_ANTHROPIC_API_KEY=your-api-key
+   ```
+
+**Key Principles**:
+- Browser apps cannot use Node.js modules (`fs`, `path`, `crypto`, `events`, etc.)
+- Create separate browser-safe exports that exclude Node.js dependencies
+- Use Vite aliases to redirect imports to browser-safe versions
+- Provide polyfills for Node.js globals that some libraries expect
+- Always check if a shared service imports Node.js modules before using in browser
+
+**When Issues Persist**:
+- Run `./scripts/cli-pipeline/all_pipelines/app-reinstall.sh app-name` to clean dependencies
+- Check for indirect Node.js dependencies in shared services
+- Consider creating browser-specific service implementations
+
 ## Google Drive Service Account Integration
 
 The project requires a valid Google Drive service account for accessing files in Google Drive.
