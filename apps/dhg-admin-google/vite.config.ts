@@ -12,6 +12,11 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../../packages/shared'),
     },
   },
+  define: {
+    // Define Node.js globals for browser compatibility
+    global: 'globalThis',
+    'process.env': {}
+  },
   server: {
     port: 5174, // Use a different port than other apps
   }
