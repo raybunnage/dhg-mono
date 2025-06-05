@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { format } from 'date-fns';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { getWorktreeAliasInfo } from '../utils/worktree-alias-mapping';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -542,10 +543,29 @@ export function GitManagement() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-2xl">📁</span>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {worktree.path.split('/').pop()}
-                    </h3>
+                    {(() => {
+                      const aliasInfo = getWorktreeAliasInfo(worktree.path);
+                      return aliasInfo ? (
+                        <>
+                          <span className="text-2xl">{aliasInfo.emoji}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-mono bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                              {aliasInfo.number}/{aliasInfo.name}
+                            </span>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {worktree.path.split('/').pop()}
+                            </h3>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-2xl">📁</span>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {worktree.path.split('/').pop()}
+                          </h3>
+                        </>
+                      );
+                    })()}
                     <span className={`px-2 py-1 text-xs font-medium rounded ${
                       worktree.branch === 'development' 
                         ? 'bg-green-100 text-green-800' 
