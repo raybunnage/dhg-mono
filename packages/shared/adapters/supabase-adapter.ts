@@ -19,6 +19,19 @@ export interface SupabaseAdapterOptions {
     detectSessionInUrl?: boolean;
     storageKey?: string;
   };
+  
+  /**
+   * Environment variables to use (for browser environments)
+   * If not provided, will try to read from process.env in Node.js
+   */
+  env?: {
+    VITE_SUPABASE_URL?: string;
+    VITE_SUPABASE_ANON_KEY?: string;
+    VITE_SUPABASE_SERVICE_ROLE_KEY?: string;
+    SUPABASE_URL?: string;
+    SUPABASE_ANON_KEY?: string;
+    SUPABASE_SERVICE_ROLE_KEY?: string;
+  };
 }
 
 /**
@@ -36,24 +49,27 @@ export function createSupabaseAdapter(options: SupabaseAdapterOptions = {}): Sup
   let supabaseKey: string;
   
   if (isBrowser) {
-    // Browser environment - get env vars from process.env injected by Vite
-    // Vite statically replaces process.env.* at build time for browser builds
-    supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+    // Browser environment - use provided env or throw error
+    if (!options.env) {
+      throw new Error('Environment variables must be provided for browser usage. Pass import.meta.env to the adapter.');
+    }
+    
+    supabaseUrl = options.env.VITE_SUPABASE_URL || options.env.SUPABASE_URL || '';
     
     if (options.useServiceRole) {
-      supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
+      supabaseKey = options.env.VITE_SUPABASE_SERVICE_ROLE_KEY || options.env.SUPABASE_SERVICE_ROLE_KEY || '';
       if (!supabaseKey) {
-        throw new Error('Missing required Vite environment variable: VITE_SUPABASE_SERVICE_ROLE_KEY');
+        throw new Error('Missing required environment variable: VITE_SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY');
       }
     } else {
-      supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+      supabaseKey = options.env.VITE_SUPABASE_ANON_KEY || options.env.SUPABASE_ANON_KEY || '';
       if (!supabaseKey) {
-        throw new Error('Missing required Vite environment variable: VITE_SUPABASE_ANON_KEY');
+        throw new Error('Missing required environment variable: VITE_SUPABASE_ANON_KEY or SUPABASE_ANON_KEY');
       }
     }
     
     if (!supabaseUrl) {
-      throw new Error('Missing required Vite environment variable: VITE_SUPABASE_URL');
+      throw new Error('Missing required environment variable: VITE_SUPABASE_URL or SUPABASE_URL');
     }
   } else {
     // Server/CLI environment - use standard variables

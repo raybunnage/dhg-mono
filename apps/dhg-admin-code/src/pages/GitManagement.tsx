@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { format } from 'date-fns';
 import { DashboardLayout } from '../components/DashboardLayout';
+
+// Create supabase client with environment variables
+const supabase = createSupabaseAdapter({ env: import.meta.env as any });
 
 interface Worktree {
   path: string;
@@ -162,7 +165,6 @@ export function GitManagement() {
   const loadData = async () => {
       try {
         setLoading(true);
-        // Use the imported supabase client
 
         // Load merge queue
         const { data: queueData, error: queueError } = await supabase
@@ -352,7 +354,6 @@ export function GitManagement() {
     }
 
     async function loadChecklist() {
-      // Use the imported supabase client
       const { data, error } = await supabase
         .from('dev_merge_checklist')
         .select('*')

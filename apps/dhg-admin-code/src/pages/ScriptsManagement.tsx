@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { DashboardLayout } from '../components/DashboardLayout';
+
+// Create supabase client with environment variables
+const supabase = createSupabaseAdapter({ env: import.meta.env as any });
 
 interface Script {
   id: string;
@@ -96,7 +99,6 @@ export function ScriptsManagement() {
     async function loadScripts() {
       try {
         setLoading(true);
-        // Use the imported supabase client
 
         let query = supabase
           .from('scripts_registry')
