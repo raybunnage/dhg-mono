@@ -1,4 +1,4 @@
-# Claude Code Instructions (v1.03)
+# Claude Code Instructions (v1.04)
 
 ## ⚠️ CRITICAL: Database Tables Have Been Renamed
 
@@ -510,28 +510,53 @@ export class MyService {
 
 ### Universal Supabase Adapter
 
-**✅ Solution**: The project includes a universal Supabase adapter that handles both browser and server environments automatically.
+**✅ Solution**: The project includes a universal Supabase adapter that handles both browser and server environments.
 
 **Location**: `packages/shared/adapters/supabase-adapter.ts`
 
-**Usage Pattern**:
+**Usage Pattern for Browser Apps (Vite)**:
 ```typescript
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 
-// The adapter automatically detects the environment and uses the correct configuration
+// Browser apps MUST pass their environment variables to the adapter
+const supabase = createSupabaseAdapter({
+  env: import.meta.env as any
+});
+```
+
+**Usage Pattern for CLI/Server**:
+```typescript
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+
+// CLI/Server can use without parameters (reads from process.env)
 const supabase = createSupabaseAdapter();
 ```
 
+**Important**: Due to CommonJS/ESM compatibility issues, browser apps must explicitly pass `import.meta.env` to the adapter. The shared package cannot access `import.meta.env` directly.
+
 **Key Benefits**:
-- Automatically detects browser vs server environment
-- Uses `VITE_` prefixed variables in browser, standard variables in CLI/server
-- No need to manually handle environment differences
-- Works seamlessly with shared services that need Supabase access
+- Works in both browser and server environments
+- Handles `VITE_` prefixed variables in browser, standard variables in CLI/server
+- Avoids CommonJS/ESM compatibility issues
+- Maintains type safety and error handling
+
+**Common Error and Fix**:
+```
+❌ Error: Missing required Vite environment variable: VITE_SUPABASE_ANON_KEY
+```
+This happens when browser apps don't pass environment variables. Fix:
+```typescript
+// ❌ Wrong - doesn't work in browser
+const supabase = createSupabaseAdapter();
+
+// ✅ Correct - pass environment variables
+const supabase = createSupabaseAdapter({ env: import.meta.env as any });
+```
 
 **When to Use**:
-- Creating new shared services that need to work in both browser and CLI environments
-- Refactoring existing services to be cross-environment compatible
-- Any situation where you need Supabase access without worrying about environment specifics
+- All browser apps (dhg-hub, dhg-audio, dhg-admin-code, etc.)
+- CLI scripts and server-side code
+- Any situation where you need Supabase access across environments
 
 ## Google Drive Service Account Integration
 
