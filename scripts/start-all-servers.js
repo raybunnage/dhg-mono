@@ -106,7 +106,14 @@ function startServer(serverConfig) {
     return null;
   }
 
+  // Add NODE_NO_WARNINGS for specific servers that have known warnings
   const env = { ...process.env, ...(serverConfig.env || {}) };
+  
+  // Suppress punycode deprecation warning for audio proxy server
+  if (serverConfig.name === 'Audio Proxy Server (dhg-audio)') {
+    env.NODE_NO_WARNINGS = '1';
+  }
+  
   const child = spawn(serverConfig.command, serverConfig.args, {
     cwd: serverConfig.cwd,
     env,
