@@ -573,7 +573,7 @@ export function GitManagement() {
                     }`}>
                       {worktree.branch}
                     </span>
-                    {worktree.activeTasks > 0 && (
+                    {worktree.activeTasks && worktree.activeTasks > 0 && (
                       <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
                         {worktree.activeTasks} active task{worktree.activeTasks > 1 ? 's' : ''}
                       </span>
@@ -598,17 +598,17 @@ export function GitManagement() {
                     )}
                     
                     <div className="flex space-x-4 text-sm">
-                      {worktree.uncommittedChanges > 0 && (
+                      {worktree.uncommittedChanges && worktree.uncommittedChanges > 0 && (
                         <span className="text-orange-600">
                           📝 {worktree.uncommittedChanges} uncommitted change{worktree.uncommittedChanges > 1 ? 's' : ''}
                         </span>
                       )}
-                      {worktree.ahead > 0 && (
+                      {worktree.ahead && worktree.ahead > 0 && (
                         <span className="text-blue-600">
                           ⬆️ {worktree.ahead} commit{worktree.ahead > 1 ? 's' : ''} ahead
                         </span>
                       )}
-                      {worktree.behind > 0 && (
+                      {worktree.behind && worktree.behind > 0 && (
                         <span className="text-red-600">
                           ⬇️ {worktree.behind} commit{worktree.behind > 1 ? 's' : ''} behind
                         </span>
@@ -791,14 +791,14 @@ export function GitManagement() {
                         </span>
                       </div>
                       
-                      {branch.hasUpstream && (branch.ahead > 0 || branch.behind > 0) && (
+                      {branch.hasUpstream && ((branch.ahead && branch.ahead > 0) || (branch.behind && branch.behind > 0)) && (
                         <div className="mt-1 flex space-x-3 text-xs">
-                          {branch.ahead > 0 && (
+                          {branch.ahead && branch.ahead > 0 && (
                             <span className="text-blue-600">
                               ⬆️ {branch.ahead} ahead
                             </span>
                           )}
-                          {branch.behind > 0 && (
+                          {branch.behind && branch.behind > 0 && (
                             <span className="text-red-600">
                               ⬇️ {branch.behind} behind
                             </span>
