@@ -6,6 +6,7 @@ import { claudeService } from '@shared/services/claude-service/claude-service';
 import { processWithAI, processDocumentWithAI, validateExpertProfile } from '../utils/ai-processing';
 import { getDocxContent } from '../utils/google-drive';
 import { ClassificationResponseSchema } from '../schemas/classification.schema';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 // Interface for document types
 interface DocumentType {
@@ -563,7 +564,8 @@ export function ClassifyDocument() {
   }, [showOnlyAssignedDocType, showOnlyUnprocessed]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Document Classification</h1>
         <p className="text-gray-600">Classify documents from Google Drive into appropriate document types</p>
@@ -771,5 +773,6 @@ export function ClassifyDocument() {
         </div>
       )}
     </div>
+    </DashboardLayout>
   );
 }
