@@ -11,7 +11,7 @@
     "clean": "turbo run clean",
     
     "// Server Utilities": "Development server management",
-    "servers": "echo 'Starting all development servers...' && turbo run dev --parallel",
+    "servers": "node scripts/start-all-servers.js",
     "browser": "cd html && node server.js",
     
     "// App Shortcuts": "Quick access to specific app development",
