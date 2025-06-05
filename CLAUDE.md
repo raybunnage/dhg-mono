@@ -53,6 +53,12 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 - Let the user decide how to proceed - don't try to "make things work" by circumventing issues
 - When problems arise, focus on fixing root causes, not symptoms
 
+⚠️ **CRITICAL: NO PULL REQUESTS WITH WORKTREES**
+- **NEVER create pull requests when working with worktrees**
+- **ALWAYS use direct push**: `git push origin branch-name:development`
+- PRs have caused deployment pipeline failures - avoid them completely
+- See "Worktree Merging" section below for proper merge workflow
+
 ⚠️ **SHARED SERVICES AVAILABLE**
 - Check `packages/shared/services/` for existing functionality before implementing new features
 - Health check tools: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
@@ -773,6 +779,36 @@ If you encounter "address already in use" errors:
 
 3. **For Vite apps**, ensure you're not running multiple apps on the same port
 
+## ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
+
+### ❌ NEVER Create Pull Requests When Merging Between Worktrees
+
+**IMPORTANT**: When working with multiple worktrees, **DO NOT create pull requests**. This has caused deployment issues where the PR workflow got stuck or confused the branch states.
+
+**❌ WRONG - Do NOT do this**:
+```bash
+# NEVER DO THIS in worktrees:
+gh pr create ...
+# NEVER create PRs through GitHub UI
+# NEVER use any PR-based workflow
+```
+
+**✅ CORRECT - Direct push to development**:
+```bash
+# Push your branch directly to development:
+git push origin your-branch:development
+
+# Then fetch and merge back:
+git fetch origin development
+git merge origin/development
+```
+
+### Why No PRs with Worktrees?
+- PRs can cause deployment pipeline issues
+- Worktrees have development checked out elsewhere
+- Direct pushes are cleaner and more reliable
+- Avoids branch state confusion
+
 ## Handling pnpm-lock.yaml in Worktree Merges
 
 When working with multiple worktrees and merging branches, `pnpm-lock.yaml` conflicts are common. Follow these guidelines:
@@ -808,6 +844,7 @@ This document provides the essential guidelines for working with Claude Code v1.
 8. **Test incrementally** - especially during cleanup or refactoring
 9. **Configure Google Drive access** - ensure `.service-account.json` exists for Drive commands
 10. **Handle pnpm-lock.yaml properly** - accept incoming and regenerate during merges
+11. **⚠️ NEVER create PRs with worktrees** - use direct push to development instead
 
 When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
 
