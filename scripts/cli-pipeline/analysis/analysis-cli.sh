@@ -1,6 +1,6 @@
 #!/bin/bash
-# AI CLI wrapper script
-# Provides a consistent interface for AI-related tools and services
+# Analysis CLI wrapper script
+# Provides a consistent interface for script analysis tools
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
@@ -8,7 +8,7 @@ TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-
 
 # Function to execute a command with tracking
 track_command() {
-  local pipeline_name="ai"
+  local pipeline_name="analysis"
   local command_name="$1"
   shift
   local full_command="$@"
@@ -35,22 +35,20 @@ done
 
 # Display help information
 function display_help() {
-  echo "AI CLI - Tools for AI services and prompt management"
+  echo "Analysis CLI - Tools for analyzing scripts and code"
   echo ""
   echo "Usage:"
-  echo "  ai-cli.sh [command] [options]"
+  echo "  analysis-cli.sh [command] [options]"
   echo ""
   echo "Commands:"
-  echo "  prompt-lookup [prompt-name]        Look up a prompt template by name"
-  echo "  validate-ai-assets                 Validate AI asset integrity"
-  echo "  validate-prompt-relationships      Validate relationships between prompts"
-  echo "  run-ai-analyze                     Run AI analysis on content"
-  echo "  check-claude-api-key               Verify Claude API key is valid"
-  echo "  health-check                       Run health check for AI pipeline"
+  echo "  analyze-scripts                    Analyze scripts in the codebase"
+  echo "  classify-script-with-prompt        Classify a script using AI prompts"
+  echo "  import-script-analysis             Import script analysis results"
+  echo "  health-check                       Run health check for analysis pipeline"
   echo ""
   echo "Examples:"
-  echo "  ai-cli.sh prompt-lookup script-analysis-prompt"
-  echo "  ai-cli.sh validate-ai-assets"
+  echo "  analysis-cli.sh analyze-scripts"
+  echo "  analysis-cli.sh classify-script-with-prompt script.ts"
 }
 
 # Check for help flag or no arguments
@@ -64,20 +62,14 @@ COMMAND="$1"
 shift
 
 case "$COMMAND" in
-  prompt-lookup)
-    track_command "prompt-lookup" "$SCRIPT_DIR/prompt-lookup.sh $*"
+  analyze-scripts)
+    track_command "analyze-scripts" "$SCRIPT_DIR/analyze-scripts.sh $*"
     ;;
-  validate-ai-assets)
-    track_command "validate-ai-assets" "$SCRIPT_DIR/validate-ai-assets.sh $*"
+  classify-script-with-prompt)
+    track_command "classify-script-with-prompt" "$SCRIPT_DIR/classify-script-with-prompt.sh $*"
     ;;
-  validate-prompt-relationships)
-    track_command "validate-prompt-relationships" "$SCRIPT_DIR/validate-prompt-relationships.sh $*"
-    ;;
-  run-ai-analyze)
-    track_command "run-ai-analyze" "$SCRIPT_DIR/run-ai-analyze.sh $*"
-    ;;
-  check-claude-api-key)
-    track_command "check-claude-api-key" "$SCRIPT_DIR/check-claude-api-key.sh $*"
+  import-script-analysis)
+    track_command "import-script-analysis" "$SCRIPT_DIR/import-script-analysis.sh $*"
     ;;
   health-check)
     track_command "health-check" "$SCRIPT_DIR/health-check.sh $*"

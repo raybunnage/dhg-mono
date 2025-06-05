@@ -46,6 +46,7 @@ interface PipelineHealthResult {
  * Available CLI pipelines with their health check commands
  */
 const CLI_PIPELINES: Pipeline[] = [
+  // Data Integration
   {
     name: 'google_sync',
     displayName: 'Google Sync',
@@ -54,18 +55,27 @@ const CLI_PIPELINES: Pipeline[] = [
     forceHealthy: false
   },
   {
+    name: 'drive_filter',
+    displayName: 'Drive Filter',
+    category: 'Data Integration',
+    healthCommand: './scripts/cli-pipeline/drive_filter/drive-filter-cli.sh health-check',
+    forceHealthy: false
+  },
+  
+  // Content Management
+  {
     name: 'document',
     displayName: 'Document Processing',
     category: 'Content',
-    healthCommand: 'echo "✅ Document Processing infrastructure appears healthy"',
-    forceHealthy: true
+    healthCommand: './scripts/cli-pipeline/document/health-check.sh',
+    forceHealthy: false
   },
   {
     name: 'experts',
     displayName: 'Experts Management',
     category: 'Content',
-    healthCommand: 'echo "✅ Experts service infrastructure appears healthy"',
-    forceHealthy: true
+    healthCommand: './scripts/cli-pipeline/experts/health-check.sh',
+    forceHealthy: false
   },
   {
     name: 'document_types',
@@ -82,12 +92,81 @@ const CLI_PIPELINES: Pipeline[] = [
     forceHealthy: false
   },
   {
+    name: 'presentations',
+    displayName: 'Presentations',
+    category: 'Content',
+    healthCommand: './scripts/cli-pipeline/presentations/presentations-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'classify',
+    displayName: 'Classification',
+    category: 'Content',
+    healthCommand: './scripts/cli-pipeline/classify/classify-cli.sh health-check',
+    forceHealthy: false
+  },
+  
+  // AI Services
+  {
+    name: 'ai',
+    displayName: 'AI Service',
+    category: 'AI Services',
+    healthCommand: './scripts/cli-pipeline/ai/ai-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
     name: 'prompt_service',
     displayName: 'Prompt Service',
     category: 'AI Services',
-    healthCommand: 'echo "✅ Prompt Service infrastructure appears healthy"',
-    forceHealthy: true
+    healthCommand: './scripts/cli-pipeline/prompt_service/prompt-service-cli.sh health-check',
+    forceHealthy: false
   },
+  {
+    name: 'analysis',
+    displayName: 'Script Analysis',
+    category: 'AI Services',
+    healthCommand: './scripts/cli-pipeline/analysis/analysis-cli.sh health-check',
+    forceHealthy: false
+  },
+  
+  // Development Tools
+  {
+    name: 'git',
+    displayName: 'Git Management',
+    category: 'Development',
+    healthCommand: './scripts/cli-pipeline/git/git-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'git_workflow',
+    displayName: 'Git Workflow',
+    category: 'Development',
+    healthCommand: './scripts/cli-pipeline/git_workflow/git-workflow-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'merge',
+    displayName: 'Merge Queue',
+    category: 'Development',
+    healthCommand: './scripts/cli-pipeline/merge/merge-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'worktree',
+    displayName: 'Worktree Management',
+    category: 'Development',
+    healthCommand: './scripts/cli-pipeline/worktree/worktree-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'dev_tasks',
+    displayName: 'Dev Tasks',
+    category: 'Development',
+    healthCommand: './scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh health-check',
+    forceHealthy: false
+  },
+  
+  // System Management
   {
     name: 'scripts',
     displayName: 'Scripts Management',
@@ -96,12 +175,58 @@ const CLI_PIPELINES: Pipeline[] = [
     forceHealthy: false
   },
   {
-    name: 'presentations',
-    displayName: 'Presentations',
-    category: 'Content',
-    healthCommand: 'echo "✅ Presentations service infrastructure appears healthy"',
-    forceHealthy: true
+    name: 'auth',
+    displayName: 'Authentication',
+    category: 'System',
+    healthCommand: './scripts/cli-pipeline/auth/health-check.sh',
+    forceHealthy: false
   },
+  {
+    name: 'mime_types',
+    displayName: 'MIME Types',
+    category: 'System',
+    healthCommand: './scripts/cli-pipeline/mime_types/mime-types-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'refactor_tracking',
+    displayName: 'Refactor Tracking',
+    category: 'System',
+    healthCommand: './scripts/cli-pipeline/refactor_tracking/refactor-tracking-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'tracking',
+    displayName: 'Command Tracking',
+    category: 'System',
+    healthCommand: './scripts/cli-pipeline/tracking/tracking-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'monitoring',
+    displayName: 'Monitoring',
+    category: 'System',
+    healthCommand: './scripts/cli-pipeline/monitoring/monitoring-cli.sh health-check',
+    forceHealthy: false
+  },
+  
+  // Documentation & Reporting
+  {
+    name: 'documentation',
+    displayName: 'Documentation',
+    category: 'Documentation',
+    healthCommand: './scripts/cli-pipeline/documentation/documentation-cli.sh health-check',
+    forceHealthy: false
+  },
+  {
+    name: 'work_summaries',
+    displayName: 'Work Summaries',
+    category: 'Documentation',
+    healthCommand: './scripts/cli-pipeline/work_summaries/work-summaries-cli.sh health-check',
+    forceHealthy: false
+  },
+  
+  // Infrastructure
   {
     name: 'supabase',
     displayName: 'Supabase',
