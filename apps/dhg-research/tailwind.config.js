@@ -8,47 +8,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Dark blue theme colors
+        // Orange theme colors to match dhg-admin-code style
         primary: {
-          50: '#e6f1ff',
-          100: '#b3d1ff',
-          200: '#80b2ff',
-          300: '#4d93ff',
-          400: '#1a74ff',
-          500: '#0055e6',  // Main brand color
-          600: '#0044b3',
-          700: '#003380',
-          800: '#00224d',
-          900: '#00111a',  // Darkest
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#f97316',  // Main brand color
+          600: '#ea580c',
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',  // Darkest
         },
         background: {
-          DEFAULT: '#00111a',
-          paper: '#001933',
-          elevated: '#002244',
-          hover: '#003355',
+          DEFAULT: '#fff7ed',  // Light orange background
+          paper: '#ffffff',
+          elevated: '#fef3e2',
+          hover: '#fed7aa',
         },
         text: {
-          primary: '#ffffff',
-          secondary: '#b3d1ff',
-          muted: '#6699cc',
-          disabled: '#4d6680',
+          primary: '#7c2d12',     // Dark orange for main text
+          secondary: '#c2410c',   // Medium orange for secondary text
+          muted: '#9a3412',      // Muted orange
+          disabled: '#fed7aa',   // Light orange for disabled
         },
         border: {
-          DEFAULT: '#003355',
-          light: '#004466',
-          dark: '#001122',
+          DEFAULT: '#fed7aa',
+          light: '#fef3e2',
+          dark: '#ea580c',
         },
         success: {
-          DEFAULT: '#00cc66',
-          dark: '#009944',
+          DEFAULT: '#16a34a',
+          dark: '#15803d',
         },
         warning: {
-          DEFAULT: '#ffaa00',
-          dark: '#cc8800',
+          DEFAULT: '#eab308',
+          dark: '#ca8a04',
         },
         error: {
-          DEFAULT: '#ff4444',
-          dark: '#cc0000',
+          DEFAULT: '#dc2626',
+          dark: '#b91c1c',
         },
       },
       fontFamily: {
