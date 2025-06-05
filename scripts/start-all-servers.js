@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 
 // Server configuration with dedicated ports
 const SERVERS = [
@@ -83,6 +84,32 @@ const SERVERS = [
   }
 ];
 
+// Function to check if a port is available
+function isPortAvailable(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close();
+      resolve(true);
+    });
+    server.listen(port);
+  });
+}
+
+// Function to kill process on a specific port
+function killPortProcess(port) {
+  try {
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+      execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`);
+    } else if (process.platform === 'win32') {
+      execSync(`netstat -ano | findstr :${port} | findstr LISTENING | awk '{print $5}' | xargs kill -9 2>/dev/null || true`);
+    }
+  } catch (e) {
+    // Ignore errors - port might already be free
+  }
+}
+
 console.log('🚀 Starting all development servers...\n');
 console.log('Port assignments:');
 console.log('================');
@@ -95,7 +122,7 @@ console.log('================\n');
 const runningServers = [];
 
 // Function to start a server
-function startServer(serverConfig) {
+async function startServer(serverConfig) {
   console.log(`Starting ${serverConfig.name} on port ${serverConfig.port}...`);
   
   // Check if the command file exists
@@ -104,6 +131,24 @@ function startServer(serverConfig) {
     console.warn(`⚠️  ${serverConfig.name}: File not found at ${commandPath}`);
     console.log(`   Skipping ${serverConfig.name}\n`);
     return null;
+  }
+  
+  // Check if port is available
+  const portAvailable = await isPortAvailable(serverConfig.port);
+  if (!portAvailable) {
+    console.warn(`⚠️  Port ${serverConfig.port} is already in use. Attempting to free it...`);
+    killPortProcess(serverConfig.port);
+    
+    // Wait a bit for the port to be freed
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check again
+    const stillInUse = !(await isPortAvailable(serverConfig.port));
+    if (stillInUse) {
+      console.error(`❌ Failed to free port ${serverConfig.port} for ${serverConfig.name}`);
+      return null;
+    }
+    console.log(`✅ Port ${serverConfig.port} freed successfully`);
   }
 
   // Add NODE_NO_WARNINGS for specific servers that have known warnings
@@ -137,18 +182,34 @@ function startServer(serverConfig) {
 
   child.on('close', (code) => {
     console.log(`[${serverConfig.name}] Process exited with code ${code}`);
+    
+    // Remove from running servers list
+    const index = runningServers.findIndex(s => s.port === serverConfig.port);
+    if (index !== -1) {
+      runningServers.splice(index, 1);
+    }
+    
+    // Log error if unexpected exit
+    if (code !== 0 && code !== null) {
+      console.error(`❌ ${serverConfig.name} crashed with exit code ${code}`);
+    }
   });
 
   return child;
 }
 
 // Start all servers
-SERVERS.forEach(server => {
-  const child = startServer(server);
-  if (child) {
-    runningServers.push({ ...server, process: child });
+(async () => {
+  for (const server of SERVERS) {
+    const child = await startServer(server);
+    if (child) {
+      runningServers.push({ ...server, process: child });
+    }
   }
-});
+  
+  console.log('\n✅ All available servers started!');
+  console.log('Press Ctrl+C to stop all servers.\n');
+})();
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
@@ -159,6 +220,3 @@ process.on('SIGINT', () => {
   });
   process.exit(0);
 });
-
-console.log('\n✅ All available servers started!');
-console.log('Press Ctrl+C to stop all servers.\n');
