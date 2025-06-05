@@ -1,0 +1,7 @@
+# Raycast Script Metadata
+*.plist
+.DS_Store
+
+# These scripts are personalized with local paths
+# Uncomment the line below if you want to exclude them from git
+# *.sh
