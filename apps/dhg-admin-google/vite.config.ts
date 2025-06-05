@@ -12,20 +12,6 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../../packages/shared'),
     },
   },
-  define: {
-    // Define Node.js globals for browser compatibility
-    global: 'globalThis',
-    // Provide a complete process object with common Node.js properties
-    process: JSON.stringify({
-      env: {},
-      stdout: { isTTY: false },
-      stderr: { isTTY: false },
-      stdin: { isTTY: false },
-      platform: 'browser',
-      version: 'browser',
-      versions: { node: 'browser' }
-    })
-  },
   server: {
     port: 5174, // Use a different port than other apps
   }
