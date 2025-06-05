@@ -12,6 +12,7 @@
     
     "// Server Utilities": "Development server management",
     "servers": "node scripts/start-all-servers.js",
+    "kill-servers": "node scripts/kill-all-servers.js",
     "browser": "cd html && node server.js",
     "file-browser": "cd html && node server.js",
     "research": "pnpm --filter @dhg/research dev",

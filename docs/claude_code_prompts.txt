@@ -7,9 +7,17 @@ write up this latest ai-work_summary and add it using and be careful about how y
     "tag1,tag2"
 
 Now first make sure all files are checked in, then carefully merge this branch into development branch (read CLAUDE.md, especially the pnpm-lock.yaml section). If
-  pnpm-lock.yaml conflicts arise, accept the incoming version with 'git checkout --theirs pnpm-lock.yaml' and run 'pnpm install' to regenerate. After successfully merging (and
-  only then), bring the updated development branch with all its changes into this worktree, again handling pnpm-lock.yaml by accepting remote and regenerating with 'pnpm
+  pnpm-lock.yaml conflicts arise, accept the incoming version with 'git checkout --theirs pnpm-lock.yaml' and run 'pnpm install' to regenerate. After successfully merging (and only then), bring the updated development branch with all its changes into this worktree, again handling pnpm-lock.yaml by accepting remote and regenerating with 'pnpm
   install'.
+
+
+Now first make sure all files are checked in, then carefully check that this branch has been properly merged into the development branch (read CLAUDE.md, especially the pnpm-lock.yaml section). If pnpm-lock.yaml conflicts arise, accept the incoming version with 'git checkout --theirs pnpm-lock.yaml' and run 'pnpm install' to regenerate. After determining successful merging was done merging (and only then), bring the updated development branch with all its changes into this worktree, again handling pnpm-lock.yaml by accepting remote and regenerating with 'pnpm install'.
+
+
+can you go through all the apps under the apps folder and check for code that could be moved into a shared service
+
+If the code could be of benefit to other apps and can be factored into a singleton - can you check and see if already is in a service or if it can be one and if it can be can you create that new service - or add to an existing service.  I need you to examine the code in each page of each app - and determine if some of it couuld be put into a singleton service or leverage an existing service.  The goal is to have lightweight applications and robust shared code under packages. Its okay to make adaptors for the broweer if necessary.  Read claude.md which has instructions about a new supabase adaptor that you will need to switch over to in many apps.  Check each page to seee if you can use this new supabase adaptor. 
+
 
 use the copy-env commands to copy the .env.development file from root of dhg-mono as well as the .env.development file from dhg-mono for the dhg-admin-suite app and copy into the  proper location in this worktree 
 
