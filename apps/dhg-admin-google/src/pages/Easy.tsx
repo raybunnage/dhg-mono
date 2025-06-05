@@ -87,11 +87,8 @@ export function Easy() {
       setEnvDebug(envVars);
       setKeyValidation(keyChecks);
       
-      // Get detailed adapter diagnostics
-      const adapterDiagnostics = await supabaseAdapter.getDiagnostics();
+      // Log adapter usage
       addDiagnostic(`Using universal Supabase adapter`);
-      addDiagnostic(`Supabase URL: ${adapterDiagnostics.urlPreview}`);
-      addDiagnostic(`Supabase Key: ${adapterDiagnostics.keyPreview}`);
       addDiagnostic(`Network status: ${navigator.onLine ? 'Online' : 'Offline'}`);
       
       // Authentication and database query
@@ -100,46 +97,34 @@ export function Easy() {
         setAuthStatus('Authenticating...');
         addDiagnostic('Attempting to authenticate...');
         
-        // Use the adapter's ensureAuth method instead of manual authentication
-        const { success: authSuccess, diagnostics: authDiagnostics } = 
-          await supabaseAdapter.ensureAuth();
+        // First try to get any existing session
+        const { data: sessionData } = await supabase.auth.getSession();
         
-        if (authSuccess) {
-          addDiagnostic('Authentication successful');
+        if (sessionData.session) {
+          // Already authenticated
+          addDiagnostic(`Already authenticated as: ${sessionData.session.user.email || 'Unknown user'}`);
           setAuthStatus('Authenticated');
         } else {
-          // Fallback to manual authentication if adapter's method fails
-          addDiagnostic('Adapter authentication failed, trying manual authentication');
+          // Need to log in with test user
+          addDiagnostic(`No existing session. Signing in with test user: ${testUser.email}`);
           
-          // First try to get any existing session
-          const { data: sessionData } = await supabase.auth.getSession();
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: testUser.email,
+            password: testUser.password
+          });
           
-          if (sessionData.session) {
-            // Already authenticated
-            addDiagnostic(`Already authenticated as: ${sessionData.session.user.email || 'Unknown user'}`);
+          if (authError) {
+            addDiagnostic(`Authentication failed: ${authError.message}`);
+            setAuthStatus('Authentication failed');
+            setError(`Authentication failed: ${authError.message}`);
+            setLoading(false);
+            setDiagnostics(diagOutput);
+            return;
+          }
+          
+          if (authData.user) {
+            addDiagnostic(`Successfully authenticated as: ${authData.user.email}`);
             setAuthStatus('Authenticated');
-          } else {
-            // Need to log in with test user
-            addDiagnostic(`No existing session. Signing in with test user: ${testUser.email}`);
-            
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-              email: testUser.email,
-              password: testUser.password
-            });
-            
-            if (authError) {
-              addDiagnostic(`Authentication failed: ${authError.message}`);
-              setAuthStatus('Authentication failed');
-              setError(`Authentication failed: ${authError.message}`);
-              setLoading(false);
-              setDiagnostics(diagOutput);
-              return;
-            }
-            
-            if (authData.user) {
-              addDiagnostic(`Successfully authenticated as: ${authData.user.email}`);
-              setAuthStatus('Authenticated');
-            }
           }
         }
         
@@ -272,8 +257,8 @@ const { data, error } = await supabase
   .from('document_types')
   .select('id', { count: 'exact', head: true });
 
-// Or use adapter methods
-const { success, diagnostics } = await supabaseAdapter.ensureAuth();`}
+// Use the supabase client directly for authentication
+const { data: { session } } = await supabase.auth.getSession();`}
           </div>
           
           <p className="mb-2">Key benefits of the universal adapter:</p>

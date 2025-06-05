@@ -17,11 +17,6 @@ import { filterService } from '@/utils/filter-service-adapter';
     console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
     console.log('- VITE_SUPABASE_SERVICE_ROLE_KEY exists:', !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY);
     
-    // Use supabaseAdapter diagnostics
-    console.log('Getting Supabase adapter diagnostics...');
-    const diagnostics = await supabaseAdapter.getDiagnostics();
-    console.log('Supabase diagnostics:', diagnostics);
-    
     // Test connection with direct test query
     console.log('Testing Supabase connection with direct query...');
     const { data, error } = await supabase.from('filter_user_profiles').select('count(*)', { count: 'exact', head: true });
