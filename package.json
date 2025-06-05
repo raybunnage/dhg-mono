@@ -13,6 +13,7 @@
     "// Server Utilities": "Development server management",
     "servers": "echo 'Starting all development servers...' && turbo run dev --parallel",
     "browser": "cd html && node server.js",
+    "research": "pnpm --filter @dhg/research dev",
     
     "// App Shortcuts": "Quick access to specific app development",
     "dev:hub": "pnpm --filter dhg-hub dev",
@@ -20,6 +21,7 @@
     "dev:experts": "pnpm --filter dhg-improve-experts dev",
     "dev:admin-code": "pnpm --filter dhg-admin-code dev",
     "dev:admin-suite": "pnpm --filter dhg-admin-suite dev",
+    "dev:research": "pnpm --filter @dhg/research dev",
     
     "// Utility Commands": "Helpful utilities",
     "tree": "node scripts/show-tree.js",
