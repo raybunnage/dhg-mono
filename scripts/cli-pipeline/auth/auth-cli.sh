@@ -47,6 +47,7 @@ print_help() {
   echo "  test                     Test authentication service"
   echo "  verify-migration         Verify email allowlist migration"
   echo "  sync-auth-ids            Sync auth_user_id fields in auth_allowed_emails"
+  echo "  health-check             Run health check for auth pipeline"
   echo "  help                     Show this help message"
   echo ""
   echo "Options:"
@@ -220,7 +221,7 @@ while [[ $# -gt 0 ]]; do
       PASSWORD="$2"
       shift 2
       ;;
-    login|logout|whoami|profile|test|verify-migration|sync-auth-ids|help)
+    login|logout|whoami|profile|test|verify-migration|sync-auth-ids|health-check|help)
       COMMAND="$1"
       shift
       ;;
@@ -284,6 +285,9 @@ case $COMMAND in
     ;;
   sync-auth-ids)
     cmd_sync_auth_ids
+    ;;
+  health-check)
+    track_command "health-check" "$SCRIPT_DIR/health-check.sh"
     ;;
   help|"")
     print_help

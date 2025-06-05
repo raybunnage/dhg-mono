@@ -48,6 +48,8 @@ Merge Management Commands:
                                       remove           Remove from queue
                                       prioritize       Update priority
                                       next             Show next merge candidate
+    
+    health-check                    Run health check for worktree pipeline
                                       dependencies     Manage dependencies
     
     execute-merge [-b <branch>]     Execute the merge into development
@@ -103,6 +105,11 @@ case "$1" in
         shift
         track_command "worktree" "execute-merge" "$@"
         ts-node "$SCRIPT_DIR/execute-merge.ts" "$@"
+        ;;
+        
+    health-check)
+        track_command "worktree" "health-check"
+        "$SCRIPT_DIR/health-check.sh"
         ;;
         
     help|--help|-h|"")

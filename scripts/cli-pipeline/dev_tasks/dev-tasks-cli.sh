@@ -41,6 +41,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  add-file     Add file references to a task"
   echo "  show         Show detailed task information"
   echo "  copy-request Format task for copying to Claude"
+  echo "  health-check Run health check for dev tasks pipeline"
   echo ""
   echo "Examples:"
   echo "  # Create a new task with git branch"
@@ -124,6 +125,11 @@ case "$1" in
     track_command "dev-tasks" "copy-request"
     shift
     ts-node "$SCRIPT_DIR/copy-request.ts" "$@"
+    ;;
+    
+  "health-check")
+    track_command "dev-tasks" "health-check"
+    "$SCRIPT_DIR/health-check.sh"
     ;;
     
   *)

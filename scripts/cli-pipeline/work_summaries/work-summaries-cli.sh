@@ -22,6 +22,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  add          Add a new work summary (manual)"
   echo "  auto         Auto-generate a work summary (AI-friendly)"
   echo "  import       Import summaries from claude_code_prompts.txt"
+  echo "  health-check Run health check for work summaries pipeline"
   echo ""
   echo "Examples:"
   echo "  ./work-summaries-cli.sh add --title \"Fixed bug\" --content \"Description\" --commands \"cmd1,cmd2\""
@@ -45,6 +46,10 @@ case "$1" in
   "import")
     shift
     ts-node "$SCRIPT_DIR/import-from-prompts.ts" "$@"
+    ;;
+    
+  "health-check")
+    "$SCRIPT_DIR/health-check.sh"
     ;;
     
   *)

@@ -41,6 +41,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
     echo "  start-merge <branch>    Start merging a branch"
     echo "  complete-merge <branch> Mark merge as complete"
     echo "  queue-remove <branch>   Remove branch from queue"
+    echo "  health-check            Run health check for merge pipeline"
     echo ""
     echo "Options:"
     echo "  --priority <n>     Set priority (0-10, higher = sooner)"
@@ -101,6 +102,11 @@ case "$COMMAND" in
     "queue-remove")
         echo "Removing from queue..."
         ts-node "$SCRIPT_DIR/queue-remove.ts" "$@"
+        ;;
+    
+    "health-check")
+        track_command "health-check"
+        "$SCRIPT_DIR/health-check.sh"
         ;;
     
     *)

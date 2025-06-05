@@ -39,6 +39,7 @@ show_help() {
     echo "  update-continuous       Update all continuously tracked documents"
     echo "  analyze-relevance       Analyze document relevance for archiving"
     echo "  clean-archived          Remove very old archived documents"
+    echo "  health-check            Run health check for documentation pipeline"
     echo ""
     echo "Options:"
     echo "  --dry-run              Show what would be done without making changes"
@@ -104,6 +105,11 @@ case "$1" in
         track_command "clean-archived" "$2"
         echo -e "${BLUE}Cleaning very old archived documents...${NC}"
         ts-node "$SCRIPT_DIR/clean-old-archives.ts" "${@:2}"
+        ;;
+        
+    "health-check")
+        track_command "health-check" ""
+        "$SCRIPT_DIR/health-check.sh"
         ;;
         
     "--help"|"-h"|"")
