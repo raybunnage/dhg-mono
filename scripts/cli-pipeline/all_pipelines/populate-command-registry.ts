@@ -30,6 +30,7 @@ const pipelines: PipelineInfo[] = [
   { name: 'document_types', description: 'Document type management', path: 'document_types' },
   { name: 'drive_filter', description: 'Google Drive filter profiles', path: 'drive_filter' },
   { name: 'experts', description: 'Expert profile management', path: 'experts' },
+  { name: 'gmail', description: 'Gmail email synchronization and processing', path: 'gmail' },
   { name: 'google_sync', description: 'Google Drive synchronization', path: 'google_sync' },
   { name: 'media-processing', description: 'Media file processing and transcription', path: 'media-processing' },
   { name: 'mime_types', description: 'MIME type configuration', path: 'mime_types' },
