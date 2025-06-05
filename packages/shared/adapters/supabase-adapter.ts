@@ -36,24 +36,17 @@ export function createSupabaseAdapter(options: SupabaseAdapterOptions = {}): Sup
   let supabaseKey: string;
   
   if (isBrowser) {
-    // Browser environment - use Vite prefixed variables
-    // Use type assertion to handle import.meta in different environments
-    let env: any = {};
-    try {
-      env = (import.meta as any)?.env || {};
-    } catch (error) {
-      // Fallback for environments that don't support import.meta
-      env = {};
-    }
-    supabaseUrl = env.VITE_SUPABASE_URL;
+    // Browser environment - get env vars from process.env injected by Vite
+    // Vite statically replaces process.env.* at build time for browser builds
+    supabaseUrl = process.env.VITE_SUPABASE_URL || '';
     
     if (options.useServiceRole) {
-      supabaseKey = env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+      supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
       if (!supabaseKey) {
         throw new Error('Missing required Vite environment variable: VITE_SUPABASE_SERVICE_ROLE_KEY');
       }
     } else {
-      supabaseKey = env.VITE_SUPABASE_ANON_KEY;
+      supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
       if (!supabaseKey) {
         throw new Error('Missing required Vite environment variable: VITE_SUPABASE_ANON_KEY');
       }
