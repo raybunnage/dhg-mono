@@ -1,11 +1,12 @@
 /**
  * Supabase Browser Client for dhg-audio
  * 
- * A browser-specific Supabase client that properly handles Vite environment variables
- * This bypasses the shared service complexity and provides direct access to Supabase
+ * A browser-specific Supabase client that uses the universal adapter
+ * This provides proper singleton pattern with environment auto-detection
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 import type { Database } from '../../../../supabase/types';
 
 class SupabaseBrowserClient {
@@ -25,33 +26,24 @@ class SupabaseBrowserClient {
 
   public getClient(): SupabaseClient<Database> {
     if (!this.client) {
-      // Get environment variables directly from Vite
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      // Use service role key for RLS bypass (following dhg-hub pattern)
-      const supabaseKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      const isServiceKey = supabaseKey === import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-      console.log('[SupabaseBrowserClient] Initializing with:', {
-        url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
-        key: supabaseKey ? `${supabaseKey.substring(0, 10)}...` : 'MISSING',
-        keyType: isServiceKey ? 'SERVICE_ROLE' : 'ANON'
+      // Check if service role key is available
+      const hasServiceKey = !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+      
+      console.log('[SupabaseBrowserClient] Initializing with universal adapter', {
+        useServiceRole: hasServiceKey
       });
 
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error(
-          'Missing Supabase environment variables. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY) are set in .env.development'
-        );
-      }
-
-      this.client = createClient<Database>(supabaseUrl, supabaseKey, {
-        auth: {
+      // Use universal adapter with appropriate configuration
+      this.client = createSupabaseAdapter({
+        useServiceRole: hasServiceKey,
+        authConfig: {
           storageKey: 'dhg-audio-auth',
           persistSession: true,
-          autoRefreshToken: false
+          autoRefreshToken: !hasServiceKey // Only auto-refresh for anon key
         }
-      });
+      }) as SupabaseClient<Database>;
 
-      console.log('[SupabaseBrowserClient] Client created successfully');
+      console.log('[SupabaseBrowserClient] Client created successfully using universal adapter');
     }
 
     return this.client;

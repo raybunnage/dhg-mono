@@ -1,9 +1,10 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
 /**
  * Browser-compatible Supabase client
- * This adapter provides a simpler implementation for browser environments
- * that doesn't rely on Node.js fs/path modules
+ * This adapter uses the universal adapter which automatically
+ * handles environment detection and configuration
  */
 class SupabaseBrowserAdapter {
   private static instance: SupabaseBrowserAdapter;
@@ -25,40 +26,21 @@ class SupabaseBrowserAdapter {
 
   /**
    * Get the Supabase client
-   * This uses environment variables injected by Vite
+   * This uses the universal adapter for proper environment handling
    */
   public getClient(): SupabaseClient {
     if (!this.client) {
       try {
-        // Using the environment variables that are already set in the project
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-        // Log the URL (but hide most of the key for security)
-        console.log('Initializing Supabase with URL:', supabaseUrl);
-        console.log('Using ANON key starting with:', 
-          supabaseKey ? `${supabaseKey.substring(0, 10)}...` : 'undefined');
-
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Supabase credentials not found. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are defined in your .env.development file.');
-        }
-
-        if (supabaseUrl.includes('your-supabase-url')) {
-          throw new Error('Default placeholder Supabase URL detected. Please update your .env.development file with the real Supabase URL.');
-        }
-
-        if (supabaseKey.includes('your-anon-key-here')) {
-          throw new Error('Default placeholder Supabase anon key detected. Please update your .env.development file with the real anon key.');
-        }
-
-        this.client = createClient(supabaseUrl, supabaseKey);
-        console.log('Supabase client successfully created');
+        console.log('Initializing Supabase with universal adapter...');
+        
+        this.client = createSupabaseAdapter();
+        console.log('Supabase client successfully created using universal adapter');
       } catch (error) {
         console.error('Failed to create Supabase client:', error);
         throw error;
       }
     }
-    return this.client;
+    return this.client!;
   }
 }
 

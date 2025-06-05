@@ -10,8 +10,7 @@ import {
   getSourcesGoogleUpdateService 
 } from '../../shared/services/google-drive';
 import chalk from 'chalk';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../../../supabase/types';
+import { SupabaseClientService } from '../../shared/services/supabase-client';
 
 /**
  * This service connects the CLI to the shared Google Drive services
@@ -28,28 +27,17 @@ class GoogleDriveCliService {
   constructor(config: any) {
     this.config = config;
     
-    // Initialize Supabase client
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || 
-                      process.env.NEXT_PUBLIC_SUPABASE_URL || 
-                      process.env.SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
-                      process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || 
-                      process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (supabaseUrl && supabaseKey) {
-      this.supabaseClient = createClient<Database>(supabaseUrl, supabaseKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      });
+    // Initialize Supabase client using the singleton service
+    try {
+      this.supabaseClient = SupabaseClientService.getInstance().getClient();
       
       // Initialize services with the centralized auth and Supabase client
       this.driveService = getGoogleDriveService(this.supabaseClient);
       this.syncService = getGoogleDriveSyncService(this.supabaseClient);
       this.updateService = getSourcesGoogleUpdateService(this.supabaseClient);
-    } else {
-      console.error(chalk.red('Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.'));
+    } catch (error) {
+      console.error(chalk.red('Failed to initialize Supabase client: ' + error));
+      console.error(chalk.red('Please ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are set.'));
     }
   }
 
@@ -380,7 +368,14 @@ class GoogleDriveCliService {
       }
       
       // Calculate statistics
-      const stats = {
+      const stats: {
+        totalFiles: number;
+        totalFolders: number;
+        totalSize: number;
+        syncedFiles: number;
+        failedFiles: number;
+        fileTypes: Record<string, number>;
+      } = {
         totalFiles: 0,
         totalFolders: 0,
         totalSize: 0,
@@ -389,7 +384,7 @@ class GoogleDriveCliService {
         fileTypes: {}
       };
       
-      data.forEach(file => {
+      data.forEach((file: any) => {
         if (file.mime_type === 'application/vnd.google-apps.folder') {
           stats.totalFolders++;
         } else {
