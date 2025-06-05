@@ -1,0 +1,38 @@
+{
+  "name": "presentations-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for managing presentations and generating AI summaries",
+  "main": "presentations-cli.sh",
+  "bin": {
+    "presentations": "presentations-cli.sh"
+  },
+  "scripts": {
+    "start": "bash presentations-cli.sh",
+    "dev": "bash presentations-cli.sh",
+    "build": "tsc --skipLibCheck",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1",
+    "markdown-table": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "presentations",
+    "summaries",
+    "claude",
+    "ai",
+    "cli"
+  ],
+  "license": "MIT",
+  "type": "commonjs"
+}

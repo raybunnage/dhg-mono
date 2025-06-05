@@ -1,0 +1,55 @@
+{
+  "transcription": {
+    "model": "base",
+    "gpu_type": "T4",
+    "gpu_count": 6,
+    "timeout_seconds": 360,
+    "segments": 3,
+    "language": "en",
+    "beam_size": 5,
+    "use_vad": true,
+    "vad_parameters": {
+      "min_silence_duration_ms": 500
+    }
+  },
+  "files": {
+    "default_audio_path": "file_types/m4a/INGESTED_2024_04_17_Navaux_10m.m4a",
+    "short_audio_path": "file_types/m4a/INGESTED_2024_04_17_Navaux_1m.m4a",
+    "medium_audio_path": "file_types/m4a/INGESTED_2024_04_17_Navaux_5m.m4a",
+    "results_dir": "packages/python-audio-processor/results"
+  },
+  "presets": {
+    "fast": {
+      "model": "tiny",
+      "gpu_count": 3,
+      "segments": 3,
+      "timeout_seconds": 300
+    },
+    "balanced": {
+      "model": "base",
+      "gpu_count": 6,
+      "segments": 6,
+      "timeout_seconds": 420
+    },
+    "quality": {
+      "model": "medium",
+      "gpu_count": 3,
+      "segments": 3,
+      "timeout_seconds": 900
+    },
+    "short_file": {
+      "model": "medium",
+      "gpu_type": "T4",
+      "gpu_count": 3,
+      "segments": 3,
+      "timeout_seconds": 360
+    },
+    "medium_file": {
+      "model": "medium",
+      "gpu_type": "T4", 
+      "gpu_count": 3,
+      "segments": 3,
+      "timeout_seconds": 420
+    }
+  }
+}

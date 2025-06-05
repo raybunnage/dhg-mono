@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "pattern": "toast.info",
+      "message": "❌ Do not use toast.info - use toast.success for positive messages or toast.error for warnings",
+      "severity": "error",
+      "replacement": {
+        "positive": "toast.success",
+        "negative": "toast.error",
+        "loading": "toast.loading"
+      },
+      "files": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+    }
+  ],
+  "documentation": {
+    "toast": {
+      "allowed": [
+        "toast.success() - For success/completion messages",
+        "toast.error() - For errors and warnings",
+        "toast.loading() - For loading states",
+        "toast.custom() - For custom styling",
+        "toast.dismiss() - To dismiss toasts"
+      ],
+      "forbidden": [
+        "toast.info() - DEPRECATED - use success or error instead"
+      ]
+    }
+  }
+} 

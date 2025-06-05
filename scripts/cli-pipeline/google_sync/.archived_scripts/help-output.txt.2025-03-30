@@ -1,0 +1,27 @@
+Usage: index [options] [command]
+
+Options:
+  -V, --version              output the version number
+  -h, --help                 display help for command
+
+Commands:
+  auth                       Manage Google Drive authentication
+  sync                       Sync files with Google Drive
+  roots                      Manage root folders for syncing
+  cleanup                    Cleanup and maintenance operations
+  stats                      Get statistics about synced files
+  files                      Operations on synced files
+  audio                      Operations on audio files
+  test-connection [options]  Test connections to Google Drive and Supabase
+  token-timer [options]      Display time until token expiration
+  help [command]             display help for command
+
+Examples:
+  # Check Google auth status
+  $ google-sync auth status
+
+  # Sync a specific folder
+  $ google-sync sync folder --id 1EHBAhSv1hmcuctiAgaLI9stLvefFFl3m
+
+  # List synced files of a specific type
+  $ google-sync files list --type "audio/x-m4a" --limit 10

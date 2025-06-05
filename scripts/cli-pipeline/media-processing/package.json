@@ -1,0 +1,39 @@
+{
+  "name": "media-processing-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for processing media files (MP4, M4A, transcripts)",
+  "main": "media-processing-cli.sh",
+  "bin": {
+    "media-processing": "media-processing-cli.sh"
+  },
+  "scripts": {
+    "start": "bash media-processing-cli.sh",
+    "dev": "bash media-processing-cli.sh",
+    "build": "tsc --skipLibCheck",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "media",
+    "processing",
+    "transcription",
+    "ffmpeg",
+    "cli"
+  ],
+  "license": "MIT",
+  "type": "commonjs"
+}

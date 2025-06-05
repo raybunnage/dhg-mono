@@ -18,9 +18,9 @@ interface ExpertFormProps {
     id: string;
     expert_name: string;
     full_name: string | null;
-    email_address: string | null;
-    expertise_area: string | null;
-    experience_years: number | null;
+    mnemonic: string | null;
+    is_in_core_group: boolean;
+    metadata: any | null;
   };
   onSuccess: () => void;
 }
@@ -28,9 +28,8 @@ interface ExpertFormProps {
 interface FormValues {
   expert_name: string;
   full_name: string;
-  email_address: string;
-  expertise_area: string;
-  experience_years: number;
+  mnemonic: string;
+  is_in_core_group: boolean;
 }
 
 export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
@@ -41,9 +40,8 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
     defaultValues: {
       expert_name: expert?.expert_name || "",
       full_name: expert?.full_name || "",
-      email_address: expert?.email_address || "",
-      expertise_area: expert?.expertise_area || "",
-      experience_years: expert?.experience_years || 0,
+      mnemonic: expert?.mnemonic || "",
+      is_in_core_group: expert?.is_in_core_group || false,
     },
   });
 
@@ -52,7 +50,7 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
     try {
       if (expert) {
         const { error } = await supabase
-          .from("experts")
+          .from("expert_profiles")
           .update(data)
           .eq("id", expert.id);
         if (error) throw error;
@@ -61,7 +59,7 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
           description: "Expert updated successfully",
         });
       } else {
-        const { error } = await supabase.from("experts").insert([data]);
+        const { error } = await supabase.from("expert_profiles").insert([data]);
         if (error) throw error;
         toast({
           title: "Success",
@@ -115,12 +113,12 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
 
         <FormField
           control={form.control}
-          name="email_address"
+          name="mnemonic"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>Mnemonic</FormLabel>
               <FormControl>
-                <Input type="email" {...field} />
+                <Input placeholder="3-character code (e.g., WAG)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -129,29 +127,16 @@ export function ExpertForm({ expert, onSuccess }: ExpertFormProps) {
 
         <FormField
           control={form.control}
-          name="expertise_area"
+          name="is_in_core_group"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Expertise Area</FormLabel>
+              <FormLabel>Core Group Member</FormLabel>
               <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="experience_years"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Years of Experience</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                <Input 
+                  type="checkbox" 
+                  checked={field.value} 
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  className="w-4 h-4"
                 />
               </FormControl>
               <FormMessage />

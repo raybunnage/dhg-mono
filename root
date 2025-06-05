@@ -1,8 +1,0 @@
-.
-├── apps
-│   ├── dhg-a
-│   └── dhg-b
-├── package.json
-├── pnpm-workspace.yaml
-├── turbo.json
-└── netlify.toml 

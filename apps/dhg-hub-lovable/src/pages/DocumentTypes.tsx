@@ -34,7 +34,7 @@ export default function DocumentTypes() {
   const fetchDocumentTypes = async () => {
     try {
       const { data, error } = await supabase
-        .from("uni_document_types")
+        .from("document_types")
         .select("*")
         .order("document_type");
 
@@ -54,7 +54,7 @@ export default function DocumentTypes() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase.from("uni_document_types").delete().eq("id", id);
+      const { error } = await supabase.from("document_types").delete().eq("id", id);
       if (error) throw error;
       
       toast({

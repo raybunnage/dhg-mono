@@ -1,0 +1,49 @@
+{
+  "name": "google-sync-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for syncing Google Drive files with Supabase",
+  "main": "google-sync-cli.sh",
+  "bin": {
+    "google-sync": "google-sync-cli.sh"
+  },
+  "scripts": {
+    "start": "bash google-sync-cli.sh",
+    "dev": "bash google-sync-cli.sh",
+    "build": "tsc --skipLibCheck",
+    "link": "npm link",
+    "unlink": "npm unlink",
+    "count-mp4": "ts-node count-mp4-files.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "chalk": "^4.1.2",
+    "commander": "^11.0.0",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.3.1",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^127.0.0",
+    "inquirer": "^8.2.5",
+    "open": "^8.4.2",
+    "ora": "^5.4.1",
+    "table": "^6.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "google",
+    "drive",
+    "sync",
+    "supabase",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs"
+}

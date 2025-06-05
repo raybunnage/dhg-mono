@@ -1,0 +1,39 @@
+# App-specific netlify.toml
+[build]
+  base = "apps/dhg-improve-experts"
+  command = "pnpm build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# App-specific environment overrides
+[context.production]
+  [context.production.environment]
+    VITE_APP_NAME = "DHG Improve Experts"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
+
+[context.development]
+  [context.development.environment]
+    VITE_APP_NAME = "DHG Improve Experts (Dev)"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
+
+[context.deploy-preview]
+  [context.deploy-preview.environment]
+    VITE_APP_NAME = "DHG Improve Experts (Preview)"
+    VITE_SUPABASE_URL = "https://jdksnfkupzywjdfefkyj.supabase.co"
+
+[build.environment]
+  NODE_VERSION = "20.9.0"
+  NPM_FLAGS = "--version"
+
+# Add API endpoints for the docs-sync API
+[[redirects]]
+  from = "/api/docs-sync"
+  to = "/.netlify/functions/docs-sync"
+  status = 200
+  force = true
+
+# Default SPA redirect
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

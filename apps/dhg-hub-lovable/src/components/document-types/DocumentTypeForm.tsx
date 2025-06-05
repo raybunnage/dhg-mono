@@ -51,7 +51,7 @@ export function DocumentTypeForm({ documentType, onSuccess }: DocumentTypeFormPr
       if (documentType) {
         // Update existing document type
         const { error } = await supabase
-          .from("uni_document_types")
+          .from("document_types")
           .update(data)
           .eq("id", documentType.id);
         if (error) throw error;
@@ -62,7 +62,7 @@ export function DocumentTypeForm({ documentType, onSuccess }: DocumentTypeFormPr
       } else {
         // Create new document type
         const { error } = await supabase
-          .from("uni_document_types")
+          .from("document_types")
           .insert([data]);
         if (error) throw error;
         toast({

@@ -1,0 +1,25 @@
+#!/bin/bash
+# Update import paths in all utility scripts
+
+UTIL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ts/utility"
+
+echo "Updating paths in all utility scripts in $UTIL_DIR"
+
+# Find all TypeScript files in the utility directory
+find "$UTIL_DIR" -type f -name "*.ts" | while read -r file; do
+  echo "Processing $file"
+  
+  # Replace imports directly 
+  sed -i '' -e 's|from "../supabase/types"|from "../../../../../../supabase/types"|g' \
+           -e 's|import type { Database } from "../supabase/types"|import type { Database } from "../../../../../../supabase/types"|g' \
+           -e 's|from "../packages/shared|from "../../../../../../packages/shared|g' \
+           -e 's|import { defaultGoogleAuth } from "../packages/shared/services/google-drive"|import { defaultGoogleAuth } from "../../../../../../packages/shared/services/google-drive"|g' "$file"
+  
+  # Update environment file paths
+  sed -i '' 's|path.resolve(__dirname, "../.env|path.resolve(__dirname, "../../../../../../.env|g' "$file"
+  sed -i '' 's|path.resolve(__dirname, "../.service-account.json|path.resolve(__dirname, "../../../../../../.service-account.json|g' "$file"
+  
+  echo "Updated $file"
+done
+
+echo "All paths updated"

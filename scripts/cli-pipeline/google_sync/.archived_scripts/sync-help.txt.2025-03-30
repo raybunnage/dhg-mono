@@ -1,0 +1,20 @@
+Usage: index sync [options] [command]
+
+Sync files with Google Drive
+
+Options:
+  -h, --help          display help for command
+
+Commands:
+  folder [options]    Sync a specific Google Drive folder
+  roots [options]     Sync all registered root folders
+  help [command]      display help for command
+
+For folder command:
+  -i, --id <folder-id>       Google Drive folder ID to sync
+  -r, --recursive            Sync recursively through subfolders (default: true)
+  -b, --batch-size <size>    Number of files to process in each batch (default: "50")
+  -d, --depth <levels>       Maximum folder depth to traverse (default: "10")
+  --dry-run                  Show what would be synced without making changes
+  -v, --verbose              Enable verbose logging
+  --no-color                 Disable color output

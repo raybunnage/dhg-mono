@@ -1,0 +1,17 @@
+{
+  "tables": [
+    "expert_documents",
+    "expert_profiles",
+    "document_types",
+    "presentation_assets",
+    "presentations",
+    "sources_google",
+    "scripts"
+  ],
+  "defaultOptions": {
+    "includeStructure": true,
+    "includeData": true,
+    "includeIndexes": true,
+    "includeConstraints": true
+  }
+}

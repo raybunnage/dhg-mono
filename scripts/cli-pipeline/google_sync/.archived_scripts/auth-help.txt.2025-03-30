@@ -1,0 +1,12 @@
+Usage: index auth [options] [command]
+
+Manage Google Drive authentication
+
+Options:
+  -h, --help       display help for command
+
+Commands:
+  status [options]  Check if Google auth token is valid
+  login [options]   Login to Google Drive and get a new token
+  refresh [options] Refresh the Google auth token
+  help [command]    display help for command

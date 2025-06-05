@@ -1,0 +1,7 @@
+{
+  "name": "@shared/services/git-service",
+  "version": "1.0.0",
+  "main": "git-service.ts",
+  "types": "git-service.ts",
+  "dependencies": {}
+}

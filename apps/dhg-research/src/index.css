@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+    background-color: #fff7ed;
+  }
+
+  /* Custom scrollbar for light orange theme */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background-paper;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-700;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-600;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #c2410c #fff7ed;
+  }
+}
+
+@layer components {
+  /* Button styles */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-500 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-background-elevated hover:bg-background-hover text-text-primary border border-border;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-background-elevated text-text-secondary hover:text-text-primary;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-background-paper border border-border rounded-lg p-6 shadow-lg;
+  }
+
+  .card-elevated {
+    @apply bg-background-elevated border border-border-light;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-4 py-2 bg-background-elevated border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+  }
+
+  /* Table styles */
+  .table {
+    @apply w-full border-collapse;
+  }
+
+  .table th {
+    @apply text-left font-semibold text-text-secondary bg-background-elevated px-4 py-3 border-b border-border;
+  }
+
+  .table td {
+    @apply px-4 py-3 border-b border-border;
+  }
+
+  .table tr:hover {
+    @apply bg-background-elevated;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-primary-900 text-primary-200 border border-primary-700;
+  }
+
+  .badge-success {
+    @apply bg-success-dark/20 text-success border border-success-dark;
+  }
+
+  .badge-warning {
+    @apply bg-warning-dark/20 text-warning border border-warning-dark;
+  }
+
+  .badge-error {
+    @apply bg-error-dark/20 text-error border border-error-dark;
+  }
+}
+
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-primary-200 bg-clip-text text-transparent;
+  }
+
+  /* Glow effect */
+  .glow {
+    box-shadow: 0 0 20px rgba(0, 85, 230, 0.5);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 10px rgba(0, 85, 230, 0.3);
+  }
+
+  /* Loading animation */
+  .loading-pulse {
+    @apply animate-pulse bg-gradient-to-r from-background-elevated via-background-hover to-background-elevated;
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+}

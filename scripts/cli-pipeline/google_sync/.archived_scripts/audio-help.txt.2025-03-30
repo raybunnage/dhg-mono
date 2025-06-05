@@ -1,0 +1,25 @@
+Usage: index audio [options] [command]
+
+Operations on audio files
+
+Options:
+  -h, --help                 display help for command
+
+Commands:
+  extract [options]          Extract audio from video or audio files
+  batch-extract [options]    Extract audio from multiple files in batch
+  help [command]             display help for command
+
+For extract command:
+  -i, --id <file-id>          File ID to extract audio from
+  -o, --output-dir <path>     Directory to save extracted audio
+  -f, --format <format>       Output format (mp3, wav, etc.) (default: "mp3")
+  -v, --verbose               Enable verbose logging
+  --no-color                  Disable color output
+
+For batch-extract command:
+  -t, --type <mime-type>      Filter by MIME type for batch extraction (default: "video/")
+  -l, --limit <number>        Maximum number of files to process (default: "10")
+  -b, --batch-size <number>   Batch size for processing (default: "2")
+  -v, --verbose               Enable verbose logging
+  --no-color                  Disable color output

@@ -19,7 +19,7 @@ export default function Experts() {
   async function getExperts() {
     try {
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .order('expert_name');
 

@@ -1,0 +1,22 @@
+Usage: index cleanup [options] [command]
+
+Cleanup and maintenance operations
+
+Options:
+  -h, --help              display help for command
+
+Commands:
+  fix-paths [options]     Fix missing parent paths in the database
+  purge [options]         Purge old records from the database
+  help [command]          display help for command
+
+For fix-paths command:
+  --dry-run               Show what would be fixed without making changes
+  -v, --verbose           Enable verbose logging
+  --no-color              Disable color output
+
+For purge command:
+  -d, --days <number>     Delete records older than this many days (default: "30")
+  --dry-run               Show what would be purged without making changes
+  -v, --verbose           Enable verbose logging
+  --no-color              Disable color output

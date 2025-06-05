@@ -1,0 +1,7 @@
+modal>=0.55.4277
+faster-whisper==0.10.0
+tqdm>=4.65.0
+torch>=2.0.0
+numpy>=1.20.0
+soundfile>=0.12.1
+ffmpeg-python>=0.2.0

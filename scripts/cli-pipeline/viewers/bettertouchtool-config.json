@@ -1,0 +1,91 @@
+{
+  "BTTPresetName": "Cursor Worktrees",
+  "BTTPresetContent": [
+    {
+      "BTTAppBundleIdentifier": "BT.G",
+      "BTTAppName": "Global",
+      "BTTTriggers": [
+        {
+          "BTTTriggerName": "Open Development (⌥1)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 18,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono"
+        },
+        {
+          "BTTTriggerName": "Open Admin Code (⌥2)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 19,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-admin-code"
+        },
+        {
+          "BTTTriggerName": "Open Hub (⌥3)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 20,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-dhg-hub"
+        },
+        {
+          "BTTTriggerName": "Open Docs (⌥4)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 21,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-feature/dhg-mono-docs"
+        },
+        {
+          "BTTTriggerName": "Open Gmail (⌥5)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 23,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-gmail-cli-pipeline-research-app"
+        },
+        {
+          "BTTTriggerName": "Open Audio (⌥6)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 22,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-improve-audio"
+        },
+        {
+          "BTTTriggerName": "Open CLI (⌥7)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 26,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-improve-cli-pipelines"
+        },
+        {
+          "BTTTriggerName": "Open Google (⌥8)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 28,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-improve-google"
+        },
+        {
+          "BTTTriggerName": "Open Suite (⌥9)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 25,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-improve-suite"
+        },
+        {
+          "BTTTriggerName": "Open Fixes (⌥0)",
+          "BTTTriggerType": 0,
+          "BTTShortcutKeyCode": 29,
+          "BTTShortcutModifierKeys": 524288,
+          "BTTActionType": 195,
+          "BTTShellTaskActionScript": "/Applications/Cursor.app/Contents/MacOS/Cursor /Users/raybunnage/Documents/github/dhg-mono-integration-bug-fixes-tweaks"
+        }
+      ]
+    }
+  ]
+}
