@@ -29,7 +29,7 @@ class FilterService {
       
       // Use exactly the same query that works in Supabase
       const { data, error } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('id, name, is_active')
         .order('name');
       
@@ -77,7 +77,7 @@ class FilterService {
       console.log('FilterServiceAdapter: Fetching active profile with simplified query');
       
       const { data, error } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('id, name, is_active')
         .eq('is_active', true)
         .limit(1);
@@ -124,7 +124,7 @@ class FilterService {
       
       // First deactivate all profiles
       const { error: deactivateError } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update({ is_active: false })
         .not('id', 'is', null);
       
@@ -135,7 +135,7 @@ class FilterService {
       
       // Then activate the selected profile
       const { error: activateError } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .update({ is_active: true })
         .eq('id', profileId);
       
@@ -167,7 +167,7 @@ class FilterService {
       
       // First verify the profile exists
       const { data: profileData, error: profileError } = await supabase
-        .from('user_filter_profiles')
+        .from('filter_user_profiles')
         .select('name, is_active')
         .eq('id', profileId)
         .single();
@@ -190,7 +190,7 @@ class FilterService {
       
       // Direct query - we know the field is root_drive_id
       const { data, error } = await supabase
-        .from('user_filter_profile_drives')
+        .from('filter_user_profile_drives')
         .select('root_drive_id')  // Using the correct field name
         .eq('profile_id', profileId);
       
@@ -242,7 +242,7 @@ class FilterService {
       
       console.log(`FilterServiceAdapter: Applying filter for profile ${activeProfileId}`);
       
-      // Get root_drive_ids for this profile from user_filter_profile_drives
+      // Get root_drive_ids for this profile from filter_user_profile_drives
       const rootDriveIds = await this.getProfileDriveIds(activeProfileId);
       
       // If no drive IDs found, return unfiltered query

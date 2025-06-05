@@ -24,7 +24,7 @@ import { filterService } from '@/utils/filter-service-adapter';
     
     // Test connection with direct test query
     console.log('Testing Supabase connection with direct query...');
-    const { data, error } = await supabase.from('user_filter_profiles').select('count(*)', { count: 'exact', head: true });
+    const { data, error } = await supabase.from('filter_user_profiles').select('count(*)', { count: 'exact', head: true });
     
     if (error) {
       console.error('Supabase connection test failed:', error);
@@ -43,10 +43,10 @@ import { FilterProfile } from '@/utils/filter-service-adapter';
 async function debugCheckFilterProfiles() {
   try {
     // Direct database query to check what profiles exist - USING THE EXACT QUERY THAT WORKS IN SUPABASE
-    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from user_filter_profiles');
+    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from filter_user_profiles');
     
     const { data, error } = await supabase
-      .from('user_filter_profiles')
+      .from('filter_user_profiles')
       .select('id, name, is_active');
       
     console.log('Debug: Direct database check for profiles');
@@ -230,7 +230,7 @@ type Presentation = Database['public']['Tables']['presentations']['Row'] & {
   created_at?: string | null;
 };
 
-type PresentationAsset = Database['public']['Tables']['presentation_assets']['Row'] & {
+type PresentationAsset = Database['public']['Tables']['media_presentation_assets']['Row'] & {
   source_file?: SourceGoogle | null;
   expert_document?: ExpertDocument | null;
 };
@@ -239,14 +239,14 @@ type SourceGoogle = Database['public']['Tables']['sources_google']['Row'] & {
   document_type?: { document_type: string; mime_type: string | null } | null;
 };
 
-type ExpertDocument = Database['public']['Tables']['expert_documents']['Row'] & {
+type ExpertDocument = Database['public']['Tables']['google_expert_documents']['Row'] & {
   processed_content: any;
   title: string | null;
   document_type?: { document_type: string } | null;
 };
 
-type SubjectClassification = Database['public']['Tables']['subject_classifications']['Row'];
-type TableClassification = Database['public']['Tables']['table_classifications']['Row'];
+type SubjectClassification = Database['public']['Tables']['learn_subject_classifications']['Row'];
+type TableClassification = Database['public']['Tables']['learn_document_classifications']['Row'];
 
 export function Home() {
   // State variables
@@ -402,7 +402,7 @@ export function Home() {
       try {
         console.log('Home: DEBUG - Checking available profiles directly');
         const { data: profilesDebug, error: profilesError } = await supabase
-          .from('user_filter_profiles')
+          .from('filter_user_profiles')
           .select('*')
           .order('name');
         
@@ -422,7 +422,7 @@ export function Home() {
       try {
         console.log('Home: DEBUG - Checking profile drives directly');
         const { data: drivesDebug, error: drivesError } = await supabase
-          .from('user_filter_profile_drives')
+          .from('filter_user_profile_drives')
           .select('*');
         
         if (drivesError) {
@@ -440,7 +440,7 @@ export function Home() {
       try {
         // Fetch presentations with their video sources and expert documents
         let query = supabase
-          .from('presentations')
+          .from('media_presentations')
           .select(`
             id, 
             video_source_id,
@@ -474,7 +474,7 @@ export function Home() {
         
         // DEBUG: Let's check total presentations before filtering
         const { count: totalBeforeFilter, error: countError } = await supabase
-          .from('presentations')
+          .from('media_presentations')
           .select('id', { count: 'exact', head: true })
           .not('video_source_id', 'is', null);
         
@@ -489,7 +489,7 @@ export function Home() {
             
             // Get root drive IDs directly - this establishes what we want to filter by
             const { data: profileDrives, error: drivesError } = await supabase
-              .from('user_filter_profile_drives')
+              .from('filter_user_profile_drives')
               .select('root_drive_id')
               .eq('profile_id', activeFilterProfile.id);
             
@@ -555,7 +555,7 @@ export function Home() {
             
             // Get root drive IDs for the active profile
             const { data: profileDrives } = await supabase
-              .from('user_filter_profile_drives')
+              .from('filter_user_profile_drives')
               .select('root_drive_id')
               .eq('profile_id', activeFilterProfile.id);
             
@@ -567,7 +567,7 @@ export function Home() {
                 
                 // Get all relevant source IDs for these root drive IDs
                 const { data: sources } = await supabase
-                  .from('sources_google')
+                  .from('google_sources')
                   .select('id')
                   .in('root_drive_id', rootDriveIds);
                 
@@ -677,7 +677,7 @@ export function Home() {
         setLoading(true);
         // Fetch assets for the selected presentation
         const { data: assetsData, error: assetsError } = await supabase
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .select(`
             id, 
             asset_type,
@@ -1386,7 +1386,7 @@ export function Home() {
     try {
       // First try to get the expert's basic info to ensure we can display something
       const { data: expertData, error: expertError } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('id, full_name, expert_name, bio')
         .eq('id', expertId)
         .single();
@@ -1454,7 +1454,7 @@ export function Home() {
       if (bioDocuments && bioDocuments.length > 0) {
         // Get presentation_assets for the current expert to find matching source_ids
         const { data: expertAssets, error: assetsError } = await supabase
-          .from('presentation_assets')
+          .from('media_presentation_assets')
           .select('source_id')
           .eq('expert_id', expertId);
           
@@ -1492,7 +1492,7 @@ export function Home() {
       
       // If no specific bio documents found, try to get any document associated with this expert
       const { data: expertAssets, error: assetsError } = await supabase
-        .from('presentation_assets')
+        .from('media_presentation_assets')
         .select('source_id')
         .eq('expert_id', expertId);
           
@@ -1603,7 +1603,7 @@ export function Home() {
     
     try {
       const { data, error } = await supabase
-        .from('experts')
+        .from('expert_profiles')
         .select('*')
         .eq('id', expertId)
         .single();
