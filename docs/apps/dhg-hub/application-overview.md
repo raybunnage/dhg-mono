@@ -12,7 +12,8 @@ DHG-Hub is built as a Single-Page Application, which means:
 - Navigation between views happens without full page reloads
 - All necessary code (HTML, JavaScript, and CSS) is retrieved with a single page load
 - Additional resources and data are loaded dynamically as needed
-- This architecture provides a smoother, more responsive user experience
+- This architecture 
+provides a smoother, more responsive user experience
 
 ## Application Architecture
 
