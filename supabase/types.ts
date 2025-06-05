@@ -953,6 +953,139 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_merge_checklist: {
+        Row: {
+          check_type: string
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          merge_queue_id: string | null
+          result: Json | null
+          status: string | null
+        }
+        Insert: {
+          check_type: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Update: {
+          check_type?: string
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          merge_queue_id?: string | null
+          result?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_checklist_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_dependencies: {
+        Row: {
+          created_at: string | null
+          dependency_type: string | null
+          depends_on_branch: string
+          id: string
+          merge_queue_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_branch?: string
+          id?: string
+          merge_queue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_merge_dependencies_merge_queue_id_fkey"
+            columns: ["merge_queue_id"]
+            isOneToOne: false
+            referencedRelation: "dev_merge_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_merge_queue: {
+        Row: {
+          branch_name: string
+          conflict_details: Json | null
+          conflicts_detected: boolean | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_updated_from_source: string | null
+          merge_commit_sha: string | null
+          merge_completed_at: string | null
+          merge_started_at: string | null
+          merge_status: string | null
+          notes: string | null
+          priority: number | null
+          source_branch: string | null
+          task_ids: string[] | null
+          tests_passed: boolean | null
+          updated_at: string | null
+          worktree_path: string | null
+        }
+        Insert: {
+          branch_name: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Update: {
+          branch_name?: string
+          conflict_details?: Json | null
+          conflicts_detected?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_updated_from_source?: string | null
+          merge_commit_sha?: string | null
+          merge_completed_at?: string | null
+          merge_started_at?: string | null
+          merge_status?: string | null
+          notes?: string | null
+          priority?: number | null
+          source_branch?: string | null
+          task_ids?: string[] | null
+          tests_passed?: boolean | null
+          updated_at?: string | null
+          worktree_path?: string | null
+        }
+        Relationships: []
+      }
       dev_task_commits: {
         Row: {
           commit_hash: string
@@ -1223,6 +1356,108 @@ export type Database = {
           },
         ]
       }
+      doc_continuous_tracking: {
+        Row: {
+          category: string
+          created_at: string | null
+          document_name: string
+          enabled: boolean | null
+          file_path: string
+          id: string
+          last_updated_at: string | null
+          metadata: Json | null
+          next_update_at: string | null
+          source_paths: string[] | null
+          update_frequency: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          document_name: string
+          enabled?: boolean | null
+          file_path: string
+          id?: string
+          last_updated_at?: string | null
+          metadata?: Json | null
+          next_update_at?: string | null
+          source_paths?: string[] | null
+          update_frequency?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          document_name?: string
+          enabled?: boolean | null
+          file_path?: string
+          id?: string
+          last_updated_at?: string | null
+          metadata?: Json | null
+          next_update_at?: string | null
+          source_paths?: string[] | null
+          update_frequency?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      doc_continuous_updates: {
+        Row: {
+          changes_detected: boolean | null
+          changes_summary: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          sections_updated: string[] | null
+          started_at: string | null
+          tracking_id: string | null
+          update_status: string
+          update_type: string
+        }
+        Insert: {
+          changes_detected?: boolean | null
+          changes_summary?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sections_updated?: string[] | null
+          started_at?: string | null
+          tracking_id?: string | null
+          update_status: string
+          update_type: string
+        }
+        Update: {
+          changes_detected?: boolean | null
+          changes_summary?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sections_updated?: string[] | null
+          started_at?: string | null
+          tracking_id?: string | null
+          update_status?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_continuous_updates_tracking_id_fkey"
+            columns: ["tracking_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doc_continuous_updates_tracking_id_fkey"
+            columns: ["tracking_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_tracking"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doc_files: {
         Row: {
           ai_assessment: Json | null
@@ -1400,6 +1635,169 @@ export type Database = {
         }
         Relationships: []
       }
+      email_attachments: {
+        Row: {
+          created_at: string | null
+          email_message_id: string | null
+          file_extension: string | null
+          filename: string
+          google_drive_id: string | null
+          id: string
+          is_processed: boolean | null
+          mime_type: string | null
+          processing_metadata: Json | null
+          size_bytes: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_message_id?: string | null
+          file_extension?: string | null
+          filename: string
+          google_drive_id?: string | null
+          id?: string
+          is_processed?: boolean | null
+          mime_type?: string | null
+          processing_metadata?: Json | null
+          size_bytes?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          email_message_id?: string | null
+          file_extension?: string | null
+          filename?: string
+          google_drive_id?: string | null
+          id?: string
+          is_processed?: boolean | null
+          mime_type?: string | null
+          processing_metadata?: Json | null
+          size_bytes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_attachments_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_extracted_concepts: {
+        Row: {
+          category: string | null
+          concept: string
+          confidence_score: number | null
+          created_at: string | null
+          email_content_id: string | null
+          email_message_id: string | null
+          example: string | null
+          id: string
+          is_valid: boolean | null
+          quote: string | null
+          quote_author: string | null
+          subject_classifications: Json | null
+          summary: string | null
+        }
+        Insert: {
+          category?: string | null
+          concept: string
+          confidence_score?: number | null
+          created_at?: string | null
+          email_content_id?: string | null
+          email_message_id?: string | null
+          example?: string | null
+          id?: string
+          is_valid?: boolean | null
+          quote?: string | null
+          quote_author?: string | null
+          subject_classifications?: Json | null
+          summary?: string | null
+        }
+        Update: {
+          category?: string | null
+          concept?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          email_content_id?: string | null
+          email_message_id?: string | null
+          example?: string | null
+          id?: string
+          is_valid?: boolean | null
+          quote?: string | null
+          quote_author?: string | null
+          subject_classifications?: Json | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_extracted_concepts_email_content_id_fkey"
+            columns: ["email_content_id"]
+            isOneToOne: false
+            referencedRelation: "email_processed_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_extracted_concepts_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_extracted_urls: {
+        Row: {
+          created_at: string | null
+          email_message_id: string | null
+          id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_message_id?: string | null
+          id?: string
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          email_message_id?: string | null
+          id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_extracted_urls_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_important_addresses: {
+        Row: {
+          created_at: string | null
+          email_address: string
+          id: string
+          importance_level: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_address: string
+          id?: string
+          importance_level?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_address?: string
+          id?: string
+          importance_level?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           attachment_cnt: number | null
@@ -1457,6 +1855,98 @@ export type Database = {
           to_recipients?: string | null
           updated_at?: string
           url_cnt?: number | null
+        }
+        Relationships: []
+      }
+      email_processed_contents: {
+        Row: {
+          created_at: string | null
+          email_message_id: string | null
+          id: string
+          is_meeting_focused: boolean | null
+          is_science_discussion: boolean | null
+          is_science_material: boolean | null
+          notable_quotes: Json | null
+          participants: Json | null
+          participants_count: number | null
+          summary: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_message_id?: string | null
+          id?: string
+          is_meeting_focused?: boolean | null
+          is_science_discussion?: boolean | null
+          is_science_material?: boolean | null
+          notable_quotes?: Json | null
+          participants?: Json | null
+          participants_count?: number | null
+          summary?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_message_id?: string | null
+          id?: string
+          is_meeting_focused?: boolean | null
+          is_science_discussion?: boolean | null
+          is_science_material?: boolean | null
+          notable_quotes?: Json | null
+          participants?: Json | null
+          participants_count?: number | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_processed_contents_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_thread_aggregations: {
+        Row: {
+          created_at: string | null
+          email_count: number | null
+          email_ids: string[] | null
+          first_email_date: string | null
+          id: string
+          is_likely_research: boolean | null
+          last_email_date: string | null
+          senders: string[] | null
+          subject_pattern: string
+          thread_metadata: Json | null
+          total_attachments: number | null
+          total_urls: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_count?: number | null
+          email_ids?: string[] | null
+          first_email_date?: string | null
+          id?: string
+          is_likely_research?: boolean | null
+          last_email_date?: string | null
+          senders?: string[] | null
+          subject_pattern: string
+          thread_metadata?: Json | null
+          total_attachments?: number | null
+          total_urls?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          email_count?: number | null
+          email_ids?: string[] | null
+          first_email_date?: string | null
+          id?: string
+          is_likely_research?: boolean | null
+          last_email_date?: string | null
+          senders?: string[] | null
+          subject_pattern?: string
+          thread_metadata?: Json | null
+          total_attachments?: number | null
+          total_urls?: number | null
         }
         Relationships: []
       }
@@ -1920,6 +2410,435 @@ export type Database = {
           new_files?: number | null
           root_drive_id?: string | null
           total_google_drive_items?: number | null
+        }
+        Relationships: []
+      }
+      import_all_email_urls: {
+        Row: {
+          all_email_url_id: number
+          created_at: string | null
+          email_id: number | null
+          url: string | null
+        }
+        Insert: {
+          all_email_url_id: number
+          created_at?: string | null
+          email_id?: number | null
+          url?: string | null
+        }
+        Update: {
+          all_email_url_id?: number
+          created_at?: string | null
+          email_id?: number | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      import_attachments: {
+        Row: {
+          attachment_id: number
+          created_at: string | null
+          email_id: number | null
+          filename: string | null
+          newpdf_id: number | null
+          size: number | null
+        }
+        Insert: {
+          attachment_id: number
+          created_at?: string | null
+          email_id?: number | null
+          filename?: string | null
+          newpdf_id?: number | null
+          size?: number | null
+        }
+        Update: {
+          attachment_id?: number
+          created_at?: string | null
+          email_id?: number | null
+          filename?: string | null
+          newpdf_id?: number | null
+          size?: number | null
+        }
+        Relationships: []
+      }
+      import_email_concepts: {
+        Row: {
+          actual_quote: string | null
+          auto_learning_grade: number | null
+          backup_category: string | null
+          category: string | null
+          citation: string | null
+          concept: string | null
+          created_at: string | null
+          date: string | null
+          email_concept_id: number
+          email_content_id: number | null
+          email_id: number | null
+          example: string | null
+          is_valid: number | null
+          master_category: string | null
+          quote_author: string | null
+          reference_info: string | null
+          section_info: string | null
+          source_name: string | null
+          subject_classifications: string | null
+          summary: string | null
+          url: string | null
+          year: number | null
+        }
+        Insert: {
+          actual_quote?: string | null
+          auto_learning_grade?: number | null
+          backup_category?: string | null
+          category?: string | null
+          citation?: string | null
+          concept?: string | null
+          created_at?: string | null
+          date?: string | null
+          email_concept_id: number
+          email_content_id?: number | null
+          email_id?: number | null
+          example?: string | null
+          is_valid?: number | null
+          master_category?: string | null
+          quote_author?: string | null
+          reference_info?: string | null
+          section_info?: string | null
+          source_name?: string | null
+          subject_classifications?: string | null
+          summary?: string | null
+          url?: string | null
+          year?: number | null
+        }
+        Update: {
+          actual_quote?: string | null
+          auto_learning_grade?: number | null
+          backup_category?: string | null
+          category?: string | null
+          citation?: string | null
+          concept?: string | null
+          created_at?: string | null
+          date?: string | null
+          email_concept_id?: number
+          email_content_id?: number | null
+          email_id?: number | null
+          example?: string | null
+          is_valid?: number | null
+          master_category?: string | null
+          quote_author?: string | null
+          reference_info?: string | null
+          section_info?: string | null
+          source_name?: string | null
+          subject_classifications?: string | null
+          summary?: string | null
+          url?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
+      import_email_contents: {
+        Row: {
+          email_content_id: number
+          email_id: number | null
+          good_quotes: string | null
+          how_many_participants: number | null
+          is_meeting_focused: number | null
+          is_science_discussion: number | null
+          is_science_material: number | null
+          participants: string | null
+          summary_of_the_email: string | null
+        }
+        Insert: {
+          email_content_id: number
+          email_id?: number | null
+          good_quotes?: string | null
+          how_many_participants?: number | null
+          is_meeting_focused?: number | null
+          is_science_discussion?: number | null
+          is_science_material?: number | null
+          participants?: string | null
+          summary_of_the_email?: string | null
+        }
+        Update: {
+          email_content_id?: number
+          email_id?: number | null
+          good_quotes?: string | null
+          how_many_participants?: number | null
+          is_meeting_focused?: number | null
+          is_science_discussion?: number | null
+          is_science_material?: number | null
+          participants?: string | null
+          summary_of_the_email?: string | null
+        }
+        Relationships: []
+      }
+      import_emails: {
+        Row: {
+          attachment_cnt: number | null
+          content: string | null
+          contents_length: number | null
+          created_at: string | null
+          date: string | null
+          email_id: number
+          is_ai_process_for_concepts: number | null
+          is_in_concepts: number | null
+          is_in_contents: number | null
+          is_valid: number | null
+          sender: string | null
+          subject: string | null
+          to_recipients: string | null
+          url_cnt: number | null
+        }
+        Insert: {
+          attachment_cnt?: number | null
+          content?: string | null
+          contents_length?: number | null
+          created_at?: string | null
+          date?: string | null
+          email_id: number
+          is_ai_process_for_concepts?: number | null
+          is_in_concepts?: number | null
+          is_in_contents?: number | null
+          is_valid?: number | null
+          sender?: string | null
+          subject?: string | null
+          to_recipients?: string | null
+          url_cnt?: number | null
+        }
+        Update: {
+          attachment_cnt?: number | null
+          content?: string | null
+          contents_length?: number | null
+          created_at?: string | null
+          date?: string | null
+          email_id?: number
+          is_ai_process_for_concepts?: number | null
+          is_in_concepts?: number | null
+          is_in_contents?: number | null
+          is_valid?: number | null
+          sender?: string | null
+          subject?: string | null
+          to_recipients?: string | null
+          url_cnt?: number | null
+        }
+        Relationships: []
+      }
+      import_important_email_addresses: {
+        Row: {
+          email_address: string
+          important_email_address_id: number
+          is_important: boolean | null
+        }
+        Insert: {
+          email_address: string
+          important_email_address_id: number
+          is_important?: boolean | null
+        }
+        Update: {
+          email_address?: string
+          important_email_address_id?: number
+          is_important?: boolean | null
+        }
+        Relationships: []
+      }
+      import_rolled_up_emails: {
+        Row: {
+          content_lengths: string | null
+          count: number | null
+          email_ids: string | null
+          first_date: string | null
+          is_likely_url: number | null
+          last_date: string | null
+          rolled_up_email_id: number
+          senders: string | null
+          subject: string | null
+          total_attachments: number | null
+          total_urls: number | null
+        }
+        Insert: {
+          content_lengths?: string | null
+          count?: number | null
+          email_ids?: string | null
+          first_date?: string | null
+          is_likely_url?: number | null
+          last_date?: string | null
+          rolled_up_email_id: number
+          senders?: string | null
+          subject?: string | null
+          total_attachments?: number | null
+          total_urls?: number | null
+        }
+        Update: {
+          content_lengths?: string | null
+          count?: number | null
+          email_ids?: string | null
+          first_date?: string | null
+          is_likely_url?: number | null
+          last_date?: string | null
+          rolled_up_email_id?: number
+          senders?: string | null
+          subject?: string | null
+          total_attachments?: number | null
+          total_urls?: number | null
+        }
+        Relationships: []
+      }
+      import_urls: {
+        Row: {
+          article_day: number | null
+          article_month: number | null
+          article_year: number | null
+          authors: string | null
+          created_at: string | null
+          earliest_id_datetime: string | null
+          email_ids_count: number | null
+          email_ids_text: string | null
+          email_senders: string | null
+          email_subjects: string | null
+          is_extract_concepts_from_url: number | null
+          is_in_source: number | null
+          is_openable_url: number | null
+          is_process_concepts_with_ai: number | null
+          keywords: string | null
+          latest_id_datetime: string | null
+          summary: string | null
+          title: string | null
+          url: string | null
+          url_id: number
+          url_source: string | null
+          url_type: string | null
+        }
+        Insert: {
+          article_day?: number | null
+          article_month?: number | null
+          article_year?: number | null
+          authors?: string | null
+          created_at?: string | null
+          earliest_id_datetime?: string | null
+          email_ids_count?: number | null
+          email_ids_text?: string | null
+          email_senders?: string | null
+          email_subjects?: string | null
+          is_extract_concepts_from_url?: number | null
+          is_in_source?: number | null
+          is_openable_url?: number | null
+          is_process_concepts_with_ai?: number | null
+          keywords?: string | null
+          latest_id_datetime?: string | null
+          summary?: string | null
+          title?: string | null
+          url?: string | null
+          url_id: number
+          url_source?: string | null
+          url_type?: string | null
+        }
+        Update: {
+          article_day?: number | null
+          article_month?: number | null
+          article_year?: number | null
+          authors?: string | null
+          created_at?: string | null
+          earliest_id_datetime?: string | null
+          email_ids_count?: number | null
+          email_ids_text?: string | null
+          email_senders?: string | null
+          email_subjects?: string | null
+          is_extract_concepts_from_url?: number | null
+          is_in_source?: number | null
+          is_openable_url?: number | null
+          is_process_concepts_with_ai?: number | null
+          keywords?: string | null
+          latest_id_datetime?: string | null
+          summary?: string | null
+          title?: string | null
+          url?: string | null
+          url_id?: number
+          url_source?: string | null
+          url_type?: string | null
+        }
+        Relationships: []
+      }
+      import_web_concepts: {
+        Row: {
+          auto_learning_grade: number | null
+          backup_category: string | null
+          category: string | null
+          citation: string | null
+          concept: string | null
+          created_at: string | null
+          date: string | null
+          example: string | null
+          header: string | null
+          is_valid: number | null
+          learning_grade: number | null
+          learning_grade_reason: string | null
+          master_category: string | null
+          mixed_case_category: string | null
+          quote: string | null
+          quote_author: string | null
+          reference_info: string | null
+          section: string | null
+          source_name: string | null
+          subject_classifications: string | null
+          summary: string | null
+          url: string | null
+          url_id: number | null
+          web_concept_id: number
+          year: number | null
+        }
+        Insert: {
+          auto_learning_grade?: number | null
+          backup_category?: string | null
+          category?: string | null
+          citation?: string | null
+          concept?: string | null
+          created_at?: string | null
+          date?: string | null
+          example?: string | null
+          header?: string | null
+          is_valid?: number | null
+          learning_grade?: number | null
+          learning_grade_reason?: string | null
+          master_category?: string | null
+          mixed_case_category?: string | null
+          quote?: string | null
+          quote_author?: string | null
+          reference_info?: string | null
+          section?: string | null
+          source_name?: string | null
+          subject_classifications?: string | null
+          summary?: string | null
+          url?: string | null
+          url_id?: number | null
+          web_concept_id: number
+          year?: number | null
+        }
+        Update: {
+          auto_learning_grade?: number | null
+          backup_category?: string | null
+          category?: string | null
+          citation?: string | null
+          concept?: string | null
+          created_at?: string | null
+          date?: string | null
+          example?: string | null
+          header?: string | null
+          is_valid?: number | null
+          learning_grade?: number | null
+          learning_grade_reason?: string | null
+          master_category?: string | null
+          mixed_case_category?: string | null
+          quote?: string | null
+          quote_author?: string | null
+          reference_info?: string | null
+          section?: string | null
+          source_name?: string | null
+          subject_classifications?: string | null
+          summary?: string | null
+          url?: string | null
+          url_id?: number | null
+          web_concept_id?: number
+          year?: number | null
         }
         Relationships: []
       }
@@ -2652,6 +3571,75 @@ export type Database = {
           },
         ]
       }
+      research_urls: {
+        Row: {
+          authors: string[] | null
+          content_source: string | null
+          created_at: string | null
+          domain: string | null
+          email_associations: Json | null
+          email_count: number | null
+          extraction_metadata: Json | null
+          first_seen: string | null
+          id: string
+          is_accessible: boolean | null
+          is_processed: boolean | null
+          keywords: string[] | null
+          last_seen: string | null
+          process_ai_concepts: boolean | null
+          published_date: string | null
+          summary: string | null
+          title: string | null
+          updated_at: string | null
+          url: string
+          url_type: string | null
+        }
+        Insert: {
+          authors?: string[] | null
+          content_source?: string | null
+          created_at?: string | null
+          domain?: string | null
+          email_associations?: Json | null
+          email_count?: number | null
+          extraction_metadata?: Json | null
+          first_seen?: string | null
+          id?: string
+          is_accessible?: boolean | null
+          is_processed?: boolean | null
+          keywords?: string[] | null
+          last_seen?: string | null
+          process_ai_concepts?: boolean | null
+          published_date?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+          url: string
+          url_type?: string | null
+        }
+        Update: {
+          authors?: string[] | null
+          content_source?: string | null
+          created_at?: string | null
+          domain?: string | null
+          email_associations?: Json | null
+          email_count?: number | null
+          extraction_metadata?: Json | null
+          first_seen?: string | null
+          id?: string
+          is_accessible?: boolean | null
+          is_processed?: boolean | null
+          keywords?: string[] | null
+          last_seen?: string | null
+          process_ai_concepts?: boolean | null
+          published_date?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+          url?: string
+          url_type?: string | null
+        }
+        Relationships: []
+      }
       scripts_registry: {
         Row: {
           ai_assessment: Json | null
@@ -2952,6 +3940,48 @@ export type Database = {
           },
         ]
       }
+      doc_continuous_status: {
+        Row: {
+          category: string | null
+          document_name: string | null
+          enabled: boolean | null
+          file_path: string | null
+          id: string | null
+          last_check_at: string | null
+          last_updated_at: string | null
+          next_update_at: string | null
+          status: string | null
+          total_updates_with_changes: number | null
+          update_frequency: string | null
+        }
+        Insert: {
+          category?: string | null
+          document_name?: string | null
+          enabled?: boolean | null
+          file_path?: string | null
+          id?: string | null
+          last_check_at?: never
+          last_updated_at?: string | null
+          next_update_at?: string | null
+          status?: never
+          total_updates_with_changes?: never
+          update_frequency?: string | null
+        }
+        Update: {
+          category?: string | null
+          document_name?: string | null
+          enabled?: boolean | null
+          file_path?: string | null
+          id?: string | null
+          last_check_at?: never
+          last_updated_at?: string | null
+          next_update_at?: string | null
+          status?: never
+          total_updates_with_changes?: never
+          update_frequency?: string | null
+        }
+        Relationships: []
+      }
       document_classifications_view: {
         Row: {
           category: string | null
@@ -3123,6 +4153,10 @@ export type Database = {
           p_dependencies?: Json
         }
         Returns: boolean
+      }
+      calculate_next_update: {
+        Args: { last_update: string; frequency: string }
+        Returns: string
       }
       check_auth_user_exists: {
         Args: { target_email: string }
@@ -3355,6 +4389,18 @@ export type Database = {
           count: number
         }[]
       }
+      get_documents_due_for_update: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          file_path: string
+          document_name: string
+          category: string
+          update_frequency: string
+          last_updated_at: string
+          source_paths: string[]
+        }[]
+      }
       get_domain_id_by_name: {
         Args: { domain_name_input: string }
         Returns: string
@@ -3415,6 +4461,15 @@ export type Database = {
           queue_id: string
           file_id: string
           file_path: string
+        }[]
+      }
+      get_next_merge_candidate: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          branch_name: string
+          priority: number
+          pending_dependencies: number
         }[]
       }
       get_or_create_page: {
@@ -3619,6 +4674,18 @@ export type Database = {
       }
       queue_documentation_file_for_processing: {
         Args: { file_id: string; priority?: number }
+        Returns: string
+      }
+      record_documentation_update: {
+        Args: {
+          p_tracking_id: string
+          p_update_type: string
+          p_changes_detected?: boolean
+          p_changes_summary?: string
+          p_sections_updated?: string[]
+          p_status?: string
+          p_error_message?: string
+        }
         Returns: string
       }
       refresh_schema_and_fix_metadata: {
