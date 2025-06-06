@@ -335,6 +335,8 @@ export type Database = {
           notes: string | null
           organization: string | null
           preferences: Json | null
+          primary_source_id: string | null
+          source_count: number | null
           updated_at: string | null
         }
         Insert: {
@@ -355,6 +357,8 @@ export type Database = {
           notes?: string | null
           organization?: string | null
           preferences?: Json | null
+          primary_source_id?: string | null
+          source_count?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -375,9 +379,19 @@ export type Database = {
           notes?: string | null
           organization?: string | null
           preferences?: Json | null
+          primary_source_id?: string | null
+          source_count?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "auth_allowed_emails_primary_source_id_fkey"
+            columns: ["primary_source_id"]
+            isOneToOne: false
+            referencedRelation: "email_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auth_audit_log: {
         Row: {
@@ -1937,6 +1951,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_source_associations: {
+        Row: {
+          created_at: string | null
+          email_id: string
+          first_seen_at: string | null
+          id: string
+          import_metadata: Json | null
+          source_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_id: string
+          first_seen_at?: string | null
+          id?: string
+          import_metadata?: Json | null
+          source_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_id?: string
+          first_seen_at?: string | null
+          id?: string
+          import_metadata?: Json | null
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_source_associations_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "auth_allowed_emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_source_associations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "email_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sources: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          source_code: string
+          source_name: string
+          source_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          source_code: string
+          source_name: string
+          source_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          source_code?: string
+          source_name?: string
+          source_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       email_thread_aggregations: {
         Row: {
@@ -3879,6 +3965,97 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      worktree_app_mappings: {
+        Row: {
+          app_name: string
+          created_at: string
+          id: string
+          worktree_id: string
+        }
+        Insert: {
+          app_name: string
+          created_at?: string
+          id?: string
+          worktree_id: string
+        }
+        Update: {
+          app_name?: string
+          created_at?: string
+          id?: string
+          worktree_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worktree_definitions: {
+        Row: {
+          alias_name: string
+          alias_number: string
+          created_at: string
+          description: string | null
+          emoji: string
+          id: string
+          path: string
+          updated_at: string
+        }
+        Insert: {
+          alias_name: string
+          alias_number: string
+          created_at?: string
+          description?: string | null
+          emoji: string
+          id?: string
+          path: string
+          updated_at?: string
+        }
+        Update: {
+          alias_name?: string
+          alias_number?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      worktree_pipeline_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          pipeline_name: string
+          worktree_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pipeline_name: string
+          worktree_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pipeline_name?: string
+          worktree_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

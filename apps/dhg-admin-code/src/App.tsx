@@ -18,6 +18,7 @@ import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 import ClipboardManager from './pages/ClipboardManager';
+import WorktreeMappings from './pages/WorktreeMappings';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -159,6 +160,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <ClipboardManager />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/worktree-mappings" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <WorktreeMappings />
             </ProtectedRoute>
           } 
         />

@@ -3,22 +3,29 @@ import { useNavigate, Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import { ArrowLeft, Save } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { 
-  worktreeMappings, 
-  getAppsForWorktree, 
-  getCliPipelinesForWorktree,
-  getWorktreeLabel,
-  WorktreeMapping
-} from '../utils/worktree-mapping';
+import { useWorktreeMappings } from '../hooks/useWorktreeMappings';
+import type { Database } from '../../../../supabase/types';
+
+type WorktreeDefinition = Database['public']['Tables']['worktree_definitions']['Row'];
 
 export default function CreateTaskPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customBranchName, setCustomBranchName] = useState<string>('');
-  const [selectedWorktree, setSelectedWorktree] = useState<WorktreeMapping | null>(null);
+  const [selectedWorktree, setSelectedWorktree] = useState<WorktreeDefinition | null>(null);
   const [availableApps, setAvailableApps] = useState<string[]>([]);
   const [availablePipelines, setAvailablePipelines] = useState<string[]>([]);
+  
+  const { 
+    worktrees, 
+    loading: worktreesLoading, 
+    error: worktreesError,
+    getAppsForWorktree,
+    getPipelinesForWorktree,
+    getWorktreeLabel,
+    getWorktreeByPath
+  } = useWorktreeMappings();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -34,20 +41,23 @@ export default function CreateTaskPage() {
   // Update available apps and pipelines when worktree changes
   useEffect(() => {
     if (selectedWorktree) {
-      setAvailableApps(selectedWorktree.apps);
-      setAvailablePipelines(selectedWorktree.cliPipelines);
+      const apps = getAppsForWorktree(selectedWorktree.id);
+      const pipelines = getPipelinesForWorktree(selectedWorktree.id);
+      
+      setAvailableApps(apps);
+      setAvailablePipelines(pipelines);
       
       // Reset app selection if it's not available in the new worktree
       if (formData.app && 
-          !selectedWorktree.apps.includes(formData.app) && 
-          !selectedWorktree.cliPipelines.some(p => `cli-${p}` === formData.app)) {
+          !apps.includes(formData.app) && 
+          !pipelines.some(p => `cli-${p}` === formData.app)) {
         setFormData(prev => ({ ...prev, app: '' }));
       }
     } else {
       setAvailableApps([]);
       setAvailablePipelines([]);
     }
-  }, [selectedWorktree]);
+  }, [selectedWorktree?.id]); // Remove function dependencies
 
   // Generate branch name from title and type
   const generateBranchName = (title: string, type: string): string => {
@@ -135,6 +145,12 @@ export default function CreateTaskPage() {
             <p className="text-red-800">{error}</p>
           </div>
         )}
+        
+        {worktreesError && (
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-yellow-800">Failed to load worktrees: {worktreesError}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Worktree Selection */}
@@ -147,16 +163,18 @@ export default function CreateTaskPage() {
               value={formData.worktree_path}
               onChange={(e) => {
                 const path = e.target.value;
-                const worktree = worktreeMappings.find(w => w.path === path);
+                const worktree = getWorktreeByPath(path);
                 setSelectedWorktree(worktree || null);
                 setFormData({ ...formData, worktree_path: path });
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              disabled={loading}
+              disabled={loading || worktreesLoading}
               required
             >
-              <option value="">Select a worktree...</option>
-              {worktreeMappings.map(worktree => (
+              <option value="">
+                {worktreesLoading ? 'Loading worktrees...' : 'Select a worktree...'}
+              </option>
+              {worktrees.map(worktree => (
                 <option key={worktree.path} value={worktree.path}>
                   {getWorktreeLabel(worktree)}
                 </option>
@@ -356,7 +374,7 @@ export default function CreateTaskPage() {
                     type="text"
                     value={customBranchName || generateBranchName(formData.title || 'untitled', formData.task_type)}
                     onChange={(e) => setCustomBranchName(e.target.value)}
-                    onFocus={(e) => {
+                    onFocus={() => {
                       // Set custom branch name if not already set when focusing
                       if (!customBranchName && formData.title) {
                         setCustomBranchName(generateBranchName(formData.title, formData.task_type));
