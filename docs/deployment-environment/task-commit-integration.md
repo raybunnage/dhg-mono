@@ -1,98 +1,112 @@
-# Task-Commit Integration Guide
+# Task-Commit Integration
 
 ## Overview
-This system automatically links git commits to development tasks, creating a traceable history of work done for each task.
 
-## Two Ways to Use
-
-### 1. Using the CLI Command (Recommended)
-When you have changes ready to commit and an active task:
-
-```bash
-./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit "Your commit message here"
-```
-
-This command will:
-- Find any active task in your current worktree
-- Add the task ID to your commit message
-- Create the commit
-- Log the commit details in the `dev_task_commits` table
-- Update the task's commit count
-
-### 2. Manual Commit with Task Reference
-If committing manually, include the task reference in your commit message:
-
-```bash
-git commit -m "[TASK-<task_number>] Your commit message
-
-Task ID: <full-task-id>"
-```
-
-## Prompt Template for Claude Code
-
-When asking Claude to commit changes, use this enhanced prompt:
-
-```
-Please commit the changes on this branch. 
-
-First, check if there's an active task (status = 'in_progress') in this worktree by running:
-./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh list --status in_progress
-
-If a task is found, use:
-./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit "Your descriptive commit message"
-
-If no active task is found, use a regular git commit.
-```
+The task-commit integration automatically links git commits to development tasks, making it easy to track which commits solved which tasks. This is especially useful when working across multiple worktrees.
 
 ## How It Works
 
-1. **Task Detection**: The system looks for tasks with:
-   - `status = 'in_progress'`
-   - `worktree_path` matching the current directory
+1. **Task Creation**: When you create a task, it's associated with a specific worktree path
+2. **Commit Time**: When committing, the CLI checks for active tasks in the current worktree
+3. **Task Selection**: You select which task the commit relates to (or none)
+4. **Commit Message**: The task ID is included in the commit message
+5. **Task Update**: The task notes are updated with the commit SHA
 
-2. **Commit Formatting**: Commits are formatted as:
-   ```
-   [TASK-123] Fix authentication bug
-   
-   Related to: Implement OAuth2 login flow
-   Task ID: d4d49d84-a808-4a12-bd78-9702f4a09b8e
-   ```
+## Usage
 
-3. **Database Updates**:
-   - Adds entry to `dev_task_commits` table with full commit details
-   - Updates task's `git_commit_current` and `git_commits_count`
-   - Tracks files changed, insertions, and deletions
+### Creating a Commit with Task Tracking
+
+```bash
+# Instead of regular git commit, use:
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit
+```
+
+The CLI will:
+1. Show all active tasks in your current worktree
+2. Let you select the relevant task
+3. Display the task ID to include in your commit message
+4. After committing, update the task with the commit SHA
+
+### Example Workflow
+
+```bash
+# 1. Create a task (already done via UI)
+# Task ID: 07832f16-301d-4a77-8c97-67f84725fe37
+
+# 2. Make your changes
+vim apps/dhg-admin-code/src/pages/CreateTaskPage.tsx
+
+# 3. Stage changes
+git add -A
+
+# 4. Use task-aware commit
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit
+
+# Output:
+# 🌳 Current worktree: /Users/raybunnage/Documents/github/dhg-mono-admin-code
+# 
+# 📋 Found 1 active task in this worktree:
+#    Fix worktree dropdown in CreateTaskPage (feature)
+# 
+# Use this task for the commit? (Y/n): y
+# 
+# ✅ Selected task: Fix worktree dropdown in CreateTaskPage
+#    ID: 07832f16-301d-4a77-8c97-67f84725fe37
+# 
+# 📝 Add this to your commit message:
+# Task: #07832f16-301d-4a77-8c97-67f84725fe37
+
+# 5. Create your commit with the task ID
+git commit -m "fix: replace worktree hook with direct data fetching
+
+Task: #07832f16-301d-4a77-8c97-67f84725fe37
+
+- Remove problematic useWorktreeMappings hook
+- Implement direct Supabase data fetching
+- Fix TypeScript errors
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# 6. Confirm to update task
+# Have you made the commit? (y/N): y
+# ✅ Task updated with commit reference
+```
+
+## Commit Message Format
+
+Always include the task ID on its own line:
+
+```
+<type>: <subject>
+
+Task: #<task-id>
+
+<body>
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
 
 ## Benefits
 
-- **Automatic Linking**: No need to manually track which commits belong to which tasks
-- **Full History**: Every commit is logged with detailed metadata
-- **UI Integration**: The task detail page shows all related commits
-- **Metrics**: Track lines added/removed per task
-- **Git Integration**: Works with your normal git workflow
+1. **Traceability**: Easy to find which commits solved which tasks
+2. **History**: Task notes contain commit SHAs for reference
+3. **Worktree-Aware**: Automatically filters tasks by current worktree
+4. **Optional**: Can skip task linking for unrelated commits
 
 ## Database Schema
 
-The system uses these tables:
-- `dev_tasks`: Main task table with git tracking fields
-- `dev_task_commits`: Individual commits linked to tasks
-- `dev_task_work_sessions`: Claude Code work sessions
+Tasks are linked to commits through:
+- `dev_tasks.worktree_path` - Associates task with worktree
+- `dev_tasks.notes` - Stores commit SHA references
+- Task ID in commit message - Links commit back to task
 
-## Example Workflow
+## Future Enhancements
 
-1. Create a task with branch:
-   ```bash
-   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh create-with-branch "Fix auth bug" "Users can't login"
-   ```
-
-2. Work on the task (Claude makes changes)
-
-3. Commit with task linking:
-   ```bash
-   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit "Fix OAuth redirect URL validation"
-   ```
-
-4. View task with commit history:
-   ```bash
-   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh show <task-id>
-   ```
+- Automatic task status updates (pending → in_progress → completed)
+- Multiple commit tracking per task
+- Commit statistics (files changed, insertions, deletions)
+- Integration with git hooks for automatic tracking
