@@ -534,23 +534,51 @@ const supabase = createSupabaseAdapter();
 
 **Important**: Due to CommonJS/ESM compatibility issues, browser apps must explicitly pass `import.meta.env` to the adapter. The shared package cannot access `import.meta.env` directly.
 
-**Key Benefits**:
-- Works in both browser and server environments
-- Handles `VITE_` prefixed variables in browser, standard variables in CLI/server
-- Avoids CommonJS/ESM compatibility issues
-- Maintains type safety and error handling
+**Setting Up @shared Alias in Vite Apps**:
+```typescript
+// vite.config.ts
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, '../../packages/shared'),
+    },
+  },
+});
+```
 
-**Common Error and Fix**:
+**Common Errors and Fixes**:
+
+1. **Missing environment variable error**:
 ```
 ❌ Error: Missing required Vite environment variable: VITE_SUPABASE_ANON_KEY
 ```
-This happens when browser apps don't pass environment variables. Fix:
+Fix: Pass environment variables to adapter:
 ```typescript
 // ❌ Wrong - doesn't work in browser
 const supabase = createSupabaseAdapter();
 
 // ✅ Correct - pass environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
+```
+
+2. **Module resolution error (500 Internal Server Error)**:
+```
+❌ Error: Cannot find module '@shared/adapters/supabase-adapter'
+```
+Fix: Add @shared alias to vite.config.ts (see above)
+
+3. **Obsolete adapter methods**:
+```
+❌ Error: Cannot find name 'supabaseAdapter'
+```
+The old `supabaseAdapter` object with methods like `getDiagnostics()` and `ensureAuth()` no longer exists. Use the Supabase client directly:
+```typescript
+// ❌ Old way
+const { success } = await supabaseAdapter.ensureAuth();
+
+// ✅ New way
+const { data, error } = await supabase.from('table').select();
 ```
 
 **When to Use**:
