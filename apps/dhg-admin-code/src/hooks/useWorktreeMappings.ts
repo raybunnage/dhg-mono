@@ -96,7 +96,8 @@ export function useWorktreeMappings() {
   };
 
   const getWorktreeLabel = (worktree: WorktreeDefinition): string => {
-    return `${worktree.emoji} ${worktree.alias_name}`;
+    // Format like on Git page: emoji number/alias - path
+    return `${worktree.emoji} ${worktree.alias_number}/${worktree.alias_name} - ${worktree.path}`;
   };
 
   return {

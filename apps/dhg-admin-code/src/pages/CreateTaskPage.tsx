@@ -3,10 +3,18 @@ import { useNavigate, Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import { ArrowLeft, Save } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { useWorktreeMappings } from '../hooks/useWorktreeMappings';
-import type { Database } from '../../../../supabase/types';
+import { supabase } from '../lib/supabase';
 
-type WorktreeDefinition = Database['public']['Tables']['worktree_definitions']['Row'];
+interface WorktreeDefinition {
+  id: string;
+  path: string;
+  alias_name: string;
+  alias_number: string;
+  emoji: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function CreateTaskPage() {
   const navigate = useNavigate();
@@ -17,15 +25,11 @@ export default function CreateTaskPage() {
   const [availableApps, setAvailableApps] = useState<string[]>([]);
   const [availablePipelines, setAvailablePipelines] = useState<string[]>([]);
   
-  const { 
-    worktrees, 
-    loading: worktreesLoading, 
-    error: worktreesError,
-    getAppsForWorktree,
-    getPipelinesForWorktree,
-    getWorktreeLabel,
-    getWorktreeByPath
-  } = useWorktreeMappings();
+  // Direct state for worktree data (like WorktreeMappings page)
+  const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
+  const [appMappings, setAppMappings] = useState<any[]>([]);
+  const [pipelineMappings, setPipelineMappings] = useState<any[]>([]);
+  const [worktreesLoading, setWorktreesLoading] = useState(true);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -37,6 +41,77 @@ export default function CreateTaskPage() {
     work_mode: 'single-file' as 'single-file' | 'feature' | 'exploration' | 'cross-repo',
     worktree_path: ''
   });
+
+  // Load worktree data on mount (exactly like WorktreeMappings page)
+  useEffect(() => {
+    loadWorktreeData();
+  }, []);
+
+  const loadWorktreeData = async () => {
+    try {
+      setWorktreesLoading(true);
+      
+      // Load worktree definitions
+      const { data: worktreeData, error: worktreeError } = await supabase
+        .from('worktree_definitions')
+        .select('*')
+        .order('alias_number');
+      
+      if (worktreeError) {
+        console.error('Error loading worktrees:', worktreeError);
+        setError('Failed to load worktrees');
+        return;
+      }
+      
+      setWorktrees(worktreeData || []);
+      console.log('✅ Loaded', worktreeData?.length, 'worktrees for CreateTaskPage');
+      
+      // Load app mappings
+      const { data: appData, error: appError } = await supabase
+        .from('worktree_app_mappings')
+        .select('*');
+      
+      if (appError) console.error('Error loading app mappings:', appError);
+      setAppMappings(appData || []);
+      
+      // Load pipeline mappings
+      const { data: pipelineData, error: pipelineError } = await supabase
+        .from('worktree_pipeline_mappings')
+        .select('*');
+      
+      if (pipelineError) console.error('Error loading pipeline mappings:', pipelineError);
+      setPipelineMappings(pipelineData || []);
+      
+    } catch (err) {
+      console.error('Error in loadWorktreeData:', err);
+      setError('Failed to load worktree data');
+    } finally {
+      setWorktreesLoading(false);
+    }
+  };
+
+  // Helper functions
+  const getAppsForWorktree = (worktreeId: string): string[] => {
+    return appMappings
+      .filter(m => m.worktree_id === worktreeId)
+      .map(m => m.app_name)
+      .sort();
+  };
+
+  const getPipelinesForWorktree = (worktreeId: string): string[] => {
+    return pipelineMappings
+      .filter(m => m.worktree_id === worktreeId)
+      .map(m => m.pipeline_name)
+      .sort();
+  };
+
+  const getWorktreeByPath = (path: string): WorktreeDefinition | undefined => {
+    return worktrees.find(w => w.path === path);
+  };
+
+  const getWorktreeLabel = (worktree: WorktreeDefinition): string => {
+    return `${worktree.emoji} ${worktree.alias_number}/${worktree.alias_name} - ${worktree.path}`;
+  };
 
   // Update available apps and pipelines when worktree changes
   useEffect(() => {
@@ -132,7 +207,7 @@ export default function CreateTaskPage() {
           to="/tasks"
           className="inline-flex items-center text-gray-600 hover:text-gray-900"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
           Back to Tasks
         </Link>
       </div>
@@ -143,12 +218,6 @@ export default function CreateTaskPage() {
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800">{error}</p>
-          </div>
-        )}
-        
-        {worktreesError && (
-          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800">Failed to load worktrees: {worktreesError}</p>
           </div>
         )}
 
@@ -421,7 +490,7 @@ export default function CreateTaskPage() {
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4 mr-2" aria-hidden="true" />
                   Create Task
                 </>
               )}
