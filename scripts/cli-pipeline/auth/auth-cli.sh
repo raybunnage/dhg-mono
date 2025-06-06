@@ -12,7 +12,9 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." &> /dev/null && pwd )"
 
 # Load environment variables
 if [ -f "$PROJECT_ROOT/.env.development" ]; then
-  export $(cat "$PROJECT_ROOT/.env.development" | grep -v '^#' | xargs)
+  set -a
+  source "$PROJECT_ROOT/.env.development"
+  set +a
 fi
 
 # Color codes for output
@@ -291,6 +293,7 @@ case $COMMAND in
     ;;
   help|"")
     print_help
+    exit 0
     ;;
   *)
     print_color $RED "Unknown command: $COMMAND"
