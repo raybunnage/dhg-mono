@@ -205,3 +205,8 @@ scripts/cli-pipeline/viewers/raycast-scripts/.DS_Store
 # !scripts/cli-pipeline/viewers/raycast-scripts/*.sh
 # !scripts/cli-pipeline/viewers/setup-*.sh
 # !scripts/cli-pipeline/viewers/*-config.json
+
+# Temporary import files
+docs/imports/*.xlsx
+docs/imports/*.csv
+docs/temp/
