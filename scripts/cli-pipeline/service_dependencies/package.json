@@ -1,0 +1,25 @@
+{
+  "name": "service-dependencies-cli",
+  "version": "1.0.0",
+  "description": "Service dependency mapping and analysis CLI for DHG monorepo",
+  "scripts": {
+    "cli": "./service-dependencies-cli.sh"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "glob": "^10.0.0",
+    "fast-glob": "^3.3.0"
+  },
+  "keywords": [
+    "service-dependencies",
+    "monorepo",
+    "architecture",
+    "dependency-mapping",
+    "cli"
+  ],
+  "author": "DHG Monorepo",
+  "license": "MIT"
+}
