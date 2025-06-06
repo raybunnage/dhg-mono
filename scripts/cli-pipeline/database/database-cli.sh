@@ -38,7 +38,7 @@ track_command() {
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
     echo "🔍 Tracking command: $command_name"
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -344,6 +344,12 @@ migration_help() {
   echo ""
   echo "  See existing migration files for examples."
 }
+
+# Check if no arguments provided
+if [ $# -eq 0 ] || [ -z "$1" ]; then
+  show_help
+  exit 0
+fi
 
 # Main command processor
 case "$1" in

@@ -6,81 +6,6 @@ import ReactMarkdown from 'react-markdown';
 import JsonFormatter from '../components/JsonFormatter';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../components/ui/collapsible';
 import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
-import { filterService } from '@/utils/filter-service-adapter';
-
-// Verify Supabase connection on page load
-(async () => {
-  try {
-    // Check environment variables
-    console.log('Environment variables in browser:');
-    console.log('- VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
-    console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-    console.log('- VITE_SUPABASE_SERVICE_ROLE_KEY exists:', !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY);
-    
-    // Test connection with direct test query
-    console.log('Testing Supabase connection with direct query...');
-    const { data, error } = await supabase.from('filter_user_profiles').select('count(*)', { count: 'exact', head: true });
-    
-    if (error) {
-      console.error('Supabase connection test failed:', error);
-    } else {
-      console.log('Supabase connection test succeeded, profile count:', data?.count);
-    }
-  } catch (e) {
-    console.error('Error testing Supabase connection:', e);
-  }
-})();
-
-// Import FilterProfile interface from adapter
-import { FilterProfile } from '@/utils/filter-service-adapter';
-
-// Debug function to check the database directly
-async function debugCheckFilterProfiles() {
-  try {
-    // Direct database query to check what profiles exist - USING THE EXACT QUERY THAT WORKS IN SUPABASE
-    console.log('Debug: Running exact query that works in Supabase: select id, name, is_active from filter_user_profiles');
-    
-    const { data, error } = await supabase
-      .from('filter_user_profiles')
-      .select('id, name, is_active');
-      
-    console.log('Debug: Direct database check for profiles');
-    console.log('Results:', data);
-    
-    // Check available fields in first profile
-    if (data && data.length > 0) {
-      console.log('Debug: Available fields in first profile:', Object.keys(data[0]).join(', '));
-      console.log('Debug: Found', data.length, 'profiles with these IDs:', data.map(p => p.id).join(', '));
-      
-      data.forEach(profile => {
-        console.log(`Debug: Profile ${profile.id}: Name="${profile.name}", IsActive=${profile.is_active}`);
-      });
-    } else {
-      console.log('Debug: No profiles found in direct database check');
-      
-      // Additional error checking
-      console.log('Debug: Trying to diagnose connection issues...');
-      // Check if supabase object is properly configured
-      if (!supabase) {
-        console.error('Debug: supabase client is null or undefined!');
-      }
-      
-      if (error) {
-        console.error('Debug: SQL Error details:', JSON.stringify(error, null, 2));
-      }
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Error in debug check:', err);
-    // Log full error details
-    if (err instanceof Error) {
-      console.error('Error details:', err.message);
-      console.error('Error stack:', err.stack);
-    }
-    return null;
-  }
-}
 
 // Utility function to get video duration, either from metadata or estimated from file size
 // Helper function to search within processed content objects or strings
@@ -243,8 +168,23 @@ type ExpertDocument = Database['public']['Tables']['google_expert_documents']['R
 type SubjectClassification = Database['public']['Tables']['learn_subject_classifications']['Row'];
 type TableClassification = Database['public']['Tables']['learn_document_classifications']['Row'];
 
+// Debug component to track re-renders
+let renderCount = 0;
+
+// Track all useEffect calls
+const effectTracker: Record<string, number> = {};
+
+function trackEffect(name: string) {
+  if (!effectTracker[name]) effectTracker[name] = 0;
+  effectTracker[name]++;
+  console.log(`⚡ EFFECT [${name}] run #${effectTracker[name]} at ${new Date().toLocaleTimeString()}`);
+}
+
 export function Home() {
-  // State variables
+  // Track renders
+  renderCount++;
+  console.log(`🔄 HOME COMPONENT RENDER #${renderCount} at ${new Date().toLocaleTimeString()}`);
+  // State variables with debug tracking
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -257,9 +197,15 @@ export function Home() {
   const [presentationAssets, setPresentationAssets] = useState<PresentationAsset[]>([]);
   const [showExpertBio, setShowExpertBio] = useState<boolean>(false);
   const [expertBioContent, setExpertBioContent] = useState<any>(null);
-  const [filterProfiles, setFilterProfiles] = useState<FilterProfile[]>([]);
-  const [activeFilterProfile, setActiveFilterProfile] = useState<FilterProfile | null>(null);
-  const [loadingProfiles, setLoadingProfiles] = useState<boolean>(false);
+  
+  // Debug state changes
+  useEffect(() => { trackEffect('presentations'); console.log('🚨 PRESENTATIONS CHANGED:', presentations.length); }, [presentations]);
+  useEffect(() => { trackEffect('loading'); console.log('🚨 LOADING CHANGED:', loading); }, [loading]);
+  useEffect(() => { trackEffect('error'); console.log('🚨 ERROR CHANGED:', error); }, [error]);
+  useEffect(() => { trackEffect('searchQuery'); console.log('🚨 SEARCH QUERY CHANGED:', searchQuery); }, [searchQuery]);
+  useEffect(() => { trackEffect('selectedSubjects'); console.log('🚨 SELECTED SUBJECTS CHANGED:', selectedSubjects); }, [selectedSubjects]);
+  useEffect(() => { trackEffect('selectedPresentation'); console.log('🚨 SELECTED PRESENTATION CHANGED:', selectedPresentation?.id); }, [selectedPresentation]);
+  useEffect(() => { trackEffect('presentationAssets'); console.log('🚨 PRESENTATION ASSETS CHANGED:', presentationAssets.length); }, [presentationAssets]);
   
   // Collapsible section states - default all open except asset view mode
   const [videoSectionOpen, setVideoSectionOpen] = useState<boolean>(true);
@@ -267,131 +213,21 @@ export function Home() {
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
-  // Fetch filter profiles
-  useEffect(() => {
-    async function fetchFilterProfiles() {
-      setLoadingProfiles(true);
-      try {
-        console.log('======== INITIAL PROFILE LOADING ========');
-        
-        // Debug check first using direct Supabase query
-        const directProfiles = await debugCheckFilterProfiles();
-        console.log('Initial load: Direct database check found', directProfiles?.length || 0, 'profiles');
-        
-        if (directProfiles?.length > 0) {
-          console.log('Initial load: Direct database check profile names:', directProfiles.map(p => p.name).join(', '));
-          console.log('Initial load: First profile structure:', Object.keys(directProfiles[0]).join(', '));
-        }
-        
-        // Fetch all available profiles using the filter service
-        console.log('Initial load: Now retrieving profiles with filterService.listProfiles()...');
-        const profiles = await filterService.listProfiles();
-        console.log('Initial load: Filter service returned', profiles.length, 'profiles');
-        
-        if (profiles.length > 0) {
-          console.log('Initial load: Profile names from filterService:', profiles.map(p => p.name).join(', '));
-          console.log('Initial load: Profile data structure from service:', 
-            Object.keys(profiles[0]).join(', '));
-          setFilterProfiles(profiles);
-          
-          // Then get the active profile
-          console.log('Initial load: Retrieving active profile...');
-          const active = await filterService.loadActiveProfile();
-          if (active) {
-            console.log('Initial load: Found active profile:', active.name);
-            console.log('Initial load: Active profile structure:', Object.keys(active).join(', '));
-            setActiveFilterProfile(active);
-          } else {
-            console.log('Initial load: No active profile found, using first available profile');
-            // If no active profile, use the first one
-            if (profiles.length > 0) {
-              // Set the first profile as active
-              const success = await filterService.setActiveProfile(profiles[0].id);
-              if (success) {
-                console.log(`Initial load: Set profile ${profiles[0].name} as active`);
-                const active = await filterService.loadActiveProfile();
-                setActiveFilterProfile(active);
-              }
-            }
-          }
-        } else {
-          console.warn('Initial load: No profiles returned from filterService');
-          
-          // No profiles exist yet - just proceed without a filter
-          console.log('Initial load: No profiles found, proceeding without filtering');
-          setActiveFilterProfile(null);
-        }
-      } catch (err) {
-        console.error('Error fetching filter profiles:', err);
-        // If there's an error, still allow showing the data
-        setActiveFilterProfile(null);
-      } finally {
-        setLoadingProfiles(false);
-      }
-    }
-    
-    fetchFilterProfiles();
-  }, []);
 
-  // Handler for profile selection change
-  const handleProfileSelect = async (profileId: string) => {
-    try {
-      console.log('handleProfileSelect called with profileId:', profileId);
-      
-      if (!profileId) {
-        console.warn('Empty profileId passed to handleProfileSelect');
-        return;
-      }
-      
-      // Show loading state
-      setLoading(true);
-      
-      console.log('Setting active profile...');
-      const success = await filterService.setActiveProfile(profileId);
-      
-      if (!success) {
-        console.error('Failed to set profile as active');
-        setLoading(false);
-        return;
-      }
-      
-      // Reload the active profile - this will also load the drive IDs
-      console.log('Reloading active profile...');
-      const active = await filterService.loadActiveProfile();
-      console.log('Active profile loaded:', active);
-      
-      if (active) {
-        // Update the UI with the new active profile
-        setActiveFilterProfile(active);
-        
-        // Clear any search or subject filters
-        setSearchQuery('');
-        setSelectedSubjects([]);
-        
-        // Reload the presentations with the new filter
-        console.log('Reloading presentations with new filter...');
-        await fetchData();
-      } else {
-        console.warn('No active profile found after setting active');
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error('Error setting active filter profile:', err);
-      setLoading(false);
-    }
-  };
 
   // Fetch presentations data
   useEffect(() => {
+    trackEffect('fetchData-initial');
     fetchData();
-  }, [activeFilterProfile]);
+  }, []);
 
   // Function to fetch presentations data
   async function fetchData() {
+    console.log('🚀 FETCH DATA CALLED at', new Date().toLocaleTimeString());
+    console.trace('fetchData call stack');
     try {
       setLoading(true);
       console.log('Home: Fetching presentations data');
-      console.log('Home: Current active profile:', activeFilterProfile);
       
       // DEBUG: Let's directly verify if there are profiles in the user_filter_profiles table
       try {
@@ -478,52 +314,6 @@ export function Home() {
         }
           
         // Apply a custom filtering approach that won't hit URL length limits
-        if (activeFilterProfile) {
-          try {
-            console.log(`Home: Applying custom filter for profile: ${activeFilterProfile.name}`);
-            
-            // Get root drive IDs directly - this establishes what we want to filter by
-            const { data: profileDrives, error: drivesError } = await supabase
-              .from('filter_user_profile_drives')
-              .select('root_drive_id')
-              .eq('profile_id', activeFilterProfile.id);
-            
-            if (drivesError) {
-              console.error('Home: Error getting profile drives:', drivesError);
-              console.log('Home: Will proceed without filtering');
-            } 
-            else if (profileDrives && profileDrives.length > 0) {
-              const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
-              console.log(`Home: Found ${rootDriveIds.length} root drive IDs for filtering`);
-              
-              if (rootDriveIds.length > 0) {
-                // THIS IS THE KEY CHANGE: Instead of filtering by source_id (which creates a huge URL),
-                // we'll filter presentations directly by the root_drive_ids using a join
-                
-                // Create the join query using expert_documents table to connect presentations to root_drive_ids
-                // This creates a much shorter query than listing hundreds of source_ids
-                console.log('Home: Using a Join query approach for filtering');
-                
-                // Instead of the complex approach, we'll make a simpler version
-                // that filters the presentations after we fetch them
-                
-                // Get all presentations first (this query works fine)
-                // Then we'll filter them in memory
-              }
-            } else {
-              console.log('Home: No profile drives found for filtering');
-            }
-            
-            // Get all presentations - we'll filter them after fetching
-            // This approach prevents the URL length issues completely
-            console.log('Home: Getting all presentations - will filter after fetching');
-          } catch (filterError) {
-            console.error('Home: Error in custom filter process:', filterError);
-            console.log('Home: Proceeding without filtering due to error');
-          }
-        } else {
-          console.log('Home: No active filter profile to apply');
-        }
 
         // Add a timeout to the query to prevent hanging
         const queryPromise = query;
@@ -540,50 +330,8 @@ export function Home() {
           throw new Error(`Error fetching presentations: ${presentationsError.message}`);
         }
         
-        // Apply in-memory filtering based on active profile
+        // Use all presentations data without filtering
         let filteredPresentationsData = presentationsData || [];
-        
-        // Only apply filtering if we have an active profile and presentations
-        if (activeFilterProfile && filteredPresentationsData.length > 0) {
-          try {
-            console.log(`Home: Applying in-memory filtering for ${filteredPresentationsData.length} presentations`);
-            
-            // Get root drive IDs for the active profile
-            const { data: profileDrives } = await supabase
-              .from('filter_user_profile_drives')
-              .select('root_drive_id')
-              .eq('profile_id', activeFilterProfile.id);
-            
-            if (profileDrives && profileDrives.length > 0) {
-              const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
-              
-              if (rootDriveIds.length > 0) {
-                console.log(`Home: Filtering by ${rootDriveIds.length} root drive IDs`);
-                
-                // Get all relevant source IDs for these root drive IDs
-                const { data: sources } = await supabase
-                  .from('google_sources')
-                  .select('id')
-                  .in('root_drive_id', rootDriveIds);
-                
-                if (sources && sources.length > 0) {
-                  const sourceIds = sources.map(s => s.id);
-                  console.log(`Home: Found ${sourceIds.length} source IDs for filtering`);
-                  
-                  // Filter presentations by video_source_id
-                  filteredPresentationsData = filteredPresentationsData.filter(p => 
-                    sourceIds.includes(p.video_source_id)
-                  );
-                  
-                  console.log(`Home: Filtered to ${filteredPresentationsData.length} presentations`);
-                }
-              }
-            }
-          } catch (filterError) {
-            console.error('Home: Error in in-memory filtering:', filterError);
-            // Keep using all presentations if filtering fails
-          }
-        }
       
         // Fetch expert information separately for each presentation using google_sources_experts
         const presentationsWithExperts = await Promise.all(
@@ -665,6 +413,7 @@ export function Home() {
 
   // Fetch presentation assets when a presentation is selected
   useEffect(() => {
+    trackEffect('fetchAssets');
     async function fetchAssets() {
       if (!selectedPresentation) return;
       
@@ -718,6 +467,7 @@ export function Home() {
   
   // Fetch subject classifications for videos when presentations change
   useEffect(() => {
+    trackEffect('fetchClassifications');
     async function fetchClassifications() {
       if (presentations.length === 0) return;
       
@@ -1630,13 +1380,74 @@ export function Home() {
 
   // Fetch metadata when any modal opens
   useEffect(() => {
+    trackEffect('fetchMetadata');
+    console.log('🔍 METADATA EFFECT FIRED:', {
+      showExpertProfileModal,
+      showDebugModal,
+      selectedExpertId,
+      loadingMetadata,
+      timestamp: new Date().toLocaleTimeString()
+    });
     if ((showExpertProfileModal || showDebugModal) && selectedExpertId && !loadingMetadata) {
       fetchExpertMetadata(selectedExpertId);
     }
-  }, [showExpertProfileModal, showDebugModal, selectedExpertId]);
+  }, [showExpertProfileModal, showDebugModal, selectedExpertId, loadingMetadata]);
+
+  // Debug - track which components are rendering
+  const DebugPanel = () => {
+    const [localTime, setLocalTime] = useState(new Date().toLocaleTimeString());
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setLocalTime(new Date().toLocaleTimeString());
+      }, 1000);
+      return () => clearInterval(timer);
+    }, []);
+    
+    return (
+      <div className="fixed top-0 right-0 bg-black text-white p-2 z-50 text-xs">
+        <div>Render #{renderCount}</div>
+        <div>Loading: {loading.toString()}</div>
+        <div>Presentations: {presentations.length}</div>
+        <div>Time: {localTime}</div>
+        <div className="text-yellow-300">If only time updates = good</div>
+      </div>
+    );
+  };
+  
+  // Test if issue is component-wide
+  const [testMode, setTestMode] = useState(false);
+
+  // Test mode to isolate the issue
+  if (testMode) {
+    return (
+      <div className="container mx-auto p-4">
+        <DebugPanel />
+        <div className="bg-white p-8 rounded shadow">
+          <h1 className="text-2xl mb-4">Test Mode - Minimal Component</h1>
+          <p>If this doesn't flash, the issue is in the main component logic.</p>
+          <button 
+            onClick={() => setTestMode(false)}
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Back to Main View
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4">
+      {/* Debug Panel */}
+      <DebugPanel />
+      
+      {/* Test Mode Toggle */}
+      <button 
+        onClick={() => setTestMode(true)}
+        className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded z-50"
+      >
+        Test Mode
+      </button>
       {/* Expert Profile Modal - Used for both debug and regular viewing */}
       {(showDebugModal || showExpertProfileModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1734,36 +1545,6 @@ export function Home() {
       <div className="flex lg:flex-row gap-6">
         {/* Left column with filter dropdown and left sidebar content */}
         <div className="lg:w-1/3 space-y-4">
-          {/* Filter profiles dropdown */}
-          <select 
-            className="px-4 py-2 w-full bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
-            onChange={(e) => {
-              if (e.target.value) {
-                handleProfileSelect(e.target.value);
-              }
-            }}
-            value={activeFilterProfile?.id || ''}
-            disabled={loadingProfiles}
-          >
-            <option value="" disabled>
-              {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
-            </option>
-            {filterProfiles && filterProfiles.length > 0 ? (
-              filterProfiles
-                .filter(profile => profile && profile.id && profile.name)
-                .map((profile) => {
-                  const id = String(profile.id);
-                  const name = String(profile.name);
-                  return (
-                    <option key={id} value={id}>
-                      {name}
-                    </option>
-                  );
-                })
-            ) : (
-              <option value="" disabled>No profiles available</option>
-            )}
-          </select>
           
           {/* Search Box - Moved up */}
           <div className="bg-white rounded-lg shadow p-4">
@@ -2008,7 +1789,7 @@ export function Home() {
                   <button
                     onClick={async () => {
                       // Reset active profile to null (no filtering)
-                      setActiveFilterProfile(null);
+                      // Removed setActiveFilterProfile
                       // Clear error
                       setError(null);
                       // Refetch data with a slight delay to ensure state update

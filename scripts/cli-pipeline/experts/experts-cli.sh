@@ -28,7 +28,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
