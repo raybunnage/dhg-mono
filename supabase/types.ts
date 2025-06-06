@@ -316,6 +316,105 @@ export type Database = {
         }
         Relationships: []
       }
+      app_service_dependencies: {
+        Row: {
+          app_id: string | null
+          dependency_type: string
+          first_detected_at: string | null
+          id: string
+          import_path: string | null
+          is_critical: boolean | null
+          last_verified_at: string | null
+          notes: string | null
+          service_id: string | null
+          usage_context: string | null
+          usage_frequency: string | null
+        }
+        Insert: {
+          app_id?: string | null
+          dependency_type: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Update: {
+          app_id?: string | null
+          dependency_type?: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_service_dependencies_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      apps_registry: {
+        Row: {
+          app_name: string
+          app_path: string
+          app_type: string
+          created_at: string | null
+          description: string | null
+          display_name: string
+          framework: string | null
+          id: string
+          package_manager: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          app_path: string
+          app_type: string
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          framework?: string | null
+          id?: string
+          package_manager?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          app_path?: string
+          app_type?: string
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          framework?: string | null
+          id?: string
+          package_manager?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       auth_allowed_emails: {
         Row: {
           added_at: string | null
@@ -608,6 +707,101 @@ export type Database = {
           total_duration_seconds?: number | null
           total_files?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cli_commands_registry: {
+        Row: {
+          command_name: string
+          command_script: string | null
+          command_type: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string | null
+          id: string
+          is_primary: boolean | null
+          pipeline_id: string | null
+          status: string | null
+          success_rate: number | null
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          command_name: string
+          command_script?: string | null
+          command_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string | null
+          id?: string
+          is_primary?: boolean | null
+          pipeline_id?: string | null
+          status?: string | null
+          success_rate?: number | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          command_name?: string
+          command_script?: string | null
+          command_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string | null
+          id?: string
+          is_primary?: boolean | null
+          pipeline_id?: string | null
+          status?: string | null
+          success_rate?: number | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cli_commands_registry_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "cli_pipelines_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cli_pipelines_registry: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          domain: string | null
+          id: string
+          main_script: string | null
+          pipeline_name: string
+          pipeline_path: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          domain?: string | null
+          id?: string
+          main_script?: string | null
+          pipeline_name: string
+          pipeline_path: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          domain?: string | null
+          id?: string
+          main_script?: string | null
+          pipeline_name?: string
+          pipeline_path?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -958,6 +1152,60 @@ export type Database = {
         }
         Relationships: []
       }
+      command_service_dependencies: {
+        Row: {
+          command_id: string | null
+          dependency_type: string
+          first_detected_at: string | null
+          id: string
+          import_path: string | null
+          is_critical: boolean | null
+          last_verified_at: string | null
+          notes: string | null
+          service_id: string | null
+          usage_context: string | null
+        }
+        Insert: {
+          command_id?: string | null
+          dependency_type: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          usage_context?: string | null
+        }
+        Update: {
+          command_id?: string | null
+          dependency_type?: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          usage_context?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_service_dependencies_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "cli_commands_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "command_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       command_tracking: {
         Row: {
           affected_entity: string | null
@@ -997,6 +1245,48 @@ export type Database = {
           records_affected?: number | null
           status?: string
           summary?: string | null
+        }
+        Relationships: []
+      }
+      dependency_analysis_runs: {
+        Row: {
+          completed_at: string | null
+          dependencies_found: number | null
+          errors_encountered: number | null
+          id: string
+          items_scanned: number | null
+          notes: string | null
+          run_duration_ms: number | null
+          run_type: string
+          started_at: string | null
+          status: string | null
+          target_type: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          dependencies_found?: number | null
+          errors_encountered?: number | null
+          id?: string
+          items_scanned?: number | null
+          notes?: string | null
+          run_duration_ms?: number | null
+          run_type: string
+          started_at?: string | null
+          status?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          dependencies_found?: number | null
+          errors_encountered?: number | null
+          id?: string
+          items_scanned?: number | null
+          notes?: string | null
+          run_duration_ms?: number | null
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+          target_type?: string | null
         }
         Relationships: []
       }
@@ -1655,6 +1945,7 @@ export type Database = {
           is_important: boolean
           is_primary: boolean | null
           last_used_at: string | null
+          legacy_id: number | null
           updated_at: string
           user_id: string | null
         }
@@ -1666,6 +1957,7 @@ export type Database = {
           is_important?: boolean
           is_primary?: boolean | null
           last_used_at?: string | null
+          legacy_id?: number | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1677,6 +1969,7 @@ export type Database = {
           is_important?: boolean
           is_primary?: boolean | null
           last_used_at?: string | null
+          legacy_id?: number | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1853,6 +2146,7 @@ export type Database = {
           created_at: string | null
           date: string | null
           domain_id: string
+          email_address_id: string | null
           email_id: number
           id: string
           is_ai_process_for_concepts: number | null
@@ -1872,6 +2166,7 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           domain_id?: string
+          email_address_id?: string | null
           email_id: number
           id?: string
           is_ai_process_for_concepts?: number | null
@@ -1891,6 +2186,7 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           domain_id?: string
+          email_address_id?: string | null
           email_id?: number
           id?: string
           is_ai_process_for_concepts?: number | null
@@ -1903,7 +2199,15 @@ export type Database = {
           updated_at?: string
           url_cnt?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_email_address_id_fkey"
+            columns: ["email_address_id"]
+            isOneToOne: false
+            referencedRelation: "email_addresses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_processed_contents: {
         Row: {
@@ -3690,6 +3994,63 @@ export type Database = {
           },
         ]
       }
+      pipeline_service_dependencies: {
+        Row: {
+          dependency_type: string
+          first_detected_at: string | null
+          id: string
+          import_path: string | null
+          is_critical: boolean | null
+          last_verified_at: string | null
+          notes: string | null
+          pipeline_id: string | null
+          service_id: string | null
+          usage_context: string | null
+          usage_frequency: string | null
+        }
+        Insert: {
+          dependency_type: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          pipeline_id?: string | null
+          service_id?: string | null
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Update: {
+          dependency_type?: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          pipeline_id?: string | null
+          service_id?: string | null
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_service_dependencies_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "cli_pipelines_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_urls: {
         Row: {
           authors: string[] | null
@@ -3851,6 +4212,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_exports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          export_name: string
+          export_type: string | null
+          id: string
+          is_default: boolean | null
+          service_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          export_name: string
+          export_type?: string | null
+          id?: string
+          is_default?: boolean | null
+          service_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          export_name?: string
+          export_type?: string | null
+          id?: string
+          is_default?: boolean | null
+          service_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_exports_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services_registry: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          export_type: string | null
+          id: string
+          is_singleton: boolean | null
+          package_path: string
+          service_file: string | null
+          service_name: string
+          service_type: string
+          status: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          export_type?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          package_path: string
+          service_file?: string | null
+          service_name: string
+          service_type: string
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          export_type?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          package_path?: string
+          service_file?: string | null
+          service_name?: string
+          service_type?: string
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
       }
       sys_mime_types: {
         Row: {
@@ -4509,6 +4956,16 @@ export type Database = {
           suggested_prefix: string
         }[]
       }
+      get_app_service_dependencies: {
+        Args: { app_name_param: string }
+        Returns: {
+          service_name: string
+          display_name: string
+          dependency_type: string
+          usage_frequency: string
+          is_critical: boolean
+        }[]
+      }
       get_auth_audit_log_count: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -4727,6 +5184,15 @@ export type Database = {
           is_primary: boolean
         }[]
       }
+      get_pipeline_dependencies_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          pipeline_name: string
+          domain: string
+          service_count: number
+          critical_dependencies: number
+        }[]
+      }
       get_pipeline_statistics: {
         Args: { p_pipeline_id?: string }
         Returns: {
@@ -4743,6 +5209,16 @@ export type Database = {
       get_schema_info: {
         Args: { schema_name: string }
         Returns: Json
+      }
+      get_service_usage_by_apps: {
+        Args: { service_name_param: string }
+        Returns: {
+          app_name: string
+          display_name: string
+          dependency_type: string
+          usage_frequency: string
+          is_critical: boolean
+        }[]
       }
       get_table_columns: {
         Args: { p_table_name: string }
@@ -4877,6 +5353,10 @@ export type Database = {
       make_email_admin: {
         Args: { user_email: string }
         Returns: Json
+      }
+      populate_email_address_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }

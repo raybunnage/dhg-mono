@@ -7,7 +7,7 @@ import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
 import { DocumentsPage } from './pages/DocumentsPage';
-import { HiMomPage } from './pages/HiMomPage';
+// import { HiMomPage } from './pages/HiMomPage'; // Archived
 import { PromptService } from './pages/PromptService';
 import { DocumentTypes } from './pages/DocumentTypes';
 import { ScriptsManagement } from './pages/ScriptsManagement';
@@ -99,6 +99,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        {/* Archived Hi Mom page
         <Route 
           path="/hi-mom" 
           element={
@@ -106,7 +107,7 @@ function App() {
               <HiMomPage />
             </ProtectedRoute>
           } 
-        />
+        /> */}
         <Route 
           path="/prompts" 
           element={
