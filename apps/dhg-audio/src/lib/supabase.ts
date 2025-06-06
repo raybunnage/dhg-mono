@@ -1,7 +1,9 @@
+// Using the shared Supabase adapter for cross-environment compatibility
 import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
-// Create Supabase client using the universal adapter
-// Pass the environment variables from Vite (required for browser apps)
-export const supabase = createSupabaseAdapter({
-  env: import.meta.env as any
-});
+console.log('=== Supabase Client Setup (dhg-audio) ===');
+console.log('Using shared Supabase adapter for cross-environment compatibility');
+
+// The adapter automatically handles environment detection and uses the correct variables
+export const supabase = createSupabaseAdapter();
+console.log('Supabase client created successfully using shared adapter');

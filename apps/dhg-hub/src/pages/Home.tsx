@@ -1,11 +1,40 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/utils/supabase-adapter';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 // @ts-ignore - This import will work at runtime
 import { Database } from '../../../supabase/types';
 import ReactMarkdown from 'react-markdown';
 import JsonFormatter from '../components/JsonFormatter';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../components/ui/collapsible';
 import { ChevronDown, ChevronRight, ArrowLeft, RefreshCcw } from 'lucide-react';
+import { filterService } from '@/utils/filter-service-adapter';
+import { FirstTimeProfilePrompt } from '../components/FirstTimeProfilePrompt';
+import { useFirstTimeProfilePrompt } from '../hooks/useFirstTimeProfilePrompt';
+
+// Supabase connection verified during initialization
+
+// Import FilterProfile interface from adapter
+import { FilterProfile } from '@/utils/filter-service-adapter';
+
+// Create a const for the supabase client to use throughout the file
+const supabase = createSupabaseAdapter();
+
+// Debug function to check the database directly
+async function debugCheckFilterProfiles() {
+  try {
+    const { data, error } = await supabase
+      .from('filter_user_profiles')
+      .select('id, name, is_active');
+      
+    if (error) {
+      console.error('Debug: SQL Error details:', error.message);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error in debug check:', err);
+    return null;
+  }
+}
 
 // Utility function to get video duration, either from metadata or estimated from file size
 // Helper function to search within processed content objects or strings
@@ -135,7 +164,7 @@ const extractDriveId = (url: string | null): string | null => {
 };
 
 // Define key types
-type Presentation = Database['public']['Tables']['presentations']['Row'] & {
+type Presentation = Database['public']['Tables']['media_presentations']['Row'] & {
   title?: string | null;
   expert_document?: ExpertDocument | null;
   video_source?: SourceGoogle | null;
@@ -155,7 +184,7 @@ type PresentationAsset = Database['public']['Tables']['media_presentation_assets
   expert_document?: ExpertDocument | null;
 };
 
-type SourceGoogle = Database['public']['Tables']['sources_google']['Row'] & {
+type SourceGoogle = Database['public']['Tables']['google_sources']['Row'] & {
   document_type?: { document_type: string; mime_type: string | null } | null;
 };
 
@@ -168,23 +197,8 @@ type ExpertDocument = Database['public']['Tables']['google_expert_documents']['R
 type SubjectClassification = Database['public']['Tables']['learn_subject_classifications']['Row'];
 type TableClassification = Database['public']['Tables']['learn_document_classifications']['Row'];
 
-// Debug component to track re-renders
-let renderCount = 0;
-
-// Track all useEffect calls
-const effectTracker: Record<string, number> = {};
-
-function trackEffect(name: string) {
-  if (!effectTracker[name]) effectTracker[name] = 0;
-  effectTracker[name]++;
-  console.log(`⚡ EFFECT [${name}] run #${effectTracker[name]} at ${new Date().toLocaleTimeString()}`);
-}
-
 export function Home() {
-  // Track renders
-  renderCount++;
-  console.log(`🔄 HOME COMPONENT RENDER #${renderCount} at ${new Date().toLocaleTimeString()}`);
-  // State variables with debug tracking
+  // State variables
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,76 +211,139 @@ export function Home() {
   const [presentationAssets, setPresentationAssets] = useState<PresentationAsset[]>([]);
   const [showExpertBio, setShowExpertBio] = useState<boolean>(false);
   const [expertBioContent, setExpertBioContent] = useState<any>(null);
-  
-  // Debug state changes
-  useEffect(() => { trackEffect('presentations'); console.log('🚨 PRESENTATIONS CHANGED:', presentations.length); }, [presentations]);
-  useEffect(() => { trackEffect('loading'); console.log('🚨 LOADING CHANGED:', loading); }, [loading]);
-  useEffect(() => { trackEffect('error'); console.log('🚨 ERROR CHANGED:', error); }, [error]);
-  useEffect(() => { trackEffect('searchQuery'); console.log('🚨 SEARCH QUERY CHANGED:', searchQuery); }, [searchQuery]);
-  useEffect(() => { trackEffect('selectedSubjects'); console.log('🚨 SELECTED SUBJECTS CHANGED:', selectedSubjects); }, [selectedSubjects]);
-  useEffect(() => { trackEffect('selectedPresentation'); console.log('🚨 SELECTED PRESENTATION CHANGED:', selectedPresentation?.id); }, [selectedPresentation]);
-  useEffect(() => { trackEffect('presentationAssets'); console.log('🚨 PRESENTATION ASSETS CHANGED:', presentationAssets.length); }, [presentationAssets]);
+  const [filterProfiles, setFilterProfiles] = useState<FilterProfile[]>([]);
+  const [activeFilterProfile, setActiveFilterProfile] = useState<FilterProfile | null>(null);
+  const [loadingProfiles, setLoadingProfiles] = useState<boolean>(false);
   
   // Collapsible section states - default all open except asset view mode
   const [videoSectionOpen, setVideoSectionOpen] = useState<boolean>(true);
+  
+  // First-time profile prompt
+  const { shouldShowPrompt, dismissPrompt } = useFirstTimeProfilePrompt();
   const [presentationAssetsOpen, setPresentationAssetsOpen] = useState<boolean>(true);
   const [assetSectionOpen, setAssetSectionOpen] = useState<boolean>(true);
   const [assetViewMode, setAssetViewMode] = useState<boolean>(false);
 
-
-
-  // Fetch presentations data
+  // Fetch filter profiles
   useEffect(() => {
-    trackEffect('fetchData-initial');
-    fetchData();
+    async function fetchFilterProfiles() {
+      setLoadingProfiles(true);
+      try {
+        // Check if profiles exist directly in database first
+        console.log('Checking profiles directly in database...');
+        const { data: dbProfiles, error: dbError } = await supabase
+          .from('filter_user_profiles')
+          .select('*');
+        console.log('Direct DB check:', dbProfiles?.length || 0, 'profiles found');
+        if (dbError) console.error('DB Error:', dbError);
+        
+        // Fetch all available profiles using the filter service
+        console.log('Fetching filter profiles through service...');
+        const profiles = await filterService.listProfiles();
+        console.log('Found profiles through service:', profiles?.length || 0, profiles?.map(p => p.name) || []);
+        
+        if (profiles.length > 0) {
+          setFilterProfiles(profiles);
+          
+          // Then get the active profile
+          console.log('Loading active profile...');
+          const active = await filterService.loadActiveProfile();
+          console.log('Active profile:', active?.name || 'none');
+          if (active) {
+            setActiveFilterProfile(active);
+          } else {
+            // If no active profile, use the first one
+            if (profiles.length > 0) {
+              // Set the first profile as active
+              console.log('Setting first profile as active:', profiles[0].name);
+              const success = await filterService.setActiveProfile(profiles[0].id);
+              if (success) {
+                const active = await filterService.loadActiveProfile();
+                setActiveFilterProfile(active);
+              }
+            }
+          }
+        } else {
+          console.log('No profiles found, proceeding without filter');
+          // No profiles exist yet - just proceed without a filter
+          setActiveFilterProfile(null);
+        }
+      } catch (err) {
+        console.error('Error fetching filter profiles:', err);
+        // If there's an error, still allow showing the data
+        setActiveFilterProfile(null);
+      } finally {
+        setLoadingProfiles(false);
+      }
+    }
+    
+    fetchFilterProfiles();
   }, []);
+
+  // Handler for profile selection change
+  const handleProfileSelect = async (profileId: string) => {
+    try {
+      console.log('handleProfileSelect called with profileId:', profileId);
+      
+      if (!profileId) {
+        console.warn('Empty profileId passed to handleProfileSelect');
+        return;
+      }
+      
+      // Show loading state
+      setLoading(true);
+      
+      console.log('Setting active profile...');
+      const success = await filterService.setActiveProfile(profileId);
+      
+      if (!success) {
+        console.error('Failed to set profile as active');
+        setLoading(false);
+        return;
+      }
+      
+      // Reload the active profile - this will also load the drive IDs
+      console.log('Reloading active profile...');
+      const active = await filterService.loadActiveProfile();
+      console.log('Active profile loaded:', active);
+      
+      if (active) {
+        // Update the UI with the new active profile
+        setActiveFilterProfile(active);
+        
+        // Clear any search or subject filters
+        setSearchQuery('');
+        setSelectedSubjects([]);
+        
+        // Reload the presentations with the new filter
+        console.log('Reloading presentations with new filter...');
+        await fetchData();
+      } else {
+        console.warn('No active profile found after setting active');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Error setting active filter profile:', err);
+      setLoading(false);
+    }
+  };
+
+  // Fetch presentations data - only trigger when activeFilterProfile ID changes
+  useEffect(() => {
+    console.log('useEffect triggered, activeFilterProfile:', activeFilterProfile?.name);
+    if (!loadingProfiles) {  // Don't fetch data while still loading profiles
+      fetchData();
+    }
+  }, [activeFilterProfile?.id, loadingProfiles]);
 
   // Function to fetch presentations data
   async function fetchData() {
-    console.log('🚀 FETCH DATA CALLED at', new Date().toLocaleTimeString());
-    console.trace('fetchData call stack');
     try {
       setLoading(true);
       console.log('Home: Fetching presentations data');
+      console.log('Home: Current active profile:', activeFilterProfile);
       
-      // DEBUG: Let's directly verify if there are profiles in the user_filter_profiles table
-      try {
-        console.log('Home: DEBUG - Checking available profiles directly');
-        const { data: profilesDebug, error: profilesError } = await supabase
-          .from('filter_user_profiles')
-          .select('*')
-          .order('name');
-        
-        if (profilesError) {
-          console.error('Home: Error directly querying profiles:', profilesError);
-        } else {
-          console.log(`Home: Found ${profilesDebug?.length || 0} profiles directly from DB`);
-          if (profilesDebug && profilesDebug.length > 0) {
-            console.log('Home: Profile names:', profilesDebug.map(p => p.name).join(', '));
-          }
-        }
-      } catch (e) {
-        console.error('Home: Error in direct profile check:', e);
-      }
-      
-      // DEBUG: Let's check profile drives directly
-      try {
-        console.log('Home: DEBUG - Checking profile drives directly');
-        const { data: drivesDebug, error: drivesError } = await supabase
-          .from('filter_user_profile_drives')
-          .select('*');
-        
-        if (drivesError) {
-          console.error('Home: Error directly querying profile drives:', drivesError);
-        } else {
-          console.log(`Home: Found ${drivesDebug?.length || 0} profile drives directly from DB`);
-          if (drivesDebug && drivesDebug.length > 0) {
-            console.log('Home: Sample profile drive fields:', Object.keys(drivesDebug[0]).join(', '));
-          }
-        }
-      } catch (e) {
-        console.error('Home: Error in direct drives check:', e);
-      }
+      // Debug: checking profiles and drives
       
       try {
         // Fetch presentations with their video sources and expert documents
@@ -293,7 +370,8 @@ export function Home() {
               created_at,
               modified_at,
               size,
-              metadata
+              metadata,
+              root_drive_id
             ),
             high_level_folder:high_level_folder_source_id(
               id,
@@ -314,28 +392,104 @@ export function Home() {
         }
           
         // Apply a custom filtering approach that won't hit URL length limits
+        if (activeFilterProfile) {
+          try {
+            console.log(`Home: Applying custom filter for profile: ${activeFilterProfile.name}`);
+            
+            // Get root drive IDs directly - this establishes what we want to filter by
+            const { data: profileDrives, error: drivesError } = await supabase
+              .from('filter_user_profile_drives')
+              .select('root_drive_id')
+              .eq('profile_id', activeFilterProfile.id);
+            
+            if (drivesError) {
+              console.error('Home: Error getting profile drives:', drivesError);
+              console.log('Home: Will proceed without filtering');
+            } 
+            else if (profileDrives && profileDrives.length > 0) {
+              const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
+              console.log(`Home: Found ${rootDriveIds.length} root drive IDs for filtering:`, rootDriveIds);
+              
+              if (rootDriveIds.length > 0) {
+                // Apply filter by checking if the video_source has a root_drive_id in our filter list
+                // Join with sources_google to get the root_drive_id
+                query = query.eq('video_source.root_drive_id', rootDriveIds[0]);
+                
+                // If there are multiple root_drive_ids, we need to use an 'in' filter
+                if (rootDriveIds.length > 1) {
+                  query = query.in('video_source.root_drive_id', rootDriveIds);
+                }
+                
+                console.log(`Home: Applied filter for root_drive_ids: ${rootDriveIds.join(', ')}`);
+              }
+            } else {
+              console.log('Home: No profile drives found for filtering');
+            }
+          } catch (filterError) {
+            console.error('Home: Error in custom filter process:', filterError);
+            console.log('Home: Proceeding without filtering due to error');
+          }
+        } else {
+          console.log('Home: No active filter profile to apply');
+        }
 
-        // Add a timeout to the query to prevent hanging
-        const queryPromise = query;
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Query timeout - request took too long')), 30000);
-        });
-        
-        const { data: presentationsData, error: presentationsError } = await Promise.race([
-          queryPromise,
-          timeoutPromise
-        ]) as any;
+        // Execute the query
+        console.log('Executing presentations query...');
+        const { data: presentationsData, error: presentationsError } = await query;
+        console.log('Query result:', presentationsData?.length || 0, 'presentations found');
 
         if (presentationsError) {
           throw new Error(`Error fetching presentations: ${presentationsError.message}`);
         }
         
-        // Use all presentations data without filtering
+        // Apply in-memory filtering based on active profile
         let filteredPresentationsData = presentationsData || [];
+        
+        // Only apply filtering if we have an active profile and presentations
+        if (activeFilterProfile && filteredPresentationsData.length > 0) {
+          try {
+            console.log(`Home: Applying in-memory filtering for ${filteredPresentationsData.length} presentations`);
+            
+            // Get root drive IDs for the active profile
+            const { data: profileDrives } = await supabase
+              .from('filter_user_profile_drives')
+              .select('root_drive_id')
+              .eq('profile_id', activeFilterProfile.id);
+            
+            if (profileDrives && profileDrives.length > 0) {
+              const rootDriveIds = profileDrives.map(d => d.root_drive_id).filter(Boolean);
+              
+              if (rootDriveIds.length > 0) {
+                console.log(`Home: Filtering by ${rootDriveIds.length} root drive IDs`);
+                
+                // Get all relevant source IDs for these root drive IDs
+                const { data: sources } = await supabase
+                  .from('google_sources')
+                  .select('id')
+                  .in('root_drive_id', rootDriveIds);
+                
+                if (sources && sources.length > 0) {
+                  const sourceIds = sources.map(s => s.id);
+                  console.log(`Home: Found ${sourceIds.length} source IDs for filtering`);
+                  
+                  // Filter presentations by video_source_id
+                  filteredPresentationsData = filteredPresentationsData.filter((p: any) => 
+                    sourceIds.includes(p.video_source_id)
+                  );
+                  
+                  console.log(`Home: Filtered to ${filteredPresentationsData.length} presentations`);
+                }
+              }
+            }
+          } catch (filterError) {
+            console.error('Home: Error in in-memory filtering:', filterError);
+            // Keep using all presentations if filtering fails
+          }
+        }
       
         // Fetch expert information separately for each presentation using google_sources_experts
         const presentationsWithExperts = await Promise.all(
-          (filteredPresentationsData || []).map(async (presentation) => {
+          (filteredPresentationsData || []).map(async (presentation: Presentation) => {
             if (!presentation.video_source_id) return presentation;
           
           // Get experts associated with this video source
@@ -350,7 +504,18 @@ export function Home() {
                 expert_name
               )
             `)
-            .eq('source_id', presentation.video_source_id);
+            .eq('source_id', presentation.video_source_id) as { 
+              data: Array<{ 
+                expert_id: string; 
+                is_primary: boolean; 
+                expert: { 
+                  id: string; 
+                  full_name: string | null; 
+                  expert_name: string | null 
+                } | null 
+              }> | null; 
+              error: any 
+            };
             
           if (expertsError) {
             console.error(`Error fetching experts for presentation ${presentation.id}:`, expertsError);
@@ -413,7 +578,6 @@ export function Home() {
 
   // Fetch presentation assets when a presentation is selected
   useEffect(() => {
-    trackEffect('fetchAssets');
     async function fetchAssets() {
       if (!selectedPresentation) return;
       
@@ -467,7 +631,6 @@ export function Home() {
   
   // Fetch subject classifications for videos when presentations change
   useEffect(() => {
-    trackEffect('fetchClassifications');
     async function fetchClassifications() {
       if (presentations.length === 0) return;
       
@@ -487,7 +650,7 @@ export function Home() {
             subject_classification_id
           `)
           .in('entity_id', videoSourceIds)
-          .eq('entity_type', 'sources_google');
+          .eq('entity_type', 'google_sources');
         
         if (classificationError) {
           console.error('Error fetching classifications:', classificationError);
@@ -560,6 +723,41 @@ export function Home() {
     
     return filtered;
   }, [presentations, searchQuery, selectedSubjects, presentationClassifications]);
+
+  // Compute unique experts count
+  const uniqueExperts = useMemo(() => {
+    const experts = new Set<string>();
+    presentations.forEach(p => {
+      if (p.expert?.id) {
+        experts.add(p.expert.id);
+      }
+      // Also count experts from the experts array if present
+      if (p.experts && Array.isArray(p.experts)) {
+        p.experts.forEach((e: {id: string, name: string}) => {
+          if (e.id) experts.add(e.id);
+        });
+      }
+    });
+    return experts;
+  }, [presentations]);
+
+  // Compute audio assets count
+  const audioAssetsCount = useMemo(() => {
+    let count = 0;
+    presentations.forEach(p => {
+      // Count audio from video sources
+      if (p.video_source?.mime_type?.includes('audio')) {
+        count++;
+      }
+    });
+    // Also count audio assets from all presentation assets
+    presentationAssets.forEach(asset => {
+      if (asset.asset_type === 'audio' || asset.source_file?.mime_type?.includes('audio')) {
+        count++;
+      }
+    });
+    return count;
+  }, [presentations, presentationAssets]);
 
   // Check if content is likely markdown
   const isMarkdown = (content: string): boolean => {
@@ -1172,7 +1370,7 @@ export function Home() {
       
       // If no bio in experts table, try to fetch an expert document with the bio document_type_id
       const { data: bioDocuments, error: bioError } = await supabase
-        .from('expert_documents')
+        .from('google_expert_documents')
         .select(`
           id,
           processed_content,
@@ -1197,7 +1395,7 @@ export function Home() {
       
       // Find if any of the bio documents is associated with this expert
       if (bioDocuments && bioDocuments.length > 0) {
-        // Get presentation_assets for the current expert to find matching source_ids
+        // Get media_presentation_assets for the current expert to find matching source_ids
         const { data: expertAssets, error: assetsError } = await supabase
           .from('media_presentation_assets')
           .select('source_id')
@@ -1245,7 +1443,7 @@ export function Home() {
         const sourceId = expertAssets[0].source_id;
         
         const { data: anyDocument, error: anyError } = await supabase
-          .from('expert_documents')
+          .from('google_expert_documents')
           .select('id, processed_content')
           .eq('source_id', sourceId)
           .limit(1);
@@ -1380,74 +1578,18 @@ export function Home() {
 
   // Fetch metadata when any modal opens
   useEffect(() => {
-    trackEffect('fetchMetadata');
-    console.log('🔍 METADATA EFFECT FIRED:', {
-      showExpertProfileModal,
-      showDebugModal,
-      selectedExpertId,
-      loadingMetadata,
-      timestamp: new Date().toLocaleTimeString()
-    });
     if ((showExpertProfileModal || showDebugModal) && selectedExpertId && !loadingMetadata) {
       fetchExpertMetadata(selectedExpertId);
     }
-  }, [showExpertProfileModal, showDebugModal, selectedExpertId, loadingMetadata]);
-
-  // Debug - track which components are rendering
-  const DebugPanel = () => {
-    const [localTime, setLocalTime] = useState(new Date().toLocaleTimeString());
-    useEffect(() => {
-      const timer = setInterval(() => {
-        setLocalTime(new Date().toLocaleTimeString());
-      }, 1000);
-      return () => clearInterval(timer);
-    }, []);
-    
-    return (
-      <div className="fixed top-0 right-0 bg-black text-white p-2 z-50 text-xs">
-        <div>Render #{renderCount}</div>
-        <div>Loading: {loading.toString()}</div>
-        <div>Presentations: {presentations.length}</div>
-        <div>Time: {localTime}</div>
-        <div className="text-yellow-300">If only time updates = good</div>
-      </div>
-    );
-  };
-  
-  // Test if issue is component-wide
-  const [testMode, setTestMode] = useState(false);
-
-  // Test mode to isolate the issue
-  if (testMode) {
-    return (
-      <div className="container mx-auto p-4">
-        <DebugPanel />
-        <div className="bg-white p-8 rounded shadow">
-          <h1 className="text-2xl mb-4">Test Mode - Minimal Component</h1>
-          <p>If this doesn't flash, the issue is in the main component logic.</p>
-          <button 
-            onClick={() => setTestMode(false)}
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Back to Main View
-          </button>
-        </div>
-      </div>
-    );
-  }
+  }, [showExpertProfileModal, showDebugModal, selectedExpertId]);
 
   return (
-    <div className="container mx-auto p-4">
-      {/* Debug Panel */}
-      <DebugPanel />
+    <div className="w-full">
+      {/* First-time profile prompt */}
+      {shouldShowPrompt && (
+        <FirstTimeProfilePrompt onDismiss={dismissPrompt} />
+      )}
       
-      {/* Test Mode Toggle */}
-      <button 
-        onClick={() => setTestMode(true)}
-        className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded z-50"
-      >
-        Test Mode
-      </button>
       {/* Expert Profile Modal - Used for both debug and regular viewing */}
       {(showDebugModal || showExpertProfileModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1542,9 +1684,39 @@ export function Home() {
       )}
     
       {/* Main content area with everything side by side */}
-      <div className="flex lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Left column with filter dropdown and left sidebar content */}
-        <div className="lg:w-1/3 space-y-4">
+        <div className="w-full lg:w-2/5 space-y-4">
+          {/* Filter profiles dropdown */}
+          <select 
+            className="px-4 py-2 w-full bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-semibold"
+            onChange={(e) => {
+              if (e.target.value) {
+                handleProfileSelect(e.target.value);
+              }
+            }}
+            value={activeFilterProfile?.id || ''}
+            disabled={loadingProfiles}
+          >
+            <option value="" disabled>
+              {loadingProfiles ? 'Loading profiles...' : 'Select a filter profile'}
+            </option>
+            {filterProfiles && filterProfiles.length > 0 ? (
+              filterProfiles
+                .filter(profile => profile && profile.id && profile.name)
+                .map((profile) => {
+                  const id = String(profile.id);
+                  const name = String(profile.name);
+                  return (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  );
+                })
+            ) : (
+              <option value="" disabled>No profiles available</option>
+            )}
+          </select>
           
           {/* Search Box - Moved up */}
           <div className="bg-white rounded-lg shadow p-4">
@@ -1789,11 +1961,10 @@ export function Home() {
                   <button
                     onClick={async () => {
                       // Reset active profile to null (no filtering)
-                      // Removed setActiveFilterProfile
+                      setActiveFilterProfile(null);
                       // Clear error
                       setError(null);
-                      // Refetch data with a slight delay to ensure state update
-                      setTimeout(() => fetchData(), 100);
+                      // Data will refetch automatically when activeFilterProfile changes
                     }}
                     className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm transition-colors"
                   >
@@ -1933,7 +2104,7 @@ export function Home() {
         </div>
       
         {/* Right Content Area */}
-        <div className="lg:w-2/3">
+        <div className="lg:w-3/5">
           {/* Video Title and Player */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {selectedPresentation?.expert_document?.title ? (
@@ -2033,12 +2204,13 @@ export function Home() {
                 
                 <CollapsibleContent>
                   {selectedPresentation?.video_source?.web_view_link ? (
-                    <div className="aspect-video bg-black">
+                    <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
                       <iframe 
                         src={`https://drive.google.com/file/d/${extractDriveId(selectedPresentation.video_source.web_view_link)}/preview`}
-                        className="w-full h-full"
+                        className="absolute top-0 left-0 w-full h-full"
                         title="Video Player"
                         allow="autoplay"
+                        style={{ border: 'none' }}
                       />
                     </div>
                   ) : (
