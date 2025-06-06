@@ -258,6 +258,48 @@ ORDER BY cpt.table_name;
    - Follow the existing format with ❌ Problem and ✅ Solution examples
    - Focus on patterns that could help with similar issues in the future
 
+## Task-Aware Git Commits
+
+⚠️ **ALWAYS check for active tasks before committing changes**
+
+When the user asks you to commit changes, follow this workflow:
+
+1. **Check for active tasks in the current worktree**:
+   ```bash
+   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit
+   ```
+   
+2. **If a task is found**:
+   - The CLI will show active tasks in the current worktree
+   - Select the appropriate task (or none if the work isn't task-related)
+   - Include the task ID in your commit message:
+   
+   ```
+   feat: implement worktree mappings feature
+   
+   Task: #07832f16-301d-4a77-8c97-67f84725fe37
+   
+   - Add WorktreeMappings page
+   - Fix CreateTaskPage dropdown
+   
+   🤖 Generated with [Claude Code](https://claude.ai/code)
+   
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   ```
+
+3. **Benefits**:
+   - Automatically links commits to tasks
+   - Updates task notes with commit SHA
+   - Makes it easy to track what commits solved which tasks
+   - Helps with project history and debugging
+
+4. **When to use**:
+   - ✅ ALWAYS when committing task-related work
+   - ✅ When the user asks for commits/merges
+   - ❌ Skip for minor fixes unrelated to any task
+   
+**Note**: The task tracking is automatic - the CLI will find tasks based on the current worktree path
+
 ## Final Checklist
 
 ⚠️ **BEFORE SUBMITTING CODE:**
