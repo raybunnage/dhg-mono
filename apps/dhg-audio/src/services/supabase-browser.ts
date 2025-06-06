@@ -34,7 +34,9 @@ class SupabaseBrowserClient {
       });
 
       // Use universal adapter with appropriate configuration
+      // MUST pass environment variables for browser usage
       this.client = createSupabaseAdapter({
+        env: import.meta.env as any,
         useServiceRole: hasServiceKey,
         authConfig: {
           storageKey: 'dhg-audio-auth',
