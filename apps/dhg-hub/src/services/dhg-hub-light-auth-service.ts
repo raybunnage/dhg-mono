@@ -5,7 +5,7 @@
  * using the browser-specific Supabase adapter
  */
 
-import { supabaseBrowser } from './supabase-browser-adapter';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 import type { SupabaseClient, User, Session } from '@supabase/supabase-js';
 
 export interface LightAuthServiceResult {
@@ -32,7 +32,7 @@ class DhgHubLightAuthService {
   private mockSession: Session | null = null;
 
   private constructor() {
-    this.supabase = supabaseBrowser.getClient();
+    this.supabase = createSupabaseAdapter();
   }
 
   static getInstance(): DhgHubLightAuthService {

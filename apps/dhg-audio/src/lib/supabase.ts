@@ -1,16 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+// Using the shared Supabase adapter for cross-environment compatibility
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+console.log('=== Supabase Client Setup (dhg-audio) ===');
+console.log('Using shared Supabase adapter for cross-environment compatibility');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+// The adapter automatically handles environment detection and uses the correct variables
+export const supabase = createSupabaseAdapter();
+console.log('Supabase client created successfully using shared adapter');

@@ -1,24 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+// Using the shared Supabase adapter for cross-environment compatibility
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+console.log('=== Supabase Client Setup (dhg-admin-code) ===');
+console.log('Using shared Supabase adapter for cross-environment compatibility');
 
-console.log('=== Supabase Client Setup ===');
-console.log('URL:', supabaseUrl);
-console.log('Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables!');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl);
-  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Not set');
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  realtime: {
-    params: {
-      eventsPerSecond: 0
-    }
-  }
-});
-console.log('Supabase client created successfully');
+// The adapter automatically handles environment detection and uses the correct variables
+export const supabase = createSupabaseAdapter();
+console.log('Supabase client created successfully using shared adapter');

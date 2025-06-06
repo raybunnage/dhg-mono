@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabaseBrowser } from '../services/supabase-browser-adapter';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 // @ts-ignore - This import will work at runtime
 import { Database } from '../../../supabase/types';
 import ReactMarkdown from 'react-markdown';
@@ -16,7 +16,7 @@ import { useFirstTimeProfilePrompt } from '../hooks/useFirstTimeProfilePrompt';
 import { FilterProfile } from '@/utils/filter-service-adapter';
 
 // Create a const for the supabase client to use throughout the file
-const supabase = supabaseBrowser.getClient();
+const supabase = createSupabaseAdapter();
 
 // Debug function to check the database directly
 async function debugCheckFilterProfiles() {

@@ -1,4 +1,4 @@
-import { supabaseBrowser } from './supabase-browser-adapter';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
 export interface UserProfile {
   id: string;
@@ -44,6 +44,7 @@ export interface ProfileServiceResult {
 
 class ProfileService {
   private static instance: ProfileService;
+  private supabase = createSupabaseAdapter();
   
   private constructor() {}
   
@@ -56,7 +57,7 @@ class ProfileService {
   
   async getProfile(userId: string): Promise<ProfileServiceResult> {
     try {
-      const { data, error } = await supabaseBrowser.getClient()
+      const { data, error } = await this.supabase
         .from('auth_user_profiles')
         .select('*')
         .eq('id', userId)

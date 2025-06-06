@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-// Import the Supabase adapter
-import { supabaseBrowser } from '../services/supabase-browser-adapter'
+// Import the Universal Supabase adapter
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter'
 // @ts-ignore - This import will work at runtime
 import type { Database } from '../../../supabase/types'
 
@@ -112,7 +112,7 @@ export function Easy() {
           addDiagnostic('Adapter authentication failed, trying manual authentication');
           
           // First try to get any existing session
-          const { data: sessionData } = await supabaseBrowser.getClient().auth.getSession();
+          const { data: sessionData } = await createSupabaseAdapter().auth.getSession();
           
           if (sessionData.session) {
             // Already authenticated
@@ -122,7 +122,7 @@ export function Easy() {
             // Need to log in with test user
             addDiagnostic(`No existing session. Signing in with test user: ${testUser.email}`);
             
-            const { data: authData, error: authError } = await supabaseBrowser.getClient().auth.signInWithPassword({
+            const { data: authData, error: authError } = await createSupabaseAdapter().auth.signInWithPassword({
               email: testUser.email,
               password: testUser.password
             });
@@ -147,7 +147,7 @@ export function Easy() {
         setLoading(true);
         addDiagnostic('Querying document_types table...');
         
-        const { data, error: queryError, count: docCount } = await supabaseBrowser.getClient()
+        const { data, error: queryError, count: docCount } = await createSupabaseAdapter()
           .from('document_types')
           .select('id', { count: 'exact', head: true });
         
