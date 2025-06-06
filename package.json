@@ -9,12 +9,10 @@
     "test:run": "turbo run test:run",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    
     "// Server Utilities": "Development server management",
     "servers": "echo 'Starting all development servers...' && turbo run dev --parallel",
     "browser": "cd html && node server.js",
     "research": "pnpm --filter @dhg/research dev",
-    
     "// App Shortcuts": "Quick access to specific app development",
     "dev:hub": "pnpm --filter dhg-hub dev",
     "dev:audio": "pnpm --filter dhg-audio dev",
@@ -22,11 +20,9 @@
     "dev:admin-code": "pnpm --filter dhg-admin-code dev",
     "dev:admin-suite": "pnpm --filter dhg-admin-suite dev",
     "dev:research": "pnpm --filter @dhg/research dev",
-    
     "// Utility Commands": "Helpful utilities",
     "tree": "node scripts/show-tree.js",
     "types": "supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts",
-    
     "// Git & Promotion": "Use git-workflow-cli.sh for comprehensive git operations",
     "git": "./scripts/cli-pipeline/git_workflow/git-workflow-cli.sh"
   },
@@ -58,6 +54,7 @@
     "pptx-text-parser": "^1.1.1",
     "react-json-pretty": "^2.2.0",
     "uuid": "^11.1.0",
-    "which": "^5.0.0"
+    "which": "^5.0.0",
+    "xlsx": "^0.20.2"
   }
 }

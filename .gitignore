@@ -194,3 +194,8 @@ logs/
 **/debug-output/
 scripts/cli-pipeline/**/debug-output/
 scripts/cli-pipeline/presentations/debug-output/
+
+# Temporary import files
+docs/imports/*.xlsx
+docs/imports/*.csv
+docs/temp/
