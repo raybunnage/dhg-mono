@@ -24,7 +24,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/scripts')) return 'scripts';
     if (location.pathname.startsWith('/git-branches')) return 'git-branches';
     if (location.pathname.startsWith('/git')) return 'git';
-    if (location.pathname.startsWith('/hi-mom')) return 'hi-mom';
+    // if (location.pathname.startsWith('/hi-mom')) return 'hi-mom'; // Archived
     if (location.pathname.startsWith('/clipboard')) return 'clipboard';
     if (location.pathname.startsWith('/continuous-docs')) return 'continuous-docs';
     if (location.pathname.startsWith('/worktree-mappings')) return 'worktree-mappings';
@@ -232,6 +232,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             >
               Git Branches
             </button>
+            {/* Archived Hi Mom button
             <button
               onClick={() => navigate('/hi-mom')}
               className={`
@@ -243,7 +244,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Hi Mom! 💚
-            </button>
+            </button> */}
             <button
               onClick={() => navigate('/clipboard')}
               className={`
