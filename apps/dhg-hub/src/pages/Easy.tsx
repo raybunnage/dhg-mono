@@ -87,60 +87,32 @@ export function Easy() {
       setEnvDebug(envVars);
       setKeyValidation(keyChecks);
       
-      // Get detailed adapter diagnostics
-      const adapterDiagnostics = await supabaseAdapter.getDiagnostics();
+      // Get Supabase configuration info
       addDiagnostic(`Using universal Supabase adapter`);
-      addDiagnostic(`Supabase URL: ${adapterDiagnostics.urlPreview}`);
-      addDiagnostic(`Supabase Key: ${adapterDiagnostics.keyPreview}`);
+      addDiagnostic(`Supabase URL: ${import.meta.env.VITE_SUPABASE_URL?.slice(0, 30)}...`);
+      addDiagnostic(`Supabase Key: ${import.meta.env.VITE_SUPABASE_ANON_KEY?.slice(0, 20)}...`);
       addDiagnostic(`Network status: ${navigator.onLine ? 'Online' : 'Offline'}`);
       
-      // Authentication and database query
+      // Database connection test
       try {
-        // Step 1: Authentication
-        setAuthStatus('Authenticating...');
-        addDiagnostic('Attempting to authenticate...');
+        // Test connection with a simple query
+        setAuthStatus('Connecting...');
+        addDiagnostic('Testing database connection...');
         
-        // Use the adapter's ensureAuth method instead of manual authentication
-        const { success: authSuccess, diagnostics: authDiagnostics } = 
-          await supabaseAdapter.ensureAuth();
+        const { data: testData, error: testError } = await supabase
+          .from('filter_user_profiles')
+          .select('count(*)', { count: 'exact', head: true });
         
-        if (authSuccess) {
-          addDiagnostic('Authentication successful');
-          setAuthStatus('Authenticated');
+        if (!testError) {
+          addDiagnostic('Connection successful');
+          setAuthStatus('Connected');
         } else {
-          // Fallback to manual authentication if adapter's method fails
-          addDiagnostic('Adapter authentication failed, trying manual authentication');
-          
-          // First try to get any existing session
-          const { data: sessionData } = await supabase.auth.getSession();
-          
-          if (sessionData.session) {
-            // Already authenticated
-            addDiagnostic(`Already authenticated as: ${sessionData.session.user.email || 'Unknown user'}`);
-            setAuthStatus('Authenticated');
-          } else {
-            // Need to log in with test user
-            addDiagnostic(`No existing session. Signing in with test user: ${testUser.email}`);
-            
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-              email: testUser.email,
-              password: testUser.password
-            });
-            
-            if (authError) {
-              addDiagnostic(`Authentication failed: ${authError.message}`);
-              setAuthStatus('Authentication failed');
-              setError(`Authentication failed: ${authError.message}`);
-              setLoading(false);
-              setDiagnostics(diagOutput);
-              return;
-            }
-            
-            if (authData.user) {
-              addDiagnostic(`Successfully authenticated as: ${authData.user.email}`);
-              setAuthStatus('Authenticated');
-            }
-          }
+          addDiagnostic(`Connection test failed: ${testError.message}`);
+          setAuthStatus('Connection failed');
+          setError(`Connection failed: ${testError.message}`);
+          setLoading(false);
+          setDiagnostics(diagOutput);
+          return;
         }
         
         // Step 2: Query document_types table
@@ -264,16 +236,16 @@ export function Easy() {
           <p className="mb-2">This page uses the universal Supabase adapter from the shared services:</p>
           
           <div className="bg-gray-800 text-gray-200 p-3 rounded mb-4 font-mono text-sm">
-            {`// Import the universal adapter from shared services
-import { supabase, supabaseAdapter } from '@root/packages/shared/services/supabase-client/universal'
+            {`// Import the Supabase client from the adapter
+import { supabase } from '@/utils/supabase-adapter'
 
 // Use the client directly
 const { data, error } = await supabase
   .from('document_types')
   .select('id', { count: 'exact', head: true });
 
-// Or use adapter methods
-const { success, diagnostics } = await supabaseAdapter.ensureAuth();`}
+// Browser apps must pass environment variables
+// This is handled in the supabase-adapter.ts file`}
           </div>
           
           <p className="mb-2">Key benefits of the universal adapter:</p>

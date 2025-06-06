@@ -3,7 +3,7 @@
  * Uses the universal adapter which automatically handles environment detection
  */
 
-import { createSupabaseAdapter } from '../../../../../packages/shared/adapters/supabase-adapter';
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 
 // Create and export the Supabase client using the universal adapter
 // Browser apps MUST pass their environment variables to the adapter
