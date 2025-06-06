@@ -33,7 +33,10 @@ class SupabaseBrowserAdapter {
       try {
         console.log('Initializing Supabase with universal adapter...');
         
-        this.client = createSupabaseAdapter();
+        // Pass environment variables for browser usage
+        this.client = createSupabaseAdapter({
+          env: import.meta.env as any
+        });
         console.log('Supabase client successfully created using universal adapter');
       } catch (error) {
         console.error('Failed to create Supabase client:', error);

@@ -10,6 +10,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@root': path.resolve(__dirname, '../../'),
       '@shared': path.resolve(__dirname, '../../packages/shared'),
+      // Use browser-safe exports for Google Drive services
+      '@shared/services/google-drive': path.resolve(__dirname, '../../packages/shared/services/google-drive/browser-index.ts'),
     },
   },
   server: {

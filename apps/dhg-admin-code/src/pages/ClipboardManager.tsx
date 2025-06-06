@@ -1,46 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, Check, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
+import { DashboardLayout } from '../components/DashboardLayout';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 interface ClipboardItem {
   id: string;
   title: string;
   content: string;
-  category?: string;
-  lastUsed?: string;
+  category: string;
+  last_used?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function ClipboardManager() {
+  const { user } = useAuth();
   const [items, setItems] = useState<ClipboardItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState({ title: '', content: '', category: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load items from localStorage
+  // Load items from database
   useEffect(() => {
-    const savedItems = localStorage.getItem('clipboardItems');
-    if (savedItems) {
-      setItems(JSON.parse(savedItems));
-    } else {
-      // Default items for Claude prompts
-      setItems([
-        {
-          id: '1',
-          title: 'Claude Context Reminder',
-          content: `<system-reminder>
+    if (!user) return;
+    
+    const loadItems = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('clipboard_snippets')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setItems(data);
+        } else {
+          // Create default items for new users
+          const defaultItems = [
+            {
+              title: 'Claude Context Reminder',
+              content: `<system-reminder>
 As you answer the user's questions, you can use the following context:
 # claudeMd
 Codebase and user instructions are shown below. Be sure to adhere to these instructions. IMPORTANT: These instructions OVERRIDE any default behavior and you MUST follow them exactly as written.
 
 Contents of /Users/raybunnage/Documents/github/dhg-mono-improve-cli-pipelines/CLAUDE.md (project instructions, checked into the codebase):`,
-          category: 'Claude Prompts'
-        },
-        {
-          id: '2',
-          title: 'Important Instruction Reminders',
-          content: `# important-instruction-reminders
+              category: 'Claude Prompts',
+              user_id: user.id
+            },
+            {
+              title: 'Important Instruction Reminders',
+              content: `# important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
@@ -48,26 +67,48 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 Please clean up any files that you've created for testing or debugging purposes after they're no longer needed.
       
       IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.`,
-          category: 'Claude Prompts'
-        }
-      ]);
-    }
-  }, []);
+              category: 'Claude Prompts',
+              user_id: user.id
+            }
+          ];
 
-  // Save items to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('clipboardItems', JSON.stringify(items));
-  }, [items]);
+          // Insert default items
+          const { data: insertedData, error: insertError } = await supabase
+            .from('clipboard_snippets')
+            .insert(defaultItems)
+            .select();
+
+          if (insertError) throw insertError;
+          if (insertedData) setItems(insertedData);
+        }
+      } catch (err) {
+        console.error('Error loading clipboard snippets:', err);
+        setError('Failed to load clipboard snippets');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadItems();
+  }, [user]);
 
   const copyToClipboard = async (item: ClipboardItem) => {
     try {
       await navigator.clipboard.writeText(item.content);
       setCopiedId(item.id);
       
-      // Update last used time
+      // Update last used time in database
+      const { error } = await supabase
+        .from('clipboard_snippets')
+        .update({ last_used: new Date().toISOString() })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      // Update local state
       setItems(items.map(i => 
         i.id === item.id 
-          ? { ...i, lastUsed: new Date().toISOString() }
+          ? { ...i, last_used: new Date().toISOString() }
           : i
       ));
 
@@ -75,25 +116,52 @@ Please clean up any files that you've created for testing or debugging purposes 
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+      setError('Failed to copy to clipboard');
     }
   };
 
-  const addItem = () => {
-    if (newItem.title && newItem.content) {
-      const item: ClipboardItem = {
-        id: Date.now().toString(),
-        title: newItem.title,
-        content: newItem.content,
-        category: newItem.category || 'General'
-      };
-      setItems([...items, item]);
-      setNewItem({ title: '', content: '', category: '' });
-      setShowAddForm(false);
+  const addItem = async () => {
+    if (!user || !newItem.title || !newItem.content) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('clipboard_snippets')
+        .insert({
+          title: newItem.title,
+          content: newItem.content,
+          category: newItem.category || 'General',
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setItems([data, ...items]);
+        setNewItem({ title: '', content: '', category: '' });
+        setShowAddForm(false);
+      }
+    } catch (err) {
+      console.error('Failed to add item:', err);
+      setError('Failed to add snippet');
     }
   };
 
-  const deleteItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const deleteItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('clipboard_snippets')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setItems(items.filter(item => item.id !== id));
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+      setError('Failed to delete snippet');
+    }
   };
 
   const startEdit = (item: ClipboardItem) => {
@@ -101,14 +169,28 @@ Please clean up any files that you've created for testing or debugging purposes 
     setEditContent(item.content);
   };
 
-  const saveEdit = () => {
-    setItems(items.map(item => 
-      item.id === editingId 
-        ? { ...item, content: editContent }
-        : item
-    ));
-    setEditingId(null);
-    setEditContent('');
+  const saveEdit = async () => {
+    if (!editingId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('clipboard_snippets')
+        .update({ content: editContent })
+        .eq('id', editingId);
+
+      if (error) throw error;
+      
+      setItems(items.map(item => 
+        item.id === editingId 
+          ? { ...item, content: editContent }
+          : item
+      ));
+      setEditingId(null);
+      setEditContent('');
+    } catch (err) {
+      console.error('Failed to save edit:', err);
+      setError('Failed to update snippet');
+    }
   };
 
   const cancelEdit = () => {
@@ -133,6 +215,27 @@ Please clean up any files that you've created for testing or debugging purposes 
             Manage frequently used text snippets. Click to copy to clipboard.
           </p>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+            <button 
+              onClick={() => setError(null)} 
+              className="ml-4 text-sm underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <>
 
         {/* Add New Item Button */}
         <div className="mb-6">
@@ -292,9 +395,9 @@ Please clean up any files that you've created for testing or debugging purposes 
                         )}
                       </button>
 
-                      {item.lastUsed && (
+                      {item.last_used && (
                         <p className="text-xs text-gray-500 mt-2">
-                          Last used: {new Date(item.lastUsed).toLocaleString()}
+                          Last used: {new Date(item.last_used).toLocaleString()}
                         </p>
                       )}
                     </>
@@ -304,6 +407,8 @@ Please clean up any files that you've created for testing or debugging purposes 
             </div>
           </div>
         ))}
+        </>
+        )}
       </div>
     </DashboardLayout>
   );

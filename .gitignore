@@ -66,7 +66,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Editor directories
-.vscode/
+.vscode/*
+!.vscode/settings.json  # Keep Peacock color settings for worktrees
 .idea/
 *.swp
 *.swo
@@ -194,3 +195,18 @@ logs/
 **/debug-output/
 scripts/cli-pipeline/**/debug-output/
 scripts/cli-pipeline/presentations/debug-output/
+
+# Raycast metadata (auto-generated)
+scripts/cli-pipeline/viewers/raycast-scripts/*.plist
+scripts/cli-pipeline/viewers/raycast-scripts/.DS_Store
+
+# User-specific worktree scripts are kept in git as templates
+# Users should update paths for their own setup
+# !scripts/cli-pipeline/viewers/raycast-scripts/*.sh
+# !scripts/cli-pipeline/viewers/setup-*.sh
+# !scripts/cli-pipeline/viewers/*-config.json
+
+# Temporary import files
+docs/imports/*.xlsx
+docs/imports/*.csv
+docs/temp/

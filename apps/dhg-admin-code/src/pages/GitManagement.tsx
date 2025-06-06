@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { format } from 'date-fns';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { getWorktreeAliasInfo } from '../utils/worktree-alias-mapping';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -542,10 +543,29 @@ export function GitManagement() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-2xl">📁</span>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {worktree.path.split('/').pop()}
-                    </h3>
+                    {(() => {
+                      const aliasInfo = getWorktreeAliasInfo(worktree.path);
+                      return aliasInfo ? (
+                        <>
+                          <span className="text-2xl">{aliasInfo.emoji}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-mono bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                              {aliasInfo.number}/{aliasInfo.name}
+                            </span>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {worktree.path.split('/').pop()}
+                            </h3>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-2xl">📁</span>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {worktree.path.split('/').pop()}
+                          </h3>
+                        </>
+                      );
+                    })()}
                     <span className={`px-2 py-1 text-xs font-medium rounded ${
                       worktree.branch === 'development' 
                         ? 'bg-green-100 text-green-800' 
@@ -553,7 +573,7 @@ export function GitManagement() {
                     }`}>
                       {worktree.branch}
                     </span>
-                    {worktree.activeTasks > 0 && (
+                    {worktree.activeTasks && worktree.activeTasks > 0 && (
                       <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
                         {worktree.activeTasks} active task{worktree.activeTasks > 1 ? 's' : ''}
                       </span>
@@ -578,17 +598,17 @@ export function GitManagement() {
                     )}
                     
                     <div className="flex space-x-4 text-sm">
-                      {worktree.uncommittedChanges > 0 && (
+                      {worktree.uncommittedChanges && worktree.uncommittedChanges > 0 && (
                         <span className="text-orange-600">
                           📝 {worktree.uncommittedChanges} uncommitted change{worktree.uncommittedChanges > 1 ? 's' : ''}
                         </span>
                       )}
-                      {worktree.ahead > 0 && (
+                      {worktree.ahead && worktree.ahead > 0 && (
                         <span className="text-blue-600">
                           ⬆️ {worktree.ahead} commit{worktree.ahead > 1 ? 's' : ''} ahead
                         </span>
                       )}
-                      {worktree.behind > 0 && (
+                      {worktree.behind && worktree.behind > 0 && (
                         <span className="text-red-600">
                           ⬇️ {worktree.behind} commit{worktree.behind > 1 ? 's' : ''} behind
                         </span>
@@ -771,14 +791,14 @@ export function GitManagement() {
                         </span>
                       </div>
                       
-                      {branch.hasUpstream && (branch.ahead > 0 || branch.behind > 0) && (
+                      {branch.hasUpstream && ((branch.ahead && branch.ahead > 0) || (branch.behind && branch.behind > 0)) && (
                         <div className="mt-1 flex space-x-3 text-xs">
-                          {branch.ahead > 0 && (
+                          {branch.ahead && branch.ahead > 0 && (
                             <span className="text-blue-600">
                               ⬆️ {branch.ahead} ahead
                             </span>
                           )}
-                          {branch.behind > 0 && (
+                          {branch.behind && branch.behind > 0 && (
                             <span className="text-red-600">
                               ⬇️ {branch.behind} behind
                             </span>

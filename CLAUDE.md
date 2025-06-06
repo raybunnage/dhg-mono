@@ -53,6 +53,12 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 - Let the user decide how to proceed - don't try to "make things work" by circumventing issues
 - When problems arise, focus on fixing root causes, not symptoms
 
+⚠️ **CRITICAL: NO PULL REQUESTS WITH WORKTREES**
+- **NEVER create pull requests when working with worktrees**
+- **ALWAYS use direct push**: `git push origin branch-name:development`
+- PRs have caused deployment pipeline failures - avoid them completely
+- See "Worktree Merging" section below for proper merge workflow
+
 ⚠️ **SHARED SERVICES AVAILABLE**
 - Check `packages/shared/services/` for existing functionality before implementing new features
 - Health check tools: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
@@ -586,6 +592,71 @@ const { data, error } = await supabase.from('table').select();
 - CLI scripts and server-side code
 - Any situation where you need Supabase access across environments
 
+### Browser Compatibility for Node.js Dependencies
+
+**❌ Problem**: Browser apps importing shared services that use Node.js-specific modules
+- Error: `Module "node:events" has been externalized for browser compatibility`
+- Error: `Cannot read properties of undefined (reading 'isTTY')`
+- Error: `Class extends value undefined is not a constructor`
+- These occur when shared services import Node.js modules like `googleapis`, `google-auth-library`, or use Node.js globals
+
+**✅ Solution**: Create browser-safe imports and provide Node.js polyfills
+
+1. **Create Browser-Safe Export Files**:
+   ```typescript
+   // packages/shared/services/google-drive/browser-index.ts
+   export { GoogleDriveBrowserService, googleDriveBrowser } from './google-drive-browser-service';
+   // Only export browser-compatible services, exclude Node.js-specific ones
+   ```
+
+2. **Configure Vite Aliases**:
+   ```typescript
+   // vite.config.ts
+   resolve: {
+     alias: {
+       '@shared/services/google-drive': path.resolve(__dirname, '../../packages/shared/services/google-drive/browser-index.ts'),
+     }
+   }
+   ```
+
+3. **Add Node.js Polyfills in HTML**:
+   ```html
+   <!-- index.html - Add before main script -->
+   <script>
+     if (typeof global === 'undefined') window.global = window;
+     if (typeof process === 'undefined') {
+       window.process = {
+         env: {},
+         stdout: { isTTY: false },
+         stderr: { isTTY: false },
+         stdin: { isTTY: false },
+         platform: 'browser',
+         version: 'v16.0.0',
+         versions: { node: '16.0.0' }
+       };
+     }
+   </script>
+   ```
+
+4. **Add Required Environment Variables**:
+   ```env
+   # .env.development for browser apps
+   VITE_CLAUDE_API_KEY=your-api-key
+   VITE_ANTHROPIC_API_KEY=your-api-key
+   ```
+
+**Key Principles**:
+- Browser apps cannot use Node.js modules (`fs`, `path`, `crypto`, `events`, etc.)
+- Create separate browser-safe exports that exclude Node.js dependencies
+- Use Vite aliases to redirect imports to browser-safe versions
+- Provide polyfills for Node.js globals that some libraries expect
+- Always check if a shared service imports Node.js modules before using in browser
+
+**When Issues Persist**:
+- Run `./scripts/cli-pipeline/all_pipelines/app-reinstall.sh app-name` to clean dependencies
+- Check for indirect Node.js dependencies in shared services
+- Consider creating browser-specific service implementations
+
 ## Google Drive Service Account Integration
 
 The project requires a valid Google Drive service account for accessing files in Google Drive.
@@ -678,6 +749,7 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3007 | Experts Markdown Server | `apps/dhg-improve-experts/md-server.mjs` |
 | 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
 | 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
+| 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
 
 **Vite App Ports**:
 | Port | App | Status |
@@ -735,6 +807,36 @@ If you encounter "address already in use" errors:
 
 3. **For Vite apps**, ensure you're not running multiple apps on the same port
 
+## ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
+
+### ❌ NEVER Create Pull Requests When Merging Between Worktrees
+
+**IMPORTANT**: When working with multiple worktrees, **DO NOT create pull requests**. This has caused deployment issues where the PR workflow got stuck or confused the branch states.
+
+**❌ WRONG - Do NOT do this**:
+```bash
+# NEVER DO THIS in worktrees:
+gh pr create ...
+# NEVER create PRs through GitHub UI
+# NEVER use any PR-based workflow
+```
+
+**✅ CORRECT - Direct push to development**:
+```bash
+# Push your branch directly to development:
+git push origin your-branch:development
+
+# Then fetch and merge back:
+git fetch origin development
+git merge origin/development
+```
+
+### Why No PRs with Worktrees?
+- PRs can cause deployment pipeline issues
+- Worktrees have development checked out elsewhere
+- Direct pushes are cleaner and more reliable
+- Avoids branch state confusion
+
 ## Handling pnpm-lock.yaml in Worktree Merges
 
 When working with multiple worktrees and merging branches, `pnpm-lock.yaml` conflicts are common. Follow these guidelines:
@@ -770,6 +872,7 @@ This document provides the essential guidelines for working with Claude Code v1.
 8. **Test incrementally** - especially during cleanup or refactoring
 9. **Configure Google Drive access** - ensure `.service-account.json` exists for Drive commands
 10. **Handle pnpm-lock.yaml properly** - accept incoming and regenerate during merges
+11. **⚠️ NEVER create PRs with worktrees** - use direct push to development instead
 
 When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
 

@@ -597,6 +597,39 @@ export type Database = {
         }
         Relationships: []
       }
+      clipboard_snippets: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          id: string
+          last_used: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          last_used?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          last_used?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       command_categories: {
         Row: {
           color: string | null

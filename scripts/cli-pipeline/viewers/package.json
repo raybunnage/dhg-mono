@@ -1,0 +1,11 @@
+{
+  "name": "viewer-servers",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simple viewer servers for markdown, scripts, and documentation",
+  "scripts": {
+    "start:markdown": "node simple-md-server.js",
+    "start:script": "node simple-script-server.js",
+    "start:docs": "node docs-archive-server.js"
+  }
+}
