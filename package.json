@@ -47,6 +47,7 @@
     "ai": "./scripts/cli-pipeline/ai/ai-cli.sh",
     "auth": "./scripts/cli-pipeline/auth/auth-cli.sh",
     "database": "./scripts/cli-pipeline/database/database-cli.sh",
+    "email": "./scripts/cli-pipeline/email/email-cli.sh",
     "experts-cli": "./scripts/cli-pipeline/experts/experts-cli.sh",
     "tasks": "./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh",
     "merge": "./scripts/cli-pipeline/merge/merge-cli.sh",
