@@ -72,7 +72,7 @@ export function CommandRefactorStatus() {
 
       // Fetch status summary
       const { data: summaryData, error: summaryError } = await supabase
-        .from('command_refactor_status_summary')
+        .from('command_refactor_status_summary_view')
         .select('*')
         .order('command_type')
         .order('current_status');

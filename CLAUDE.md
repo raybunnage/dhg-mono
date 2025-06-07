@@ -128,7 +128,7 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 
    **Database Table Naming Convention**:
    
-   ⚠️ **IMPORTANT: Always ask the user before naming any new database table** - table naming consistency is critical to the project.
+   ⚠️ **IMPORTANT: Always ask the user before naming any new database table or view** - naming consistency is critical to the project.
    
    When creating new tables, follow the established prefix pattern:
    - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
@@ -162,6 +162,15 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    INSERT INTO sys_table_definitions (table_schema, table_name, description, purpose, created_date)
    VALUES ('public', 'your_new_table', 'Brief description', 'Purpose/use case', CURRENT_DATE);
    ```
+   
+   **Database View Naming Convention**:
+   - All views MUST end with `_view` suffix for clarity
+   - Use the primary table's prefix for the view (e.g., `command_refactor_status_summary_view` for command-related views)
+   - Examples:
+     - `dev_tasks_with_git_view` - View based on dev_tasks table
+     - `learn_user_progress_view` - View for learning user progress
+     - `ai_work_summaries_recent_view` - View for recent AI work summaries
+   - This ensures views are easily distinguishable from tables and sort alphabetically near their related tables
 
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`

@@ -12,7 +12,7 @@ async function checkView() {
     // Check if view exists by querying it
     console.log('Checking if active_scripts_view exists...');
     const { data, error } = await supabase
-      .from('active_scripts_view')
+      .from('registry_scripts_active_view')
       .select('*')
       .limit(1);
     
