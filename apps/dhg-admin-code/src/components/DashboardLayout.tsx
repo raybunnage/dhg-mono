@@ -28,6 +28,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/clipboard')) return 'clipboard';
     if (location.pathname.startsWith('/continuous-docs')) return 'continuous-docs';
     if (location.pathname.startsWith('/worktree-mappings')) return 'worktree-mappings';
+    if (location.pathname.startsWith('/service-dependencies')) return 'service-dependencies';
     return 'tasks'; // default
   };
   
@@ -268,6 +269,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Worktree Maps 🌳
+            </button>
+            <button
+              onClick={() => navigate('/service-dependencies')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'service-dependencies'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Services 🔗
             </button>
           </nav>
         </div>
