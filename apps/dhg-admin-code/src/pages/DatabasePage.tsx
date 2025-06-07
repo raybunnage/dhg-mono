@@ -198,6 +198,7 @@ export function DatabasePage() {
       'ai_': { label: 'AI', description: 'AI & prompt management' },
       'auth_': { label: 'Auth', description: 'Authentication & users' },
       'batch_': { label: 'Batch', description: 'Batch operations' },
+      'clipboard_': { label: 'Clipboard', description: 'Clipboard snippets management' },
       'command_': { label: 'Command', description: 'Command & analytics' },
       'dev_': { label: 'Dev', description: 'Development tasks, merge queue & workflow' },
       'doc_': { label: 'Docs', description: 'Document management & continuous monitoring' },
@@ -209,7 +210,8 @@ export function DatabasePage() {
       'learn_': { label: 'Learning', description: 'Learning platform' },
       'media_': { label: 'Media', description: 'Media & presentations' },
       'scripts_': { label: 'Scripts', description: 'Script management' },
-      'sys_': { label: 'System', description: 'System & infrastructure' },
+      'sys_': { label: 'System', description: 'System & infrastructure, service registry' },
+      'worktree_': { label: 'Worktree', description: 'Git worktree management' },
       '_other': { label: 'Other', description: 'Other tables' }
     };
     
@@ -253,9 +255,9 @@ export function DatabasePage() {
     // Apply prefix filter
     if (selectedPrefix) {
       if (selectedPrefix === '_other') {
-        const knownPrefixes = ['ai_', 'auth_', 'batch_', 'command_', 'dev_', 'doc_', 
+        const knownPrefixes = ['ai_', 'auth_', 'batch_', 'clipboard_', 'command_', 'dev_', 'doc_', 
                                'document_', 'email_', 'expert_', 'filter_', 'google_', 'learn_', 
-                               'media_', 'scripts_', 'sys_'];
+                               'media_', 'scripts_', 'sys_', 'worktree_'];
         filtered = filtered.filter(table => 
           !knownPrefixes.some(prefix => table.table_name.startsWith(prefix))
         );
