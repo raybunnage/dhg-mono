@@ -239,15 +239,7 @@ export const TaskWorkflowPanel: React.FC<TaskWorkflowPanelProps> = ({
         <h3 className="text-lg font-semibold mb-4">Workflow Actions</h3>
         
         <div className="space-y-3">
-          {task.status === 'pending' && (
-            <button
-              onClick={() => onStatusChange('in_progress')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              <FileEdit className="w-5 h-5" />
-              Start Working
-            </button>
-          )}
+          {/* Start Working button removed - status changes happen through dev_tasks CLI */}
           
           {task.status === 'in_progress' && (
             <button

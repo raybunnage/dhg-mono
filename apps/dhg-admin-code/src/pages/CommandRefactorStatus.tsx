@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { CheckCircle, Clock, AlertCircle, Archive, Package, TestTube } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from '../lib/supabase';
 
 interface CommandRefactor {
   id: string;
@@ -72,7 +67,7 @@ export function CommandRefactorStatus() {
 
       // Fetch status summary
       const { data: summaryData, error: summaryError } = await supabase
-        .from('command_refactor_status_summary')
+        .from('command_refactor_status_summary_view')
         .select('*')
         .order('command_type')
         .order('current_status');

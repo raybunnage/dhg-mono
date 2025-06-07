@@ -1,261 +1,428 @@
--- Create service dependency mapping system tables
+-- Migration: Create Service Dependency Mapping System
+-- Description: Comprehensive tracking of relationships between apps, CLI pipelines, commands, and shared services
+-- Author: Claude Code Assistant
+-- Date: 2025-06-06
 
--- 1. Registry of all shared services
-CREATE TABLE IF NOT EXISTS sys_shared_services (
+-- SECTION: extensions
+-- Ensure required extensions are available
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- SECTION: tables
+
+-- 1. Services Registry
+-- Catalog of all shared services in the monorepo
+CREATE TABLE registry_services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  service_name TEXT NOT NULL UNIQUE,
-  service_path TEXT NOT NULL, -- relative path from packages/shared/services/
+  service_name VARCHAR(255) UNIQUE NOT NULL,
+  display_name VARCHAR(255) NOT NULL,
   description TEXT,
-  category TEXT, -- e.g., 'auth', 'database', 'ai', 'google', 'document', 'utility'
+  package_path TEXT NOT NULL, -- e.g., 'packages/shared/services/supabase-client'
+  service_file VARCHAR(255), -- e.g., 'supabase-client-service.ts'
+  service_type VARCHAR(100) NOT NULL, -- 'singleton', 'adapter', 'utility', 'helper'
+  export_type VARCHAR(100), -- 'class', 'function', 'object', 'constant'
   is_singleton BOOLEAN DEFAULT false,
-  has_browser_variant BOOLEAN DEFAULT false,
-  dependencies JSONB DEFAULT '[]'::jsonb, -- array of service names this service depends on
-  exports JSONB DEFAULT '[]'::jsonb, -- array of exported functions/classes
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'deprecated', 'experimental')),
+  status VARCHAR(50) DEFAULT 'active', -- 'active', 'deprecated', 'archived'
+  version VARCHAR(50),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Applications registry
-CREATE TABLE IF NOT EXISTS sys_applications (
+-- 2. Apps Registry  
+-- Registry of all applications in the monorepo
+CREATE TABLE registry_apps (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  app_name TEXT NOT NULL UNIQUE,
-  app_path TEXT NOT NULL, -- relative path from apps/
+  app_name VARCHAR(255) UNIQUE NOT NULL,
+  display_name VARCHAR(255) NOT NULL,
   description TEXT,
-  app_type TEXT CHECK (app_type IN ('vite', 'node', 'hybrid')),
-  primary_purpose TEXT,
-  port_dev INTEGER,
-  port_preview INTEGER,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'deprecated', 'experimental', 'archived')),
+  app_path TEXT NOT NULL, -- e.g., 'apps/dhg-hub'
+  app_type VARCHAR(100) NOT NULL, -- 'vite-app', 'node-service', 'cli-tool'
+  framework VARCHAR(100), -- 'react', 'node', 'express'
+  package_manager VARCHAR(50) DEFAULT 'pnpm',
+  status VARCHAR(50) DEFAULT 'active',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. CLI pipelines registry
-CREATE TABLE IF NOT EXISTS sys_cli_pipelines (
+-- 3. CLI Pipelines Registry
+-- Registry of all CLI pipelines
+CREATE TABLE registry_cli_pipelines (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  pipeline_name TEXT NOT NULL UNIQUE,
-  pipeline_path TEXT NOT NULL, -- relative path from scripts/cli-pipeline/
+  pipeline_name VARCHAR(255) UNIQUE NOT NULL,
+  display_name VARCHAR(255) NOT NULL,
   description TEXT,
-  shell_script TEXT, -- e.g., 'google-sync-cli.sh'
-  commands JSONB DEFAULT '[]'::jsonb, -- array of available commands
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'deprecated', 'experimental')),
+  pipeline_path TEXT NOT NULL, -- e.g., 'scripts/cli-pipeline/database'
+  main_script VARCHAR(255), -- e.g., 'database-cli.sh'
+  domain VARCHAR(100), -- 'database', 'google_sync', 'ai', etc.
+  status VARCHAR(50) DEFAULT 'active',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Application to service dependencies
-CREATE TABLE IF NOT EXISTS sys_app_service_dependencies (
+-- 4. CLI Commands Registry
+-- Registry of individual commands within CLI pipelines
+CREATE TABLE registry_cli_commands (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  app_id UUID NOT NULL REFERENCES sys_applications(id) ON DELETE CASCADE,
-  service_id UUID NOT NULL REFERENCES sys_shared_services(id) ON DELETE CASCADE,
-  usage_type TEXT CHECK (usage_type IN ('direct', 'indirect', 'dev-only')),
-  import_path TEXT, -- how it's imported in the app
-  features_used JSONB DEFAULT '[]'::jsonb, -- specific functions/features used
+  pipeline_id UUID REFERENCES registry_cli_pipelines(id) ON DELETE CASCADE,
+  command_name VARCHAR(255) NOT NULL,
+  display_name VARCHAR(255),
+  description TEXT,
+  command_script VARCHAR(255), -- e.g., 'connection-test.ts'
+  command_type VARCHAR(100), -- 'typescript', 'bash', 'node'
+  is_primary BOOLEAN DEFAULT false, -- Main commands vs helper commands
+  usage_frequency INTEGER DEFAULT 0, -- From command tracking
+  success_rate DECIMAL(5,2), -- From command tracking
+  status VARCHAR(50) DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(pipeline_id, command_name)
+);
+
+-- 5. App Service Dependencies
+-- Maps applications to the services they use
+CREATE TABLE service_app_dependencies (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  app_id UUID REFERENCES registry_apps(id) ON DELETE CASCADE,
+  service_id UUID REFERENCES registry_services(id) ON DELETE CASCADE,
+  dependency_type VARCHAR(100) NOT NULL, -- 'direct-import', 'adapter-usage', 'singleton-call'
+  import_path TEXT, -- How it's imported, e.g., '@shared/services/supabase-client'
+  usage_context TEXT, -- Where/how it's used
+  usage_frequency VARCHAR(50), -- 'high', 'medium', 'low', 'occasional'
+  is_critical BOOLEAN DEFAULT false, -- Is this a critical dependency?
+  first_detected_at TIMESTAMPTZ DEFAULT NOW(),
+  last_verified_at TIMESTAMPTZ DEFAULT NOW(),
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(app_id, service_id)
 );
 
--- 5. CLI pipeline to service dependencies
-CREATE TABLE IF NOT EXISTS sys_pipeline_service_dependencies (
+-- 6. Pipeline Service Dependencies
+-- Maps CLI pipelines to the services they use
+CREATE TABLE service_pipeline_dependencies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  pipeline_id UUID NOT NULL REFERENCES sys_cli_pipelines(id) ON DELETE CASCADE,
-  service_id UUID NOT NULL REFERENCES sys_shared_services(id) ON DELETE CASCADE,
-  command_name TEXT, -- specific command that uses this service (null = used by multiple)
-  usage_type TEXT CHECK (usage_type IN ('direct', 'indirect')),
+  pipeline_id UUID REFERENCES registry_cli_pipelines(id) ON DELETE CASCADE,
+  service_id UUID REFERENCES registry_services(id) ON DELETE CASCADE,
+  dependency_type VARCHAR(100) NOT NULL,
   import_path TEXT,
-  features_used JSONB DEFAULT '[]'::jsonb,
+  usage_context TEXT,
+  usage_frequency VARCHAR(50),
+  is_critical BOOLEAN DEFAULT false,
+  first_detected_at TIMESTAMPTZ DEFAULT NOW(),
+  last_verified_at TIMESTAMPTZ DEFAULT NOW(),
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(pipeline_id, service_id, command_name)
+  UNIQUE(pipeline_id, service_id)
 );
 
--- 6. Service-to-service dependencies (for tracking internal dependencies)
-CREATE TABLE IF NOT EXISTS sys_service_dependencies (
+-- 7. Command Service Dependencies
+-- Maps individual CLI commands to specific services (most granular level)
+CREATE TABLE service_command_dependencies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  service_id UUID NOT NULL REFERENCES sys_shared_services(id) ON DELETE CASCADE,
-  depends_on_service_id UUID NOT NULL REFERENCES sys_shared_services(id) ON DELETE CASCADE,
-  dependency_type TEXT CHECK (dependency_type IN ('required', 'optional', 'dev-only')),
+  command_id UUID REFERENCES registry_cli_commands(id) ON DELETE CASCADE,
+  service_id UUID REFERENCES registry_services(id) ON DELETE CASCADE,
+  dependency_type VARCHAR(100) NOT NULL,
+  import_path TEXT,
+  usage_context TEXT, -- Specific function calls, etc.
+  is_critical BOOLEAN DEFAULT false,
+  first_detected_at TIMESTAMPTZ DEFAULT NOW(),
+  last_verified_at TIMESTAMPTZ DEFAULT NOW(),
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(service_id, depends_on_service_id)
+  UNIQUE(command_id, service_id)
 );
 
--- Create indexes for better query performance
-CREATE INDEX idx_app_service_deps_app ON sys_app_service_dependencies(app_id);
-CREATE INDEX idx_app_service_deps_service ON sys_app_service_dependencies(service_id);
-CREATE INDEX idx_pipeline_service_deps_pipeline ON sys_pipeline_service_dependencies(pipeline_id);
-CREATE INDEX idx_pipeline_service_deps_service ON sys_pipeline_service_dependencies(service_id);
-CREATE INDEX idx_service_deps_service ON sys_service_dependencies(service_id);
-CREATE INDEX idx_service_deps_depends_on ON sys_service_dependencies(depends_on_service_id);
+-- 8. Service Exports
+-- Track what each service exports (for comprehensive dependency analysis)
+CREATE TABLE service_exports (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  service_id UUID REFERENCES registry_services(id) ON DELETE CASCADE,
+  export_name VARCHAR(255) NOT NULL,
+  export_type VARCHAR(100), -- 'function', 'class', 'constant', 'type'
+  is_default BOOLEAN DEFAULT false,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(service_id, export_name)
+);
 
--- Create updated_at triggers
+-- 9. Dependency Analysis Runs
+-- Track when dependency analysis was last run
+CREATE TABLE service_dependency_analysis_runs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  run_type VARCHAR(100) NOT NULL, -- 'full-scan', 'incremental', 'manual'
+  target_type VARCHAR(100), -- 'apps', 'pipelines', 'services', 'all'
+  items_scanned INTEGER,
+  dependencies_found INTEGER,
+  errors_encountered INTEGER,
+  run_duration_ms INTEGER,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  status VARCHAR(50) DEFAULT 'running', -- 'running', 'completed', 'failed'
+  notes TEXT
+);
+
+-- SECTION: indexes
+-- Create indexes for better query performance
+
+-- Services registry indexes
+CREATE INDEX idx_registry_services_service_type ON registry_services(service_type);
+CREATE INDEX idx_registry_services_status ON registry_services(status);
+CREATE INDEX idx_registry_services_package_path ON registry_services(package_path);
+
+-- Apps registry indexes  
+CREATE INDEX idx_registry_apps_app_type ON registry_apps(app_type);
+CREATE INDEX idx_registry_apps_status ON registry_apps(status);
+CREATE INDEX idx_registry_apps_framework ON registry_apps(framework);
+
+-- CLI pipelines registry indexes
+CREATE INDEX idx_registry_cli_pipelines_domain ON registry_cli_pipelines(domain);
+CREATE INDEX idx_registry_cli_pipelines_status ON registry_cli_pipelines(status);
+
+-- CLI commands registry indexes
+CREATE INDEX idx_registry_cli_commands_pipeline_id ON registry_cli_commands(pipeline_id);
+CREATE INDEX idx_registry_cli_commands_command_type ON registry_cli_commands(command_type);
+CREATE INDEX idx_registry_cli_commands_is_primary ON registry_cli_commands(is_primary);
+CREATE INDEX idx_registry_cli_commands_status ON registry_cli_commands(status);
+
+-- Dependencies indexes
+CREATE INDEX idx_service_app_dependencies_app_id ON service_app_dependencies(app_id);
+CREATE INDEX idx_service_app_dependencies_service_id ON service_app_dependencies(service_id);
+CREATE INDEX idx_service_app_dependencies_dependency_type ON service_app_dependencies(dependency_type);
+CREATE INDEX idx_service_app_dependencies_is_critical ON service_app_dependencies(is_critical);
+
+CREATE INDEX idx_service_pipeline_dependencies_pipeline_id ON service_pipeline_dependencies(pipeline_id);
+CREATE INDEX idx_service_pipeline_dependencies_service_id ON service_pipeline_dependencies(service_id);
+CREATE INDEX idx_service_pipeline_dependencies_dependency_type ON service_pipeline_dependencies(dependency_type);
+
+CREATE INDEX idx_service_command_dependencies_command_id ON service_command_dependencies(command_id);
+CREATE INDEX idx_service_command_dependencies_service_id ON service_command_dependencies(service_id);
+CREATE INDEX idx_service_command_dependencies_dependency_type ON service_command_dependencies(dependency_type);
+
+-- Service exports indexes
+CREATE INDEX idx_service_exports_service_id ON service_exports(service_id);
+CREATE INDEX idx_service_exports_export_type ON service_exports(export_type);
+CREATE INDEX idx_service_exports_is_default ON service_exports(is_default);
+
+-- Analysis runs indexes
+CREATE INDEX idx_service_dependency_analysis_runs_run_type ON service_dependency_analysis_runs(run_type);
+CREATE INDEX idx_service_dependency_analysis_runs_status ON service_dependency_analysis_runs(status);
+CREATE INDEX idx_service_dependency_analysis_runs_started_at ON service_dependency_analysis_runs(started_at);
+
+-- SECTION: triggers
+-- Create updated_at triggers for timestamp maintenance
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply updated_at triggers to relevant tables
+CREATE TRIGGER update_registry_services_updated_at 
+    BEFORE UPDATE ON registry_services 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_registry_apps_updated_at 
+    BEFORE UPDATE ON registry_apps 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_registry_cli_pipelines_updated_at 
+    BEFORE UPDATE ON registry_cli_pipelines 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_registry_cli_commands_updated_at 
+    BEFORE UPDATE ON registry_cli_commands 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- SECTION: functions
+-- Helper functions for common operations
+
+-- Function to get service dependencies for an app
+CREATE OR REPLACE FUNCTION get_app_service_dependencies(app_name_param TEXT)
+RETURNS TABLE (
+    service_name TEXT,
+    display_name TEXT,
+    dependency_type TEXT,
+    usage_frequency TEXT,
+    is_critical BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        sr.service_name::TEXT,
+        sr.display_name::TEXT,
+        asd.dependency_type::TEXT,
+        asd.usage_frequency::TEXT,
+        asd.is_critical
+    FROM service_app_dependencies asd
+    JOIN registry_apps ar ON asd.app_id = ar.id
+    JOIN registry_services sr ON asd.service_id = sr.id
+    WHERE ar.app_name = app_name_param
+    ORDER BY asd.is_critical DESC, sr.service_name;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_sys_shared_services_updated_at
-  BEFORE UPDATE ON sys_shared_services
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- Function to get apps using a specific service
+CREATE OR REPLACE FUNCTION get_service_usage_by_apps(service_name_param TEXT)
+RETURNS TABLE (
+    app_name TEXT,
+    display_name TEXT,
+    dependency_type TEXT,
+    usage_frequency TEXT,
+    is_critical BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        ar.app_name::TEXT,
+        ar.display_name::TEXT,
+        asd.dependency_type::TEXT,
+        asd.usage_frequency::TEXT,
+        asd.is_critical
+    FROM service_app_dependencies asd
+    JOIN registry_apps ar ON asd.app_id = ar.id
+    JOIN registry_services sr ON asd.service_id = sr.id
+    WHERE sr.service_name = service_name_param
+    ORDER BY asd.is_critical DESC, ar.app_name;
+END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_sys_applications_updated_at
-  BEFORE UPDATE ON sys_applications
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- Function to get pipeline dependencies summary
+CREATE OR REPLACE FUNCTION get_pipeline_dependencies_summary()
+RETURNS TABLE (
+    pipeline_name TEXT,
+    domain TEXT,
+    service_count BIGINT,
+    critical_dependencies BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        cpr.pipeline_name::TEXT,
+        cpr.domain::TEXT,
+        COUNT(psd.service_id) as service_count,
+        COUNT(CASE WHEN psd.is_critical THEN 1 END) as critical_dependencies
+    FROM registry_cli_pipelines cpr
+    LEFT JOIN service_pipeline_dependencies psd ON cpr.id = psd.pipeline_id
+    GROUP BY cpr.id, cpr.pipeline_name, cpr.domain
+    ORDER BY critical_dependencies DESC, service_count DESC;
+END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_sys_cli_pipelines_updated_at
-  BEFORE UPDATE ON sys_cli_pipelines
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- SECTION: rls
+-- Enable Row Level Security (following project patterns)
 
--- Create views for easy querying
+ALTER TABLE registry_services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE registry_apps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE registry_cli_pipelines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE registry_cli_commands ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_app_dependencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_pipeline_dependencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_command_dependencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_exports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_dependency_analysis_runs ENABLE ROW LEVEL SECURITY;
 
--- View: Services with their dependencies count
-CREATE OR REPLACE VIEW sys_service_dependency_summary AS
-SELECT 
-  s.id,
-  s.service_name,
-  s.category,
-  s.description,
-  s.is_singleton,
-  s.has_browser_variant,
-  s.status,
-  COUNT(DISTINCT asd.app_id) as used_by_apps_count,
-  COUNT(DISTINCT psd.pipeline_id) as used_by_pipelines_count,
-  COUNT(DISTINCT sd.depends_on_service_id) as depends_on_count,
-  COUNT(DISTINCT sd2.service_id) as depended_by_count
-FROM sys_shared_services s
-LEFT JOIN sys_app_service_dependencies asd ON s.id = asd.service_id
-LEFT JOIN sys_pipeline_service_dependencies psd ON s.id = psd.service_id
-LEFT JOIN sys_service_dependencies sd ON s.id = sd.service_id
-LEFT JOIN sys_service_dependencies sd2 ON s.id = sd2.depends_on_service_id
-GROUP BY s.id;
+-- Create permissive policies for all tables (following project patterns)
+CREATE POLICY "Enable read access for all users" ON registry_services
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON registry_services
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON registry_services
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON registry_services
+    FOR DELETE USING (auth.role() = 'authenticated');
 
--- View: Application dependencies
-CREATE OR REPLACE VIEW sys_app_dependencies_view AS
-SELECT 
-  a.app_name,
-  a.app_type,
-  a.description as app_description,
-  s.service_name,
-  s.category as service_category,
-  asd.usage_type,
-  asd.import_path,
-  asd.features_used
-FROM sys_applications a
-JOIN sys_app_service_dependencies asd ON a.id = asd.app_id
-JOIN sys_shared_services s ON asd.service_id = s.id
-ORDER BY a.app_name, s.category, s.service_name;
+CREATE POLICY "Enable read access for all users" ON registry_apps
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON registry_apps
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON registry_apps
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON registry_apps
+    FOR DELETE USING (auth.role() = 'authenticated');
 
--- View: Pipeline dependencies
-CREATE OR REPLACE VIEW sys_pipeline_dependencies_view AS
-SELECT 
-  p.pipeline_name,
-  p.description as pipeline_description,
-  psd.command_name,
-  s.service_name,
-  s.category as service_category,
-  psd.usage_type,
-  psd.import_path,
-  psd.features_used
-FROM sys_cli_pipelines p
-JOIN sys_pipeline_service_dependencies psd ON p.id = psd.pipeline_id
-JOIN sys_shared_services s ON psd.service_id = s.id
-ORDER BY p.pipeline_name, psd.command_name, s.service_name;
+CREATE POLICY "Enable read access for all users" ON registry_cli_pipelines
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON registry_cli_pipelines
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON registry_cli_pipelines
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON registry_cli_pipelines
+    FOR DELETE USING (auth.role() = 'authenticated');
 
--- RLS policies
-ALTER TABLE sys_shared_services ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sys_applications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sys_cli_pipelines ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sys_app_service_dependencies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sys_pipeline_service_dependencies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sys_service_dependencies ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for all users" ON registry_cli_commands
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON registry_cli_commands
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON registry_cli_commands
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON registry_cli_commands
+    FOR DELETE USING (auth.role() = 'authenticated');
 
--- Allow authenticated users to read all data
-CREATE POLICY "Allow authenticated read access" ON sys_shared_services
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Enable read access for all users" ON service_app_dependencies
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON service_app_dependencies
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON service_app_dependencies
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON service_app_dependencies
+    FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow authenticated read access" ON sys_applications
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Enable read access for all users" ON service_pipeline_dependencies
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON service_pipeline_dependencies
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON service_pipeline_dependencies
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON service_pipeline_dependencies
+    FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow authenticated read access" ON sys_cli_pipelines
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Enable read access for all users" ON service_command_dependencies
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON service_command_dependencies
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON service_command_dependencies
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON service_command_dependencies
+    FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow authenticated read access" ON sys_app_service_dependencies
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Enable read access for all users" ON service_exports
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON service_exports
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON service_exports
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON service_exports
+    FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow authenticated read access" ON sys_pipeline_service_dependencies
-  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Enable read access for all users" ON service_dependency_analysis_runs
+    FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON service_dependency_analysis_runs
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON service_dependency_analysis_runs
+    FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON service_dependency_analysis_runs
+    FOR DELETE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow authenticated read access" ON sys_service_dependencies
-  FOR SELECT TO authenticated USING (true);
+-- SECTION: comments
+-- Add table comments for documentation
 
--- Allow authenticated users who are in allowed emails to manage data
-CREATE POLICY "Allow allowed users full access" ON sys_shared_services
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true))
-  WITH CHECK (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true));
+COMMENT ON TABLE registry_services IS 'Registry of all shared services in the monorepo with metadata and versioning';
+COMMENT ON TABLE registry_apps IS 'Registry of all applications in the monorepo with type and framework information';
+COMMENT ON TABLE registry_cli_pipelines IS 'Registry of all CLI pipelines with domain classification';
+COMMENT ON TABLE registry_cli_commands IS 'Registry of individual commands within CLI pipelines with usage statistics';
+COMMENT ON TABLE service_app_dependencies IS 'Mapping of applications to shared services they depend on';
+COMMENT ON TABLE service_pipeline_dependencies IS 'Mapping of CLI pipelines to shared services they depend on';
+COMMENT ON TABLE service_command_dependencies IS 'Granular mapping of individual commands to specific services';
+COMMENT ON TABLE service_exports IS 'Catalog of what each service exports for dependency analysis';
+COMMENT ON TABLE service_dependency_analysis_runs IS 'Audit log of dependency scanning and analysis operations';
 
-CREATE POLICY "Allow allowed users full access" ON sys_applications
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true))
-  WITH CHECK (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true));
-
-CREATE POLICY "Allow allowed users full access" ON sys_cli_pipelines
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true))
-  WITH CHECK (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true));
-
-CREATE POLICY "Allow allowed users full access" ON sys_app_service_dependencies
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true))
-  WITH CHECK (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true));
-
-CREATE POLICY "Allow allowed users full access" ON sys_pipeline_service_dependencies
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true))
-  WITH CHECK (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true));
-
-CREATE POLICY "Allow allowed users full access" ON sys_service_dependencies
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true))
-  WITH CHECK (EXISTS (SELECT 1 FROM auth_allowed_emails WHERE email = auth.jwt()->>'email' AND is_active = true));
-
--- Add to sys_table_definitions
+-- Add this table to the table definitions registry
 INSERT INTO sys_table_definitions (table_schema, table_name, description, purpose, created_date)
 VALUES 
-  ('public', 'sys_shared_services', 'Registry of all shared services in packages/shared/services', 'Track and manage shared service definitions', CURRENT_DATE),
-  ('public', 'sys_applications', 'Registry of all applications in the monorepo', 'Track applications and their configurations', CURRENT_DATE),
-  ('public', 'sys_cli_pipelines', 'Registry of all CLI pipeline scripts', 'Track CLI pipelines and their commands', CURRENT_DATE),
-  ('public', 'sys_app_service_dependencies', 'Mapping of applications to services they use', 'Track which services each app depends on', CURRENT_DATE),
-  ('public', 'sys_pipeline_service_dependencies', 'Mapping of CLI pipelines to services they use', 'Track which services each pipeline/command uses', CURRENT_DATE),
-  ('public', 'sys_service_dependencies', 'Service-to-service dependency mapping', 'Track internal dependencies between services', CURRENT_DATE);
-
--- Initial population helper function
-CREATE OR REPLACE FUNCTION populate_initial_services() RETURNS void AS $$
-BEGIN
-  -- Core singleton services
-  INSERT INTO sys_shared_services (service_name, service_path, description, category, is_singleton, has_browser_variant)
-  VALUES 
-    ('SupabaseClientService', 'supabase-client.ts', 'Singleton Supabase client for server/CLI environments', 'database', true, true),
-    ('claudeService', 'claude-service/', 'Claude AI API service singleton', 'ai', true, false),
-    ('GoogleDriveService', 'google-drive/', 'Google Drive API integration service', 'google', false, true),
-    ('AuthService', 'auth-service/', 'Authentication service with browser support', 'auth', false, true),
-    ('DocumentTypeService', 'document-type-service/', 'Document type management and classification', 'document', false, false),
-    ('PromptService', 'prompt-service/', 'Prompt management and template service', 'ai', false, false),
-    ('FileService', 'file-service/', 'File system operations service', 'utility', false, false),
-    ('GitService', 'git-service/', 'Git operations service', 'utility', false, false),
-    ('CommandTrackingService', 'tracking-service/', 'CLI command usage tracking', 'utility', false, false),
-    ('FilterService', 'filter-service/', 'User filter and profile management', 'utility', false, false)
-  ON CONFLICT (service_name) DO NOTHING;
-END;
-$$ LANGUAGE plpgsql;
-
--- Run initial population
-SELECT populate_initial_services();
+    ('public', 'registry_services', 'Registry of all shared services in the monorepo', 'Service dependency mapping and architectural insight', CURRENT_DATE),
+    ('public', 'registry_apps', 'Registry of all applications in the monorepo', 'Application dependency mapping and management', CURRENT_DATE),
+    ('public', 'registry_cli_pipelines', 'Registry of all CLI pipelines', 'CLI pipeline dependency tracking and analysis', CURRENT_DATE),
+    ('public', 'registry_cli_commands', 'Registry of individual commands within CLI pipelines', 'Granular command-level dependency mapping', CURRENT_DATE),
+    ('public', 'service_app_dependencies', 'Mapping of applications to shared services', 'Application-service dependency relationships', CURRENT_DATE),
+    ('public', 'service_pipeline_dependencies', 'Mapping of CLI pipelines to shared services', 'Pipeline-service dependency relationships', CURRENT_DATE),
+    ('public', 'service_command_dependencies', 'Mapping of commands to specific services', 'Command-level service dependency tracking', CURRENT_DATE),
+    ('public', 'service_exports', 'Catalog of service exports', 'Service export tracking for dependency analysis', CURRENT_DATE),
+    ('public', 'service_dependency_analysis_runs', 'Audit log of dependency analysis operations', 'Tracking of dependency scanning activities', CURRENT_DATE);

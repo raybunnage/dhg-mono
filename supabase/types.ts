@@ -4090,139 +4090,6 @@ export type Database = {
         }
         Relationships: []
       }
-      sys_app_service_dependencies: {
-        Row: {
-          app_id: string
-          created_at: string | null
-          features_used: Json | null
-          id: string
-          import_path: string | null
-          notes: string | null
-          service_id: string
-          usage_type: string | null
-        }
-        Insert: {
-          app_id: string
-          created_at?: string | null
-          features_used?: Json | null
-          id?: string
-          import_path?: string | null
-          notes?: string | null
-          service_id: string
-          usage_type?: string | null
-        }
-        Update: {
-          app_id?: string
-          created_at?: string | null
-          features_used?: Json | null
-          id?: string
-          import_path?: string | null
-          notes?: string | null
-          service_id?: string
-          usage_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sys_app_service_dependencies_app_id_fkey"
-            columns: ["app_id"]
-            isOneToOne: false
-            referencedRelation: "sys_applications"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_app_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_app_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_shared_services"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sys_applications: {
-        Row: {
-          app_name: string
-          app_path: string
-          app_type: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          port_dev: number | null
-          port_preview: number | null
-          primary_purpose: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          app_name: string
-          app_path: string
-          app_type?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          port_dev?: number | null
-          port_preview?: number | null
-          primary_purpose?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          app_name?: string
-          app_path?: string
-          app_type?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          port_dev?: number | null
-          port_preview?: number | null
-          primary_purpose?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      sys_cli_pipelines: {
-        Row: {
-          commands: Json | null
-          created_at: string | null
-          description: string | null
-          id: string
-          pipeline_name: string
-          pipeline_path: string
-          shell_script: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          commands?: Json | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          pipeline_name: string
-          pipeline_path: string
-          shell_script?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          commands?: Json | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          pipeline_name?: string
-          pipeline_path?: string
-          shell_script?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       sys_mime_types: {
         Row: {
           category: string | null
@@ -4259,213 +4126,39 @@ export type Database = {
         }
         Relationships: []
       }
-      sys_pipeline_service_dependencies: {
-        Row: {
-          command_name: string | null
-          created_at: string | null
-          features_used: Json | null
-          id: string
-          import_path: string | null
-          notes: string | null
-          pipeline_id: string
-          service_id: string
-          usage_type: string | null
-        }
-        Insert: {
-          command_name?: string | null
-          created_at?: string | null
-          features_used?: Json | null
-          id?: string
-          import_path?: string | null
-          notes?: string | null
-          pipeline_id: string
-          service_id: string
-          usage_type?: string | null
-        }
-        Update: {
-          command_name?: string | null
-          created_at?: string | null
-          features_used?: Json | null
-          id?: string
-          import_path?: string | null
-          notes?: string | null
-          pipeline_id?: string
-          service_id?: string
-          usage_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sys_pipeline_service_dependencies_pipeline_id_fkey"
-            columns: ["pipeline_id"]
-            isOneToOne: false
-            referencedRelation: "sys_cli_pipelines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_pipeline_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_pipeline_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_shared_services"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sys_service_dependencies: {
-        Row: {
-          created_at: string | null
-          dependency_type: string | null
-          depends_on_service_id: string
-          id: string
-          notes: string | null
-          service_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          dependency_type?: string | null
-          depends_on_service_id: string
-          id?: string
-          notes?: string | null
-          service_id: string
-        }
-        Update: {
-          created_at?: string | null
-          dependency_type?: string | null
-          depends_on_service_id?: string
-          id?: string
-          notes?: string | null
-          service_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sys_service_dependencies_depends_on_service_id_fkey"
-            columns: ["depends_on_service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_service_dependencies_depends_on_service_id_fkey"
-            columns: ["depends_on_service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_shared_services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sys_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "sys_shared_services"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sys_shared_services: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          dependencies: Json | null
-          description: string | null
-          exports: Json | null
-          has_browser_variant: boolean | null
-          id: string
-          is_singleton: boolean | null
-          service_name: string
-          service_path: string
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          dependencies?: Json | null
-          description?: string | null
-          exports?: Json | null
-          has_browser_variant?: boolean | null
-          id?: string
-          is_singleton?: boolean | null
-          service_name: string
-          service_path: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          dependencies?: Json | null
-          description?: string | null
-          exports?: Json | null
-          has_browser_variant?: boolean | null
-          id?: string
-          is_singleton?: boolean | null
-          service_name?: string
-          service_path?: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       sys_table_definitions: {
         Row: {
           created_by: string | null
           created_date: string | null
-          depends_on: string[] | null
           description: string | null
           id: string
-          is_insertable: boolean | null
-          is_updatable: boolean | null
           last_modified: string | null
           notes: string | null
-          object_type: string | null
           purpose: string | null
           table_name: string
           table_schema: string
-          view_definition: string | null
         }
         Insert: {
           created_by?: string | null
           created_date?: string | null
-          depends_on?: string[] | null
           description?: string | null
           id?: string
-          is_insertable?: boolean | null
-          is_updatable?: boolean | null
           last_modified?: string | null
           notes?: string | null
-          object_type?: string | null
           purpose?: string | null
           table_name: string
           table_schema?: string
-          view_definition?: string | null
         }
         Update: {
           created_by?: string | null
           created_date?: string | null
-          depends_on?: string[] | null
           description?: string | null
           id?: string
-          is_insertable?: boolean | null
-          is_updatable?: boolean | null
           last_modified?: string | null
           notes?: string | null
-          object_type?: string | null
           purpose?: string | null
           table_name?: string
           table_schema?: string
-          view_definition?: string | null
         }
         Relationships: []
       }
@@ -4869,111 +4562,6 @@ export type Database = {
           status: string | null
           updated_at: string | null
           version: string | null
-        }
-        Relationships: []
-      }
-      sys_app_dependencies_view: {
-        Row: {
-          app_description: string | null
-          app_name: string | null
-          app_type: string | null
-          features_used: Json | null
-          import_path: string | null
-          service_category: string | null
-          service_name: string | null
-          usage_type: string | null
-        }
-        Relationships: []
-      }
-      sys_database_objects_info_view: {
-        Row: {
-          column_count: number | null
-          column_names: unknown[] | null
-          created_by: string | null
-          created_date: string | null
-          depends_on: string[] | null
-          description: string | null
-          id: string | null
-          is_currently_insertable: boolean | null
-          is_currently_updatable: boolean | null
-          is_insertable: boolean | null
-          is_updatable: boolean | null
-          last_modified: string | null
-          notes: string | null
-          object_type: string | null
-          purpose: string | null
-          table_name: string | null
-          table_schema: string | null
-          view_definition: string | null
-        }
-        Insert: {
-          column_count?: never
-          column_names?: never
-          created_by?: string | null
-          created_date?: string | null
-          depends_on?: string[] | null
-          description?: string | null
-          id?: string | null
-          is_currently_insertable?: never
-          is_currently_updatable?: never
-          is_insertable?: boolean | null
-          is_updatable?: boolean | null
-          last_modified?: string | null
-          notes?: string | null
-          object_type?: string | null
-          purpose?: string | null
-          table_name?: string | null
-          table_schema?: string | null
-          view_definition?: string | null
-        }
-        Update: {
-          column_count?: never
-          column_names?: never
-          created_by?: string | null
-          created_date?: string | null
-          depends_on?: string[] | null
-          description?: string | null
-          id?: string | null
-          is_currently_insertable?: never
-          is_currently_updatable?: never
-          is_insertable?: boolean | null
-          is_updatable?: boolean | null
-          last_modified?: string | null
-          notes?: string | null
-          object_type?: string | null
-          purpose?: string | null
-          table_name?: string | null
-          table_schema?: string | null
-          view_definition?: string | null
-        }
-        Relationships: []
-      }
-      sys_pipeline_dependencies_view: {
-        Row: {
-          command_name: string | null
-          features_used: Json | null
-          import_path: string | null
-          pipeline_description: string | null
-          pipeline_name: string | null
-          service_category: string | null
-          service_name: string | null
-          usage_type: string | null
-        }
-        Relationships: []
-      }
-      sys_service_dependency_summary_view: {
-        Row: {
-          category: string | null
-          depended_by_count: number | null
-          depends_on_count: number | null
-          description: string | null
-          has_browser_variant: boolean | null
-          id: string | null
-          is_singleton: boolean | null
-          service_name: string | null
-          status: string | null
-          used_by_apps_count: number | null
-          used_by_pipelines_count: number | null
         }
         Relationships: []
       }
@@ -5598,16 +5186,8 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      populate_initial_services: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }
-        Returns: undefined
-      }
-      populate_view_definitions: {
-        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       queue_documentation_file_for_processing: {

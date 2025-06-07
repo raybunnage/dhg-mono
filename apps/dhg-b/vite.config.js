@@ -11,10 +11,10 @@ export default defineConfig({
     sourcemap: true, // Helps with debugging
   },
   server: {
-    port: 5176,      // Unique port for dhg-b
+    port: 5179,      // Dedicated port for dhg-b
     ...baseConfig.server,
   },
   preview: {
-    port: 4174,      // Next available preview port
+    port: 4179,      // Preview port for dhg-b
   }
 }) 

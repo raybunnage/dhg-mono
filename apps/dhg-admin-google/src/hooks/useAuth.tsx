@@ -6,7 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { browserAuthService } from '../../../../packages/shared/services/auth-service/browser-auth-service';
-import { supabase } from '../utils/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import type { AppUser } from '../../../../packages/shared/services/auth-service/types';
 
 interface AuthContextType {

@@ -37,7 +37,7 @@ async function showStatus() {
   try {
     // Get summary by pipeline, type and status
     let query = supabase
-      .from('command_refactor_status_summary')
+      .from('command_refactor_status_summary_view')
       .select('*')
       .order('pipeline')
       .order('command_type')

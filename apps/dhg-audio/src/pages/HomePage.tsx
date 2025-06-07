@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AudioList } from '@/components';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
-import { supabaseBrowser } from '@/services/supabase-browser-adapter';
+import { supabase } from '@/lib/supabase';
 import { FilterService } from '@shared/services/filter-service/filter-service';
 import { DriveFilterCombobox } from '@shared/components/filter';
 
@@ -11,8 +11,8 @@ export const HomePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Create filter service instance
-  const filterService = new FilterService(supabaseBrowser.getClient() as any);
+  // Create filter service instance with the single supabase client
+  const filterService = new FilterService(supabase);
 
   useEffect(() => {
     const fetchAudioFiles = async () => {

@@ -118,7 +118,7 @@ async function classifyScript(scriptPath?: string) {
     
     // Check if script exists in registry
     const { data: existingScript } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .select('id, file_path')
       .eq('file_path', filePath)
       .single();
@@ -127,7 +127,7 @@ async function classifyScript(scriptPath?: string) {
       console.log('\n💾 Updating script registry...');
       
       const { error: updateError } = await supabase
-        .from('scripts_registry')
+        .from('registry_scripts')
         .update({
           document_type_id: classification.document_type_id,
           ai_assessment: {
