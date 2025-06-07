@@ -89,9 +89,11 @@ export function parseImports(content: string): ParsedImport[] {
 
 // Classify import type based on path
 export function classifyImport(importPath: string): ImportType {
-  // Shared services imports
+  // Shared services imports (including adapters)
   if (importPath.startsWith('@shared/services') || 
-      importPath.includes('packages/shared/services')) {
+      importPath.includes('packages/shared/services') ||
+      importPath.startsWith('@shared/adapters') ||
+      importPath.includes('packages/shared/adapters')) {
     return 'shared-service';
   }
   
@@ -117,10 +119,23 @@ export function extractServiceFromImport(importPath: string): string | null {
     return sharedMatch[1];
   }
   
+  // Handle @shared/adapters imports (adapters are services too)
+  const adapterMatch = importPath.match(/@shared\/adapters\/([^/]+)/);
+  if (adapterMatch) {
+    // Convert adapter name to service name (e.g., supabase-adapter -> supabase)
+    return adapterMatch[1].replace('-adapter', '');
+  }
+  
   // Handle relative imports to shared services
   const relativeMatch = importPath.match(/packages\/shared\/services\/([^/]+)/);
   if (relativeMatch) {
     return relativeMatch[1];
+  }
+  
+  // Handle relative imports to shared adapters
+  const relativeAdapterMatch = importPath.match(/packages\/shared\/adapters\/([^/]+)/);
+  if (relativeAdapterMatch) {
+    return relativeAdapterMatch[1].replace('-adapter', '');
   }
   
   return null;
