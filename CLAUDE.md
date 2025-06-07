@@ -1,4 +1,4 @@
-# Claude Code Instructions (v1.05)
+# Claude Code Instructions (v1.06)
 
 ## ⚠️ CRITICAL: Database Tables Have Been Renamed
 
@@ -48,18 +48,20 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 
 ## ⚠️ Database Views Have Been Renamed
 
-All database views now follow a consistent naming convention with `_view` suffix:
+All database views now follow a consistent naming convention:
+1. **Must end with `_view` suffix**
+2. **Must use the prefix of their primary table**
 
-| Old View Name | New View Name |
-|---------------|---------------|
-| command_refactor_status_summary | command_refactor_status_summary_view |
-| commands_needing_attention | command_refactor_needing_attention_view |
-| dev_tasks_with_git | dev_tasks_with_git_view |
-| doc_continuous_status | doc_continuous_status_view |
-| learn_user_progress | learn_user_progress_view |
-| recent_ai_work_summaries | ai_work_summaries_recent_view |
+| Old View Name | New View Name | Primary Table Prefix |
+|---------------|---------------|---------------------|
+| command_refactor_status_summary | command_refactor_status_summary_view | `command_` |
+| commands_needing_attention | command_refactor_needing_attention_view | `command_` |
+| dev_tasks_with_git | dev_tasks_with_git_view | `dev_` |
+| doc_continuous_status | doc_continuous_status_view | `doc_` |
+| learn_user_progress | learn_user_progress_view | `learn_` |
+| recent_ai_work_summaries | ai_work_summaries_recent_view | `ai_` |
 
-**Note**: `media_content_view` already had the `_view` suffix and was not changed.
+**Note**: Views must use their primary table's prefix so they sort together in database tools.
 
 ⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
 - **NEVER implement workarounds without explicit permission**
@@ -265,12 +267,22 @@ All database views now follow a consistent naming convention with `_view` suffix
    
    **Database View Naming Convention**:
    - All views MUST end with `_view` suffix for clarity
-   - Use the primary table's prefix for the view (e.g., `command_refactor_status_summary_view` for command-related views)
-   - Examples:
-     - `dev_tasks_with_git_view` - View based on dev_tasks table
-     - `learn_user_progress_view` - View for learning user progress
-     - `ai_work_summaries_recent_view` - View for recent AI work summaries
-   - This ensures views are easily distinguishable from tables and sort alphabetically near their related tables
+   - ⚠️ **CRITICAL: Views MUST use the prefix of their primary table**
+   - This ensures views sort alphabetically with their related tables
+   - The prefix determines which functional area owns the view
+   
+   **Examples of Correct View Naming**:
+   - `command_refactor_status_summary_view` - Uses `command_` prefix (primary table: command_refactor_tracking)
+   - `dev_tasks_with_git_view` - Uses `dev_` prefix (primary table: dev_tasks)
+   - `learn_user_progress_view` - Uses `learn_` prefix (primary table: learn_user_analytics)
+   - `ai_work_summaries_recent_view` - Uses `ai_` prefix (primary table: ai_work_summaries)
+   - `google_sources_with_experts_view` - Uses `google_` prefix (primary table: google_sources)
+   
+   **Why This Matters**:
+   - Views appear next to their related tables in database tools
+   - Clear ownership - you know which subsystem the view belongs to
+   - Consistent organization across the entire schema
+   - Easy to find all views for a specific functional area
 
    **Database Best Practices**:
    
@@ -537,6 +549,29 @@ This ensures migrations are properly tested before applying to the database.
    - ✅ **Solution**: See "Essential Patterns > Supabase Connection Patterns" above for the correct approach
    - Each app should have ONE `lib/supabase.ts` file
    - If an app has multiple Supabase files, consolidate them into one
+
+8. **Incorrect Date Handling**:
+   - ❌ **Problem**: Using incorrect dates in file names or documentation
+   - ✅ **Solution**: Always check the actual date using system commands
+   - **Getting Current Date**:
+     ```bash
+     # For file names (YYYYMMDD format):
+     date +%Y%m%d  # Example: 20250607
+     
+     # For documentation headers:
+     date          # Example: Sat Jun  7 08:58:14 PDT 2025
+     
+     # For timestamp in file names:
+     date +%Y-%m-%dT%H-%M-%S  # Example: 2025-06-07T08-58-14
+     ```
+   - **In TypeScript/JavaScript**:
+     ```typescript
+     // Always use new Date() for current date
+     const currentDate = new Date();
+     const dateString = currentDate.toISOString().split('T')[0]; // 2025-06-07
+     const timestamp = currentDate.toISOString(); // 2025-06-07T15:58:14.000Z
+     ```
+   - ⚠️ **Important**: The environment shows today's date in `<env>` tags but should be verified with actual system date
 
 ## Debugging in a Monorepo Context
 
