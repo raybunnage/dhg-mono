@@ -1,5 +1,4 @@
 import { supabaseBrowser } from './supabase-browser-adapter';
-import { FilterService } from '@shared/services/filter-service/filter-service';
 
 /**
  * Browser-compatible audio service
@@ -9,12 +8,10 @@ import { FilterService } from '@shared/services/filter-service/filter-service';
 class AudioBrowserService {
   private static instance: AudioBrowserService;
   private supabase: any;
-  private filterService: FilterService;
 
   private constructor() {
     try {
       this.supabase = supabaseBrowser.getClient();
-      this.filterService = new FilterService(this.supabase);
       console.log('Supabase client initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Supabase client:', error);
@@ -34,12 +31,15 @@ class AudioBrowserService {
 
   /**
    * Get all audio files (MP3 and M4A)
+   * @param limit - Maximum number of files to return
+   * @param rootDriveId - Optional root drive ID to filter by
    */
-  async getAudioFiles(limit?: number): Promise<any[]> {
+  async getAudioFiles(limit?: number, rootDriveId?: string | null): Promise<any[]> {
     try {
       // Log the query parameters for debugging
       console.log('Fetching audio files with params:', { 
         limit: limit || 100,
+        rootDriveId: rootDriveId || 'none',
         supabaseUrl: import.meta.env.VITE_SUPABASE_URL
       });
       
@@ -72,8 +72,11 @@ class AudioBrowserService {
         .order('name', { ascending: true })
         .limit(limit || 100);
 
-      // Apply filter if one is active
-      query = await this.filterService.applyFilterToQuery(query);
+      // Apply root drive ID filter if provided
+      if (rootDriveId) {
+        console.log('Applying root drive filter:', rootDriveId);
+        query = query.eq('root_drive_id', rootDriveId);
+      }
       
       console.log('Executing Supabase query');
       const { data, error } = await query;
@@ -87,21 +90,22 @@ class AudioBrowserService {
       
       // For m4a files without titles, try to find corresponding mp4 files
       const enrichedData = await Promise.all((data || []).map(async (audioFile: any) => {
-        // If this is an m4a file without a title, look for corresponding mp4
-        if (audioFile.mime_type?.includes('m4a') && 
-            (!audioFile.expert_documents || audioFile.expert_documents.length === 0 || !audioFile.expert_documents[0]?.title)) {
+        // For all audio files, try to find corresponding mp4
+        if (audioFile.mime_type?.includes('m4a') || audioFile.mime_type?.includes('mp3')) {
           
           // Extract base name without extension
-          const baseName = audioFile.name.replace(/\.m4a$/i, '');
+          const baseName = audioFile.name.replace(/\.(m4a|mp3)$/i, '');
           
-          // Look for mp4 file in same folder
+          // Look for mp4 file in same folder with same base name
           const { data: mp4Files } = await this.supabase
             .from('google_sources')
             .select(`
               id,
               name,
+              drive_id,
               google_expert_documents!expert_documents_source_id_fkey(
-                title
+                title,
+                source_id
               )
             `)
             .eq('parent_folder_id', audioFile.parent_folder_id)
@@ -109,10 +113,17 @@ class AudioBrowserService {
             .is('is_deleted', false)
             .limit(1);
             
-          if (mp4Files && mp4Files.length > 0 && mp4Files[0].expert_documents?.[0]?.title) {
-            // Add the mp4's title to the m4a file data
-            audioFile.mp4_title = mp4Files[0].expert_documents[0].title;
-            console.log(`Found MP4 title for ${audioFile.name}: ${audioFile.mp4_title}`);
+          if (mp4Files && mp4Files.length > 0) {
+            // Add the main video ID (the mp4 file's ID)
+            audioFile.main_video_id = mp4Files[0].id;
+            audioFile.main_video_name = mp4Files[0].name;
+            audioFile.main_video_drive_id = mp4Files[0].drive_id;
+            
+            // Add the title from the video's expert documents
+            if (mp4Files[0].google_expert_documents?.[0]?.title) {
+              audioFile.video_title = mp4Files[0].google_expert_documents[0].title;
+              console.log(`Found video title for ${audioFile.name}: ${audioFile.video_title}`);
+            }
           }
         }
         
