@@ -1,4 +1,4 @@
-# Claude Code Instructions (v1.04)
+# Claude Code Instructions (v1.05)
 
 ## ⚠️ CRITICAL: Database Tables Have Been Renamed
 
@@ -101,6 +101,39 @@ All database views now follow a consistent naming convention with `_view` suffix
 - If moving functionality to shared services, test both before and after
 - Run appropriate tests for both the original behavior and any enhancements
 
+## Current Project State & Ongoing Refactoring
+
+⚠️ **The codebase is undergoing significant refactoring**. Here's what you need to know:
+
+### Database Table Renaming
+- **Major renaming effort completed** - Most tables now follow consistent prefix patterns
+- **Check renamed tables** - See the table at the top of this document
+- **Always verify table names** - Use `supabase/types.ts` as the source of truth
+- **Some code may still use old names** - Update as you encounter them
+
+### CLI Pipeline Consolidation
+- **14+ active pipelines** exist but may be consolidated
+- **New pipelines added**: `service_dependencies/`, `dev_tasks/`, `database/`
+- **Some pipelines may merge** - Check `command_pipelines` table for current status
+- **Command tracking is mandatory** - All new commands must be registered
+
+### Shared Services Migration
+- **Ongoing effort** to extract common functionality from apps to shared services
+- **UI pages in dhg-improve-experts** are being mined for reusable services
+- **Singleton patterns enforced** - Direct client creation is being eliminated
+- **Cross-environment compatibility** required for all new services
+
+### Type Generation & Schema Updates
+- **Types are auto-generated** after migrations: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+- **Schema changes frequent** - Always pull latest types after database updates
+- **RLS policies being standardized** - Most tables now have consistent policies
+
+### What This Means For You
+1. **Expect changes** - Table names, file locations, and APIs may shift
+2. **Check before assuming** - Verify table names, pipeline locations, service patterns
+3. **Update old code** - When you find outdated references, fix them
+4. **Document discoveries** - Add to this file when you solve tricky issues
+
 ## Code Organization Principles
 
 0. **⚠️ CRITICAL: NEVER ADD FILES TO THE ROOT DIRECTORY**: 
@@ -124,11 +157,33 @@ All database views now follow a consistent naming convention with `_view` suffix
 3. **CLI Pipeline Architecture**: 
    - ⚠️ **ALL new scripts MUST go in `scripts/cli-pipeline/{domain}/`**
    - ⚠️ **NEVER place scripts directly in `/scripts/` root folder**
-   - Available domains: `google_sync/`, `document/`, `document_types/`, `media-processing/`, `presentations/`, `prompt_service/`
+   
+   **Current Active Pipelines**:
+   - `all_pipelines/` - Master pipeline for managing all other pipelines
+   - `analysis/` - Script analysis and classification tools
+   - `auth/` - Authentication and user management
+   - `database/` - Database migrations and management
+   - `dev_tasks/` - Development task tracking and git integration
+   - `document/` - Document processing and management
+   - `document_types/` - Document type classification
+   - `gmail/` - Gmail integration and email processing
+   - `google_sync/` - Google Drive synchronization
+   - `media-processing/` - Audio/video processing pipelines
+   - `presentations/` - Presentation management
+   - `prompt_service/` - AI prompt management
+   - `service_dependencies/` - Service dependency mapping
+   - `viewers/` - Various file viewers and servers
+   
+   **Pipeline Standards**:
    - Keep flat file structure within pipeline folders - no nested subfolders
    - Each pipeline uses commander.js for CLI integration
    - Each pipeline has its own package.json with commander.js v11.0.0
    - Always implement command tracking for new commands
+   
+   **⚠️ Pipeline Refactoring in Progress**:
+   - Some pipelines may be consolidated or renamed
+   - Check `command_pipelines` table for current active pipelines
+   - New pipelines require proper registration in the database
 
 4. **Essential Patterns**:
 
@@ -304,6 +359,11 @@ ORDER BY cpt.table_name;
    - This ensures TypeScript interfaces always match the updated database schema
    - If type generation fails, the command provides manual instructions
    - Consider committing the updated types.ts file along with your migration
+   
+   **⚠️ Manual Type Generation** (when needed):
+   ```bash
+   pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+   ```
 
 3. **Safe Refactoring**:
    - ⚠️ **Never break existing functionality**
@@ -503,7 +563,7 @@ const { data, error } = await supabase
 - Always handle errors properly with `if (error)` checks
 - Include `.select()` after inserts to get the created record
 - Consult `supabase/types.ts` for schema information (single source of truth)
-- Use proper column names: `experts.expert_name`, `document_types.name`
+- Use proper column names: `expert_profiles.expert_name`, `document_types.name`
 
 **Accessing auth.users Table**:
 ```typescript
@@ -578,9 +638,9 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 
 ## Database Table Relationships
 
-### sources_google and expert_documents Recursive Search
+### google_sources (formerly sources_google) Recursive Search
 
-The `sources_google` table uses a hierarchical structure for Google Drive folders and files:
+The `google_sources` table uses a hierarchical structure for Google Drive folders and files:
 
 **Key Principles:**
 - **Use Google Drive IDs, not Supabase UUIDs** for navigation
@@ -593,14 +653,14 @@ The `sources_google` table uses a hierarchical structure for Google Drive folder
 WITH RECURSIVE folder_tree AS (
   -- Base case: start with target folder
   SELECT drive_id, parent_folder_id, name, path_depth, 0 as level
-  FROM sources_google 
+  FROM google_sources 
   WHERE drive_id = 'target_folder_id'
   
   UNION ALL
   
   -- Recursive case: find children
   SELECT s.drive_id, s.parent_folder_id, s.name, s.path_depth, ft.level + 1
-  FROM sources_google s
+  FROM google_sources s
   INNER JOIN folder_tree ft ON s.parent_folder_id = ft.drive_id
 )
 SELECT * FROM folder_tree;
@@ -1015,7 +1075,7 @@ pnpm install                           # Regenerate with all dependencies
 
 ## Key Points Summary
 
-This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:
+This document provides the essential guidelines for working with Claude Code v1.05. The most important principles are:
 
 1. **Ask before implementing workarounds** - explain problems and get permission
 2. **Use proper file locations** - scripts go in `scripts/cli-pipeline/{domain}/`
