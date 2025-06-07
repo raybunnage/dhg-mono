@@ -1063,10 +1063,13 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 **Vite App Ports**:
 | Port | App | Status |
 |------|-----|--------|
-| 5173 | dhg-a, dhg-hub-lovable | Shared (don't run together) |
-| 5174 | dhg-b, dhg-hub, dhg-admin-google | Shared (don't run together) |
+| 5173 | dhg-hub-lovable | Dedicated |
+| 5174 | dhg-hub | Dedicated |
 | 5175 | dhg-admin-suite | Dedicated |
+| 5176 | dhg-admin-google | Dedicated |
 | 5177 | dhg-admin-code | Dedicated |
+| 5178 | dhg-a | Dedicated |
+| 5179 | dhg-b | Dedicated |
 | 5194 | dhg-audio | Dedicated |
 | 8080 | dhg-improve-experts | Dedicated |
 

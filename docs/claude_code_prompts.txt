@@ -155,6 +155,16 @@ CREATE TABLE "web_concepts"(
   year INT
 )
 
+1. Add missing CLI pipeline domains - Update the list to include all
+  active pipelines
+  2. Add troubleshooting section for common TypeScript errors:
+    - "Cannot find module" errors
+    - Type mismatches with supabase/types.ts
+    - ESM/CommonJS compatibility issues
+  4. Enhance the database section:
+    - Add common Supabase RLS patterns
+    - Add guidance on when to use views vs tables
+    - Include foreign key best practices
 
 
 
