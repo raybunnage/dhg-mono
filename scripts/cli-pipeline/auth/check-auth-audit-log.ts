@@ -26,10 +26,8 @@ async function checkAuthAuditLog() {
         return;
       }
       
-      // Create admin client
-      const { createClient } = require('@supabase/supabase-js');
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+      // Create admin client using SupabaseClientService with service role
+      const supabaseAdmin = SupabaseClientService.getInstance().getClient();
       
       const { data: adminTestData, error: adminTestError } = await supabaseAdmin
         .from('auth_audit_log')
