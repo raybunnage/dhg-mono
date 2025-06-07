@@ -46,6 +46,21 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 
 **Note**: This is a temporary reference while code is being updated. Always check `supabase/types.ts` for the current schema.
 
+## ⚠️ Database Views Have Been Renamed
+
+All database views now follow a consistent naming convention with `_view` suffix:
+
+| Old View Name | New View Name |
+|---------------|---------------|
+| command_refactor_status_summary | command_refactor_status_summary_view |
+| commands_needing_attention | command_refactor_needing_attention_view |
+| dev_tasks_with_git | dev_tasks_with_git_view |
+| doc_continuous_status | doc_continuous_status_view |
+| learn_user_progress | learn_user_progress_view |
+| recent_ai_work_summaries | ai_work_summaries_recent_view |
+
+**Note**: `media_content_view` already had the `_view` suffix and was not changed.
+
 ⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
 - **NEVER implement workarounds without explicit permission**
 - If you encounter an issue or error, STOP and explain the problem clearly

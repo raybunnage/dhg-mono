@@ -108,36 +108,7 @@ export type Database = {
           relationship_type?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_prompt_relationships_document_type"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_classifications_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_prompt_relationships_document_type"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_relationships_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
-          },
-          {
-            foreignKeyName: "prompt_relationships_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ai_prompt_template_associations: {
         Row: {
@@ -166,32 +137,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ai_prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompt_template_associations_view"
-            referencedColumns: ["prompt_id"]
-          },
-          {
-            foreignKeyName: "ai_prompt_template_associations_prompt_id_fkey"
-            columns: ["prompt_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ai_prompt_template_associations_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "ai_prompt_output_templates"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_prompt_template_associations_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompt_template_associations_view"
-            referencedColumns: ["template_id"]
           },
         ]
       }
@@ -199,14 +149,14 @@ export type Database = {
         Row: {
           author: string | null
           category_id: string | null
-          content: Json
+          content: Json | null
           created_at: string | null
           description: string | null
           document_type_id: string | null
           file_path: string | null
           id: string
           metadata: Json | null
-          name: string
+          name: string | null
           status: Database["public"]["Enums"]["prompt_status"] | null
           tags: string[] | null
           updated_at: string | null
@@ -215,14 +165,14 @@ export type Database = {
         Insert: {
           author?: string | null
           category_id?: string | null
-          content: Json
+          content?: Json | null
           created_at?: string | null
           description?: string | null
           document_type_id?: string | null
           file_path?: string | null
-          id?: string
+          id: string
           metadata?: Json | null
-          name: string
+          name?: string | null
           status?: Database["public"]["Enums"]["prompt_status"] | null
           tags?: string[] | null
           updated_at?: string | null
@@ -231,42 +181,20 @@ export type Database = {
         Update: {
           author?: string | null
           category_id?: string | null
-          content?: Json
+          content?: Json | null
           created_at?: string | null
           description?: string | null
           document_type_id?: string | null
           file_path?: string | null
           id?: string
           metadata?: Json | null
-          name?: string
+          name?: string | null
           status?: Database["public"]["Enums"]["prompt_status"] | null
           tags?: string[] | null
           updated_at?: string | null
           version?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "prompts_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "ai_prompt_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompts_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_classifications_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompts_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ai_work_summaries: {
         Row: {
@@ -313,105 +241,6 @@ export type Database = {
           ui_components?: string[] | null
           updated_at?: string | null
           work_date?: string
-        }
-        Relationships: []
-      }
-      app_service_dependencies: {
-        Row: {
-          app_id: string | null
-          dependency_type: string
-          first_detected_at: string | null
-          id: string
-          import_path: string | null
-          is_critical: boolean | null
-          last_verified_at: string | null
-          notes: string | null
-          service_id: string | null
-          usage_context: string | null
-          usage_frequency: string | null
-        }
-        Insert: {
-          app_id?: string | null
-          dependency_type: string
-          first_detected_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_critical?: boolean | null
-          last_verified_at?: string | null
-          notes?: string | null
-          service_id?: string | null
-          usage_context?: string | null
-          usage_frequency?: string | null
-        }
-        Update: {
-          app_id?: string | null
-          dependency_type?: string
-          first_detected_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_critical?: boolean | null
-          last_verified_at?: string | null
-          notes?: string | null
-          service_id?: string | null
-          usage_context?: string | null
-          usage_frequency?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "app_service_dependencies_app_id_fkey"
-            columns: ["app_id"]
-            isOneToOne: false
-            referencedRelation: "apps_registry"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "app_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services_registry"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      apps_registry: {
-        Row: {
-          app_name: string
-          app_path: string
-          app_type: string
-          created_at: string | null
-          description: string | null
-          display_name: string
-          framework: string | null
-          id: string
-          package_manager: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          app_name: string
-          app_path: string
-          app_type: string
-          created_at?: string | null
-          description?: string | null
-          display_name: string
-          framework?: string | null
-          id?: string
-          package_manager?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          app_name?: string
-          app_path?: string
-          app_type?: string
-          created_at?: string | null
-          description?: string | null
-          display_name?: string
-          framework?: string | null
-          id?: string
-          package_manager?: string | null
-          status?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -707,101 +536,6 @@ export type Database = {
           total_duration_seconds?: number | null
           total_files?: number
           updated_at?: string
-        }
-        Relationships: []
-      }
-      cli_commands_registry: {
-        Row: {
-          command_name: string
-          command_script: string | null
-          command_type: string | null
-          created_at: string | null
-          description: string | null
-          display_name: string | null
-          id: string
-          is_primary: boolean | null
-          pipeline_id: string | null
-          status: string | null
-          success_rate: number | null
-          updated_at: string | null
-          usage_frequency: number | null
-        }
-        Insert: {
-          command_name: string
-          command_script?: string | null
-          command_type?: string | null
-          created_at?: string | null
-          description?: string | null
-          display_name?: string | null
-          id?: string
-          is_primary?: boolean | null
-          pipeline_id?: string | null
-          status?: string | null
-          success_rate?: number | null
-          updated_at?: string | null
-          usage_frequency?: number | null
-        }
-        Update: {
-          command_name?: string
-          command_script?: string | null
-          command_type?: string | null
-          created_at?: string | null
-          description?: string | null
-          display_name?: string | null
-          id?: string
-          is_primary?: boolean | null
-          pipeline_id?: string | null
-          status?: string | null
-          success_rate?: number | null
-          updated_at?: string | null
-          usage_frequency?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cli_commands_registry_pipeline_id_fkey"
-            columns: ["pipeline_id"]
-            isOneToOne: false
-            referencedRelation: "cli_pipelines_registry"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cli_pipelines_registry: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          display_name: string
-          domain: string | null
-          id: string
-          main_script: string | null
-          pipeline_name: string
-          pipeline_path: string
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          display_name: string
-          domain?: string | null
-          id?: string
-          main_script?: string | null
-          pipeline_name: string
-          pipeline_path: string
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          display_name?: string
-          domain?: string | null
-          id?: string
-          main_script?: string | null
-          pipeline_name?: string
-          pipeline_path?: string
-          status?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1152,60 +886,6 @@ export type Database = {
         }
         Relationships: []
       }
-      command_service_dependencies: {
-        Row: {
-          command_id: string | null
-          dependency_type: string
-          first_detected_at: string | null
-          id: string
-          import_path: string | null
-          is_critical: boolean | null
-          last_verified_at: string | null
-          notes: string | null
-          service_id: string | null
-          usage_context: string | null
-        }
-        Insert: {
-          command_id?: string | null
-          dependency_type: string
-          first_detected_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_critical?: boolean | null
-          last_verified_at?: string | null
-          notes?: string | null
-          service_id?: string | null
-          usage_context?: string | null
-        }
-        Update: {
-          command_id?: string | null
-          dependency_type?: string
-          first_detected_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_critical?: boolean | null
-          last_verified_at?: string | null
-          notes?: string | null
-          service_id?: string | null
-          usage_context?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "command_service_dependencies_command_id_fkey"
-            columns: ["command_id"]
-            isOneToOne: false
-            referencedRelation: "cli_commands_registry"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "command_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services_registry"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       command_tracking: {
         Row: {
           affected_entity: string | null
@@ -1245,48 +925,6 @@ export type Database = {
           records_affected?: number | null
           status?: string
           summary?: string | null
-        }
-        Relationships: []
-      }
-      dependency_analysis_runs: {
-        Row: {
-          completed_at: string | null
-          dependencies_found: number | null
-          errors_encountered: number | null
-          id: string
-          items_scanned: number | null
-          notes: string | null
-          run_duration_ms: number | null
-          run_type: string
-          started_at: string | null
-          status: string | null
-          target_type: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          dependencies_found?: number | null
-          errors_encountered?: number | null
-          id?: string
-          items_scanned?: number | null
-          notes?: string | null
-          run_duration_ms?: number | null
-          run_type: string
-          started_at?: string | null
-          status?: string | null
-          target_type?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          dependencies_found?: number | null
-          errors_encountered?: number | null
-          id?: string
-          items_scanned?: number | null
-          notes?: string | null
-          run_duration_ms?: number | null
-          run_type?: string
-          started_at?: string | null
-          status?: string | null
-          target_type?: string | null
         }
         Relationships: []
       }
@@ -1466,7 +1104,7 @@ export type Database = {
             foreignKeyName: "dev_task_commits_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_tasks_with_git"
+            referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1505,7 +1143,7 @@ export type Database = {
             foreignKeyName: "dev_task_files_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_tasks_with_git"
+            referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1541,7 +1179,7 @@ export type Database = {
             foreignKeyName: "dev_task_tags_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_tasks_with_git"
+            referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1589,7 +1227,7 @@ export type Database = {
             foreignKeyName: "dev_task_work_sessions_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_tasks_with_git"
+            referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1688,7 +1326,7 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
-            referencedRelation: "dev_tasks_with_git"
+            referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1783,7 +1421,7 @@ export type Database = {
             foreignKeyName: "doc_continuous_updates_tracking_id_fkey"
             columns: ["tracking_id"]
             isOneToOne: false
-            referencedRelation: "doc_continuous_status"
+            referencedRelation: "doc_continuous_status_view"
             referencedColumns: ["id"]
           },
           {
@@ -1873,38 +1511,17 @@ export type Database = {
         }
         Relationships: []
       }
-      document_type_aliases: {
-        Row: {
-          alias_name: string
-          document_type_id: number
-          document_type_uuid: string | null
-          id: number
-        }
-        Insert: {
-          alias_name: string
-          document_type_id: number
-          document_type_uuid?: string | null
-          id?: number
-        }
-        Update: {
-          alias_name?: string
-          document_type_id?: number
-          document_type_uuid?: string | null
-          id?: number
-        }
-        Relationships: []
-      }
       document_types: {
         Row: {
           category: string | null
           created_at: string | null
           description: string | null
           expected_json_schema: Json | null
-          id: string
+          id: string | null
           is_ai_generated: boolean | null
           is_general_type: boolean | null
           mnemonic: string | null
-          name: string
+          name: string | null
           prompt_id: string | null
           updated_at: string | null
         }
@@ -1913,11 +1530,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           expected_json_schema?: Json | null
-          id?: string
+          id?: string | null
           is_ai_generated?: boolean | null
           is_general_type?: boolean | null
           mnemonic?: string | null
-          name: string
+          name?: string | null
           prompt_id?: string | null
           updated_at?: string | null
         }
@@ -1926,11 +1543,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           expected_json_schema?: Json | null
-          id?: string
+          id?: string | null
           is_ai_generated?: boolean | null
           is_general_type?: boolean | null
           mnemonic?: string | null
-          name?: string
+          name?: string | null
           prompt_id?: string | null
           updated_at?: string | null
         }
@@ -2373,35 +1990,6 @@ export type Database = {
         }
         Relationships: []
       }
-      expert_profile_aliases: {
-        Row: {
-          alias_name: string
-          expert_id: number | null
-          expert_uuid: string
-          id: number
-        }
-        Insert: {
-          alias_name: string
-          expert_id?: number | null
-          expert_uuid: string
-          id?: number
-        }
-        Update: {
-          alias_name?: string
-          expert_id?: number | null
-          expert_uuid?: string
-          id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_expert_uuid"
-            columns: ["expert_uuid"]
-            isOneToOne: false
-            referencedRelation: "expert_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       expert_profiles: {
         Row: {
           created_at: string
@@ -2574,20 +2162,6 @@ export type Database = {
           word_count?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "expert_documents_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_classifications_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expert_documents_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "expert_documents_source_id_fkey"
             columns: ["source_id"]
@@ -2836,6 +2410,33 @@ export type Database = {
         }
         Relationships: []
       }
+      import_all_authors: {
+        Row: {
+          all_author_id: number
+          expert_count: number | null
+          full_name: string | null
+          primary_count: number | null
+          ref_ids: string | null
+          representation_count: number | null
+        }
+        Insert: {
+          all_author_id?: number
+          expert_count?: number | null
+          full_name?: string | null
+          primary_count?: number | null
+          ref_ids?: string | null
+          representation_count?: number | null
+        }
+        Update: {
+          all_author_id?: number
+          expert_count?: number | null
+          full_name?: string | null
+          primary_count?: number | null
+          ref_ids?: string | null
+          representation_count?: number | null
+        }
+        Relationships: []
+      }
       import_all_email_urls: {
         Row: {
           all_email_url_id: number
@@ -3046,6 +2647,83 @@ export type Database = {
         }
         Relationships: []
       }
+      import_expert_profile_aliases: {
+        Row: {
+          alias_name: string
+          expert_id: number | null
+          expert_uuid: string
+          id: number
+        }
+        Insert: {
+          alias_name: string
+          expert_id?: number | null
+          expert_uuid: string
+          id?: number
+        }
+        Update: {
+          alias_name?: string
+          expert_id?: number | null
+          expert_uuid?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_expert_uuid"
+            columns: ["expert_uuid"]
+            isOneToOne: false
+            referencedRelation: "expert_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_experts: {
+        Row: {
+          expert_id: number | null
+          expert_name: string | null
+          full_name: string | null
+          is_in_core_group: number | null
+          starting_ref_id: number | null
+        }
+        Insert: {
+          expert_id?: number | null
+          expert_name?: string | null
+          full_name?: string | null
+          is_in_core_group?: number | null
+          starting_ref_id?: number | null
+        }
+        Update: {
+          expert_id?: number | null
+          expert_name?: string | null
+          full_name?: string | null
+          is_in_core_group?: number | null
+          starting_ref_id?: number | null
+        }
+        Relationships: []
+      }
+      import_hncs_file_names: {
+        Row: {
+          id: number | null
+          level1: string | null
+          level2: string | null
+          level3: string | null
+          level4: string | null
+        }
+        Insert: {
+          id?: number | null
+          level1?: string | null
+          level2?: string | null
+          level3?: string | null
+          level4?: string | null
+        }
+        Update: {
+          id?: number | null
+          level1?: string | null
+          level2?: string | null
+          level3?: string | null
+          level4?: string | null
+        }
+        Relationships: []
+      }
       import_important_email_addresses: {
         Row: {
           email_address: string
@@ -3151,7 +2829,7 @@ export type Database = {
           summary?: string | null
           title?: string | null
           url?: string | null
-          url_id: number
+          url_id?: number
           url_source?: string | null
           url_type?: string | null
         }
@@ -3233,7 +2911,91 @@ export type Database = {
           summary?: string | null
           url?: string | null
           url_id?: number | null
+          web_concept_id?: number
+          year?: number | null
+        }
+        Update: {
+          auto_learning_grade?: number | null
+          backup_category?: string | null
+          category?: string | null
+          citation?: string | null
+          concept?: string | null
+          created_at?: string | null
+          date?: string | null
+          example?: string | null
+          header?: string | null
+          is_valid?: number | null
+          learning_grade?: number | null
+          learning_grade_reason?: string | null
+          master_category?: string | null
+          mixed_case_category?: string | null
+          quote?: string | null
+          quote_author?: string | null
+          reference_info?: string | null
+          section?: string | null
+          source_name?: string | null
+          subject_classifications?: string | null
+          summary?: string | null
+          url?: string | null
+          url_id?: number | null
+          web_concept_id?: number
+          year?: number | null
+        }
+        Relationships: []
+      }
+      import_web_concepts2: {
+        Row: {
+          auto_learning_grade: number | null
+          backup_category: string | null
+          category: string | null
+          citation: string | null
+          concept: string | null
+          created_at: string | null
+          date: string | null
+          example: string | null
+          header: string | null
+          is_valid: number | null
+          learning_grade: number | null
+          learning_grade_reason: string | null
+          master_category: string | null
+          mixed_case_category: string | null
+          quote: string | null
+          quote_author: string | null
+          reference_info: string | null
+          section: string | null
+          source_name: string | null
+          subject_classifications: string | null
+          summary: string | null
+          url: string | null
+          url_id: number | null
           web_concept_id: number
+          year: number | null
+        }
+        Insert: {
+          auto_learning_grade?: number | null
+          backup_category?: string | null
+          category?: string | null
+          citation?: string | null
+          concept?: string | null
+          created_at?: string | null
+          date?: string | null
+          example?: string | null
+          header?: string | null
+          is_valid?: number | null
+          learning_grade?: number | null
+          learning_grade_reason?: string | null
+          master_category?: string | null
+          mixed_case_category?: string | null
+          quote?: string | null
+          quote_author?: string | null
+          reference_info?: string | null
+          section?: string | null
+          source_name?: string | null
+          subject_classifications?: string | null
+          summary?: string | null
+          url?: string | null
+          url_id?: number | null
+          web_concept_id?: number
           year?: number | null
         }
         Update: {
@@ -3994,132 +3756,6 @@ export type Database = {
           },
         ]
       }
-      pipeline_service_dependencies: {
-        Row: {
-          dependency_type: string
-          first_detected_at: string | null
-          id: string
-          import_path: string | null
-          is_critical: boolean | null
-          last_verified_at: string | null
-          notes: string | null
-          pipeline_id: string | null
-          service_id: string | null
-          usage_context: string | null
-          usage_frequency: string | null
-        }
-        Insert: {
-          dependency_type: string
-          first_detected_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_critical?: boolean | null
-          last_verified_at?: string | null
-          notes?: string | null
-          pipeline_id?: string | null
-          service_id?: string | null
-          usage_context?: string | null
-          usage_frequency?: string | null
-        }
-        Update: {
-          dependency_type?: string
-          first_detected_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_critical?: boolean | null
-          last_verified_at?: string | null
-          notes?: string | null
-          pipeline_id?: string | null
-          service_id?: string | null
-          usage_context?: string | null
-          usage_frequency?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pipeline_service_dependencies_pipeline_id_fkey"
-            columns: ["pipeline_id"]
-            isOneToOne: false
-            referencedRelation: "cli_pipelines_registry"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pipeline_service_dependencies_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services_registry"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      research_urls: {
-        Row: {
-          authors: string[] | null
-          content_source: string | null
-          created_at: string | null
-          domain: string | null
-          email_associations: Json | null
-          email_count: number | null
-          extraction_metadata: Json | null
-          first_seen: string | null
-          id: string
-          is_accessible: boolean | null
-          is_processed: boolean | null
-          keywords: string[] | null
-          last_seen: string | null
-          process_ai_concepts: boolean | null
-          published_date: string | null
-          summary: string | null
-          title: string | null
-          updated_at: string | null
-          url: string
-          url_type: string | null
-        }
-        Insert: {
-          authors?: string[] | null
-          content_source?: string | null
-          created_at?: string | null
-          domain?: string | null
-          email_associations?: Json | null
-          email_count?: number | null
-          extraction_metadata?: Json | null
-          first_seen?: string | null
-          id?: string
-          is_accessible?: boolean | null
-          is_processed?: boolean | null
-          keywords?: string[] | null
-          last_seen?: string | null
-          process_ai_concepts?: boolean | null
-          published_date?: string | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-          url: string
-          url_type?: string | null
-        }
-        Update: {
-          authors?: string[] | null
-          content_source?: string | null
-          created_at?: string | null
-          domain?: string | null
-          email_associations?: Json | null
-          email_count?: number | null
-          extraction_metadata?: Json | null
-          first_seen?: string | null
-          id?: string
-          is_accessible?: boolean | null
-          is_processed?: boolean | null
-          keywords?: string[] | null
-          last_seen?: string | null
-          process_ai_concepts?: boolean | null
-          published_date?: string | null
-          summary?: string | null
-          title?: string | null
-          updated_at?: string | null
-          url?: string
-          url_type?: string | null
-        }
-        Relationships: []
-      }
       scripts_registry: {
         Row: {
           ai_assessment: Json | null
@@ -4195,107 +3831,6 @@ export type Database = {
           summary?: Json | null
           title?: string
           updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scripts_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_classifications_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scripts_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      service_exports: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          export_name: string
-          export_type: string | null
-          id: string
-          is_default: boolean | null
-          service_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          export_name: string
-          export_type?: string | null
-          id?: string
-          is_default?: boolean | null
-          service_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          export_name?: string
-          export_type?: string | null
-          id?: string
-          is_default?: boolean | null
-          service_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "service_exports_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services_registry"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      services_registry: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          display_name: string
-          export_type: string | null
-          id: string
-          is_singleton: boolean | null
-          package_path: string
-          service_file: string | null
-          service_name: string
-          service_type: string
-          status: string | null
-          updated_at: string | null
-          version: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          display_name: string
-          export_type?: string | null
-          id?: string
-          is_singleton?: boolean | null
-          package_path: string
-          service_file?: string | null
-          service_name: string
-          service_type: string
-          status?: string | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          display_name?: string
-          export_type?: string | null
-          id?: string
-          is_singleton?: boolean | null
-          package_path?: string
-          service_file?: string | null
-          service_name?: string
-          service_type?: string
-          status?: string | null
-          updated_at?: string | null
-          version?: string | null
         }
         Relationships: []
       }
@@ -4506,30 +4041,22 @@ export type Database = {
       }
     }
     Views: {
-      ai_prompt_template_associations_view: {
+      ai_work_summaries_recent_view: {
         Row: {
-          association_created_at: string | null
-          association_id: string | null
-          association_updated_at: string | null
-          priority: number | null
-          prompt_id: string | null
-          prompt_name: string | null
-          template_description: string | null
-          template_id: string | null
-          template_name: string | null
+          category: string | null
+          commands: string[] | null
+          created_at: string | null
+          id: string | null
+          status: string | null
+          summary_preview: string | null
+          tags: string[] | null
+          title: string | null
+          ui_components: string[] | null
+          work_date: string | null
         }
         Relationships: []
       }
-      command_refactor_status_summary: {
-        Row: {
-          command_type: string | null
-          count: number | null
-          current_status: string | null
-          pipeline: string | null
-        }
-        Relationships: []
-      }
-      commands_needing_attention: {
+      command_refactor_needing_attention_view: {
         Row: {
           command_name: string | null
           command_type: string | null
@@ -4553,7 +4080,16 @@ export type Database = {
         }
         Relationships: []
       }
-      dev_tasks_with_git: {
+      command_refactor_status_summary_view: {
+        Row: {
+          command_type: string | null
+          count: number | null
+          current_status: string | null
+          pipeline: string | null
+        }
+        Relationships: []
+      }
+      dev_tasks_with_git_view: {
         Row: {
           app: string | null
           claude_request: string | null
@@ -4592,12 +4128,12 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
-            referencedRelation: "dev_tasks_with_git"
+            referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
         ]
       }
-      doc_continuous_status: {
+      doc_continuous_status_view: {
         Row: {
           category: string | null
           document_name: string | null
@@ -4639,49 +4175,7 @@ export type Database = {
         }
         Relationships: []
       }
-      document_classifications_view: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          description: string | null
-          expected_json_schema: Json | null
-          id: string | null
-          is_ai_generated: boolean | null
-          is_general_type: boolean | null
-          mnemonic: string | null
-          name: string | null
-          prompt_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          expected_json_schema?: Json | null
-          id?: string | null
-          is_ai_generated?: boolean | null
-          is_general_type?: boolean | null
-          mnemonic?: string | null
-          name?: string | null
-          prompt_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          expected_json_schema?: Json | null
-          id?: string | null
-          is_ai_generated?: boolean | null
-          is_general_type?: boolean | null
-          mnemonic?: string | null
-          name?: string | null
-          prompt_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      learn_user_progress: {
+      learn_user_progress_view: {
         Row: {
           avg_completion: number | null
           bookmarks_created: number | null
@@ -4732,21 +4226,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      recent_ai_work_summaries: {
-        Row: {
-          category: string | null
-          commands: string[] | null
-          created_at: string | null
-          id: string | null
-          status: string | null
-          summary_preview: string | null
-          tags: string[] | null
-          title: string | null
-          ui_components: string[] | null
-          work_date: string | null
-        }
-        Relationships: []
       }
     }
     Functions: {
