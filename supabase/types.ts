@@ -4133,7 +4133,7 @@ export type Database = {
             foreignKeyName: "sys_app_service_dependencies_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary"
+            referencedRelation: "sys_service_dependency_summary_view"
             referencedColumns: ["id"]
           },
           {
@@ -4305,7 +4305,7 @@ export type Database = {
             foreignKeyName: "sys_pipeline_service_dependencies_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary"
+            referencedRelation: "sys_service_dependency_summary_view"
             referencedColumns: ["id"]
           },
           {
@@ -4347,7 +4347,7 @@ export type Database = {
             foreignKeyName: "sys_service_dependencies_depends_on_service_id_fkey"
             columns: ["depends_on_service_id"]
             isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary"
+            referencedRelation: "sys_service_dependency_summary_view"
             referencedColumns: ["id"]
           },
           {
@@ -4361,7 +4361,7 @@ export type Database = {
             foreignKeyName: "sys_service_dependencies_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "sys_service_dependency_summary"
+            referencedRelation: "sys_service_dependency_summary_view"
             referencedColumns: ["id"]
           },
           {
@@ -4885,57 +4885,66 @@ export type Database = {
         }
         Relationships: []
       }
-      sys_database_objects_info: {
+      sys_database_objects_info_view: {
         Row: {
           column_count: number | null
+          column_names: unknown[] | null
           created_by: string | null
           created_date: string | null
-          dependency_count: number | null
           depends_on: string[] | null
           description: string | null
-          exists_in_db: number | null
+          id: string | null
+          is_currently_insertable: boolean | null
+          is_currently_updatable: boolean | null
           is_insertable: boolean | null
           is_updatable: boolean | null
+          last_modified: string | null
           notes: string | null
           object_type: string | null
           purpose: string | null
-          row_count: number | null
           table_name: string | null
           table_schema: string | null
+          view_definition: string | null
         }
         Insert: {
           column_count?: never
+          column_names?: never
           created_by?: string | null
           created_date?: string | null
-          dependency_count?: never
           depends_on?: string[] | null
           description?: string | null
-          exists_in_db?: never
+          id?: string | null
+          is_currently_insertable?: never
+          is_currently_updatable?: never
           is_insertable?: boolean | null
           is_updatable?: boolean | null
+          last_modified?: string | null
           notes?: string | null
           object_type?: string | null
           purpose?: string | null
-          row_count?: never
           table_name?: string | null
           table_schema?: string | null
+          view_definition?: string | null
         }
         Update: {
           column_count?: never
+          column_names?: never
           created_by?: string | null
           created_date?: string | null
-          dependency_count?: never
           depends_on?: string[] | null
           description?: string | null
-          exists_in_db?: never
+          id?: string | null
+          is_currently_insertable?: never
+          is_currently_updatable?: never
           is_insertable?: boolean | null
           is_updatable?: boolean | null
+          last_modified?: string | null
           notes?: string | null
           object_type?: string | null
           purpose?: string | null
-          row_count?: never
           table_name?: string | null
           table_schema?: string | null
+          view_definition?: string | null
         }
         Relationships: []
       }
@@ -4952,7 +4961,7 @@ export type Database = {
         }
         Relationships: []
       }
-      sys_service_dependency_summary: {
+      sys_service_dependency_summary_view: {
         Row: {
           category: string | null
           depended_by_count: number | null

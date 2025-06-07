@@ -157,6 +157,16 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    VALUES ('public', 'your_new_table', 'Brief description', 'Purpose/use case', CURRENT_DATE);
    ```
 
+   **Database View Naming Convention**:
+   - ⚠️ **ALL views MUST end with `_view` suffix** (e.g., `ai_work_summaries_recent_view`, `media_content_view`)
+   - Views should follow the same prefix pattern as tables
+   - View descriptions in `sys_table_definitions` should explain:
+     - Primary tables involved in the view
+     - Purpose of the aggregation/joining
+     - Any filtering or time-based constraints
+   - Example: `command_refactor_status_summary_view` - "Aggregates command_refactor_tracking data to show overall refactoring progress by status and pipeline"
+   - When creating views, add them to `sys_table_definitions` with `object_type = 'view'`
+
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
    - Check for hardcoded secrets before submitting any code
