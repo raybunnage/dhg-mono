@@ -452,6 +452,33 @@ const { data: { users }, error } = await supabase.auth.admin.listUsers();
 
 **Note**: The `auth.users` table is in the auth schema and requires special access. Use the auth admin API methods when working with user data from TypeScript/JavaScript code.
 
+## ⚠️ CRITICAL: SQLite to Supabase Migration Safety
+
+**ALWAYS CHECK FOR EXISTING TABLES BEFORE IMPORTING FROM SQLITE**
+
+When migrating data from SQLite to Supabase, you MUST verify that the target table name doesn't conflict with existing Supabase tables. Importing with the same name as an existing table can **permanently overwrite critical data**.
+
+**❌ DANGEROUS Example**:
+```sql
+-- If 'document_types' already exists in Supabase, this will DESTROY it!
+CREATE TABLE document_types AS SELECT * FROM sqlite_export;
+```
+
+**✅ SAFE Approach**:
+```sql
+-- 1. Always check for existing tables first
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'public' AND table_name = 'your_table_name';
+
+-- 2. Use prefixed names for imports
+CREATE TABLE import_document_types (...);  -- Note the 'import_' prefix
+
+-- 3. Keep backups before any migration
+pg_dump ... > backup_before_migration.sql
+```
+
+**Lesson Learned**: Tables like `document_types` and `ai_prompts` exist in both SQLite and Supabase databases. Always use unique import names (e.g., `import_web_concepts`) to avoid data loss. Regular backups saved the day when this mistake was made.
+
 ## Claude Service Usage
 
 **Import and Use the Singleton**:

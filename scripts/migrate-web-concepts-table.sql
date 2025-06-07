@@ -1,7 +1,7 @@
--- Create import_web_concepts2 table in PostgreSQL/Supabase
-DROP TABLE IF EXISTS import_web_concepts2;
+-- Create import_web_concepts table in PostgreSQL/Supabase
+DROP TABLE IF EXISTS import_web_concepts;
 
-CREATE TABLE import_web_concepts2 (
+CREATE TABLE import_web_concepts (
     web_concept_id SERIAL PRIMARY KEY,
     url_id INTEGER,
     concept TEXT,
@@ -30,6 +30,6 @@ CREATE TABLE import_web_concepts2 (
 );
 
 -- Create indexes for better performance
-CREATE INDEX idx_import_web_concepts2_url_id ON import_web_concepts2(url_id);
-CREATE INDEX idx_import_web_concepts2_category ON import_web_concepts2(category);
-CREATE INDEX idx_import_web_concepts2_year ON import_web_concepts2(year);
+CREATE INDEX idx_import_web_concepts_url_id ON import_web_concepts(url_id);
+CREATE INDEX idx_import_web_concepts_category ON import_web_concepts(category);
+CREATE INDEX idx_import_web_concepts_year ON import_web_concepts(year);
