@@ -7,7 +7,7 @@ const fs = require('fs');
 const cors = require('./cors-middleware');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.AUDIO_PROXY_PORT || process.env.PORT || 3006;
 
 // Apply CORS middleware
 app.use(cors);

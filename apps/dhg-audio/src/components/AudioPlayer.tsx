@@ -75,7 +75,7 @@ export const AudioPlayer = ({ url, title, onTimeUpdate, initialTime = 0 }: Audio
         }
       } else {
         // All URL options failed
-        setError('Failed to load audio. All Google Drive URL options failed. Browser tracking prevention may be blocking access.');
+        setError('Failed to load audio through proxy server and direct Google Drive access. Check that the audio proxy server is running.');
         setLoadingState('error');
         setIsPlaying(false);
       }
@@ -179,7 +179,7 @@ export const AudioPlayer = ({ url, title, onTimeUpdate, initialTime = 0 }: Audio
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
           <p className="font-medium">{error}</p>
           <p className="text-sm mt-1">
-            Tried {urlOptions.length} different Google Drive URL formats. This may be due to browser tracking prevention or CORS restrictions.
+            Tried {urlOptions.length} different URL formats including the audio proxy server. Make sure the proxy server is running on port 3006.
           </p>
           <div className="mt-2 space-y-1">
             <a 
@@ -190,9 +190,19 @@ export const AudioPlayer = ({ url, title, onTimeUpdate, initialTime = 0 }: Audio
             >
               Open original Google Drive link
             </a>
-            {urlOptions.length > 0 && (
+            {urlOptions.length > 1 && (
               <a 
                 href={urlOptions[0]} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block text-blue-600 hover:underline text-sm font-medium"
+              >
+                Try proxy server link
+              </a>
+            )}
+            {urlOptions.length > 2 && (
+              <a 
+                href={urlOptions[1]} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="block text-blue-600 hover:underline text-sm font-medium"
