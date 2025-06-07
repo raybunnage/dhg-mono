@@ -212,6 +212,7 @@ export function DatabasePage() {
       'media_': { label: 'Media', description: 'Media & presentations' },
       'registry_': { label: 'Registry', description: 'System registries & catalogs' },
       'scripts_': { label: 'Scripts', description: 'Script management' },
+      'service_': { label: 'Service', description: 'Service configurations & metadata' },
       'sys_': { label: 'System', description: 'System & infrastructure, service registry' },
       'worktree_': { label: 'Worktree', description: 'Git worktree management' },
       '_other': { label: 'Other', description: 'Other tables' }
@@ -259,7 +260,8 @@ export function DatabasePage() {
       if (selectedPrefix === '_other') {
         const knownPrefixes = ['ai_', 'auth_', 'batch_', 'clipboard_', 'command_', 'dev_', 'doc_', 
                                'document_', 'email_', 'expert_', 'filter_', 'google_', 'import_', 
-                               'learn_', 'media_', 'registry_', 'scripts_', 'sys_', 'worktree_'];
+                               'learn_', 'media_', 'registry_', 'scripts_', 'service_', 'sys_', 
+                               'worktree_'];
         filtered = filtered.filter(table => 
           !knownPrefixes.some(prefix => table.table_name.startsWith(prefix))
         );
