@@ -18,8 +18,10 @@ show_help() {
     echo "  verify-sources        Verify email source tracking configuration"
     echo "  add-email-address-id  Add email_address_id field to email_messages and populate"
     echo "  populate-address-ids  Populate email_address_id field based on sender lookup"
+    echo "  merge-important       Merge import_important_email_addresses data with email_addresses"
     echo "  check-tables          Check email table structure and data"
     echo "  verify-implementation Final verification of email_address_id implementation"
+    echo "  verify-merge          Verify important emails merge results"
     echo ""
     echo "EXAMPLES:"
     echo "  # Import emails from DHG source"
@@ -33,6 +35,9 @@ show_help() {
     echo ""
     echo "  # Check table structure and data"
     echo "  ./email-cli.sh check-tables"
+    echo ""
+    echo "  # Merge important email addresses data"
+    echo "  ./email-cli.sh merge-important"
 }
 
 # Track command usage (if available)
@@ -71,10 +76,22 @@ case "$1" in
         ts-node "$SCRIPT_DIR/check-email-tables.ts"
         ;;
     
+    merge-important)
+        echo "🔄 Merging important email addresses..."
+        cd "$SCRIPT_DIR/../../.."
+        ts-node "$SCRIPT_DIR/merge-important-emails.ts"
+        ;;
+    
     verify-implementation)
         echo "🎯 Verifying email_address_id implementation..."
         cd "$SCRIPT_DIR/../../.."
         ts-node "$SCRIPT_DIR/final-verification.ts"
+        ;;
+    
+    verify-merge)
+        echo "🔍 Verifying important emails merge..."
+        cd "$SCRIPT_DIR/../../.."
+        ts-node "$SCRIPT_DIR/verify-merge.ts"
         ;;
     
     --help|-h|help|"")
