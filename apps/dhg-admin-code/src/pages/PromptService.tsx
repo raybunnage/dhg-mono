@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { 
   Search, 
   FileText, 
@@ -21,11 +21,6 @@ import {
   LinkIcon
 } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Prompt {
   id: string;

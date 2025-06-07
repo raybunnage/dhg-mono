@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../utils/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import { GoogleDriveExplorerService, FileNode } from '@shared/services/google-drive-explorer';
 import { FileTree, FileViewer } from '@shared/components/file-explorer';
 import { DashboardLayout } from '../components/DashboardLayout';

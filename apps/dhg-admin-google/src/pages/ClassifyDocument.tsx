@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import { supabase } from '../utils/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import { claudeService } from '@shared/services/claude-service/claude-service';
 import { processWithAI, processDocumentWithAI, validateExpertProfile } from '../utils/ai-processing';
 import { getDocxContent } from '../utils/google-drive';

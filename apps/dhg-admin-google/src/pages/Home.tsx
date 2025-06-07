@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/utils/supabase-adapter';
+import { supabase } from '@/lib/supabase';
 // @ts-ignore - This import will work at runtime
 import { Database } from '../../../supabase/types';
 import ReactMarkdown from 'react-markdown';

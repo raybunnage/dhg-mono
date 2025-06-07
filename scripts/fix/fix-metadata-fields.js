@@ -3,22 +3,13 @@
  * to replace 'size' with 'file_size' and ensure all records have a created date
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { SupabaseClientService } = require('../../packages/shared/services/supabase-client');
 const fs = require('fs');
 const path = require('path');
 
 async function updateMetadataFields() {
-  // Load environment variables
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('Missing required environment variables: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY');
-    process.exit(1);
-  }
-  
-  // Create Supabase client
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  // Use SupabaseClientService singleton
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   console.log('Fetching all documentation files...');
   
