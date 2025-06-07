@@ -78,15 +78,15 @@ class ServiceDependencyInitializer {
     console.log('🗃️ Verifying database schema...');
     
     const requiredTables = [
-      'services_registry',
-      'apps_registry', 
-      'cli_pipelines_registry',
-      'cli_commands_registry',
-      'app_service_dependencies',
-      'pipeline_service_dependencies',
-      'command_service_dependencies',
+      'registry_services',
+      'registry_apps', 
+      'registry_cli_pipelines',
+      'registry_cli_commands',
+      'service_app_dependencies',
+      'service_pipeline_dependencies',
+      'service_command_dependencies',
       'service_exports',
-      'dependency_analysis_runs'
+      'service_dependency_analysis_runs'
     ];
 
     const existingTables: string[] = [];
@@ -167,7 +167,7 @@ class ServiceDependencyInitializer {
     console.log('📊 Creating analysis run record...');
     
     const { data, error } = await this.supabase
-      .from('dependency_analysis_runs')
+      .from('service_dependency_analysis_runs')
       .insert({
         run_type: 'initialization',
         target_type: 'all',
@@ -235,7 +235,7 @@ class ServiceDependencyInitializer {
 
   private async completeAnalysisRun(analysisRunId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('dependency_analysis_runs')
+      .from('service_dependency_analysis_runs')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
@@ -250,7 +250,7 @@ class ServiceDependencyInitializer {
 
   private async failAnalysisRun(analysisRunId: string, errorMessage: string): Promise<void> {
     const { error } = await this.supabase
-      .from('dependency_analysis_runs')
+      .from('service_dependency_analysis_runs')
       .update({
         status: 'failed',
         completed_at: new Date().toISOString(),

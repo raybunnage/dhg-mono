@@ -73,7 +73,7 @@ async function syncDatabase(supabase: SupabaseClient, scriptFiles: string[]): Pr
   
   // 1. Get all existing scripts from database
   const { data: existingScripts, error: fetchError } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select('id, file_path');
     
   if (fetchError) {
@@ -104,7 +104,7 @@ async function syncDatabase(supabase: SupabaseClient, scriptFiles: string[]): Pr
   // 3. Delete scripts that no longer exist on disk
   if (scriptsToDelete.length > 0) {
     const { error: deleteError } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .delete()
       .in('id', scriptsToDelete);
       
@@ -153,7 +153,7 @@ async function syncDatabase(supabase: SupabaseClient, scriptFiles: string[]): Pr
     
     if (scriptRecords.length > 0) {
       const { error: insertError } = await supabase
-        .from('scripts_registry')
+        .from('registry_scripts')
         .insert(scriptRecords);
         
       if (insertError) {
@@ -169,7 +169,7 @@ async function syncDatabase(supabase: SupabaseClient, scriptFiles: string[]): Pr
   
   // 6. Get the total count of scripts in the database
   const { count } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select('*', { count: 'exact', head: true });
     
   console.log(`Total script records in database after sync: ${count || 'unknown'}`);

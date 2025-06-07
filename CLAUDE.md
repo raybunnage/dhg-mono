@@ -127,6 +127,9 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - This is the single source of truth for all table structures and relationships
 
    **Database Table Naming Convention**:
+   
+   ⚠️ **IMPORTANT: Always ask the user before naming any new database table** - table naming consistency is critical to the project.
+   
    When creating new tables, follow the established prefix pattern:
    - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
    - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
@@ -139,9 +142,12 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - `command_` - Command & analytics (e.g., command_aliases, command_logs)
    - `filter_` - User filtering & preferences (e.g., filter_rules, filter_history)
    - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
-   - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
    - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
    - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies, dev_merge_queue, dev_merge_checklist)
+   - `registry_` - Registry tables for cataloging items (e.g., registry_scripts, registry_services, registry_apps)
+   - `service_` - Service dependency & relationship tables (e.g., service_exports, service_command_dependencies)
+   - `worktree_` - Git worktree management (e.g., worktree_definitions, worktree_app_mappings)
+   - `import_` - Data import tables (e.g., import_emails, import_attachments)
    
    **Examples**: 
    - New authentication feature → `auth_password_resets`

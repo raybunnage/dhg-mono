@@ -169,7 +169,7 @@ async function syncAllScripts() {
   
   // Get existing scripts from database
   const { data: existingScripts, error: fetchError } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select('file_path, id, file_hash');
     
   if (fetchError) {
@@ -186,7 +186,7 @@ async function syncAllScripts() {
   if (toDelete.length > 0) {
     console.log(`🗑️  Removing ${toDelete.length} deleted scripts from registry`);
     const { error: deleteError } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .delete()
       .in('id', toDelete.map(s => s.id));
       
@@ -245,7 +245,7 @@ async function syncAllScripts() {
           
           if (isNew) {
             const { error: insertError } = await supabase
-              .from('scripts_registry')
+              .from('registry_scripts')
               .insert(fullScriptData);
               
             if (insertError) {
@@ -255,7 +255,7 @@ async function syncAllScripts() {
             }
           } else {
             const { error: updateError } = await supabase
-              .from('scripts_registry')
+              .from('registry_scripts')
               .update(fullScriptData)
               .eq('file_path', script.file_path);
               
@@ -271,8 +271,8 @@ async function syncAllScripts() {
       } else {
         // For archived scripts, just update metadata without classification
         const operation = isNew ? 
-          supabase.from('scripts_registry').insert(scriptData) :
-          supabase.from('scripts_registry').update(scriptData).eq('file_path', script.file_path);
+          supabase.from('registry_scripts').insert(scriptData) :
+          supabase.from('registry_scripts').update(scriptData).eq('file_path', script.file_path);
           
         const { error } = await operation;
         if (error) {
