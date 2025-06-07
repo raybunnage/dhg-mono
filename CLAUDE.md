@@ -272,6 +272,55 @@ All database views now follow a consistent naming convention with `_view` suffix
      - `ai_work_summaries_recent_view` - View for recent AI work summaries
    - This ensures views are easily distinguishable from tables and sort alphabetically near their related tables
 
+   **Database Best Practices**:
+   
+   **When to Use Views vs Tables**:
+   - **Use Views** when:
+     - Combining data from multiple tables for read-only access
+     - Creating computed columns or aggregations
+     - Simplifying complex queries for app consumption
+     - Enforcing a consistent API over changing table structures
+   - **Use Tables** when:
+     - Data needs to be written/updated
+     - Performance is critical (views can be slower)
+     - You need triggers, constraints, or indexes
+     - Data represents a core business entity
+   
+   **Foreign Key Best Practices**:
+   ```sql
+   -- Always name constraints descriptively
+   ALTER TABLE google_expert_documents 
+   ADD CONSTRAINT fk_expert_documents_expert_profile 
+   FOREIGN KEY (expert_id) REFERENCES expert_profiles(id) ON DELETE CASCADE;
+   
+   -- Use appropriate cascade actions
+   ON DELETE CASCADE     -- Child records deleted with parent
+   ON DELETE RESTRICT    -- Prevent parent deletion if children exist
+   ON DELETE SET NULL    -- Set FK to null when parent deleted
+   ```
+   
+   **Common RLS (Row Level Security) Patterns**:
+   ```sql
+   -- Pattern 1: Public read, authenticated write
+   CREATE POLICY "Enable read access for all users" ON table_name
+       FOR SELECT USING (true);
+   CREATE POLICY "Enable insert for authenticated users" ON table_name
+       FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+   
+   -- Pattern 2: User-specific data
+   CREATE POLICY "Users can view own data" ON user_data
+       FOR SELECT USING (auth.uid() = user_id);
+   
+   -- Pattern 3: Admin override
+   CREATE POLICY "Admins can do anything" ON table_name
+       FOR ALL USING (
+         EXISTS (
+           SELECT 1 FROM auth_user_profiles
+           WHERE auth.uid() = id AND role = 'admin'
+         )
+       );
+   ```
+
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
    - Check for hardcoded secrets before submitting any code
@@ -528,6 +577,51 @@ This ensures migrations are properly tested before applying to the database.
 - Always run `tsc --noEmit` before submitting code
 - Handle undefined/null values properly
 - Use types from `supabase/types.ts` for database operations
+
+## TypeScript Troubleshooting
+
+### Common TypeScript Errors and Solutions
+
+1. **"Cannot find module" Errors**:
+   ```
+   ❌ Error: Cannot find module '@shared/services/...' or its corresponding type declarations
+   ```
+   **Solutions**:
+   - Check if the path is correct and file exists
+   - Verify tsconfig.json has proper path mappings
+   - For browser apps, check vite.config.ts alias configuration
+   - Try relative imports as a temporary workaround: `../../../packages/shared/...`
+   - Run `pnpm install` to ensure dependencies are linked
+
+2. **Type Mismatches with supabase/types.ts**:
+   ```
+   ❌ Error: Type 'string | null' is not assignable to type 'string'
+   ```
+   **Solutions**:
+   - Always check for null: `if (data.field) { ... }`
+   - Use nullish coalescing: `data.field ?? 'default'`
+   - Update types after schema changes: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - Use type assertions carefully: `data.field as string` (only when certain)
+
+3. **ESM/CommonJS Compatibility Issues**:
+   ```
+   ❌ Error: require() of ES Module not supported
+   ❌ Error: Cannot use import statement outside a module
+   ```
+   **Solutions**:
+   - For Node.js scripts, use `.mjs` extension or add `"type": "module"` to package.json
+   - For mixed environments, use dynamic imports: `const module = await import('./module.js')`
+   - In Vite apps, modules are ESM by default
+   - For CLI scripts using ts-node: `ts-node --esm script.ts`
+
+4. **Import.meta.env Errors in Shared Packages**:
+   ```
+   ❌ Error: Cannot access 'import.meta' outside a module
+   ```
+   **Solutions**:
+   - Shared packages cannot access `import.meta.env` directly
+   - Pass environment from the app: `createAdapter({ env: import.meta.env })`
+   - Use dependency injection pattern for environment-specific values
 
 ## Supabase Query Patterns
 
