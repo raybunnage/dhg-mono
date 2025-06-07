@@ -162,9 +162,13 @@ All database views now follow a consistent naming convention with `_view` suffix
 
    **Database Table Naming Convention**:
    
-   ⚠️ **IMPORTANT: Always ask the user before naming any new database table or view** - naming consistency is critical to the project.
+   ⚠️ **CRITICAL: Table Naming Rules**
+   1. **ALWAYS use one of the established prefixes** - no exceptions
+   2. **ALWAYS ask the user before creating ANY new table** - they may want to create a new prefix
+   3. **NEVER create a table without a prefix** - this breaks the naming convention
+   4. **NEVER overwrite existing table names** - always check if a table exists first
    
-   When creating new tables, follow the established prefix pattern:
+   **Established Prefixes**:
    - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
    - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
    - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
@@ -176,17 +180,24 @@ All database views now follow a consistent naming convention with `_view` suffix
    - `command_` - Command & analytics (e.g., command_aliases, command_logs)
    - `filter_` - User filtering & preferences (e.g., filter_rules, filter_history)
    - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
+   - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
    - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
    - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies, dev_merge_queue, dev_merge_checklist)
    - `registry_` - Registry tables for cataloging items (e.g., registry_scripts, registry_services, registry_apps)
    - `service_` - Service dependency & relationship tables (e.g., service_exports, service_command_dependencies)
    - `worktree_` - Git worktree management (e.g., worktree_definitions, worktree_app_mappings)
-   - `import_` - Data import tables (e.g., import_emails, import_attachments)
+   - `import_` - **CRITICAL: Data import tables - ALWAYS use this prefix for SQLite imports** (e.g., import_urls, import_web_concepts)
    
    **Examples**: 
    - New authentication feature → `auth_password_resets`
    - New AI feature → `ai_embeddings`
    - New learning feature → `learn_quiz_results`
+   - SQLite data import → `import_document_types` (NEVER just `document_types` if it exists!)
+   
+   ⚠️ **If your table doesn't fit any existing prefix**:
+   - STOP and ask the user what to do
+   - They may want to create a new prefix category
+   - NEVER proceed without proper prefix assignment
    
    Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
    
@@ -514,26 +525,45 @@ const { data: { users }, error } = await supabase.auth.admin.listUsers();
 
 When migrating data from SQLite to Supabase, you MUST verify that the target table name doesn't conflict with existing Supabase tables. Importing with the same name as an existing table can **permanently overwrite critical data**.
 
+**⚠️ CRITICAL Rules for SQLite Imports**:
+1. **ALWAYS prefix imported tables with `import_`** - no exceptions
+2. **ALWAYS check existing tables before creating any import table**
+3. **NEVER use the same name as an existing Supabase table**
+4. **ALWAYS verify the import script checks for existing tables**
+
 **❌ DANGEROUS Example**:
 ```sql
 -- If 'document_types' already exists in Supabase, this will DESTROY it!
 CREATE TABLE document_types AS SELECT * FROM sqlite_export;
+pgloader sqlite://file.db postgresql://... -- Without checking target tables!
 ```
 
 **✅ SAFE Approach**:
 ```sql
 -- 1. Always check for existing tables first
 SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' AND table_name = 'your_table_name';
+WHERE table_schema = 'public' 
+AND table_name IN ('web_concepts', 'import_web_concepts');
 
--- 2. Use prefixed names for imports
-CREATE TABLE import_document_types (...);  -- Note the 'import_' prefix
+-- 2. ALWAYS use import_ prefix for SQLite imports
+CREATE TABLE import_document_types (...);  -- CORRECT: import_ prefix
+CREATE TABLE import_web_concepts (...);    -- CORRECT: import_ prefix
 
 -- 3. Keep backups before any migration
 pg_dump ... > backup_before_migration.sql
+
+-- 4. In your import scripts, ALWAYS include existence checks:
+DROP TABLE IF EXISTS import_web_concepts;  -- Safe - only drops import table
+CREATE TABLE import_web_concepts (...);
 ```
 
-**Lesson Learned**: Tables like `document_types` and `ai_prompts` exist in both SQLite and Supabase databases. Always use unique import names (e.g., `import_web_concepts`) to avoid data loss. Regular backups saved the day when this mistake was made.
+**Real Incident**: Tables like `document_types` and `ai_prompts` were accidentally overwritten because they had the same names in both SQLite and Supabase. This caused significant data loss that required restoration from backups. **This MUST never happen again.**
+
+**Import Script Requirements**:
+- Must check for existing tables before creating
+- Must use `import_` prefix for all imported tables
+- Must NOT drop or modify non-import tables
+- Should include clear comments about what's being imported
 
 ## Claude Service Usage
 
