@@ -1126,6 +1126,50 @@ If you encounter "address already in use" errors:
 - **NO GitHub UI operations** for merging or PRs
 - **Worktrees are used** for parallel development work
 
+### Understanding Worktree Branch Management
+
+**The Unique Nature of Worktrees**:
+
+Each worktree is a **separate directory with its own branch**, allowing parallel development:
+```
+dhg-mono/                    # Main worktree (development branch)
+dhg-mono-improve-audio/      # Worktree for audio improvements
+dhg-mono-feature-xyz/        # Worktree for feature XYZ
+```
+
+**The Worktree Update Cycle** (unique to this workflow):
+
+1. **Branch lives independently** in its own directory
+   - You work in isolation without affecting other branches
+   - Changes accumulate over time in your worktree
+
+2. **Periodic merge to development**:
+   ```bash
+   # From worktree branch:
+   git push origin feature-branch:development
+   ```
+   - Your changes flow into the main development branch
+   - Other developers benefit from your work
+
+3. **Pull updates back from development**:
+   ```bash
+   # Still in worktree:
+   git fetch origin development
+   git merge origin/development
+   ```
+   - You receive everyone else's changes
+   - Your branch stays current with the project
+
+4. **The cycle repeats**:
+   - Work → Push to development → Pull from development → Work...
+   - This creates a "breathing" pattern of isolation and integration
+
+**Why This Is Different**:
+- Traditional branches require constant switching
+- Worktrees let each branch "live" permanently in its own space
+- No need to stash changes or switch contexts
+- Multiple features can progress simultaneously
+
 ### Standard Git Workflow
 
 1. **Committing Changes**:
