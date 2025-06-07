@@ -132,10 +132,29 @@ All database views now follow a consistent naming convention with `_view` suffix
 
 4. **Essential Patterns**:
 
-   **Singleton Services**: Always use existing singletons:
-   - ⚠️ **Supabase**: `SupabaseClientService.getInstance().getClient()`
-   - ⚠️ **Claude AI**: `import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';`
-   - ⚠️ **NEVER create direct clients** - always use the singleton services
+   **Singleton Services**: Always use the correct pattern for your environment:
+   
+   **Supabase Connection Patterns**:
+   ```typescript
+   // ✅ FOR BROWSER APPS (React/Vite) - Use createSupabaseAdapter
+   // File: apps/{app-name}/src/lib/supabase.ts (ONE file per app!)
+   import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+   
+   export const supabase = createSupabaseAdapter({
+     env: import.meta.env as any  // REQUIRED for browser apps!
+   });
+   
+   // ✅ FOR CLI SCRIPTS & SERVER CODE - Use SupabaseClientService singleton
+   import { SupabaseClientService } from '@shared/services/supabase-client';
+   const supabase = SupabaseClientService.getInstance().getClient();
+   ```
+   
+   - ⚠️ **NEVER create direct clients with createClient()** - always use the patterns above
+   - ⚠️ **ONE Supabase file per app** - no multiple supabase.ts, supabase-browser.ts, etc.
+   - ⚠️ **Browser apps MUST pass env** - `createSupabaseAdapter()` without env will fail
+   
+   **Claude AI**: 
+   - ⚠️ `import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';`
 
    **Database Schema**: 
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
@@ -364,8 +383,9 @@ This ensures migrations are properly tested before applying to the database.
    - ✅ Example: `/scripts/cli-pipeline/prompt_service/check-prompt.ts`
 
 2. **Direct database clients**: 
-   - ❌ NEVER create your own Supabase clients
-   - ✅ ALWAYS use `SupabaseClientService.getInstance().getClient()`
+   - ❌ NEVER create your own Supabase clients with `createClient()`
+   - ✅ BROWSER APPS: Use `createSupabaseAdapter({ env: import.meta.env as any })`
+   - ✅ CLI/SERVER: Use `SupabaseClientService.getInstance().getClient()`
 
 3. **Hardcoded credentials**: 
    - ❌ NEVER hardcode API keys or secrets
@@ -391,6 +411,12 @@ This ensures migrations are properly tested before applying to the database.
      SELECT * FROM table_info ORDER BY table_info.table_name;
      ```
    - This commonly occurs when RETURNS TABLE has columns with same names as query columns
+
+7. **Multiple Supabase Client Instances in Apps**:
+   - ❌ **Problem**: Apps creating multiple Supabase client files/instances (e.g., supabase.ts, supabase-browser.ts, supabase-browser-adapter.ts)
+   - ✅ **Solution**: See "Essential Patterns > Supabase Connection Patterns" above for the correct approach
+   - Each app should have ONE `lib/supabase.ts` file
+   - If an app has multiple Supabase files, consolidate them into one
 
 ## Debugging in a Monorepo Context
 
@@ -481,6 +507,33 @@ const { data: { users }, error } = await supabase.auth.admin.listUsers();
 ```
 
 **Note**: The `auth.users` table is in the auth schema and requires special access. Use the auth admin API methods when working with user data from TypeScript/JavaScript code.
+
+## ⚠️ CRITICAL: SQLite to Supabase Migration Safety
+
+**ALWAYS CHECK FOR EXISTING TABLES BEFORE IMPORTING FROM SQLITE**
+
+When migrating data from SQLite to Supabase, you MUST verify that the target table name doesn't conflict with existing Supabase tables. Importing with the same name as an existing table can **permanently overwrite critical data**.
+
+**❌ DANGEROUS Example**:
+```sql
+-- If 'document_types' already exists in Supabase, this will DESTROY it!
+CREATE TABLE document_types AS SELECT * FROM sqlite_export;
+```
+
+**✅ SAFE Approach**:
+```sql
+-- 1. Always check for existing tables first
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'public' AND table_name = 'your_table_name';
+
+-- 2. Use prefixed names for imports
+CREATE TABLE import_document_types (...);  -- Note the 'import_' prefix
+
+-- 3. Keep backups before any migration
+pg_dump ... > backup_before_migration.sql
+```
+
+**Lesson Learned**: Tables like `document_types` and `ai_prompts` exist in both SQLite and Supabase databases. Always use unique import names (e.g., `import_web_concepts`) to avoid data loss. Regular backups saved the day when this mistake was made.
 
 ## Claude Service Usage
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 // Import the Supabase adapter
-import { supabase, supabaseAdapter } from '@/utils/supabase-adapter'
+import { supabase, supabaseAdapter } from '@/lib/supabase'
 // @ts-ignore - This import will work at runtime
 import type { Database } from '../../../supabase/types'
 

@@ -6,7 +6,7 @@ import './index.css'
 
 // Initialize browser auth service
 import { browserAuthService } from '../../../packages/shared/services/auth-service/browser-auth-service'
-import { getSupabaseClient } from './utils/supabase-adapter'
+import { getSupabaseClient } from './lib/supabase'
 import { AuthProvider } from './hooks/useAuth'
 
 // Initialize the auth service with the Supabase client

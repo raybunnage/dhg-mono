@@ -6,7 +6,9 @@ import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supa
 console.log('=== Supabase Admin Client Setup ===');
 
 // Create admin client using the universal adapter with service role configuration
+// Browser apps MUST pass environment variables to the adapter
 export const supabaseAdmin = createSupabaseAdapter({ 
+  env: import.meta.env as any,
   useServiceRole: true,
   authConfig: {
     autoRefreshToken: false,

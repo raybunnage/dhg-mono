@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { createClient } = require('@supabase/supabase-js');
+const { SupabaseClientService } = require('../../../packages/shared/services/supabase-client');
 const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
@@ -13,16 +13,8 @@ if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
 }
 
-// Create Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Use SupabaseClientService singleton
+const supabase = SupabaseClientService.getInstance().getClient();
 
 // Define the mapping between CSV files and import tables
 const importMappings = [

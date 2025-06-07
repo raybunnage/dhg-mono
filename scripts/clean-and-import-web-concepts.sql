@@ -31,7 +31,7 @@ CREATE TEMP TABLE staging_web_concepts (
 \COPY staging_web_concepts FROM '/Users/raybunnage/Documents/github/dhg-mono/scripts/web-concepts-export.csv' WITH (FORMAT csv, HEADER true);
 
 -- Insert into final table with proper type conversions and NULL handling
-INSERT INTO import_web_concepts2 (
+INSERT INTO import_web_concepts (
     web_concept_id, url_id, concept, category, summary, example,
     url, date, citation, section, header, reference_info,
     source_name, quote, learning_grade, created_at, quote_author,
@@ -67,5 +67,4 @@ SELECT
 FROM staging_web_concepts;
 
 -- Check the results
-SELECT COUNT(*) as total_rows FROM import_web_concepts2;
-EOF < /dev/null
+SELECT COUNT(*) as total_rows FROM import_web_concepts;
