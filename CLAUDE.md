@@ -1116,9 +1116,47 @@ If you encounter "address already in use" errors:
 
 3. **For Vite apps**, ensure you're not running multiple apps on the same port
 
-## ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
+## Git & Worktree Management
 
-### ❌ NEVER Create Pull Requests When Merging Between Worktrees
+### ⚠️ CRITICAL: This Repository is Managed by Claude Code
+
+**Important Context**:
+- **ALL git operations are handled by Claude Code** - not by humans
+- **NO manual git commands** should be run by users
+- **NO GitHub UI operations** for merging or PRs
+- **Worktrees are used** for parallel development work
+
+### Standard Git Workflow
+
+1. **Committing Changes**:
+   - Claude Code handles all commits
+   - Commits always include the 🤖 signature
+   - Co-authored commits credit Claude
+   - Task IDs are automatically included when applicable
+
+2. **Branch Management**:
+   - **Main branch**: `development` (not `main` or `master`)
+   - **Feature branches**: Created in worktrees for specific work
+   - **No feature branch PRs** - direct merges only
+
+3. **Merging Workflow** (Claude Code handles this):
+   ```bash
+   # 1. Commit all changes in current branch
+   git add .
+   git commit -m "Your commit message..."
+   
+   # 2. Push branch to remote
+   git push origin current-branch
+   
+   # 3. Merge to development (NO PR!)
+   git push origin current-branch:development
+   
+   # 4. Update local development
+   git fetch origin development
+   git merge origin/development
+   ```
+
+### ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
 
 **IMPORTANT**: When working with multiple worktrees, **DO NOT create pull requests**. This has caused deployment issues where the PR workflow got stuck or confused the branch states.
 
@@ -1140,11 +1178,32 @@ git fetch origin development
 git merge origin/development
 ```
 
-### Why No PRs with Worktrees?
-- PRs can cause deployment pipeline issues
-- Worktrees have development checked out elsewhere
-- Direct pushes are cleaner and more reliable
-- Avoids branch state confusion
+### Why This Workflow?
+- **Claude Code automation** - Git operations are automated
+- **No PRs with worktrees** - Avoids deployment pipeline issues
+- **Direct pushes** - Cleaner and more reliable
+- **Consistent history** - All commits properly attributed
+- **Task integration** - Commits linked to dev_tasks automatically
+
+### Branch Strategy
+
+**Active Branches**:
+- `development` - Main development branch (default)
+- `production` - Production deployments (protected)
+- Feature branches - Created in worktrees for specific work
+
+**Important Notes**:
+- **Deployment happens from `development`** to staging environments
+- **Production deployments** require special approval
+- **Feature branches** are temporary and deleted after merging
+- **No long-lived feature branches** - merge frequently
+
+### What This Means for You (the User)
+
+1. **Just describe what you want** - Claude Code handles the git work
+2. **Don't run git commands manually** - Let Claude Code manage it
+3. **Review commits in GitHub** - After Claude Code pushes changes
+4. **Trust the process** - This workflow has been refined over time
 
 ## Handling pnpm-lock.yaml in Worktree Merges
 
