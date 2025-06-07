@@ -38,7 +38,7 @@ track_command() {
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
     echo "🔍 Tracking command: $command_name"
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -149,110 +149,110 @@ show_help() {
 
 # Command handlers
 table_records() {
-  track_command "table-records" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/table-records.ts $@"
+  track_command "table-records" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/table-records.ts $@"
 }
 
 empty_tables() {
-  track_command "empty-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/empty-tables.ts $@"
+  track_command "empty-tables" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/empty-tables.ts $@"
 }
 
 database_functions() {
-  track_command "database-functions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/database-functions.ts $@"
+  track_command "database-functions" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/database-functions.ts $@"
 }
 
 list_views() {
   echo "🔍 Listing database views..."
-  track_command "list-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-views.ts $@"
+  track_command "list-views" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/list-views.ts $@"
 }
 
 # Helper function was moved up earlier in the file
 
 table_structure() {
-  track_command "table-structure" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/table-structure.ts $@"
+  track_command "table-structure" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/table-structure.ts $@"
 }
 
 schema_health() {
-  track_command "schema-health" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/schema-health.ts $@"
+  track_command "schema-health" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/schema-health.ts $@"
 }
 
 connection_test() {
-  track_command "connection-test" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/connection-test.ts $@"
+  track_command "connection-test" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/connection-test.ts $@"
 }
 
 db_health_check() {
-  track_command "db-health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/db-health-check.ts $@"
+  track_command "db-health-check" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/db-health-check.ts $@"
 }
 
 check_auth_objects() {
   echo "🔍 Checking for existing auth migration objects..."
-  track_command "check-auth-objects" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/check-auth-migration-objects.ts $@"
+  track_command "check-auth-objects" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/check-auth-migration-objects.ts $@"
 }
 
 check_rls_policies() {
   echo "🔒 Checking and creating RLS policies..."
-  track_command "check-rls-policies" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/check-and-create-rls-policies.ts $@"
+  track_command "check-rls-policies" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/check-and-create-rls-policies.ts $@"
 }
 
 list_backup_tables() {
   echo "📋 Listing backup tables..."
-  track_command "list-backup-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/list-backup-tables.ts $@"
+  track_command "list-backup-tables" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/list-backup-tables-simple.ts $@"
 }
 
 verify_user_roles() {
   echo "🔍 Verifying user roles removal migration..."
-  track_command "verify-user-roles" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/verify-user-roles-removal.ts $@"
+  track_command "verify-user-roles" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/verify-user-roles-removal.ts $@"
 }
 
 find_tables() {
   echo "🔍 Searching for tables in the database..."
-  track_command "find-tables" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/find-missing-tables.ts $@"
+  track_command "find-tables" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/find-missing-tables.ts $@"
 }
 
 test_light_auth_audit() {
   echo "🧪 Testing light auth audit logging..."
-  track_command "test-light-auth-audit" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/test-light-auth-audit-logging.ts $@"
+  track_command "test-light-auth-audit" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/test-light-auth-audit-logging.ts $@"
 }
 
 test_auth_audit_simple() {
   echo "🧪 Testing auth audit log functionality..."
-  track_command "test-auth-audit-simple" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/test-light-auth-audit-simple.ts $@"
+  track_command "test-auth-audit-simple" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/test-light-auth-audit-simple.ts $@"
 }
 
 # Backup command handlers
 create_backup() {
   echo "🔄 Creating database backups..."
-  track_command "create-backup" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/backup/create-backup.ts $@"
+  track_command "create-backup" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/create-backup.ts $@"
 }
 
 add_backup_table() {
   echo "📝 Adding table to backup configuration..."
-  track_command "add-backup-table" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/backup/add-backup-table.ts $@"
+  track_command "add-backup-table" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/add-backup-table.ts $@"
 }
 
 list_backup_config() {
   echo "📋 Listing backup configuration..."
-  track_command "list-backup-config" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/backup/list-backup-config.ts $@"
+  track_command "list-backup-config" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/list-backup-config.ts $@"
 }
 
 # Migration command handlers
 migration_validate() {
   echo "🔍 Validating migration file..."
-  track_command "migration-validate" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/validate.ts $@"
+  track_command "migration-validate" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/validate.ts $@"
 }
 
 migration_dry_run() {
   echo "🏃‍♂️ Performing migration dry run..."
-  track_command "migration-dry-run" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/dry-run.ts $@"
+  track_command "migration-dry-run" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/dry-run.ts $@"
 }
 
 migration_test() {
   echo "🧪 Testing migration sections..."
-  track_command "migration-test" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/test-sections.ts $@"
+  track_command "migration-test" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/test-sections.ts $@"
 }
 
 migration_run_staged() {
   echo "🚀 Running staged migration..."
-  track_command "migration-run-staged" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/migration/run-staged.ts $@"
+  track_command "migration-run-staged" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/run-staged.ts $@"
 }
 
 migration_help() {
@@ -344,6 +344,12 @@ migration_help() {
   echo ""
   echo "  See existing migration files for examples."
 }
+
+# Check if no arguments provided
+if [ $# -eq 0 ] || [ -z "$1" ]; then
+  show_help
+  exit 0
+fi
 
 # Main command processor
 case "$1" in
@@ -437,7 +443,7 @@ case "$1" in
       exit 1
     fi
     echo "🔄 Renaming table..."
-    track_command "rename-table" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rename-table.ts ${@:2}"
+    track_command "rename-table" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rename-table.ts ${@:2}"
     ;;
   "rollback-rename")
     if [ -z "$2" ]; then
@@ -450,15 +456,15 @@ case "$1" in
       exit 1
     fi
     echo "🔄 Rolling back table rename..."
-    track_command "rollback-rename" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rollback-table-rename.ts ${@:2}"
+    track_command "rollback-rename" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rollback-table-rename.ts ${@:2}"
     ;;
   "list-migrations")
     echo "📋 Listing table migration history..."
-    track_command "list-migrations" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/rollback-table-rename.ts list ${@:2}"
+    track_command "list-migrations" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rollback-table-rename.ts list ${@:2}"
     ;;
   "scan-cli-pipelines")
     echo "🔍 Scanning CLI pipelines for command registry..."
-    track_command "scan-cli-pipelines" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/scan-cli-pipelines.ts ${@:2}"
+    track_command "scan-cli-pipelines" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/scan-cli-pipelines.ts ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

@@ -1,12 +1,24 @@
 {
   "tables": [
-    "expert_documents",
+    "google_expert_documents",
     "expert_profiles",
     "document_types",
-    "presentation_assets",
-    "presentations",
-    "sources_google",
-    "scripts"
+    "media_presentation_assets",
+    "media_presentations",
+    "google_sources",
+    "scripts_registry",
+    "ai_work_summaries",
+    "auth_allowed_emails",
+    "command_tracking",
+    "dev_tasks",
+    "filter_user_profile_drives",
+    "filter_user_profiles",
+    "google_sources_experts",
+    "learn_subject_classifications",
+    "sys_mime_types",
+    "sys_table_definitions",
+    "sys_table_migrations",
+    "clipboard_snippets"
   ],
   "defaultOptions": {
     "includeStructure": true,
