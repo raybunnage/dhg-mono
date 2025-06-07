@@ -4422,35 +4422,50 @@ export type Database = {
         Row: {
           created_by: string | null
           created_date: string | null
+          depends_on: string[] | null
           description: string | null
           id: string
+          is_insertable: boolean | null
+          is_updatable: boolean | null
           last_modified: string | null
           notes: string | null
+          object_type: string | null
           purpose: string | null
           table_name: string
           table_schema: string
+          view_definition: string | null
         }
         Insert: {
           created_by?: string | null
           created_date?: string | null
+          depends_on?: string[] | null
           description?: string | null
           id?: string
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
           last_modified?: string | null
           notes?: string | null
+          object_type?: string | null
           purpose?: string | null
           table_name: string
           table_schema?: string
+          view_definition?: string | null
         }
         Update: {
           created_by?: string | null
           created_date?: string | null
+          depends_on?: string[] | null
           description?: string | null
           id?: string
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
           last_modified?: string | null
           notes?: string | null
+          object_type?: string | null
           purpose?: string | null
           table_name?: string
           table_schema?: string
+          view_definition?: string | null
         }
         Relationships: []
       }
@@ -4867,6 +4882,60 @@ export type Database = {
           service_category: string | null
           service_name: string | null
           usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_database_objects_info: {
+        Row: {
+          column_count: number | null
+          created_by: string | null
+          created_date: string | null
+          dependency_count: number | null
+          depends_on: string[] | null
+          description: string | null
+          exists_in_db: number | null
+          is_insertable: boolean | null
+          is_updatable: boolean | null
+          notes: string | null
+          object_type: string | null
+          purpose: string | null
+          row_count: number | null
+          table_name: string | null
+          table_schema: string | null
+        }
+        Insert: {
+          column_count?: never
+          created_by?: string | null
+          created_date?: string | null
+          dependency_count?: never
+          depends_on?: string[] | null
+          description?: string | null
+          exists_in_db?: never
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
+          notes?: string | null
+          object_type?: string | null
+          purpose?: string | null
+          row_count?: never
+          table_name?: string | null
+          table_schema?: string | null
+        }
+        Update: {
+          column_count?: never
+          created_by?: string | null
+          created_date?: string | null
+          dependency_count?: never
+          depends_on?: string[] | null
+          description?: string | null
+          exists_in_db?: never
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
+          notes?: string | null
+          object_type?: string | null
+          purpose?: string | null
+          row_count?: never
+          table_name?: string | null
+          table_schema?: string | null
         }
         Relationships: []
       }
@@ -5526,6 +5595,10 @@ export type Database = {
       }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }
+        Returns: undefined
+      }
+      populate_view_definitions: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       queue_documentation_file_for_processing: {

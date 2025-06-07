@@ -7,6 +7,7 @@ interface TableInfo {
   table_name: string;
   table_schema: string;
   table_type: string;
+  object_type?: string; // 'table' | 'view' | 'materialized_view'
   row_count: number;
   size_pretty?: string;
   size_bytes?: number;
@@ -22,6 +23,10 @@ interface TableInfo {
   notes?: string;
   error?: string;
   columns?: string[];
+  is_updatable?: boolean;
+  is_insertable?: boolean;
+  depends_on?: string[];
+  dependency_count?: number;
 }
 
 interface PrefixInfo {
@@ -50,6 +55,7 @@ export function DatabasePage() {
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrefix, setSelectedPrefix] = useState<string | null>(null);
+  const [objectTypeFilter, setObjectTypeFilter] = useState<'all' | 'tables' | 'views'>('all');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -246,6 +252,15 @@ export function DatabasePage() {
   // Filter tables based on current filters
   const getFilteredTables = () => {
     let filtered = [...tables];
+    
+    // Apply object type filter
+    if (objectTypeFilter !== 'all') {
+      if (objectTypeFilter === 'tables') {
+        filtered = filtered.filter(table => !table.object_type || table.object_type === 'table');
+      } else if (objectTypeFilter === 'views') {
+        filtered = filtered.filter(table => table.object_type === 'view' || table.object_type === 'materialized_view');
+      }
+    }
     
     // Apply search filter
     if (searchTerm) {
@@ -477,6 +492,40 @@ export function DatabasePage() {
               
               <div className="border-l border-green-300 mx-2"></div>
               
+              {/* Object type filter */}
+              <button
+                onClick={() => setObjectTypeFilter('all')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  objectTypeFilter === 'all'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setObjectTypeFilter('tables')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  objectTypeFilter === 'tables'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                }`}
+              >
+                Tables
+              </button>
+              <button
+                onClick={() => setObjectTypeFilter('views')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  objectTypeFilter === 'views'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                }`}
+              >
+                Views
+              </button>
+              
+              <div className="border-l border-green-300 mx-2"></div>
+              
               {/* Date filter toggles */}
               <button
                 onClick={() => setDateFilter('all')}
@@ -624,13 +673,25 @@ export function DatabasePage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        table.row_count > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {table.row_count.toLocaleString()}
-                      </span>
+                      {table.object_type === 'view' ? (
+                        <span className="text-sm text-gray-500">
+                          {table.depends_on && table.depends_on.length > 0 ? (
+                            <span title={`Depends on: ${table.depends_on.join(', ')}`}>
+                              {table.depends_on.length} deps
+                            </span>
+                          ) : (
+                            'View'
+                          )}
+                        </span>
+                      ) : (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          table.row_count > 0 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {table.row_count.toLocaleString()}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-600">
@@ -665,15 +726,35 @@ export function DatabasePage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
-                        {table.has_primary_key && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Has Primary Key">
-                            PK
-                          </span>
-                        )}
-                        {table.has_rls && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Row Level Security Enabled">
-                            RLS
-                          </span>
+                        {table.object_type === 'view' ? (
+                          <>
+                            {table.is_updatable && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded" title="Updatable View">
+                                UPD
+                              </span>
+                            )}
+                            {table.is_insertable && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Insertable View">
+                                INS
+                              </span>
+                            )}
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Database View">
+                              VIEW
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            {table.has_primary_key && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Has Primary Key">
+                                PK
+                              </span>
+                            )}
+                            {table.has_rls && (
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Row Level Security Enabled">
+                                RLS
+                              </span>
+                            )}
+                          </>
                         )}
                         {table.table_schema === 'auth' && (
                           <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded" title="Auth Schema">

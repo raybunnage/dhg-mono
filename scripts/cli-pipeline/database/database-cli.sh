@@ -61,6 +61,8 @@ show_help() {
   echo "    table-structure      Get detailed information about a table structure (3 uses)"
   echo "    find-tables          Search for specific tables in the database"
   echo "    update-table-definitions  Update sys_table_definitions with missing tables"
+  echo "    update-view-definitions   Update sys_table_definitions with database views"
+  echo "    analyze-views        Analyze all views registered in sys_table_definitions"
   echo ""
   echo "SYSTEM HEALTH:"
   echo "  * connection-test      Test connection to Supabase database (4 uses)"
@@ -470,6 +472,14 @@ case "$1" in
   "update-table-definitions")
     echo "🔄 Updating sys_table_definitions..."
     track_command "update-table-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-definitions.ts ${@:2}"
+    ;;
+  "update-view-definitions")
+    echo "🔄 Updating view definitions in sys_table_definitions..."
+    track_command "update-view-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts ${@:2}"
+    ;;
+  "analyze-views")
+    echo "📊 Analyzing views in sys_table_definitions..."
+    track_command "analyze-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts analyze ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help
