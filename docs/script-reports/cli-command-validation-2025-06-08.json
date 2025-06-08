@@ -1,10 +1,10 @@
 {
-  "validation_date": "2025-06-08T17:59:12.935Z",
-  "total_pipelines_checked": 21,
-  "broken_commands_count": 142,
+  "validation_date": "2025-06-08T20:23:03.266Z",
+  "total_pipelines_checked": 18,
+  "broken_commands_count": 107,
   "summary": {
     "archived": 0,
-    "missing": 142,
+    "missing": 107,
     "syntax_errors": 0
   },
   "broken_commands": [
@@ -409,78 +409,6 @@
       "is_archived": false
     },
     {
-      "pipeline_name": "documentation",
-      "command_name": "archive-reports",
-      "script_path": "scripts/cli-pipeline/documentation/commands/archive-reports.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "archive-specs",
-      "script_path": "scripts/cli-pipeline/documentation/commands/archive-specs.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "archive-solutions",
-      "script_path": "scripts/cli-pipeline/documentation/commands/archive-solutions.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "watch-continuous",
-      "script_path": "scripts/cli-pipeline/documentation/commands/watch-continuous.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "add-continuous",
-      "script_path": "scripts/cli-pipeline/documentation/commands/add-continuous.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "list-continuous",
-      "script_path": "scripts/cli-pipeline/documentation/commands/list-continuous.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "update-continuous",
-      "script_path": "scripts/cli-pipeline/documentation/commands/update-continuous.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "analyze-relevance",
-      "script_path": "scripts/cli-pipeline/documentation/commands/analyze-relevance.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "documentation",
-      "command_name": "clean-archived",
-      "script_path": "scripts/cli-pipeline/documentation/commands/clean-archived.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
       "pipeline_name": "document_types",
       "command_name": "main CLI script",
       "script_path": "scripts/cli-pipeline/document_types/document_types-cli.sh",
@@ -633,38 +561,6 @@
       "is_archived": false
     },
     {
-      "pipeline_name": "google_sync",
-      "command_name": "--video-name",
-      "script_path": "scripts/cli-pipeline/google_sync/commands/--video-name.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "google_sync",
-      "command_name": "--new-name",
-      "script_path": "scripts/cli-pipeline/google_sync/commands/--new-name.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "google_sync",
-      "command_name": "--folder-name",
-      "script_path": "scripts/cli-pipeline/google_sync/commands/--folder-name.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "google_sync",
-      "command_name": "--source-id",
-      "script_path": "scripts/cli-pipeline/google_sync/commands/--source-id.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
       "pipeline_name": "media-processing",
       "command_name": "transcribe",
       "script_path": "scripts/cli-pipeline/media-processing/commands/transcribe.ts",
@@ -724,70 +620,6 @@
       "pipeline_name": "media-processing",
       "command_name": "update-disk-status",
       "script_path": "scripts/cli-pipeline/media-processing/commands/update-disk-status.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "queue-status",
-      "script_path": "scripts/cli-pipeline/merge/commands/queue-status.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "start-merge",
-      "script_path": "scripts/cli-pipeline/merge/commands/start-merge.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "queue-add",
-      "script_path": "scripts/cli-pipeline/merge/commands/queue-add.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "check-conflicts",
-      "script_path": "scripts/cli-pipeline/merge/commands/check-conflicts.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "complete-merge",
-      "script_path": "scripts/cli-pipeline/merge/commands/complete-merge.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "queue-list",
-      "script_path": "scripts/cli-pipeline/merge/commands/queue-list.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "run-checks",
-      "script_path": "scripts/cli-pipeline/merge/commands/run-checks.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "merge",
-      "command_name": "queue-remove",
-      "script_path": "scripts/cli-pipeline/merge/commands/queue-remove.ts",
       "error": "Command script not found",
       "is_missing": true,
       "is_archived": false
@@ -969,54 +801,6 @@
       "is_archived": false
     },
     {
-      "pipeline_name": "refactor_tracking",
-      "command_name": "test-complete",
-      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/test-complete.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "refactor_tracking",
-      "command_name": "update",
-      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/update.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "refactor_tracking",
-      "command_name": "sign-off",
-      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/sign-off.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "refactor_tracking",
-      "command_name": "show",
-      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/show.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "refactor_tracking",
-      "command_name": "status",
-      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/status.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "refactor_tracking",
-      "command_name": "list",
-      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/list.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
       "pipeline_name": "scripts",
       "command_name": "sync",
       "script_path": "scripts/cli-pipeline/scripts/commands/sync.ts",
@@ -1077,70 +861,6 @@
       "command_name": "main CLI script",
       "script_path": "scripts/cli-pipeline/work_summaries/work_summaries-cli.sh",
       "error": "Main CLI script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "work_summaries",
-      "command_name": "add",
-      "script_path": "scripts/cli-pipeline/work_summaries/commands/add.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "work_summaries",
-      "command_name": "auto",
-      "script_path": "scripts/cli-pipeline/work_summaries/commands/auto.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "work_summaries",
-      "command_name": "import",
-      "script_path": "scripts/cli-pipeline/work_summaries/commands/import.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "worktree",
-      "command_name": "copy-env",
-      "script_path": "scripts/cli-pipeline/worktree/commands/copy-env.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "worktree",
-      "command_name": "merge-status",
-      "script_path": "scripts/cli-pipeline/worktree/commands/merge-status.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "worktree",
-      "command_name": "prepare-merge",
-      "script_path": "scripts/cli-pipeline/worktree/commands/prepare-merge.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "worktree",
-      "command_name": "merge-queue",
-      "script_path": "scripts/cli-pipeline/worktree/commands/merge-queue.ts",
-      "error": "Command script not found",
-      "is_missing": true,
-      "is_archived": false
-    },
-    {
-      "pipeline_name": "worktree",
-      "command_name": "execute-merge",
-      "script_path": "scripts/cli-pipeline/worktree/commands/execute-merge.ts",
-      "error": "Command script not found",
       "is_missing": true,
       "is_archived": false
     }
@@ -1558,80 +1278,6 @@
         "is_archived": false
       }
     ],
-    "documentation": [
-      {
-        "pipeline_name": "documentation",
-        "command_name": "archive-reports",
-        "script_path": "scripts/cli-pipeline/documentation/commands/archive-reports.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "archive-specs",
-        "script_path": "scripts/cli-pipeline/documentation/commands/archive-specs.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "archive-solutions",
-        "script_path": "scripts/cli-pipeline/documentation/commands/archive-solutions.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "watch-continuous",
-        "script_path": "scripts/cli-pipeline/documentation/commands/watch-continuous.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "add-continuous",
-        "script_path": "scripts/cli-pipeline/documentation/commands/add-continuous.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "list-continuous",
-        "script_path": "scripts/cli-pipeline/documentation/commands/list-continuous.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "update-continuous",
-        "script_path": "scripts/cli-pipeline/documentation/commands/update-continuous.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "analyze-relevance",
-        "script_path": "scripts/cli-pipeline/documentation/commands/analyze-relevance.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "documentation",
-        "command_name": "clean-archived",
-        "script_path": "scripts/cli-pipeline/documentation/commands/clean-archived.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      }
-    ],
     "document_types": [
       {
         "pipeline_name": "document_types",
@@ -1792,38 +1438,6 @@
         "error": "Main CLI script not found",
         "is_missing": true,
         "is_archived": false
-      },
-      {
-        "pipeline_name": "google_sync",
-        "command_name": "--video-name",
-        "script_path": "scripts/cli-pipeline/google_sync/commands/--video-name.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "google_sync",
-        "command_name": "--new-name",
-        "script_path": "scripts/cli-pipeline/google_sync/commands/--new-name.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "google_sync",
-        "command_name": "--folder-name",
-        "script_path": "scripts/cli-pipeline/google_sync/commands/--folder-name.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "google_sync",
-        "command_name": "--source-id",
-        "script_path": "scripts/cli-pipeline/google_sync/commands/--source-id.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
       }
     ],
     "media-processing": [
@@ -1887,72 +1501,6 @@
         "pipeline_name": "media-processing",
         "command_name": "update-disk-status",
         "script_path": "scripts/cli-pipeline/media-processing/commands/update-disk-status.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      }
-    ],
-    "merge": [
-      {
-        "pipeline_name": "merge",
-        "command_name": "queue-status",
-        "script_path": "scripts/cli-pipeline/merge/commands/queue-status.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "start-merge",
-        "script_path": "scripts/cli-pipeline/merge/commands/start-merge.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "queue-add",
-        "script_path": "scripts/cli-pipeline/merge/commands/queue-add.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "check-conflicts",
-        "script_path": "scripts/cli-pipeline/merge/commands/check-conflicts.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "complete-merge",
-        "script_path": "scripts/cli-pipeline/merge/commands/complete-merge.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "queue-list",
-        "script_path": "scripts/cli-pipeline/merge/commands/queue-list.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "run-checks",
-        "script_path": "scripts/cli-pipeline/merge/commands/run-checks.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "merge",
-        "command_name": "queue-remove",
-        "script_path": "scripts/cli-pipeline/merge/commands/queue-remove.ts",
         "error": "Command script not found",
         "is_missing": true,
         "is_archived": false
@@ -2140,54 +1688,6 @@
         "error": "Main CLI script not found",
         "is_missing": true,
         "is_archived": false
-      },
-      {
-        "pipeline_name": "refactor_tracking",
-        "command_name": "test-complete",
-        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/test-complete.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "refactor_tracking",
-        "command_name": "update",
-        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/update.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "refactor_tracking",
-        "command_name": "sign-off",
-        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/sign-off.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "refactor_tracking",
-        "command_name": "show",
-        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/show.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "refactor_tracking",
-        "command_name": "status",
-        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/status.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "refactor_tracking",
-        "command_name": "list",
-        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/list.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
       }
     ],
     "scripts": [
@@ -2254,72 +1754,6 @@
         "command_name": "main CLI script",
         "script_path": "scripts/cli-pipeline/work_summaries/work_summaries-cli.sh",
         "error": "Main CLI script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "work_summaries",
-        "command_name": "add",
-        "script_path": "scripts/cli-pipeline/work_summaries/commands/add.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "work_summaries",
-        "command_name": "auto",
-        "script_path": "scripts/cli-pipeline/work_summaries/commands/auto.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "work_summaries",
-        "command_name": "import",
-        "script_path": "scripts/cli-pipeline/work_summaries/commands/import.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      }
-    ],
-    "worktree": [
-      {
-        "pipeline_name": "worktree",
-        "command_name": "copy-env",
-        "script_path": "scripts/cli-pipeline/worktree/commands/copy-env.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "worktree",
-        "command_name": "merge-status",
-        "script_path": "scripts/cli-pipeline/worktree/commands/merge-status.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "worktree",
-        "command_name": "prepare-merge",
-        "script_path": "scripts/cli-pipeline/worktree/commands/prepare-merge.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "worktree",
-        "command_name": "merge-queue",
-        "script_path": "scripts/cli-pipeline/worktree/commands/merge-queue.ts",
-        "error": "Command script not found",
-        "is_missing": true,
-        "is_archived": false
-      },
-      {
-        "pipeline_name": "worktree",
-        "command_name": "execute-merge",
-        "script_path": "scripts/cli-pipeline/worktree/commands/execute-merge.ts",
-        "error": "Command script not found",
         "is_missing": true,
         "is_archived": false
       }
