@@ -1444,6 +1444,9 @@ export function Home() {
 
   // Debug - comprehensive debugging panel
   const DebugPanel = () => {
+    // TEMPORARILY DISABLED TO TEST FLASHING FIX
+    return null;
+    
     const [localTime, setLocalTime] = useState(new Date().toLocaleTimeString());
     const [debugExpanded, setDebugExpanded] = useState(false);
     
@@ -1522,11 +1525,11 @@ export function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      {/* Debug Panel */}
-      <DebugPanel />
+      {/* Debug Panel - TEMPORARILY DISABLED TO TEST FLASHING FIX */}
+      {/* <DebugPanel /> */}
       
-      {/* Debug Controls */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+      {/* Debug Controls - TEMPORARILY DISABLED TO TEST FLASHING FIX */}
+      {/* <div className="fixed bottom-4 right-4 z-50 space-y-2">
         <button 
           onClick={() => setTestMode(true)}
           className="block w-full bg-red-500 text-white px-4 py-2 rounded text-sm"
@@ -1552,7 +1555,7 @@ export function Home() {
         >
           Disable StrictMode
         </button>
-      </div>
+      </div> */}
       {/* Expert Profile Modal - Used for both debug and regular viewing */}
       {(showDebugModal || showExpertProfileModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
