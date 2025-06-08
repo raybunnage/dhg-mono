@@ -41,7 +41,6 @@ export function useMediaTracking({
       try {
         const sessionId = await trackingServiceRef.current?.startSession({
           mediaId,
-          userId: userId || '',
           mediaType
         });
         sessionIdRef.current = sessionId || null;
