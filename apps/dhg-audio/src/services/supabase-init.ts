@@ -5,7 +5,7 @@
  * before any services try to use it.
  */
 
-import { supabaseBrowserClient } from './supabase-browser';
+import { supabase } from '../lib/supabase';
 
 /**
  * Initialize Supabase and ensure credentials are available
@@ -29,11 +29,9 @@ export async function initializeSupabase(): Promise<boolean> {
       );
     }
     
-    // Initialize the browser client
-    const client = supabaseBrowserClient.getClient();
-    
-    // Test the connection
-    const connected = await supabaseBrowserClient.testConnection();
+    // Test the connection using the standard client
+    const { error } = await supabase.from('auth_allowed_emails').select('id').limit(1);
+    const connected = !error;
     
     if (!connected) {
       console.error('[initializeSupabase] Failed to connect to Supabase');
