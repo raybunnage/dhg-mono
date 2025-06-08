@@ -61,6 +61,7 @@ show_help() {
   echo "    table-structure      Get detailed information about a table structure (3 uses)"
   echo "    find-tables          Search for specific tables in the database"
   echo "    update-table-definitions  Update sys_table_definitions with missing tables"
+  echo "    update-table-purposes     Update table/view purposes with common use cases"
   echo "    update-view-definitions   Update sys_table_definitions with database views"
   echo "    analyze-views        Analyze all views registered in sys_table_definitions"
   echo ""
@@ -472,6 +473,10 @@ case "$1" in
   "update-table-definitions")
     echo "🔄 Updating sys_table_definitions..."
     track_command "update-table-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-definitions.ts ${@:2}"
+    ;;
+  "update-table-purposes")
+    echo "📝 Updating table and view purposes with common use cases..."
+    track_command "update-table-purposes" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-purposes.ts ${@:2}"
     ;;
   "update-view-definitions")
     echo "🔄 Updating view definitions in sys_table_definitions..."
