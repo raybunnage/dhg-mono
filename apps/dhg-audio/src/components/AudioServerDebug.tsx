@@ -10,8 +10,8 @@ export function AudioServerDebug() {
     setError(null);
     
     try {
-      // First try the health endpoint
-      const healthResponse = await fetch('/api/health');
+      // Check the enhanced server health endpoint directly
+      const healthResponse = await fetch('http://localhost:3006/api/health');
       
       if (healthResponse.ok) {
         const healthData = await healthResponse.json();
@@ -19,7 +19,7 @@ export function AudioServerDebug() {
       } else {
         // Fallback to basic connectivity test
         const testId = 'test-connection';
-        const response = await fetch(`/api/audio/${testId}`, {
+        const response = await fetch(`http://localhost:3006/api/audio/${testId}`, {
           method: 'HEAD'
         });
         
