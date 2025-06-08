@@ -7,7 +7,7 @@ type PlaybackEvent = Tables['learn_media_playback_events']['Insert'];
 type MediaBookmark = Tables['learn_media_bookmarks']['Insert'];
 
 export interface MediaTrackingOptions {
-  userId: string;
+  userId?: string; // Optional - will use authenticated user if not provided
   mediaId: string;
   mediaType?: 'audio' | 'video';
   deviceType?: string;
@@ -39,8 +39,16 @@ export class MediaTrackingService {
    */
   async startSession(options: MediaTrackingOptions): Promise<string | null> {
     try {
+      // Get the current authenticated user
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('No authenticated user found for media session:', userError);
+        return null;
+      }
+
       const sessionData: MediaSession = {
-        user_id: options.userId,
+        user_id: user.id, // Use authenticated user ID, not passed parameter
         media_id: options.mediaId,
         session_start: new Date().toISOString(),
         device_type: options.deviceType || this.detectDeviceType(),

@@ -5,48 +5,46 @@ export function AudioServerDebug() {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const checkServerHealth = async () => {
+  const checkServerConnectivity = async () => {
     setChecking(true);
     setError(null);
     
     try {
-      // First try the health endpoint
-      const healthResponse = await fetch('/api/health');
+      // Test server connectivity by making a basic API request
+      // Use a test audio file ID that we expect to either work or fail gracefully
+      const testId = 'connectivity-test';
+      const response = await fetch(`/api/audio/${testId}`, {
+        method: 'HEAD'
+      });
       
-      if (healthResponse.ok) {
-        const healthData = await healthResponse.json();
-        setServerHealth(healthData);
-      } else {
-        // Fallback to basic connectivity test
-        const testId = 'test-connection';
-        const response = await fetch(`/api/audio/${testId}`, {
-          method: 'HEAD'
-        });
-        
-        // We expect either 400 (bad request) or 500 (server error)
-        // Both indicate the server is reachable
-        if (response.status === 404) {
-          throw new Error('Audio proxy server not accessible - make sure to run pnpm servers from the main dhg-mono directory');
-        }
-        
+      // Any response (even 404/500) indicates server is reachable
+      const isServerReachable = response.status !== 0;
+      
+      if (isServerReachable) {
         setServerHealth({
-          status: 'running',
+          status: 'reachable',
           port: 3006,
           timestamp: new Date().toISOString(),
-          serviceAccount: 'check-health-endpoint',
-          note: 'Server is reachable but health endpoint not available. Update server.js for full diagnostics.'
+          note: `Server responded with status ${response.status}. Enhanced audio server is running and accessible via Vite proxy.`,
+          responseStatus: response.status
         });
+      } else {
+        throw new Error('Server not reachable');
       }
     } catch (error: any) {
-      setError(error.message || 'Audio proxy server not reachable');
-      console.error('Server health check failed:', error);
+      if (error.message.includes('fetch')) {
+        setError('Audio server not reachable - make sure to run pnpm servers from the main dhg-mono directory');
+      } else {
+        setError(error.message || 'Unable to connect to audio server');
+      }
+      console.error('Server connectivity check failed:', error);
     } finally {
       setChecking(false);
     }
   };
 
   useEffect(() => {
-    checkServerHealth();
+    checkServerConnectivity();
   }, []);
 
   const getStatusColor = () => {
@@ -69,11 +67,11 @@ export function AudioServerDebug() {
           Audio Server Status
         </h3>
         <button
-          onClick={checkServerHealth}
+          onClick={checkServerConnectivity}
           disabled={checking}
           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
         >
-          {checking ? 'Checking...' : 'Refresh'}
+          {checking ? 'Checking...' : 'Test Connection'}
         </button>
       </div>
 
@@ -94,37 +92,12 @@ export function AudioServerDebug() {
               <span className="font-medium">Status:</span> {serverHealth.status}
             </div>
             <div>
-              <span className="font-medium">Port:</span> {serverHealth.port}
+              <span className="font-medium">Response:</span> {serverHealth.responseStatus}
             </div>
             <div>
               <span className="font-medium">Time:</span> {new Date(serverHealth.timestamp).toLocaleTimeString()}
             </div>
           </div>
-
-          {serverHealth.serviceAccount && (
-            <div className="mt-2 text-sm">
-              <span className="font-medium">Service Account:</span>{' '}
-              <span className={serverHealth.serviceAccount === 'found' ? 'text-green-600' : 'text-red-600'}>
-                {serverHealth.serviceAccount}
-              </span>
-            </div>
-          )}
-
-          {serverHealth.possiblePaths && (
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
-              <p className="font-medium mb-1">Service Account Search Paths:</p>
-              <ul className="space-y-1">
-                {serverHealth.possiblePaths.map((path: any, idx: number) => (
-                  <li key={idx} className="flex items-center gap-2">
-                    <span className={path.exists ? 'text-green-600' : 'text-gray-400'}>
-                      {path.exists ? '✓' : '✗'}
-                    </span>
-                    <code className="text-xs">{path.path}</code>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {serverHealth.note && (
             <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">

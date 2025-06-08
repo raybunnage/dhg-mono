@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { viewSessions } from './commands/view-sessions';
 import { viewEvents } from './commands/view-events';
 import { mediaStats } from './commands/media-stats';
+import { testAudioPerformance, compareServers } from './commands/test-audio-performance';
 
 const program = new Command();
 
@@ -49,12 +50,33 @@ program
     });
   });
 
+// Test audio server performance
+program
+  .command('test-performance')
+  .description('Test audio server performance with sample files')
+  .option('-s, --server <url>', 'Server URL', 'http://localhost:3006')
+  .option('-f, --files <ids...>', 'File IDs to test')
+  .option('-c, --compare', 'Compare standard vs enhanced server')
+  .action(async (options) => {
+    // Default test files if none provided
+    const testFileIds = options.files || [
+      // Add some default file IDs for testing
+      // These would be actual file IDs from your database
+    ];
+    
+    if (options.compare) {
+      await compareServers(testFileIds);
+    } else {
+      await testAudioPerformance(options.server, testFileIds);
+    }
+  });
+
 // Health check command
 program
   .command('health-check')
   .description('Check media tracking system health')
   .action(async () => {
-    const { SupabaseClientService } = await import('../../../../packages/shared/services/supabase-client');
+    const { SupabaseClientService } = await import('../../../../packages/shared/services/supabase-client/index.js');
     const supabase = SupabaseClientService.getInstance().getClient();
     
     try {
