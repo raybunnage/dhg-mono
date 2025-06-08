@@ -84,11 +84,11 @@ async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
       Logger.info('No active filter profile found - searching all drives');
     }
     
-    // First get all presentations to check against
+    // First get all media_presentations to check against
     let presentationsQuery = supabase
-      .from('presentations')
-      .select('filename, main_video_id')
-      .is('main_video_id', null);
+      .from('media_presentations')
+      .select('title, video_source_id')
+      .is('video_source_id', null);
     
     // Apply root_drive_id filter to presentations if active
     if (rootDriveIdFilter) {
@@ -102,7 +102,7 @@ async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
       return [];
     }
     
-    Logger.info(`Found ${presentations.length} presentations without main_video_id${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
+    Logger.info(`Found ${presentations.length} media_presentations without video_source_id${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
     
     // Then get all MP4 files from sources_google
     let query = supabase
@@ -130,10 +130,10 @@ async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
     
     Logger.info(`Found ${sources.length} MP4 files in sources_google${options.pathContains ? ` with path containing "${options.pathContains}"` : ''}${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
     
-    // Get all presentations to check against
+    // Get all media_presentations to check against
     let allPresentationsQuery = supabase
-      .from('presentations')
-      .select('id, filename, main_video_id');
+      .from('media_presentations')
+      .select('id, title, video_source_id');
     
     // Apply root_drive_id filter to all presentations query if active
     if (rootDriveIdFilter) {
@@ -147,46 +147,46 @@ async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
       return [];
     }
     
-    Logger.info(`Found ${allPresentations.length} total presentations${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
+    Logger.info(`Found ${allPresentations.length} total media_presentations${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
     
-    // Find presentations without a main_video_id
-    const presentationsWithoutVideo = allPresentations.filter((p: any) => !p.main_video_id);
-    Logger.info(`Found ${presentationsWithoutVideo.length} presentations without main_video_id`);
+    // Find presentations without a video_source_id
+    const presentationsWithoutVideo = allPresentations.filter((p: any) => !p.video_source_id);
+    Logger.info(`Found ${presentationsWithoutVideo.length} media_presentations without video_source_id`);
     
     // Get existing linked video IDs
     const existingVideoIds = allPresentations
-      .filter((p: any) => p.main_video_id)
-      .map((p: any) => p.main_video_id);
-    Logger.info(`Found ${existingVideoIds.length} presentations with main_video_id already set`);
+      .filter((p: any) => p.video_source_id)
+      .map((p: any) => p.video_source_id);
+    Logger.info(`Found ${existingVideoIds.length} media_presentations with video_source_id already set`);
     
     // Filter out sources that are already in presentations
     const missingFiles = sources.filter((source: any) => 
       !existingVideoIds.includes(source.id)
     );
     
-    Logger.info(`Found ${missingFiles.length} MP4 files not yet linked to presentations`);
+    Logger.info(`Found ${missingFiles.length} MP4 files not yet linked to media_presentations`);
     
-    // Also find presentations with filenames that don't match any sources_google name
+    // Also find media_presentations with titles that don't match any sources_google name
     const sourcesFilenames = sources.map((s: any) => s.name.toLowerCase());
     const presentationsWithoutMatchingSource = allPresentations.filter(
-      (p: any) => !sourcesFilenames.includes(p.filename.toLowerCase())
+      (p: any) => p.title && !sourcesFilenames.includes(p.title.toLowerCase())
     );
-    Logger.info(`Found ${presentationsWithoutMatchingSource.length} presentations with filenames that don't match any sources_google name`);
+    Logger.info(`Found ${presentationsWithoutMatchingSource.length} media_presentations with titles that don't match any sources_google name`);
     
-    // Find sources_google names that don't match any presentation filename
-    const presentationFilenames = allPresentations.map((p: any) => p.filename.toLowerCase());
+    // Find sources_google names that don't match any media_presentation title
+    const presentationTitles = allPresentations.map((p: any) => p.title?.toLowerCase()).filter(Boolean);
     const sourcesWithoutMatchingPresentation = sources.filter(
-      (s: any) => !presentationFilenames.includes(s.name.toLowerCase())
+      (s: any) => !presentationTitles.includes(s.name.toLowerCase())
     );
-    Logger.info(`Found ${sourcesWithoutMatchingPresentation.length} sources_google names that don't match any presentation filename`);
+    Logger.info(`Found ${sourcesWithoutMatchingPresentation.length} sources_google names that don't match any media_presentation title`);
     
     // Debug output
-    Logger.info("Presentations without matching sources_google name:");
+    Logger.info("Media_presentations without matching sources_google name:");
     presentationsWithoutMatchingSource.forEach((p: any) => {
-      Logger.info(`  ${p.filename}`);
+      Logger.info(`  ${p.title}`);
     });
     
-    Logger.info("Sources_google names without matching presentation filename:");
+    Logger.info("Sources_google names without matching media_presentation title:");
     sourcesWithoutMatchingPresentation.forEach((s: any) => {
       Logger.info(`  ${s.name} (path: ${s.path})`);
     });
