@@ -45,7 +45,8 @@ show_help() {
   echo ""
   echo "EVALUATION COMMANDS:"
   echo "  analyze-services     Analyze unused services and generate report"
-  echo "  analyze-scripts      Analyze inactive scripts"
+  echo "  analyze-scripts      Analyze inactive scripts (basic)"
+  echo "  analyze-script-usage Detailed script usage analysis (recommended)"
   echo "  analyze-commands     Analyze low-usage CLI commands"
   echo "  analyze-pipelines    Analyze pipeline usage patterns"
   echo "  generate-report      Generate comprehensive deprecation report"
@@ -53,7 +54,10 @@ show_help() {
   echo "OPERATION COMMANDS:"
   echo "  mark-deprecated      Mark items for deprecation"
   echo "  archive-service      Archive a deprecated service"
-  echo "  archive-script       Archive a deprecated script"
+  echo "  archive-script       Archive a deprecated script (single)"
+  echo "  archive-scripts      Archive multiple scripts (batch)"
+  echo "  restore-script       Restore an archived script"
+  echo "  list-archived        List all archived scripts"
   echo "  deprecate-command    Deprecate a CLI command"
   echo "  generate-migration   Generate migration plan for deprecated items"
   echo ""
@@ -82,6 +86,26 @@ analyze_services() {
 analyze_scripts() {
   echo "📊 Analyzing inactive scripts..."
   track_command "analyze-scripts" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-scripts.ts ${@}"
+}
+
+analyze_script_usage() {
+  echo "🔍 Analyzing detailed script usage across monorepo..."
+  track_command "analyze-script-usage" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-script-usage.ts ${@}"
+}
+
+archive_scripts() {
+  echo "📦 Archiving unused scripts..."
+  track_command "archive-scripts" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/archive-scripts.ts ${@}"
+}
+
+restore_script() {
+  echo "♻️ Restoring archived script..."
+  track_command "restore-script" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/restore-script.ts ${@}"
+}
+
+list_archived() {
+  echo "📋 Listing archived scripts..."
+  track_command "list-archived" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-archived.ts ${@}"
 }
 
 analyze_commands() {
@@ -165,6 +189,18 @@ case "${1:-}" in
     ;;
   "analyze-scripts")
     analyze_scripts "${@:2}"
+    ;;
+  "analyze-script-usage")
+    analyze_script_usage "${@:2}"
+    ;;
+  "archive-scripts")
+    archive_scripts "${@:2}"
+    ;;
+  "restore-script")
+    restore_script "${@:2}"
+    ;;
+  "list-archived")
+    list_archived "${@:2}"
     ;;
   "analyze-commands")
     analyze_commands "${@:2}"

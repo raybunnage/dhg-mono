@@ -129,6 +129,18 @@ supabase/schema-info.tmp.json
 # Archive directories
 **/_archive/
 **/._archive/ # Also catch potential typos/variants
+
+# Root script archives
+scripts/.archived_root_scripts/
+scripts/.archived_root_scripts/**/*
+
+# CLI pipeline archives
+scripts/cli-pipeline/**/.archived_scripts/
+scripts/cli-pipeline/**/.archived_scripts/**/*
+scripts/cli-pipeline/.archived_pipeline_scripts/
+scripts/cli-pipeline/.archived_pipeline_scripts/**/*
+
+# Legacy archive patterns
 scripts/.archived_scripts/
 scripts/.archived_scripts/**/*
 **/scripts/.archived_scripts/
@@ -139,6 +151,14 @@ scripts/cli-pipeline/.backup_scripts/**/*
 # Ensure all nested backup script folders are caught
 scripts/**/.backup_scripts/
 scripts/**/.backup_scripts/**/*
+
+# App-specific archives
+apps/**/.archived_scripts/
+apps/**/.archived_scripts/**/*
+
+# Python script archives
+scripts/python/.archived_scripts/
+scripts/python/.archived_scripts/**/*
 
 # Env backups
 .backups/env/
