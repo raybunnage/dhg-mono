@@ -23,6 +23,9 @@ const { Logger } = require('../../../../packages/shared/utils');
 const { SupabaseClientService } = require('../../../../packages/shared/services/supabase-client');
 const { LogLevel } = require('../../../../packages/shared/utils/logger');
 
+// Import active filter profile functionality
+import { getActiveFilterProfile } from '../../presentations/get-active-filter-profile';
+
 // Initialize logger
 Logger.setLevel(LogLevel.INFO);
 
@@ -71,25 +74,47 @@ interface MissingFile {
  */
 async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
   try {
+    // Get active filter profile for root_drive_id filtering
+    const activeFilter = await getActiveFilterProfile();
+    const rootDriveIdFilter = activeFilter?.rootDriveId;
+    
+    if (rootDriveIdFilter) {
+      Logger.info(`Using active filter profile: filtering by root_drive_id = ${rootDriveIdFilter}`);
+    } else {
+      Logger.info('No active filter profile found - searching all drives');
+    }
+    
     // First get all presentations to check against
-    const { data: presentations, error: presentationsError } = await supabase
+    let presentationsQuery = supabase
       .from('presentations')
       .select('filename, main_video_id')
       .is('main_video_id', null);
+    
+    // Apply root_drive_id filter to presentations if active
+    if (rootDriveIdFilter) {
+      presentationsQuery = presentationsQuery.eq('root_drive_id', rootDriveIdFilter);
+    }
+    
+    const { data: presentations, error: presentationsError } = await presentationsQuery;
       
     if (presentationsError) {
       Logger.error(`Error fetching presentations data: ${presentationsError.message}`);
       return [];
     }
     
-    Logger.info(`Found ${presentations.length} presentations without main_video_id`);
+    Logger.info(`Found ${presentations.length} presentations without main_video_id${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
     
     // Then get all MP4 files from sources_google
     let query = supabase
       .from('google_sources')
-      .select('id, name, path, drive_id, web_view_link, mime_type')
+      .select('id, name, path, drive_id, web_view_link, mime_type, root_drive_id')
       .eq('mime_type', 'video/mp4')
       .eq('is_deleted', false);
+      
+    // Apply root_drive_id filter if active
+    if (rootDriveIdFilter) {
+      query = query.eq('root_drive_id', rootDriveIdFilter);
+    }
       
     // Only apply path filter if pathContains is provided
     if (options.pathContains) {
@@ -103,19 +128,26 @@ async function getMissingMP4Files(supabase: any): Promise<MissingFile[]> {
       return [];
     }
     
-    Logger.info(`Found ${sources.length} MP4 files in sources_google${options.pathContains ? ` with path containing "${options.pathContains}"` : ''}`);
+    Logger.info(`Found ${sources.length} MP4 files in sources_google${options.pathContains ? ` with path containing "${options.pathContains}"` : ''}${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
     
     // Get all presentations to check against
-    const { data: allPresentations, error: allPresentationsError } = await supabase
+    let allPresentationsQuery = supabase
       .from('presentations')
       .select('id, filename, main_video_id');
+    
+    // Apply root_drive_id filter to all presentations query if active
+    if (rootDriveIdFilter) {
+      allPresentationsQuery = allPresentationsQuery.eq('root_drive_id', rootDriveIdFilter);
+    }
+    
+    const { data: allPresentations, error: allPresentationsError } = await allPresentationsQuery;
       
     if (allPresentationsError) {
       Logger.error(`Error fetching all presentations data: ${allPresentationsError.message}`);
       return [];
     }
     
-    Logger.info(`Found ${allPresentations.length} total presentations`);
+    Logger.info(`Found ${allPresentations.length} total presentations${rootDriveIdFilter ? ` (filtered by root_drive_id)` : ''}`);
     
     // Find presentations without a main_video_id
     const presentationsWithoutVideo = allPresentations.filter((p: any) => !p.main_video_id);
