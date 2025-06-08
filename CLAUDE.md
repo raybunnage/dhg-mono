@@ -388,6 +388,38 @@ When the user asks you to commit changes, follow this workflow:
    
 **Note**: The task tracking is automatic - the CLI will find tasks based on the current worktree path
 
+## Dev Task Commit Tracking
+
+⚠️ **Manually track commits for dev tasks using the commit tracking utility**
+
+For commits related to dev tasks that need detailed tracking:
+
+1. **After committing**, track the commit in the database:
+   ```bash
+   ts-node scripts/cli-pipeline/utilities/track-commit-for-task.ts <task_id> <commit_hash> [commit_message]
+   ```
+
+2. **Example usage**:
+   ```bash
+   # Track a commit for a specific task
+   ts-node scripts/cli-pipeline/utilities/track-commit-for-task.ts bb1d3a41-39ef-4ac8-8786-c8bcc7d10dc9 ad534c18 "fix: health check"
+   ```
+
+3. **What this does**:
+   - Creates record in `dev_task_commits` table
+   - Updates `dev_tasks.git_commit_current` with latest commit
+   - Increments `dev_tasks.git_commits_count`
+   - Extracts git stats (files changed, insertions, deletions)
+   - Links commit history to task for better tracking
+
+4. **When to use**:
+   - ✅ Major feature implementations
+   - ✅ Bug fixes tied to specific tasks
+   - ✅ Refactoring work tracked in dev_tasks
+   - ❌ Minor commits or unrelated changes
+
+**Integration Points**: This can be automated in git hooks or integrated into the worktree merging workflow for better commit tracking.
+
 ## Final Checklist
 
 ⚠️ **BEFORE SUBMITTING CODE:**
