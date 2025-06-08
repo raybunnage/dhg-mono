@@ -57,22 +57,9 @@ export class EnvConfigService {
    */
   private loadConfig(): void {
     if (this.isBrowser) {
-      // Browser environment - use import.meta.env with VITE_ prefix
-      // @ts-ignore - import.meta.env is available in Vite
-      const env = (typeof import !== 'undefined' && import.meta?.env) || {};
-      
-      this.config = {
-        SUPABASE_URL: env.VITE_SUPABASE_URL,
-        SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY,
-        SUPABASE_SERVICE_ROLE_KEY: env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-        CLAUDE_API_KEY: env.VITE_CLAUDE_API_KEY,
-        APP_NAME: env.VITE_APP_NAME,
-        APP_ENV: env.VITE_ENV,
-        API_URL: env.VITE_API_URL,
-        FEATURE_FLAGS: env.VITE_FEATURE_FLAGS,
-        TEST_USER_EMAIL: env.VITE_TEST_USER_EMAIL,
-        TEST_USER_PASSWORD: env.VITE_TEST_USER_PASSWORD,
-      };
+      // Browser environment - this service should not be used in browser
+      // Browser apps should use createSupabaseAdapter with direct import.meta.env
+      throw new Error('EnvConfigService should not be used in browser environments. Use createSupabaseAdapter with import.meta.env instead.');
     } else {
       // Node.js environment - use process.env
       this.config = {
