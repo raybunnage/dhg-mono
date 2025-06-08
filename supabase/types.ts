@@ -3808,6 +3808,7 @@ export type Database = {
           description: string | null
           display_name: string
           domain: string | null
+          has_health_check: boolean | null
           id: string
           main_script: string | null
           pipeline_name: string
@@ -3821,6 +3822,7 @@ export type Database = {
           description?: string | null
           display_name: string
           domain?: string | null
+          has_health_check?: boolean | null
           id?: string
           main_script?: string | null
           pipeline_name: string
@@ -3834,6 +3836,7 @@ export type Database = {
           description?: string | null
           display_name?: string
           domain?: string | null
+          has_health_check?: boolean | null
           id?: string
           main_script?: string | null
           pipeline_name?: string

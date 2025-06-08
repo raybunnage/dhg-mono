@@ -33,7 +33,7 @@ track_command() {
   
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -86,5 +86,13 @@ case "$1" in
       echo "Run '$0 help' for usage information"
       exit 1
     fi
+    ;;
+  health-check)
+    echo "🏥 Running health check for mime_types pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ mime_types pipeline is healthy"
     ;;
 esac

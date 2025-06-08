@@ -212,7 +212,7 @@ async function deprecateCommand(supabase: any, commandName: string, reason: stri
   if (commands.length > 1) {
     return { 
       success: false, 
-      error: `Multiple commands found. Please specify pipeline:command format. Found in: ${commands.map(c => c.command_pipelines?.name).join(', ')}`
+      error: `Multiple commands found. Please specify pipeline:command format. Found in: ${commands.map((c: any) => c.command_pipelines?.name).join(', ')}`
     };
   }
   

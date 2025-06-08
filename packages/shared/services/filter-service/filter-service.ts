@@ -397,6 +397,30 @@ export class FilterService {
   }
 
   /**
+   * Gets all drives for a profile with full details
+   * @param profileId - The profile ID
+   * @returns Array of drive mappings or empty array if none found
+   */
+  public async getProfileDrives(profileId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('filter_user_profile_drives')
+        .select('*')
+        .eq('profile_id', profileId);
+      
+      if (error) {
+        console.error('FilterService: Error getting profile drives:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (err) {
+      console.error('FilterService: Error in getProfileDrives:', err);
+      return [];
+    }
+  }
+
+  /**
    * Apply filter to a query based on active profile
    * This method modifies a Supabase query to filter results based on the active profile's drive IDs
    * @param query - The Supabase query to modify

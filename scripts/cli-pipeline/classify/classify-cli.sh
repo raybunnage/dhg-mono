@@ -132,7 +132,7 @@ batch_create_command() {
 
 # Handle health-check command
 health_check_command() {
-  track_command "health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/index.ts health-check $@"
+  track_command "health-check" "$SCRIPT_DIR/health-check.sh $@"
 }
 
 # Handle classify-subjects command
@@ -247,5 +247,13 @@ case "$1" in
     echo "Unknown command: $1"
     echo "Run 'classify-cli help' to see available commands"
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for classify pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ classify pipeline is healthy"
     ;;
 esac

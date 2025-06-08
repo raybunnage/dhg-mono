@@ -5,7 +5,7 @@
  * to prevent initialization errors on app startup
  */
 
-import { supabaseBrowser } from './supabase-browser-adapter';
+import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
 // Export User type as LightAuthUser for consistency
@@ -85,7 +85,7 @@ class DhgAudioLightAuthService {
       console.log('Attempting login with email:', email);
       
       // Initialize Supabase client only when needed
-      const supabase = supabaseBrowser.getClient();
+      const supabase = supabase;
       
       // Check if email is on the allowed list
       const { data: allowedEmail, error } = await supabase
