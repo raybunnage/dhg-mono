@@ -257,7 +257,7 @@ class AudioBrowserService {
 // Export a factory function instead of immediate instance creation
 export const audioBrowserService = {
   getInstance: () => AudioBrowserService.getInstance(),
-  getAudioFiles: async (limit?: number) => AudioBrowserService.getInstance().getAudioFiles(limit),
+  getAudioFiles: async (limit?: number, rootDriveId?: string | null) => AudioBrowserService.getInstance().getAudioFiles(limit, rootDriveId),
   getAudioFile: async (id: string) => AudioBrowserService.getInstance().getAudioFile(id),
   getTranscript: async (sourceId: string) => AudioBrowserService.getInstance().getTranscript(sourceId)
 };

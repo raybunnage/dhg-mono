@@ -3,6 +3,7 @@ export * from './AudioPlayer';
 export * from './TrackedAudioPlayer';
 export * from './Layout';
 export * from './Transcript';
+export * from './DriveFilterSelect';
 
 // Auth components
 export * from './LightEmailAuth';
@@ -19,3 +20,7 @@ export * from './CheckRLS';
 export * from './AudioServerDebug';
 export * from './AudioUrlDebug';
 export * from './AudioFileDebug';
+export * from './MediaTrackingDebug';
+
+// Tracking components
+export * from './TrackingStatusIndicator';
