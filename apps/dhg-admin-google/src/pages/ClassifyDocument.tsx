@@ -8,15 +8,38 @@ import { getDocxContent } from '../utils/google-drive';
 import { ClassificationResponseSchema } from '../schemas/classification.schema';
 import { DashboardLayout } from '../components/DashboardLayout';
 
-// Interface for document types
+// Interface for hierarchical document types
 interface DocumentType {
   id: string;
   name: string;
-  category: string;
-  keywords?: string[];
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
+  category: string | null;
+  description?: string | null;
+  is_general_type: boolean;
+  is_ai_generated?: boolean | null;
+  mnemonic?: string | null;
+  prompt_id?: string | null;
+  expected_json_schema?: any | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+// Interface for general document type categories
+interface GeneralDocumentType extends DocumentType {
+  is_general_type: true;
+  children: SpecificDocumentType[];
+}
+
+// Interface for specific document types under a general category
+interface SpecificDocumentType extends DocumentType {
+  is_general_type: false;
+  parent_category?: string;
+}
+
+// Hierarchical structure for UI display
+interface DocumentTypeHierarchy {
+  generalTypes: GeneralDocumentType[];
+  specificTypes: SpecificDocumentType[];
+  ungroupedTypes: DocumentType[];
 }
 
 // Interface for google sources
@@ -76,6 +99,11 @@ export function ClassifyDocument() {
   const [processingDocId, setProcessingDocId] = useState<string | null>(null);
   const [currentStage, setCurrentStage] = useState<WorkflowStage | null>(null);
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
+  const [documentTypeHierarchy, setDocumentTypeHierarchy] = useState<DocumentTypeHierarchy>({
+    generalTypes: [],
+    specificTypes: [],
+    ungroupedTypes: []
+  });
   const [pendingCreations, setPendingCreations] = useState<{
     [id: string]: {
       data: any;
@@ -99,27 +127,38 @@ export function ClassifyDocument() {
     }>
   });
 
-  // Get unique categories from document types
+  // Get unique categories from general document types
   const categories = useMemo(() => {
-    const categoryList = documentStats.documentTypes.map(dt => dt.category);
-    return ['all', ...Array.from(new Set(categoryList))];
-  }, [documentStats.documentTypes]);
+    const generalTypeNames = documentTypeHierarchy.generalTypes.map(gt => gt.name);
+    return ['all', ...generalTypeNames];
+  }, [documentTypeHierarchy.generalTypes]);
 
   const filteredDocumentTypes = useMemo(() => {
     if (selectedCategory === 'all') {
       return documentStats.documentTypes;
     }
-    return documentStats.documentTypes.filter(dt => dt.category === selectedCategory);
-  }, [documentStats.documentTypes, selectedCategory]);
+    
+    // Find the selected general type and its children
+    const selectedGeneralType = documentTypeHierarchy.generalTypes.find(gt => gt.name === selectedCategory);
+    if (selectedGeneralType) {
+      return documentStats.documentTypes.filter(dt => 
+        selectedGeneralType.children.some(child => child.id === dt.id)
+      );
+    }
+    
+    return documentStats.documentTypes;
+  }, [documentStats.documentTypes, selectedCategory, documentTypeHierarchy.generalTypes]);
 
   const loadDocumentTypes = async () => {
     setLoading(true);
     try {
-      console.log('Starting document types query...');
+      console.log('Starting hierarchical document types query...');
       
       const { data, error } = await supabase
         .from('document_types')
-        .select('*');
+        .select('*')
+        .order('is_general_type', { ascending: false })
+        .order('name', { ascending: true });
 
       console.log('Query complete:', {
         success: !error,
@@ -130,16 +169,64 @@ export function ClassifyDocument() {
 
       if (error) throw error;
 
-      const documentTypes = data as DocumentType[];
-      setDocumentTypes(documentTypes);
-      toast.success(`Loaded ${documentTypes.length} document types`);
-      return documentTypes;
+      const allDocumentTypes = data as DocumentType[];
+      setDocumentTypes(allDocumentTypes);
+
+      // Build hierarchical structure
+      const hierarchy = buildDocumentTypeHierarchy(allDocumentTypes);
+      setDocumentTypeHierarchy(hierarchy);
+
+      toast.success(`Loaded ${allDocumentTypes.length} document types (${hierarchy.generalTypes.length} categories)`);
+      return allDocumentTypes;
     } catch (error) {
       console.error('Error loading document types:', error);
       toast.error('Failed to load document types');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to build hierarchical structure
+  const buildDocumentTypeHierarchy = (documentTypes: DocumentType[]): DocumentTypeHierarchy => {
+    const generalTypes: GeneralDocumentType[] = [];
+    const specificTypes: SpecificDocumentType[] = [];
+    const ungroupedTypes: DocumentType[] = [];
+
+    // Separate general types from specific types
+    const generalTypesList = documentTypes.filter(dt => dt.is_general_type === true);
+    const specificTypesList = documentTypes.filter(dt => dt.is_general_type === false);
+
+    // Build general types with their children
+    generalTypesList.forEach(generalType => {
+      const children = specificTypesList.filter(specificType => 
+        specificType.category === generalType.name
+      );
+
+      generalTypes.push({
+        ...generalType,
+        is_general_type: true,
+        children: children as SpecificDocumentType[]
+      });
+    });
+
+    // Find specific types that don't belong to any general category
+    specificTypesList.forEach(specificType => {
+      const hasParent = generalTypesList.some(generalType => 
+        generalType.name === specificType.category
+      );
+
+      if (!hasParent) {
+        ungroupedTypes.push(specificType);
+      } else {
+        specificTypes.push(specificType as SpecificDocumentType);
+      }
+    });
+
+    return {
+      generalTypes,
+      specificTypes,
+      ungroupedTypes
+    };
   };
 
   // Check if file type is supported
@@ -249,10 +336,11 @@ export function ClassifyDocument() {
         return acc;
       }, {} as Record<string, number>);
 
-      // Load document types with counts
+      // Load document types with counts (only specific types, not general categories)
       const { data: docTypes } = await supabase
         .from('document_types')
-        .select('id, name, category');
+        .select('id, name, category, is_general_type')
+        .eq('is_general_type', false); // Only load specific document types for stats
 
       const documentTypesWithCounts = (docTypes || []).map(dt => ({
         ...dt,
@@ -318,13 +406,14 @@ export function ClassifyDocument() {
         throw new Error('Failed to load classification prompt');
       }
 
-      // Get document types for classification
+      // Get only specific document types for classification (exclude general categories)
       const { data: docTypes } = await supabase
         .from('document_types')
-        .select('*');
+        .select('*')
+        .eq('is_general_type', false); // Only use specific document types, not general categories
 
       if (!docTypes || docTypes.length === 0) {
-        throw new Error('No document types available for classification');
+        throw new Error('No specific document types available for classification');
       }
 
       // Prepare content for classification
@@ -363,7 +452,7 @@ export function ClassifyDocument() {
       if (updateError) throw updateError;
 
       setClassifiedCount(prev => prev + 1);
-      toast.success(`Classified "${doc.name}" as ${validatedResponse.document_type_name}`);
+      toast.success(`Classified "${doc.name}" as ${validatedResponse.document_type_name} (${validatedResponse.document_type_category})`);
 
       // Create expert document if high confidence
       if (validatedResponse.confidence >= 0.8 && validatedResponse.document_type_id) {
@@ -621,15 +710,88 @@ export function ClassifyDocument() {
             </select>
           </div>
 
-          {/* Document Types Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {filteredDocumentTypes.map(dt => (
-              <div key={dt.id} className="border rounded-lg p-4">
-                <div className="font-medium">{dt.name}</div>
-                <div className="text-sm text-gray-600">{dt.category}</div>
-                <div className="text-lg font-semibold text-blue-600 mt-2">{dt.count} documents</div>
+          {/* Hierarchical Document Types Display */}
+          <div className="space-y-6">
+            {selectedCategory === 'all' ? (
+              /* Show all categories in hierarchical format */
+              documentTypeHierarchy.generalTypes.map(generalType => (
+                <div key={generalType.id} className="border rounded-lg overflow-hidden">
+                  {/* General Category Header */}
+                  <div className="bg-blue-50 border-b px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg text-blue-900">{generalType.name}</h3>
+                        {generalType.description && (
+                          <p className="text-sm text-blue-700 mt-1">{generalType.description}</p>
+                        )}
+                      </div>
+                      <div className="text-sm text-blue-600">
+                        {generalType.children.length} specific types
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Specific Document Types under this category */}
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {generalType.children.map(specificType => {
+                        const typeStats = documentStats.documentTypes.find(dt => dt.id === specificType.id);
+                        return (
+                          <div key={specificType.id} className="border rounded-md p-3 bg-gray-50">
+                            <div className="font-medium text-sm">{specificType.name}</div>
+                            {specificType.description && (
+                              <div className="text-xs text-gray-600 mt-1">{specificType.description}</div>
+                            )}
+                            <div className="text-sm font-semibold text-green-600 mt-2">
+                              {typeStats?.count || 0} documents
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              /* Show filtered specific types for selected category */
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {filteredDocumentTypes.map(dt => (
+                  <div key={dt.id} className="border rounded-lg p-4">
+                    <div className="font-medium">{dt.name}</div>
+                    <div className="text-sm text-gray-600">{dt.category}</div>
+                    <div className="text-lg font-semibold text-blue-600 mt-2">{dt.count} documents</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Show ungrouped types if any */}
+            {documentTypeHierarchy.ungroupedTypes.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-yellow-50 border-b px-4 py-3">
+                  <h3 className="font-semibold text-lg text-yellow-900">Uncategorized Document Types</h3>
+                  <p className="text-sm text-yellow-700">These document types don't belong to any general category</p>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {documentTypeHierarchy.ungroupedTypes.map(ungroupedType => {
+                      const typeStats = documentStats.documentTypes.find(dt => dt.id === ungroupedType.id);
+                      return (
+                        <div key={ungroupedType.id} className="border rounded-md p-3 bg-gray-50">
+                          <div className="font-medium text-sm">{ungroupedType.name}</div>
+                          {ungroupedType.description && (
+                            <div className="text-xs text-gray-600 mt-1">{ungroupedType.description}</div>
+                          )}
+                          <div className="text-sm font-semibold text-orange-600 mt-2">
+                            {typeStats?.count || 0} documents
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -734,11 +896,24 @@ export function ClassifyDocument() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {doc.document_type_id ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
-                        {documentTypes.find(dt => dt.id === doc.document_type_id)?.name || 'Unknown'}
-                      </span>
-                    ) : (
+                    {doc.document_type_id ? (() => {
+                      const docType = documentTypes.find(dt => dt.id === doc.document_type_id);
+                      if (docType) {
+                        return (
+                          <div className="space-y-1">
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm block">
+                              {docType.name}
+                            </span>
+                            {docType.category && (
+                              <span className="text-xs text-gray-500">
+                                Category: {docType.category}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
+                      return <span className="text-red-400">Unknown Type</span>;
+                    })() : (
                       <span className="text-gray-400">Not classified</span>
                     )}
                   </td>
