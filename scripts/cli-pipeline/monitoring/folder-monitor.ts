@@ -5,7 +5,7 @@ import { glob } from 'glob';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import chalk from 'chalk';
-import { SupabaseClientService } from '../../../packages/shared/services/supabase-client/index.js';
+// import { SupabaseClientService } from '../../../packages/shared/services/supabase-client.ts';
 
 const program = new Command();
 
@@ -212,6 +212,11 @@ async function generateReport(result: MonitoringResult): Promise<void> {
 }
 
 async function saveResultToDatabase(result: MonitoringResult): Promise<void> {
+  console.log(chalk.yellow('⚠️ Database functionality temporarily disabled - working on import issues'));
+  console.log(chalk.gray('Results shown above but not saved to database'));
+  return;
+  
+  /* TODO: Fix SupabaseClient import issues and re-enable
   try {
     const supabase = SupabaseClientService.getInstance().getClient();
     
@@ -300,10 +305,16 @@ async function saveResultToDatabase(result: MonitoringResult): Promise<void> {
     console.error(chalk.red('Database error:'), err);
     console.log(chalk.yellow('⚠️  Results displayed but not saved to database'));
   }
+  */
 }
 
 // Historical reporting functions
 async function getHistoricalReport(folderPath: string, days: number = 7): Promise<void> {
+  console.log(chalk.yellow('⚠️ Historical reporting temporarily disabled - working on import issues'));
+  console.log(chalk.gray(`Would show history for ${folderPath} over last ${days} days`));
+  return;
+  
+  /* TODO: Fix SupabaseClient import issues and re-enable
   try {
     const supabase = SupabaseClientService.getInstance().getClient();
     
@@ -385,9 +396,15 @@ async function getHistoricalReport(folderPath: string, days: number = 7): Promis
   } catch (err) {
     console.error(chalk.red('Error generating historical report:'), err);
   }
+  */
 }
 
 async function getTrendReport(folderPath: string): Promise<void> {
+  console.log(chalk.yellow('⚠️ Trend reporting temporarily disabled - working on import issues'));
+  console.log(chalk.gray(`Would show trends for ${folderPath} over last 30 days`));
+  return;
+  
+  /* TODO: Fix SupabaseClient import issues and re-enable
   try {
     const supabase = SupabaseClientService.getInstance().getClient();
     
@@ -447,6 +464,7 @@ async function getTrendReport(folderPath: string): Promise<void> {
   } catch (err) {
     console.error(chalk.red('Error generating trend report:'), err);
   }
+  */
 }
 
 // Commands

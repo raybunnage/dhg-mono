@@ -11,7 +11,9 @@ const presentationFiles = [
 ];
 
 async function migrateFile(filePath: string) {
-  const fullPath = path.join(process.cwd(), filePath);
+  // Go up three levels from utilities to reach the project root
+  const projectRoot = path.resolve(__dirname, '../../..');
+  const fullPath = path.join(projectRoot, filePath);
   const backupPath = fullPath + '.backup';
   
   console.log(`\n📄 Processing: ${path.basename(filePath)}`);

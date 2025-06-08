@@ -18,6 +18,7 @@ import * as path from 'path';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../../packages/shared/utils';
 import { LogLevel } from '../../../../packages/shared/utils/logger';
+import { getActiveFilterProfile } from '../../presentations/get-active-filter-profile';
 
 // Initialize logger
 Logger.setLevel(LogLevel.INFO);
@@ -85,11 +86,25 @@ function getLocalMediaFiles(directory: string, extension: string): MediaFile[] {
  */
 async function getReferencedMediaFiles(supabase: any): Promise<string[]> {
   try {
-    const { data: sources, error } = await supabase
+    // Get active filter profile for root_drive_id filtering
+    const activeFilter = await getActiveFilterProfile();
+    const rootDriveIdFilter = activeFilter?.rootDriveId;
+    
+    let query = supabase
       .from('google_sources')
-      .select('name, mime_type')
+      .select('name, mime_type, root_drive_id')
       .eq('mime_type', 'video/mp4')
-      .eq('deleted', false);
+      .eq('is_deleted', false);
+    
+    // Apply root_drive_id filter if active
+    if (rootDriveIdFilter) {
+      query = query.eq('root_drive_id', rootDriveIdFilter);
+      if (!options.summary) {
+        Logger.info(`Filtering by active profile root_drive_id: ${rootDriveIdFilter}`);
+      }
+    }
+
+    const { data: sources, error } = await query;
 
     if (error) {
       Logger.error(`Error fetching sources_google data: ${error.message}`);

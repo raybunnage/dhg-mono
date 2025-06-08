@@ -169,26 +169,7 @@ async function checkLocalFile(fileId) {
   return null;
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  const serviceAccountExists = fs.existsSync(path.resolve(__dirname, '../../.service-account.json'));
-  const googleDrivePath = findGoogleDriveBasePath();
-  
-  res.json({
-    status: 'running',
-    port: PORT,
-    timestamp: new Date().toISOString(),
-    serviceAccount: serviceAccountExists ? 'found' : 'missing',
-    localGoogleDrive: googleDrivePath ? 'found' : 'not found',
-    localGoogleDrivePath: googleDrivePath,
-    supabaseConnected: supabase !== null,
-    possiblePaths: [
-      { path: '.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '.service-account.json')) },
-      { path: '../../.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '../../.service-account.json')) },
-      { path: '../../../.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '../../../.service-account.json')) }
-    ]
-  });
-});
+// Note: Health endpoints removed from app servers - use CLI health-check commands instead
 
 // Function to get Google Drive service account credentials
 function getGoogleAuthClient() {
@@ -307,8 +288,14 @@ app.get('/api/audio/:fileId', async (req, res) => {
     });
     
     const fileName = fileMetadata.data.name;
-    const mimeType = fileMetadata.data.mimeType;
+    let mimeType = fileMetadata.data.mimeType;
     const fileSize = fileMetadata.data.size;
+    
+    // Fix MIME type for browser compatibility
+    const ext = path.extname(fileName).toLowerCase();
+    if (ext === '.m4a' && mimeType === 'audio/x-m4a') {
+      mimeType = 'audio/mp4'; // Browsers prefer audio/mp4 for M4A files
+    }
     
     console.log(`File info: ${fileName}, ${mimeType}, ${fileSize} bytes`);
     

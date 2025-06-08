@@ -22,7 +22,7 @@ import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
 import { IncomingMessage } from 'http';
-import { FileService } from '../../packages/cli/src/services/file-service';
+// FileService is no longer needed - using fs directly
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Add global declaration for TypeScript
@@ -39,7 +39,7 @@ declare global {
 
 // Initialize services
 let supabase: SupabaseClient;
-const fileService = new FileService();
+// FileService instance removed - using fs directly
 
 // Initialize the global metadata object
 global.scriptMetadata = {
