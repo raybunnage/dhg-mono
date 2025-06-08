@@ -8,8 +8,6 @@ import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
 import { DocumentsPage } from './pages/DocumentsPage';
 // import { HiMomPage } from './pages/HiMomPage'; // Archived
-import { PromptService } from './pages/PromptService';
-import { DocumentTypes } from './pages/DocumentTypes';
 import { ScriptsManagement } from './pages/ScriptsManagement';
 import { GitManagement } from './pages/GitManagement';
 import { GitBranchManagement } from './pages/GitBranchManagement';
@@ -110,22 +108,6 @@ function App() {
             </ProtectedRoute>
           } 
         /> */}
-        <Route 
-          path="/prompts" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <PromptService />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/document-types" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <DocumentTypes />
-            </ProtectedRoute>
-          } 
-        />
         <Route 
           path="/scripts" 
           element={

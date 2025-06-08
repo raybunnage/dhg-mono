@@ -12,3 +12,6 @@ export * from './LoginPage';
 
 // Tracking components
 export * from './TrackingStatusIndicator';
+
+// Debug components
+export * from './AudioSourceDebug';
