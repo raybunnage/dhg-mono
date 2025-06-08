@@ -10,26 +10,33 @@ export function AudioServerDebug() {
     setError(null);
     
     try {
-      // Try a simple test to see if the proxy is working
-      // by checking if we can reach the audio endpoint structure
-      const testId = 'test-connection';
-      const response = await fetch(`/api/audio/${testId}`, {
-        method: 'HEAD'
-      });
+      // First try the health endpoint
+      const healthResponse = await fetch('/api/health');
       
-      // We expect either 400 (bad request) or 500 (server error)
-      // Both indicate the server is reachable
-      if (response.status === 404) {
-        throw new Error('Audio proxy server not accessible - make sure to run pnpm servers from the main dhg-mono directory');
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        setServerHealth(healthData);
+      } else {
+        // Fallback to basic connectivity test
+        const testId = 'test-connection';
+        const response = await fetch(`/api/audio/${testId}`, {
+          method: 'HEAD'
+        });
+        
+        // We expect either 400 (bad request) or 500 (server error)
+        // Both indicate the server is reachable
+        if (response.status === 404) {
+          throw new Error('Audio proxy server not accessible - make sure to run pnpm servers from the main dhg-mono directory');
+        }
+        
+        setServerHealth({
+          status: 'running',
+          port: 3006,
+          timestamp: new Date().toISOString(),
+          serviceAccount: 'check-health-endpoint',
+          note: 'Server is reachable but health endpoint not available. Update server.js for full diagnostics.'
+        });
       }
-      
-      setServerHealth({
-        status: 'running',
-        port: 3006,
-        timestamp: new Date().toISOString(),
-        serviceAccount: 'check-individual-files',
-        note: 'Server is reachable. Check individual file debug info for details.'
-      });
     } catch (error: any) {
       setError(error.message || 'Audio proxy server not reachable');
       console.error('Server health check failed:', error);
@@ -94,6 +101,30 @@ export function AudioServerDebug() {
             </div>
           </div>
 
+          {serverHealth.serviceAccount && (
+            <div className="mt-2 text-sm">
+              <span className="font-medium">Service Account:</span>{' '}
+              <span className={serverHealth.serviceAccount === 'found' ? 'text-green-600' : 'text-red-600'}>
+                {serverHealth.serviceAccount}
+              </span>
+            </div>
+          )}
+
+          {serverHealth.possiblePaths && (
+            <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+              <p className="font-medium mb-1">Service Account Search Paths:</p>
+              <ul className="space-y-1">
+                {serverHealth.possiblePaths.map((path: any, idx: number) => (
+                  <li key={idx} className="flex items-center gap-2">
+                    <span className={path.exists ? 'text-green-600' : 'text-gray-400'}>
+                      {path.exists ? '✓' : '✗'}
+                    </span>
+                    <code className="text-xs">{path.path}</code>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {serverHealth.note && (
             <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">

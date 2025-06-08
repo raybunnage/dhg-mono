@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { AudioList } from '@/components';
+import { AudioList, DriveFilterSelect, AudioServerDebug, TrackingStatusIndicator } from '@/components';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
-import { DriveFilterSelect } from '@/components/DriveFilterSelect';
-import { AudioServerDebug } from '@/components/AudioServerDebug';
 
 export const HomePage = () => {
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
@@ -54,8 +52,18 @@ export const HomePage = () => {
 
   return (
     <div>
-      {/* Audio Server Status */}
-      <AudioServerDebug />
+      {/* Quick Server Status Bar */}
+      <div className="mb-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex-1">
+          <AudioServerDebug />
+        </div>
+        <a 
+          href="/debug" 
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap ml-4"
+        >
+          Full Debug Info →
+        </a>
+      </div>
       
       {/* Drive Filter Selection - Prominent at the top */}
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
@@ -75,9 +83,12 @@ export const HomePage = () => {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Audio Learning</h1>
-        <p className="text-gray-600">
-          Listen to presentations on the go. Select an audio file to begin.
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600">
+            Listen to presentations on the go. Select an audio file to begin.
+          </p>
+          <TrackingStatusIndicator />
+        </div>
         <p className="text-sm text-blue-600 mt-2 p-2 bg-blue-50 rounded border border-blue-200">
           <strong>New Feature:</strong> Audio files are now streamed through our server proxy to avoid 
           browser tracking prevention issues. Playback should work in all browsers!

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseBrowser } from '../services/supabase-browser-adapter';
+import { supabaseBrowser } from '../lib/supabase';
 import { FilterService } from '@shared/services/filter-service/filter-service';
 
 export const DriveFilterDebug: React.FC = () => {
@@ -27,7 +27,7 @@ export const DriveFilterDebug: React.FC = () => {
 
         if (profilesError) {
           console.error('Error loading profiles:', profilesError);
-          setDebugInfo(prev => ({ ...prev, error: profilesError.message }));
+          setDebugInfo((prev: any) => ({ ...prev, error: profilesError.message }));
           return;
         }
 
@@ -55,13 +55,13 @@ export const DriveFilterDebug: React.FC = () => {
         }
 
         // Get unique root_drive_ids
-        const { data: uniqueDriveIds, error: driveIdsError } = await client
+        const { data: uniqueDriveIds } = await client
           .from('google_sources')
           .select('root_drive_id')
           .not('root_drive_id', 'is', null)
           .limit(100);
 
-        const uniqueDrives = [...new Set(uniqueDriveIds?.map(s => s.root_drive_id) || [])];
+        const uniqueDrives = [...new Set(uniqueDriveIds?.map((s: any) => s.root_drive_id) || [])];
 
         setDebugInfo({
           profiles: profiles || [],
@@ -73,7 +73,7 @@ export const DriveFilterDebug: React.FC = () => {
         });
       } catch (error: any) {
         console.error('Debug load error:', error);
-        setDebugInfo(prev => ({ ...prev, error: error.message }));
+        setDebugInfo((prev: any) => ({ ...prev, error: error.message }));
       } finally {
         setIsLoading(false);
       }

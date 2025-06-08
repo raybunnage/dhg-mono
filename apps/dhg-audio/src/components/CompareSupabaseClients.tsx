@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { supabaseBrowser } from '../services/supabase-browser-adapter';
+import { supabaseBrowser } from '../lib/supabase';
 
 export const CompareSupabaseClients: React.FC = () => {
   const [comparison, setComparison] = useState<any>({});

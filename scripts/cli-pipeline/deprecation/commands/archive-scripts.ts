@@ -137,7 +137,7 @@ class ScriptArchiver {
     });
     
     return new Promise((resolve) => {
-      readline.question('Continue with archive? (yes/no): ', (answer) => {
+      readline.question('Continue with archive? (yes/no): ', (answer: string) => {
         readline.close();
         resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
       });

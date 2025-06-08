@@ -76,6 +76,16 @@ export const Layout = () => {
               >
                 Filter
               </Link>
+              <Link
+                to="/debug"
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  location.pathname === '/debug'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Debug
+              </Link>
               <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-300">
                 <span className="text-sm text-gray-600">
                   {user?.email}
