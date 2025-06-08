@@ -3,7 +3,8 @@
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import * as fs from 'fs';
 import * as path from 'path';
-import { glob } from 'glob';
+import { execSync } from 'child_process';
+const glob = require('glob');
 
 interface ScriptUsageData {
   file_path: string;
@@ -23,7 +24,19 @@ interface ScriptUsageData {
     referenced_by_scripts: string[];
     has_imports: boolean;
   };
-  classification: 'active' | 'inactive' | 'dormant' | 'unknown';
+  git_history: {
+    last_commit_date?: Date;
+    commits_last_90_days: number;
+    commits_last_year: number;
+  };
+  content_analysis: {
+    has_todo_fixme: boolean;
+    has_hardcoded_paths: boolean;
+    has_deprecated_apis: boolean;
+    has_error_handling: boolean;
+    appears_experimental: boolean;
+  };
+  classification: 'definitely_obsolete' | 'likely_obsolete' | 'needs_review' | 'active';
   safe_to_archive: boolean;
   reason?: string;
 }
@@ -48,10 +61,16 @@ class ScriptUsageAnalyzer {
     // Step 4: Check dependencies
     await this.checkDependencies();
     
-    // Step 5: Classify scripts
+    // Step 5: Analyze git history
+    await this.analyzeGitHistory();
+    
+    // Step 6: Analyze content patterns
+    await this.analyzeContent();
+    
+    // Step 7: Classify scripts with enhanced logic
     this.classifyScripts();
     
-    // Step 6: Generate report
+    // Step 8: Generate report
     await this.generateReport();
   }
 
@@ -64,9 +83,14 @@ class ScriptUsageAnalyzer {
       '!scripts/**/.archived_scripts/**'
     ];
     
-    const files = await glob(patterns[0], {
-      cwd: this.projectRoot,
-      ignore: patterns.slice(1).map(p => p.substring(1))
+    const files = await new Promise<string[]>((resolve, reject) => {
+      glob(patterns[0], {
+        cwd: this.projectRoot,
+        ignore: patterns.slice(1).map(p => p.substring(1))
+      }, (err: any, files: string[]) => {
+        if (err) reject(err);
+        else resolve(files);
+      });
     });
     
     for (const file of files) {
@@ -86,7 +110,19 @@ class ScriptUsageAnalyzer {
           referenced_by_scripts: [],
           has_imports: false
         },
-        classification: 'unknown',
+        git_history: {
+          last_commit_date: undefined,
+          commits_last_90_days: 0,
+          commits_last_year: 0
+        },
+        content_analysis: {
+          has_todo_fixme: false,
+          has_hardcoded_paths: false,
+          has_deprecated_apis: false,
+          has_error_handling: false,
+          appears_experimental: false
+        },
+        classification: 'active',
         safe_to_archive: false
       });
     }
@@ -174,9 +210,14 @@ class ScriptUsageAnalyzer {
     console.log('🔍 Checking script dependencies...');
     
     // Check package.json files
-    const packageJsonFiles = await glob('**/package.json', {
-      cwd: this.projectRoot,
-      ignore: ['**/node_modules/**']
+    const packageJsonFiles = await new Promise<string[]>((resolve, reject) => {
+      glob('**/package.json', {
+        cwd: this.projectRoot,
+        ignore: ['**/node_modules/**']
+      }, (err: any, files: string[]) => {
+        if (err) reject(err);
+        else resolve(files);
+      });
     });
     
     let referencedCount = 0;
@@ -218,91 +259,299 @@ class ScriptUsageAnalyzer {
     console.log(`  ${referencedCount} scripts referenced in package.json files\n`);
   }
 
-  private classifyScripts() {
-    console.log('🏷️  Classifying scripts...');
+  private async analyzeGitHistory() {
+    console.log('📚 Analyzing git history...');
     
-    const now = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    let gitAnalyzed = 0;
+    
+    for (const script of this.scriptFiles) {
+      try {
+        // Get last commit date for this file
+        const lastCommitCmd = `git log -1 --format="%ai" -- "${script.file_path}"`;
+        const lastCommitOutput = execSync(lastCommitCmd, { 
+          cwd: this.projectRoot, 
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+        
+        if (lastCommitOutput) {
+          script.git_history.last_commit_date = new Date(lastCommitOutput);
+        }
+        
+        // Count commits in last 90 days
+        const since90Days = new Date();
+        since90Days.setDate(since90Days.getDate() - 90);
+        const commits90Cmd = `git log --oneline --since="${since90Days.toISOString()}" -- "${script.file_path}"`;
+        const commits90Output = execSync(commits90Cmd, { 
+          cwd: this.projectRoot, 
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+        
+        script.git_history.commits_last_90_days = commits90Output ? commits90Output.split('\n').length : 0;
+        
+        // Count commits in last year
+        const sinceYear = new Date();
+        sinceYear.setFullYear(sinceYear.getFullYear() - 1);
+        const commitsYearCmd = `git log --oneline --since="${sinceYear.toISOString()}" -- "${script.file_path}"`;
+        const commitsYearOutput = execSync(commitsYearCmd, { 
+          cwd: this.projectRoot, 
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+        
+        script.git_history.commits_last_year = commitsYearOutput ? commitsYearOutput.split('\n').length : 0;
+        
+        gitAnalyzed++;
+      } catch (error) {
+        // Git command failed - file might not be tracked
+        console.error(`Git analysis failed for ${script.file_path}:`, error);
+      }
+    }
+    
+    console.log(`  Analyzed git history for ${gitAnalyzed} scripts\n`);
+  }
+
+  private async analyzeContent() {
+    console.log('🔍 Analyzing script content...');
+    
+    let contentAnalyzed = 0;
+    
+    for (const script of this.scriptFiles) {
+      try {
+        const content = fs.readFileSync(
+          path.join(this.projectRoot, script.file_path), 
+          'utf-8'
+        );
+        
+        // Check for TODO/FIXME comments
+        script.content_analysis.has_todo_fixme = /\b(TODO|FIXME|XXX|HACK)\b/i.test(content);
+        
+        // Check for hardcoded paths (absolute paths)
+        script.content_analysis.has_hardcoded_paths = /\/Users\/|\/home\/|C:\\|\/tmp\/|\/var\/tmp/i.test(content);
+        
+        // Check for deprecated APIs and patterns
+        const deprecatedPatterns = [
+          /createClient\(/,  // Direct Supabase client creation
+          /require\(['"]supabase['"]\)/,  // Old supabase import
+          /process\.env\.SUPABASE_URL/,  // Direct env access instead of service
+          /npm install --save/,  // Deprecated npm flag
+          /node_modules\/\.bin\//,  // Direct bin access
+          /DEPRECATED|deprecated/i  // Explicit deprecation markers
+        ];
+        script.content_analysis.has_deprecated_apis = deprecatedPatterns.some(pattern => pattern.test(content));
+        
+        // Check for error handling patterns
+        script.content_analysis.has_error_handling = /try\s*\{|catch\s*\(|\.catch\(|if.*error|throw\s+/.test(content);
+        
+        // Check if appears experimental
+        const experimentalMarkers = [
+          /\btest\b/i,
+          /\bexperiment/i,
+          /\bdebug\b/i,
+          /\btemp\b/i,
+          /\btmp\b/i,
+          /console\.log/,
+          /console\.debug/,
+          /\bWIP\b/,
+          /work.in.progress/i
+        ];
+        script.content_analysis.appears_experimental = experimentalMarkers.some(pattern => pattern.test(content));
+        
+        contentAnalyzed++;
+      } catch (error) {
+        console.error(`Content analysis failed for ${script.file_path}:`, error);
+      }
+    }
+    
+    console.log(`  Analyzed content for ${contentAnalyzed} scripts\n`);
+  }
+
+  private classifyScripts() {
+    console.log('🏷️  Classifying scripts with enhanced logic...');
     
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     
-    let active = 0, inactive = 0, dormant = 0, unknown = 0;
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    
+    let definitelyObsolete = 0, likelyObsolete = 0, needsReview = 0, active = 0;
     
     for (const script of this.scriptFiles) {
-      const lastUsed = script.usage_data?.last_used || script.last_modified;
-      
-      if (lastUsed > thirtyDaysAgo) {
-        script.classification = 'active';
-        active++;
-      } else if (lastUsed > ninetyDaysAgo) {
-        script.classification = 'inactive';
-        inactive++;
-      } else if (lastUsed) {
-        script.classification = 'dormant';
-        dormant++;
-      } else {
-        script.classification = 'unknown';
-        unknown++;
-      }
-      
-      // Determine if safe to archive
+      script.classification = this.determineClassification(script, ninetyDaysAgo, oneYearAgo);
       script.safe_to_archive = this.isSafeToArchive(script);
+      
+      switch (script.classification) {
+        case 'definitely_obsolete':
+          definitelyObsolete++;
+          break;
+        case 'likely_obsolete':
+          likelyObsolete++;
+          break;
+        case 'needs_review':
+          needsReview++;
+          break;
+        case 'active':
+          active++;
+          break;
+      }
     }
     
-    console.log(`  Classifications:`);
-    console.log(`    Active (< 30 days): ${active}`);
-    console.log(`    Inactive (30-90 days): ${inactive}`);
-    console.log(`    Dormant (> 90 days): ${dormant}`);
-    console.log(`    Unknown: ${unknown}\n`);
+    console.log(`  Enhanced Classifications:`);
+    console.log(`    🔴 Definitely Obsolete: ${definitelyObsolete}`);
+    console.log(`    🟡 Likely Obsolete: ${likelyObsolete}`);
+    console.log(`    🟠 Needs Review: ${needsReview}`);
+    console.log(`    🟢 Active: ${active}\n`);
   }
 
-  private isSafeToArchive(script: ScriptUsageData): boolean {
-    // Never archive certain critical files
+  private determineClassification(
+    script: ScriptUsageData, 
+    ninetyDaysAgo: Date, 
+    oneYearAgo: Date
+  ): 'definitely_obsolete' | 'likely_obsolete' | 'needs_review' | 'active' {
+    
+    // Critical files are always active
+    if (this.isCriticalFile(script)) {
+      script.reason = 'Critical infrastructure file';
+      return 'active';
+    }
+    
+    // Files with recent git activity are active
+    if (script.git_history.commits_last_90_days > 0) {
+      script.reason = `${script.git_history.commits_last_90_days} commits in last 90 days`;
+      return 'active';
+    }
+    
+    // Files referenced by other scripts are active
+    if (script.dependencies.referenced_by_scripts.length > 0 || 
+        script.dependencies.referenced_in_package_json) {
+      script.reason = 'Referenced by other scripts or package.json';
+      return 'active';
+    }
+    
+    // Files in active CLI pipelines with recent usage are active
+    if (script.in_cli_pipeline && script.usage_data && script.usage_data.usage_count > 0) {
+      script.reason = 'Part of CLI pipeline with usage history';
+      return 'active';
+    }
+    
+    // DEFINITELY OBSOLETE: Multiple red flags
+    const obsoleteScore = this.calculateObsoleteScore(script, oneYearAgo);
+    if (obsoleteScore >= 4) {
+      script.reason = `High obsolete score (${obsoleteScore}): ${this.getObsoleteReasons(script)}`;
+      return 'definitely_obsolete';
+    }
+    
+    // LIKELY OBSOLETE: Some red flags
+    if (obsoleteScore >= 2) {
+      script.reason = `Moderate obsolete score (${obsoleteScore}): ${this.getObsoleteReasons(script)}`;
+      return 'likely_obsolete';
+    }
+    
+    // Files with no git history but exist might need review
+    if (!script.git_history.last_commit_date) {
+      script.reason = 'No git history found - might be untracked';
+      return 'needs_review';
+    }
+    
+    // Files with old git history but good error handling might need review
+    if (script.git_history.last_commit_date && 
+        script.git_history.last_commit_date < oneYearAgo &&
+        script.content_analysis.has_error_handling) {
+      script.reason = 'Old but has proper error handling - needs manual review';
+      return 'needs_review';
+    }
+    
+    // Default to needs review for unclear cases
+    script.reason = 'Mixed signals - requires manual assessment';
+    return 'needs_review';
+  }
+
+  private calculateObsoleteScore(script: ScriptUsageData, oneYearAgo: Date): number {
+    let score = 0;
+    
+    // No git commits in a year (+2 points)
+    if (script.git_history.commits_last_year === 0) score += 2;
+    
+    // Very old last commit (+1 point)
+    if (script.git_history.last_commit_date && script.git_history.last_commit_date < oneYearAgo) score += 1;
+    
+    // Has TODO/FIXME comments (+1 point)
+    if (script.content_analysis.has_todo_fixme) score += 1;
+    
+    // Has deprecated APIs (+2 points)
+    if (script.content_analysis.has_deprecated_apis) score += 2;
+    
+    // Appears experimental (+1 point)
+    if (script.content_analysis.appears_experimental) score += 1;
+    
+    // Has hardcoded paths (+1 point)
+    if (script.content_analysis.has_hardcoded_paths) score += 1;
+    
+    // No error handling (-1 point - reduces obsolete score)
+    if (!script.content_analysis.has_error_handling) score += 1;
+    
+    // Not in CLI pipeline (+1 point)
+    if (!script.in_cli_pipeline) score += 1;
+    
+    return score;
+  }
+
+  private getObsoleteReasons(script: ScriptUsageData): string {
+    const reasons = [];
+    
+    if (script.git_history.commits_last_year === 0) reasons.push('no commits this year');
+    if (script.content_analysis.has_todo_fixme) reasons.push('has TODO/FIXME');
+    if (script.content_analysis.has_deprecated_apis) reasons.push('deprecated APIs');
+    if (script.content_analysis.appears_experimental) reasons.push('experimental code');
+    if (script.content_analysis.has_hardcoded_paths) reasons.push('hardcoded paths');
+    if (!script.content_analysis.has_error_handling) reasons.push('no error handling');
+    if (!script.in_cli_pipeline) reasons.push('not in CLI pipeline');
+    
+    return reasons.join(', ');
+  }
+
+  private isCriticalFile(script: ScriptUsageData): boolean {
     const criticalPatterns = [
       /cli\.sh$/,           // Main CLI entry points
       /health-check\.sh$/,  // Health checks
       /package\.json$/,     // Package files
       /start-all-servers/,  // Infrastructure
-      /kill-all-servers/    // Infrastructure
+      /kill-all-servers/,   // Infrastructure
+      /tsconfig/,           // TypeScript configs
+      /vite\.config/,       // Vite configs
+      /tailwind\.config/,   // Tailwind configs
+      /eslint\.config/      // ESLint configs
     ];
     
-    if (criticalPatterns.some(pattern => pattern.test(script.file_name))) {
-      script.reason = 'Critical infrastructure file';
+    return criticalPatterns.some(pattern => pattern.test(script.file_name));
+  }
+
+  private isSafeToArchive(script: ScriptUsageData): boolean {
+    // Critical files are never safe to archive
+    if (this.isCriticalFile(script)) {
       return false;
     }
     
-    // Don't archive if actively used
+    // Active files are not safe to archive
     if (script.classification === 'active') {
-      script.reason = 'Recently used (within 30 days)';
       return false;
     }
     
-    // Don't archive if referenced
-    if (script.dependencies.referenced_in_package_json) {
-      script.reason = 'Referenced in package.json';
+    // Files referenced by others are not safe to archive
+    if (script.dependencies.referenced_in_package_json || 
+        script.dependencies.referenced_by_scripts.length > 0) {
       return false;
     }
     
-    if (script.dependencies.referenced_by_scripts.length > 0) {
-      script.reason = `Referenced by ${script.dependencies.referenced_by_scripts.length} other scripts`;
-      return false;
-    }
-    
-    // Don't archive active CLI pipeline scripts
-    if (script.in_cli_pipeline && script.classification !== 'dormant') {
-      script.reason = 'Part of active CLI pipeline';
-      return false;
-    }
-    
-    // Safe to archive if dormant and not referenced
-    if (script.classification === 'dormant') {
-      script.reason = 'Dormant script with no dependencies';
+    // Only definitely obsolete files are immediately safe to archive
+    if (script.classification === 'definitely_obsolete') {
       return true;
     }
     
-    script.reason = 'Insufficient data to determine safety';
+    // Likely obsolete files might be safe, but need confirmation
+    // Needs review files should not be auto-archived
     return false;
   }
 
@@ -311,10 +560,10 @@ class ScriptUsageAnalyzer {
     
     const archivable = this.scriptFiles.filter(s => s.safe_to_archive);
     const byClassification = {
-      active: this.scriptFiles.filter(s => s.classification === 'active'),
-      inactive: this.scriptFiles.filter(s => s.classification === 'inactive'),
-      dormant: this.scriptFiles.filter(s => s.classification === 'dormant'),
-      unknown: this.scriptFiles.filter(s => s.classification === 'unknown')
+      definitely_obsolete: this.scriptFiles.filter(s => s.classification === 'definitely_obsolete'),
+      likely_obsolete: this.scriptFiles.filter(s => s.classification === 'likely_obsolete'),
+      needs_review: this.scriptFiles.filter(s => s.classification === 'needs_review'),
+      active: this.scriptFiles.filter(s => s.classification === 'active')
     };
     
     console.log('=== SCRIPT USAGE ANALYSIS REPORT ===\n');
@@ -356,10 +605,10 @@ class ScriptUsageAnalyzer {
         total_scripts: this.scriptFiles.length,
         archivable: archivable.length,
         by_classification: {
-          active: byClassification.active.length,
-          inactive: byClassification.inactive.length,
-          dormant: byClassification.dormant.length,
-          unknown: byClassification.unknown.length
+          definitely_obsolete: byClassification.definitely_obsolete.length,
+          likely_obsolete: byClassification.likely_obsolete.length,
+          needs_review: byClassification.needs_review.length,
+          active: byClassification.active.length
         }
       },
       archivable_scripts: archivable,

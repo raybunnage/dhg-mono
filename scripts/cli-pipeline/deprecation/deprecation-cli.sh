@@ -56,6 +56,7 @@ show_help() {
   echo "  archive-service      Archive a deprecated service"
   echo "  archive-script       Archive a deprecated script (single)"
   echo "  archive-scripts      Archive multiple scripts (batch)"
+  echo "  archive-likely-obsolete  Archive likely obsolete scripts (Phase 2B)"
   echo "  restore-script       Restore an archived script"
   echo "  list-archived        List all archived scripts"
   echo "  deprecate-command    Deprecate a CLI command"
@@ -90,32 +91,37 @@ analyze_scripts() {
 
 analyze_script_usage() {
   echo "🔍 Analyzing detailed script usage across monorepo..."
-  track_command "analyze-script-usage" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-script-usage.ts ${@}"
+  track_command "analyze-script-usage" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-script-usage.ts $*"
 }
 
 archive_scripts() {
   echo "📦 Archiving unused scripts..."
-  track_command "archive-scripts" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/archive-scripts.ts ${@}"
+  track_command "archive-scripts" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/archive-scripts.ts $*"
 }
 
 restore_script() {
   echo "♻️ Restoring archived script..."
-  track_command "restore-script" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/restore-script.ts ${@}"
+  track_command "restore-script" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/restore-script.ts $*"
 }
 
 list_archived() {
   echo "📋 Listing archived scripts..."
-  track_command "list-archived" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-archived.ts ${@}"
+  track_command "list-archived" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-archived.ts $*"
 }
 
 analyze_commands() {
   echo "📊 Analyzing low-usage CLI commands..."
-  track_command "analyze-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-commands.ts ${@}"
+  track_command "analyze-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-commands.ts $*"
 }
 
 analyze_pipelines() {
   echo "📊 Analyzing pipeline usage patterns..."
-  track_command "analyze-pipelines" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-pipelines.ts ${@}"
+  track_command "analyze-pipelines" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/analyze-pipelines.ts $*"
+}
+
+archive_likely_obsolete() {
+  echo "📦 Archiving likely obsolete scripts (Phase 2B)..."
+  track_command "archive-likely-obsolete" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/archive-likely-obsolete-scripts.ts $*"
 }
 
 generate_report() {
@@ -207,6 +213,9 @@ case "${1:-}" in
     ;;
   "analyze-pipelines")
     analyze_pipelines "${@:2}"
+    ;;
+  "archive-likely-obsolete")
+    archive_likely_obsolete "${@:2}"
     ;;
   "generate-report")
     generate_report "${@:2}"
