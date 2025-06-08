@@ -1,0 +1,13 @@
+{
+  "name": "media-analytics-cli",
+  "version": "1.0.0",
+  "description": "CLI for media tracking analytics",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  }
+}

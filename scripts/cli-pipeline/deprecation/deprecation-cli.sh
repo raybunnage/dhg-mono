@@ -65,6 +65,7 @@ show_help() {
   echo "  validate-imports     Check for broken imports of archived scripts"
   echo "  validate-cli-commands  Validate all CLI commands still work"
   echo "  validate-archiving   Run comprehensive validation suite"
+  echo "  cleanup-commands     Remove unimplemented commands from registry"
   echo "  deprecate-command    Deprecate a CLI command"
   echo "  generate-migration   Generate migration plan for deprecated items"
   echo ""
@@ -219,6 +220,11 @@ validate_plan() {
   track_command "validate-plan" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/validate-plan.ts ${@}"
 }
 
+cleanup_commands() {
+  echo "🧹 Cleaning up unimplemented commands..."
+  track_command "cleanup-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/cleanup-unimplemented-commands.ts ${@}"
+}
+
 # Main command processor
 case "${1:-}" in
   # Evaluation
@@ -302,6 +308,10 @@ case "${1:-}" in
     ;;
   "validate-plan")
     validate_plan "${@:2}"
+    ;;
+    
+  "cleanup-commands")
+    cleanup_commands "${@:2}"
     ;;
     
   "help"|"--help"|"-h"|"")
