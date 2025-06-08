@@ -12,7 +12,6 @@ class AudioBrowserService {
   private constructor() {
     try {
       this.supabase = supabase;
-      console.log('Supabase client initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Supabase client:', error);
       throw error;
@@ -36,12 +35,6 @@ class AudioBrowserService {
    */
   async getAudioFiles(limit?: number, rootDriveId?: string | null): Promise<any[]> {
     try {
-      // Log the query parameters for debugging
-      console.log('Fetching audio files with params:', { 
-        limit: limit || 100,
-        rootDriveId: rootDriveId || 'none',
-        supabaseUrl: import.meta.env.VITE_SUPABASE_URL
-      });
       
       let query = this.supabase
         .from('google_sources')
@@ -74,11 +67,8 @@ class AudioBrowserService {
 
       // Apply root drive ID filter if provided
       if (rootDriveId) {
-        console.log('Applying root drive filter:', rootDriveId);
         query = query.eq('root_drive_id', rootDriveId);
       }
-      
-      console.log('Executing Supabase query');
       const { data, error } = await query;
 
       if (error) {
@@ -86,7 +76,6 @@ class AudioBrowserService {
         throw error;
       }
 
-      console.log(`Successfully fetched ${data?.length || 0} audio files`);
       
       // For m4a files without titles, try to find corresponding mp4 files
       const enrichedData = await Promise.all((data || []).map(async (audioFile: any) => {
@@ -122,7 +111,6 @@ class AudioBrowserService {
             // Add the title from the video's expert documents
             if (mp4Files[0].google_expert_documents?.[0]?.title) {
               audioFile.video_title = mp4Files[0].google_expert_documents[0].title;
-              console.log(`Found video title for ${audioFile.name}: ${audioFile.video_title}`);
             }
           }
         }
@@ -205,7 +193,6 @@ class AudioBrowserService {
         if (mp4Files && mp4Files.length > 0 && mp4Files[0].expert_documents?.[0]?.title) {
           // Add the mp4's title to the m4a file data
           data.mp4_title = mp4Files[0].expert_documents[0].title;
-          console.log(`Found MP4 title for ${data.name}: ${data.mp4_title}`);
         }
       }
 

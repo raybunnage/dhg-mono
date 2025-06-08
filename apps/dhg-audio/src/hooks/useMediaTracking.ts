@@ -39,11 +39,11 @@ export function useMediaTracking({
     // Start a new session
     const initSession = async () => {
       try {
-        const sessionId = await trackingServiceRef.current?.startSession(
+        const sessionId = await trackingServiceRef.current?.startSession({
           mediaId,
-          userId,
+          userId: userId || '',
           mediaType
-        );
+        });
         sessionIdRef.current = sessionId || null;
       } catch (error) {
         console.error('Failed to start media tracking session:', error);
@@ -55,7 +55,7 @@ export function useMediaTracking({
     // Cleanup: end session when component unmounts
     return () => {
       if (sessionIdRef.current && trackingServiceRef.current) {
-        trackingServiceRef.current.endSession(sessionIdRef.current).catch(console.error);
+        trackingServiceRef.current.endSession().catch(console.error);
       }
     };
   }, [mediaId, userId, mediaType, enabled]);
@@ -64,11 +64,7 @@ export function useMediaTracking({
     if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
     
     try {
-      await trackingServiceRef.current.trackEvent(sessionIdRef.current, {
-        event_type: 'play',
-        event_timestamp: new Date().toISOString(),
-        playback_position: currentTime
-      });
+      await trackingServiceRef.current.trackPlay(currentTime);
     } catch (error) {
       console.error('Failed to track play event:', error);
     }
@@ -78,11 +74,7 @@ export function useMediaTracking({
     if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
     
     try {
-      await trackingServiceRef.current.trackEvent(sessionIdRef.current, {
-        event_type: 'pause',
-        event_timestamp: new Date().toISOString(),
-        playback_position: currentTime
-      });
+      await trackingServiceRef.current.trackPause(currentTime);
     } catch (error) {
       console.error('Failed to track pause event:', error);
     }
@@ -92,12 +84,7 @@ export function useMediaTracking({
     if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
     
     try {
-      await trackingServiceRef.current.trackEvent(sessionIdRef.current, {
-        event_type: 'seek',
-        event_timestamp: new Date().toISOString(),
-        playback_position: toTime,
-        event_data: { from: fromTime, to: toTime }
-      });
+      await trackingServiceRef.current.trackSeek(fromTime, toTime);
     } catch (error) {
       console.error('Failed to track seek event:', error);
     }
@@ -107,12 +94,7 @@ export function useMediaTracking({
     if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
     
     try {
-      await trackingServiceRef.current.trackEvent(sessionIdRef.current, {
-        event_type: 'speed_change',
-        event_timestamp: new Date().toISOString(),
-        playback_position: currentTime,
-        event_data: { speed: newSpeed }
-      });
+      await trackingServiceRef.current.trackSpeedChange(currentTime, newSpeed);
     } catch (error) {
       console.error('Failed to track speed change:', error);
     }
@@ -122,36 +104,32 @@ export function useMediaTracking({
     if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
     
     try {
-      await trackingServiceRef.current.trackEvent(sessionIdRef.current, {
-        event_type: 'volume_change',
-        event_timestamp: new Date().toISOString(),
-        playback_position: currentTime,
-        event_data: { volume: newVolume }
-      });
+      await trackingServiceRef.current.trackVolumeChange(currentTime, newVolume);
     } catch (error) {
       console.error('Failed to track volume change:', error);
     }
   }, [enabled]);
 
   const addBookmark = useCallback(async (currentTime: number, note?: string, type?: string) => {
-    if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
+    if (!sessionIdRef.current || !trackingServiceRef.current || !enabled || !mediaId) return;
     
     try {
-      await trackingServiceRef.current.addBookmark(sessionIdRef.current, {
-        playback_position: currentTime,
+      await trackingServiceRef.current.addBookmark(
+        mediaId,
+        currentTime,
         note,
-        bookmark_type: type
-      });
+        type
+      );
     } catch (error) {
       console.error('Failed to add bookmark:', error);
     }
-  }, [enabled]);
+  }, [enabled, mediaId]);
 
   const endSession = useCallback(async (completionPercentage?: number) => {
     if (!sessionIdRef.current || !trackingServiceRef.current || !enabled) return;
     
     try {
-      await trackingServiceRef.current.endSession(sessionIdRef.current, completionPercentage);
+      await trackingServiceRef.current.endSession(completionPercentage);
       sessionIdRef.current = null;
     } catch (error) {
       console.error('Failed to end session:', error);
