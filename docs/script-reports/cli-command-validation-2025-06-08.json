@@ -1,10 +1,10 @@
 {
-  "validation_date": "2025-06-08T21:14:39.290Z",
-  "total_pipelines_checked": 18,
-  "broken_commands_count": 107,
+  "validation_date": "2025-06-08T22:04:38.552Z",
+  "total_pipelines_checked": 19,
+  "broken_commands_count": 112,
   "summary": {
     "archived": 0,
-    "missing": 107,
+    "missing": 112,
     "syntax_errors": 0
   },
   "broken_commands": [
@@ -20,6 +20,46 @@
       "pipeline_name": "all_pipelines",
       "command_name": "quick-restart",
       "script_path": "scripts/cli-pipeline/all_pipelines/commands/quick-restart.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "analysis",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/analysis/analysis-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "analysis",
+      "command_name": "import-script-analysis",
+      "script_path": "scripts/cli-pipeline/analysis/commands/import-script-analysis.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "analysis",
+      "command_name": "analyze-scripts",
+      "script_path": "scripts/cli-pipeline/analysis/commands/analyze-scripts.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "analysis",
+      "command_name": "classify-script-with-prompt",
+      "script_path": "scripts/cli-pipeline/analysis/commands/classify-script-with-prompt.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "analysis",
+      "command_name": "health-check",
+      "script_path": "scripts/cli-pipeline/analysis/commands/health-check.ts",
       "error": "Command script not found",
       "is_missing": true,
       "is_archived": false
@@ -879,6 +919,48 @@
         "pipeline_name": "all_pipelines",
         "command_name": "quick-restart",
         "script_path": "scripts/cli-pipeline/all_pipelines/commands/quick-restart.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "analysis": [
+      {
+        "pipeline_name": "analysis",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/analysis/analysis-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "analysis",
+        "command_name": "import-script-analysis",
+        "script_path": "scripts/cli-pipeline/analysis/commands/import-script-analysis.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "analysis",
+        "command_name": "analyze-scripts",
+        "script_path": "scripts/cli-pipeline/analysis/commands/analyze-scripts.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "analysis",
+        "command_name": "classify-script-with-prompt",
+        "script_path": "scripts/cli-pipeline/analysis/commands/classify-script-with-prompt.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "analysis",
+        "command_name": "health-check",
+        "script_path": "scripts/cli-pipeline/analysis/commands/health-check.ts",
         "error": "Command script not found",
         "is_missing": true,
         "is_archived": false
