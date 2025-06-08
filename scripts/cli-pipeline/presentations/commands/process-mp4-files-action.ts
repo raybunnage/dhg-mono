@@ -49,27 +49,26 @@ export async function processMp4FilesAction(options: any) {
     try {
       // Fetch the prompt from the database using the PromptQueryService
       writeDebugLog(`Attempting to load prompt 'final_video-summary-prompt' from database`);
-      const promptResult = await promptService.loadPrompt('final_video-summary-prompt');
-      
-      if (promptResult.error) {
-        writeDebugLog(`Error loading prompt: ${promptResult.error}`);
-        Logger.warn(`Error loading prompt: ${promptResult.error}`);
-      }
-      
-      if (promptResult.prompt) {
-        promptTemplate = promptResult.prompt.content;
-        promptLoaded = true;
-        writeDebugLog(`Successfully loaded prompt from database: ${promptResult.prompt.name}`);
-        Logger.info(`Found prompt: ${promptResult.prompt.name}`);
+      try {
+        const promptResult = await promptService.loadPrompt('final_video-summary-prompt');
         
-        // Save the prompt to a debug file
-        const promptDebugPath = path.resolve(debugDir, 'prompt-template.md');
-        fs.writeFileSync(promptDebugPath, promptTemplate);
-        Logger.info(`Saved prompt template to ${promptDebugPath} for inspection`);
+        if (promptResult.prompt) {
+          promptTemplate = promptResult.prompt.content;
+          promptLoaded = true;
+          writeDebugLog(`Successfully loaded prompt from database: ${promptResult.prompt.name}`);
+          Logger.info(`Found prompt: ${promptResult.prompt.name}`);
+        
+          // Save the prompt to a debug file
+          const promptDebugPath = path.resolve(debugDir, 'prompt-template.md');
+          fs.writeFileSync(promptDebugPath, promptTemplate);
+          Logger.info(`Saved prompt template to ${promptDebugPath} for inspection`);
+        }
+        } catch (promptError) {
+        writeDebugLog(`Exception loading prompt: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`);
+        Logger.warn(`Could not get prompt from database due to exception: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`);
       }
-    } catch (promptError) {
-      writeDebugLog(`Exception loading prompt: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`);
-      Logger.warn(`Could not get prompt from database due to exception: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`);
+    } catch (error) {
+      writeDebugLog(`Outer try-catch error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
     // Use a fallback prompt if database load failed
@@ -615,7 +614,6 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
       
       // Use getJsonResponse which is specifically designed for JSON output
       const jsonResponse = await claudeService.getJsonResponse(customizedPrompt, {
-        jsonMode: true,  // Enforce JSON-only output
         temperature: 0,  // Use 0 temperature for most consistent JSON structure
         system: "You are a helpful AI assistant that ONLY responds with valid JSON. Do not include any text before or after the JSON object."
       });

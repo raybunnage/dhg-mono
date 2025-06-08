@@ -7,10 +7,8 @@
 
 import { config as dotenvConfig } from 'dotenv';
 import * as path from 'path';
-import { Logger } from '../../packages/cli/src/utils/logger';
-import { ErrorHandler } from '../../packages/cli/src/utils/error-handler';
-import { SupabaseClientService } from '../../packages/cli/src/services/supabase-client';
-import config from '../../packages/cli/src/utils/config';
+import { Logger } from '../../../packages/shared/utils/logger';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Define interfaces for typed return values
 interface ScriptResult {
@@ -28,9 +26,9 @@ async function main(): Promise<ScriptResult> {
   Logger.info('Starting script to display document file paths...');
   
   try {
-    // Use the ConfigService for connection details
-    const supabaseUrl = config.supabaseUrl;
-    const supabaseKey = config.supabaseKey;
+    // Use environment variables for connection details
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase connection details in configuration');
@@ -40,16 +38,8 @@ async function main(): Promise<ScriptResult> {
     Logger.info('Supabase key is present: YES');
     
     // Use the SupabaseClientService singleton
-    Logger.info('Initializing Supabase client...');
-    const supabaseService = SupabaseClientService.getInstance();
-    
-    // Initialize client if needed
-    if (!supabaseService.isInitialized()) {
-      supabaseService.initialize(supabaseUrl, supabaseKey);
-    }
-    
-    // Get the shared client instance
-    const supabase = supabaseService.getClient();
+    Logger.info('Getting Supabase client...');
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Count records
     Logger.info('Counting records in documentation_files table...');
@@ -97,8 +87,8 @@ async function main(): Promise<ScriptResult> {
     };
     
   } catch (error) {
-    // Use ErrorHandler for standardized error handling
-    ErrorHandler.handle(error as Error);
+    // Use Logger for error handling
+    Logger.error('Script execution error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -115,6 +105,6 @@ main()
     }
   })
   .catch(error => {
-    ErrorHandler.handle(error as Error);
+    Logger.error('Process error:', error);
     process.exit(1);
   });
