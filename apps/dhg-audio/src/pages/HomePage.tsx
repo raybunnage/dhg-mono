@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
-import { AudioList } from '@/components';
+import { AudioList, DriveFilterSelect, TrackingStatusIndicator } from '@/components';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
-import { DriveFilterSelect } from '@/components/DriveFilterSelect';
-import { AudioServerDebug } from '@/components/AudioServerDebug';
 
 export const HomePage = () => {
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
-  const [rawFiles, setRawFiles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentRootDriveId, setCurrentRootDriveId] = useState<string | null>(null);
@@ -17,24 +14,16 @@ export const HomePage = () => {
         setIsLoading(true);
         setError(null);
         
-        console.log('HomePage: Starting to fetch audio files', { rootDriveId: currentRootDriveId });
-        const result = await AudioAdapter.getAudioFilesWithDebug(currentRootDriveId);
-        console.log('HomePage: Successfully fetched audio files', result.files.length);
-        console.log('HomePage: Raw data sample:', result.rawData[0]);
-        setAudioFiles(result.files);
-        setRawFiles(result.rawData);
+        const files = await AudioAdapter.getAudioFiles(currentRootDriveId);
+        setAudioFiles(files);
       } catch (err) {
         console.error('Error fetching audio files:', err);
-        // Create a more detailed error message
-        let errorMessage = 'Failed to load audio files. ';
+        let errorMessage = 'Failed to load audio files.';
         
         if (err instanceof Error) {
-          errorMessage += `Error: ${err.message}`;
-          
-          // Check for connection-related errors
           if (err.message.includes('network') || err.message.includes('connection') || 
               err.message.includes('ERR_NAME_NOT_RESOLVED')) {
-            errorMessage = 'Connection to database failed. Please check your Supabase connection settings in .env.development file.';
+            errorMessage = 'Connection to database failed. Please check your connection.';
           }
         }
         
@@ -47,25 +36,12 @@ export const HomePage = () => {
     fetchAudioFiles();
   }, [currentRootDriveId]);
 
-  const handleFilterChange = (profileId: string | null, rootDriveId: string | null) => {
-    console.log('Filter changed:', { profileId, rootDriveId });
+  const handleFilterChange = (_profileId: string | null, rootDriveId: string | null) => {
     setCurrentRootDriveId(rootDriveId);
   };
 
   return (
     <div>
-      {/* Quick Server Status Bar */}
-      <div className="mb-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex-1">
-          <AudioServerDebug />
-        </div>
-        <a 
-          href="/debug" 
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap ml-4"
-        >
-          Full Debug Info →
-        </a>
-      </div>
       
       {/* Drive Filter Selection - Prominent at the top */}
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
@@ -85,13 +61,12 @@ export const HomePage = () => {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Audio Learning</h1>
-        <p className="text-gray-600">
-          Listen to presentations on the go. Select an audio file to begin.
-        </p>
-        <p className="text-sm text-blue-600 mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-          <strong>New Feature:</strong> Audio files are now streamed through our server proxy to avoid 
-          browser tracking prevention issues. Playback should work in all browsers!
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600">
+            Listen to presentations on the go. Select an audio file to begin.
+          </p>
+          <TrackingStatusIndicator />
+        </div>
       </div>
 
       {error && (
@@ -101,7 +76,7 @@ export const HomePage = () => {
       )}
 
 
-      <AudioList audioFiles={audioFiles} isLoading={isLoading} rawFiles={rawFiles} />
+      <AudioList audioFiles={audioFiles} isLoading={isLoading} />
     </div>
   );
 };

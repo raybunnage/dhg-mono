@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useMediaTracking } from '@shared/hooks/useMediaTracking';
+import { useMediaTracking } from '../hooks/useMediaTracking';
 import { useAuth } from '../hooks/useAuth';
 import { getAudioUrlOptions } from '../utils/google-drive-utils';
 
@@ -55,7 +55,6 @@ export const TrackedAudioPlayer = ({
       // Set the first URL option (Google Drive direct download)
       if (urlOptions.length > 0) {
         audioRef.current.src = urlOptions[0];
-        console.log('TrackedAudioPlayer using Google Drive URL:', urlOptions[0]);
       }
     }
   }, [url, initialTime, urlOptions]);
@@ -68,7 +67,6 @@ export const TrackedAudioPlayer = ({
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setLoadingState('loaded');
-      console.log('Audio loaded successfully:', title);
     };
     
     const handleTimeUpdate = () => {
@@ -93,12 +91,9 @@ export const TrackedAudioPlayer = ({
       tracking.endSession(completion);
     };
     
-    const handleError = (e: ErrorEvent) => {
-      console.error('TrackedAudioPlayer error for URL:', urlOptions[currentUrlIndex], e);
-      
+    const handleError = () => {
       // Try the next URL option if available
       if (currentUrlIndex < urlOptions.length - 1) {
-        console.log(`Trying next URL option (${currentUrlIndex + 1}/${urlOptions.length})`);
         setCurrentUrlIndex(prev => prev + 1);
         setLoadingState('loading');
         
@@ -109,7 +104,7 @@ export const TrackedAudioPlayer = ({
         }
       } else {
         // All URL options failed
-        setError('Failed to load audio through proxy server and direct Google Drive access. Check that the audio proxy server is running.');
+        setError('Failed to load audio. Please try again later.');
         setLoadingState('error');
         setIsPlaying(false);
       }
@@ -171,7 +166,6 @@ export const TrackedAudioPlayer = ({
               await tracking.trackPlay(audioRef.current!.currentTime);
             })
             .catch((err) => {
-              console.error('Play error:', err);
               setError(`Couldn't play audio: ${err.message}`);
               setIsPlaying(false);
             });
@@ -241,39 +235,12 @@ export const TrackedAudioPlayer = ({
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
           <p className="font-medium">{error}</p>
-          <p className="text-sm mt-1">
-            Tried {urlOptions.length} different URL formats including the audio proxy server. Make sure the proxy server is running on port 3006.
-          </p>
-          <div className="mt-2 space-y-1">
-            <a 
-              href={url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block text-blue-600 hover:underline text-sm font-medium"
-            >
-              Open original Google Drive link
-            </a>
-            {urlOptions.length > 1 && (
-              <a 
-                href={urlOptions[0]} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block text-blue-600 hover:underline text-sm font-medium"
-              >
-                Try proxy server link
-              </a>
-            )}
-            {urlOptions.length > 2 && (
-              <a 
-                href={urlOptions[1]} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block text-blue-600 hover:underline text-sm font-medium"
-              >
-                Try direct download link
-              </a>
-            )}
-          </div>
+          <button
+            onClick={togglePlay}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Try Again
+          </button>
         </div>
       )}
       
