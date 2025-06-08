@@ -14,6 +14,9 @@ import { SuperMinimal } from '@/pages/SuperMinimal';
 import { NetworkTest } from '@/pages/NetworkTest';
 import { HookTest } from '@/pages/HookTest';
 import { ReactQueryTest } from '@/pages/ReactQueryTest';
+import { IsolationTest } from '@/pages/IsolationTest';
+import { FlashDetector } from '@/pages/FlashDetector';
+import { StrictModeTest } from '@/pages/StrictModeTest';
 
 const queryClient = new QueryClient();
 
@@ -36,6 +39,9 @@ function App() {
         <Route path="/network" element={<NetworkTest />} />
         <Route path="/hooks" element={<HookTest />} />
         <Route path="/query" element={<ReactQueryTest />} />
+        <Route path="/isolate" element={<IsolationTest />} />
+        <Route path="/flash" element={<FlashDetector />} />
+        <Route path="/strict" element={<StrictModeTest />} />
       </Routes>
     </QueryClientProvider>
   );
