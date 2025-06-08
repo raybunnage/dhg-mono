@@ -16,17 +16,17 @@
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Load environment files directly
-if [ -f "$ROOT_DIR/.env" ]; then
-  export $(cat "$ROOT_DIR/.env" | grep -v '^#' | xargs)
+if [ -f "$PROJECT_ROOT/.env" ]; then
+  export $(cat "$PROJECT_ROOT/.env" | grep -v '^#' | xargs)
 fi
-if [ -f "$ROOT_DIR/.env.local" ]; then
-  export $(cat "$ROOT_DIR/.env.local" | grep -v '^#' | xargs)
+if [ -f "$PROJECT_ROOT/.env.local" ]; then
+  export $(cat "$PROJECT_ROOT/.env.local" | grep -v '^#' | xargs)
 fi
-if [ -f "$ROOT_DIR/.env.development" ]; then
-  export $(cat "$ROOT_DIR/.env.development" | grep -v '^#' | xargs)
+if [ -f "$PROJECT_ROOT/.env.development" ]; then
+  export $(cat "$PROJECT_ROOT/.env.development" | grep -v '^#' | xargs)
 fi
 
 # Function to track command execution
@@ -109,5 +109,13 @@ case "$1" in
     echo "Unknown command: $1"
     echo "Run './refactor-tracking-cli.sh help' for usage"
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for refactor_tracking pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ refactor_tracking pipeline is healthy"
     ;;
 esac

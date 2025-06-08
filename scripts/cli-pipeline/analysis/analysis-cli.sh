@@ -3,8 +3,8 @@
 # Provides a consistent interface for script analysis tools
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Function to execute a command with tracking
 track_command() {
@@ -15,7 +15,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -24,7 +24,7 @@ track_command() {
 }
 
 # Load environment variables
-for ENV_FILE in "${ROOT_DIR}/.env" "${ROOT_DIR}/.env.development" "${ROOT_DIR}/.env.local"; do
+for ENV_FILE in "${PROJECT_ROOT}/.env" "${PROJECT_ROOT}/.env.development" "${PROJECT_ROOT}/.env.local"; do
   if [ -f "${ENV_FILE}" ]; then
     echo "Loading environment variables from ${ENV_FILE}..."
     set -a

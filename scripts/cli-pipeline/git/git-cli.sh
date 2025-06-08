@@ -6,21 +6,26 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Source the environment variables
-source "$SCRIPT_DIR/../../core/load-env.sh"
+# Load environment variables
+ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  echo "Loading environment variables from $ENV_DEV_FILE"
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+fi
 
 # Function to track command usage
 track_command() {
-    local pipeline="git"
-    local command="$1"
+    local pipeline_name="git"
+    local command_name="$1"
     shift
+    local full_command="$@"
     
-    # Run the tracking wrapper
-    if [ -f "$SCRIPT_DIR/../database/tests/test-tracking-wrapper.sh" ]; then
-        "$SCRIPT_DIR/../database/tests/test-tracking-wrapper.sh" "$pipeline" "$command" "$@"
+    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+    if [ -f "$TRACKER_TS" ]; then
+        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
     else
-        # Fallback: run without tracking
-        "$@"
+        echo "ℹ️ Tracking not available. Running command directly."
+        eval "$full_command"
     fi
 }
 
@@ -88,7 +93,7 @@ case "$1" in
         track_command "check-conflicts" node --loader ts-node/esm "$SCRIPT_DIR/commands/check-conflicts.ts" "${@:2}"
         ;;
     "health-check")
-        track_command "health-check" node --loader ts-node/esm "$SCRIPT_DIR/commands/health-check.ts" "${@:2}"
+        track_command "health-check" "$SCRIPT_DIR/health-check.sh ${@:2}"
         ;;
     "help"|"--help"|"-h"|"")
         show_help
@@ -99,4 +104,12 @@ case "$1" in
         show_help
         exit 1
         ;;
+  health-check)
+    echo "🏥 Running health check for git pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ git pipeline is healthy"
+    ;;
 esac

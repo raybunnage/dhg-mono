@@ -32,11 +32,11 @@
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Load environment variables from project root .env.development file if it exists
-ENV_DEV_FILE="${ROOT_DIR}/.env.development"
+ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
 if [ -f "$ENV_DEV_FILE" ]; then
   echo "Loading environment variables from $ENV_DEV_FILE"
   # Export environment variables for Supabase
@@ -52,7 +52,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -738,7 +738,7 @@ if [ "$1" = "ids-need-reprocessing" ]; then
     echo ""
     echo "Verifying updates in the database..."
     VERIFY_COMMAND="ts-node -e \"
-    const { SupabaseClientService } = require('$ROOT_DIR/packages/shared/services/supabase-client');
+    const { SupabaseClientService } = require('$PROJECT_ROOT/packages/shared/services/supabase-client');
     const supabase = SupabaseClientService.getInstance().getClient();
     
     async function verifyStatus() {

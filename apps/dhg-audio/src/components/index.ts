@@ -16,3 +16,6 @@ export * from './SimpleFilterTest';
 export * from './FilterServiceTest';
 export * from './CompareSupabaseClients';
 export * from './CheckRLS';
+export * from './AudioServerDebug';
+export * from './AudioUrlDebug';
+export * from './AudioFileDebug';

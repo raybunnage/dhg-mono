@@ -7,14 +7,14 @@ set -euo pipefail
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 
 # Track command usage
 track_command() {
     local command=$1
     # Try to track command, but don't fail if tracking is not available
-    if [ -f "$ROOT_DIR/scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh" ]; then
-        "$ROOT_DIR/scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh" track-command "registry-$command" "registry" >/dev/null 2>&1 || true
+    if [ -f "$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh" ]; then
+        "$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh" track-command "registry-$command" "registry" >/dev/null 2>&1 || true
     fi
 }
 
@@ -155,4 +155,12 @@ case "${1:-help}" in
         echo "Run './registry-cli.sh help' for usage information"
         exit 1
         ;;
+  health-check)
+    echo "🏥 Running health check for registry pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ registry pipeline is healthy"
+    ;;
 esac

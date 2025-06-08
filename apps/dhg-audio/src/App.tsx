@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout, LoginPage } from '@/components';
-import { HomePage, AudioDetailPage, AboutPage, ProfileSettingsPage, TestProfilePage, DriveFilterPage } from '@/pages';
+import { HomePage, AudioDetailPage, AboutPage, ProfileSettingsPage, TestProfilePage, DriveFilterPage, DebugPage } from '@/pages';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
@@ -34,6 +34,7 @@ function App() {
           <Route path="profile" element={<ProfileSettingsPage />} />
           <Route path="test-profile" element={<TestProfilePage />} />
           <Route path="filter" element={<DriveFilterPage />} />
+          <Route path="debug" element={<DebugPage />} />
         </Route>
       )}
     </Routes>

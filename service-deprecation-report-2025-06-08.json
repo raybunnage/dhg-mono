@@ -1,0 +1,165 @@
+{
+  "total_services": 54,
+  "unused_services": 31,
+  "services_by_category": {
+    "uncategorized": 54
+  },
+  "recommendations": [
+    {
+      "service_name": "audio",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "browser",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "browser-auth",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "browser-index",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "cli-tracking-wrapper",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "document-classifier",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "document-pipeline",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "document-type-ai",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "env-config",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "filter-service-client",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "folder-hierarchy",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "google-auth",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "google-drive-browser",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "google-drive-sync",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "health-check",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "index",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "jest.config",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "jest.setup",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "media-tracking",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "prompt-cli-interface",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "prompt-management",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "prompt-output-templates",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "prompt-service.2025-04-13_17-01-26",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "report",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "script-pipeline",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "shell-command-tracker",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "sources-google-update",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "supabase-client-fixed",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "supabase-direct-service.2025-04-13_17-01-35",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "theme",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "types",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    }
+  ],
+  "generated_at": "2025-06-08T04:32:48.623Z"
+}
