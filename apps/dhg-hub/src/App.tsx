@@ -30,7 +30,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" />
       <MainNavbar />
-      <DebugMenu />
+      {/* <DebugMenu /> TEMPORARILY DISABLED TO TEST FLASHING FIX */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/easy" element={<Easy />} />
