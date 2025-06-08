@@ -656,17 +656,18 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
 
 **Vite App Ports**:
-| Port | App | Status |
-|------|-----|--------|
-| 5173 | dhg-hub-lovable | Dedicated |
-| 5174 | dhg-hub | Dedicated |
-| 5175 | dhg-admin-suite | Dedicated |
-| 5176 | dhg-admin-google | Dedicated |
-| 5177 | dhg-admin-code | Dedicated |
-| 5178 | dhg-a | Dedicated |
-| 5179 | dhg-b | Dedicated |
-| 5194 | dhg-audio | Dedicated |
-| 8080 | dhg-improve-experts | Dedicated |
+| Port | App | Preview Port | Status |
+|------|-----|--------------|--------|
+| 5173 | dhg-hub-lovable | 4173 | Dedicated |
+| 5174 | dhg-hub | 4174 | Dedicated |
+| 5175 | dhg-admin-suite | 4175 | Dedicated |
+| 5176 | dhg-admin-google | 4176 | Dedicated |
+| 5177 | dhg-admin-code | 4177 | Dedicated |
+| 5178 | dhg-a | 4178 | Dedicated |
+| 5179 | dhg-b | 4179 | Dedicated |
+| 5194 | dhg-audio | - | Dedicated |
+| 5005 | dhg-research | - | Dedicated |
+| 8080 | dhg-improve-experts | - | Dedicated |
 
 ### Starting All Servers
 
