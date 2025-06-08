@@ -627,7 +627,7 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 ```
 
 ## Google Drive Usage
-  for any issues with gooogle drive open and read docs/apps/claude_info_special/google_drive_claude_info.md 
+  for any issues with gooogle drive open and read docs/claude_info_special/google_drive_claude_info.md 
 
 
 ## Port Management for Servers and Apps
