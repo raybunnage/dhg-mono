@@ -9,10 +9,16 @@ import { MainNavbar } from '@/components/MainNavbar';
 import { Home } from '@/pages/Home';
 import { Easy } from '@/pages/Easy';
 import { HomeMinimal } from '@/pages/HomeMinimal';
+import { SuperMinimal } from '@/pages/SuperMinimal';
 
 const queryClient = new QueryClient();
 
+let appRenderCount = 0;
+
 function App() {
+  appRenderCount++;
+  console.log(`🏠 APP COMPONENT RENDER #${appRenderCount} at ${new Date().toLocaleTimeString()}`);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" />
@@ -21,6 +27,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/easy" element={<Easy />} />
         <Route path="/test" element={<HomeMinimal />} />
+        <Route path="/super" element={<SuperMinimal />} />
       </Routes>
     </QueryClientProvider>
   );
