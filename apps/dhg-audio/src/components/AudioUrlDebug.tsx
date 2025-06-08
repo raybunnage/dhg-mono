@@ -20,8 +20,31 @@ export function AudioUrlDebug({ audioFile }: AudioUrlDebugProps) {
         mode: 'cors'
       });
       
+      // If we get a 500 error, try to get the error details
+      if (response.status === 500) {
+        try {
+          // Make a GET request to get the error details
+          const errorResponse = await fetch(audioFile.url);
+          const errorData = await errorResponse.json();
+          
+          setTestResult({
+            success: false,
+            status: response.status,
+            statusText: response.statusText,
+            errorDetails: errorData,
+            headers: {
+              contentType: response.headers.get('Content-Type'),
+              contentLength: response.headers.get('Content-Length')
+            }
+          });
+          return;
+        } catch (e) {
+          // If we can't parse the error, continue with regular handling
+        }
+      }
+      
       setTestResult({
-        success: true,
+        success: response.ok,
         status: response.status,
         statusText: response.statusText,
         headers: {
@@ -77,8 +100,23 @@ export function AudioUrlDebug({ audioFile }: AudioUrlDebugProps) {
           ) : (
             <>
               <div className="font-semibold text-red-700">✗ Proxy test failed!</div>
-              <div>Error: {testResult.error}</div>
-              <div>Type: {testResult.type}</div>
+              {testResult.errorDetails ? (
+                <>
+                  <div>Status: {testResult.status} {testResult.statusText}</div>
+                  <div className="mt-1 p-2 bg-red-50 rounded">
+                    <div className="font-medium">Error: {testResult.errorDetails.error}</div>
+                    <div className="text-xs mt-1">{testResult.errorDetails.message}</div>
+                    {testResult.errorDetails.details && (
+                      <div className="text-xs mt-1 italic">{testResult.errorDetails.details}</div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>Error: {testResult.error || `HTTP ${testResult.status}`}</div>
+                  {testResult.type && <div>Type: {testResult.type}</div>}
+                </>
+              )}
             </>
           )}
         </div>

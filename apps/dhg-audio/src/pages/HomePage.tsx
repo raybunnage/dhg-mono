@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AudioList } from '@/components';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
 import { DriveFilterSelect } from '@/components/DriveFilterSelect';
+import { AudioServerDebug } from '@/components/AudioServerDebug';
 
 export const HomePage = () => {
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
@@ -53,6 +54,9 @@ export const HomePage = () => {
 
   return (
     <div>
+      {/* Audio Server Status */}
+      <AudioServerDebug />
+      
       {/* Drive Filter Selection - Prominent at the top */}
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
         <div className="flex items-center gap-4">

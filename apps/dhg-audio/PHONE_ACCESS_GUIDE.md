@@ -12,14 +12,26 @@ This guide shows you how to access the dhg-audio app from your iPhone browser wh
 
 ### 1. Start the Servers on Your Mac
 
-Open two terminal windows and run:
+**Important for Multiple Worktrees:**
+If you're using multiple worktrees, start all servers from the main dhg-mono directory (not from individual worktrees):
 
+```bash
+# Terminal 1: From main dhg-mono directory
+cd /path/to/dhg-mono  # The original repo, not a worktree
+pnpm servers          # Starts all servers with correct paths
+
+# Terminal 2: From your worktree
+cd apps/dhg-audio
+pnpm dev:network      # Start Vite in network mode
+```
+
+**For Single Worktree Setup:**
 ```bash
 # Terminal 1: Start the audio proxy server
 cd apps/dhg-audio
 pnpm server
 
-# Terminal 2: Start Vite in network mode
+# Terminal 2: Start Vite in network mode  
 cd apps/dhg-audio
 pnpm dev:network
 ```
@@ -70,10 +82,47 @@ ifconfig | grep "inet " | grep -v 127.0.0.1
 
 ### Audio Not Playing?
 
-The audio proxy server must be running on port 3006. Check that:
-1. The proxy server is running (`pnpm server`)
-2. No errors in the proxy server terminal
-3. The `.service-account.json` file exists in the project root
+The app now includes comprehensive debugging tools to help identify audio playback issues:
+
+**1. Audio Server Status Panel (Top of Page)**
+- Shows if the audio proxy server is running
+- Displays service account file status (found/missing)
+- Lists checked file paths
+- Click "Refresh" to update status
+
+**Common Issues:**
+- **Red Status**: Server not running → Run `pnpm servers` from main dhg-mono directory
+- **Wrong Path Errors**: If using worktrees → Start servers from main dhg-mono, not worktrees
+- **Service Account Missing**: Ensure `.service-account.json` exists in project root
+- **Green Status but Audio Fails**: Check individual file debug info
+
+**2. Audio URL Debug (Per File)**
+Each audio file shows debug information:
+- **Proxy URL**: The URL the browser uses (`/api/audio/...`)
+- **Direct URL**: The original Google Drive URL
+- **Drive ID**: The Google Drive file ID
+
+Click "Test Proxy Connection" to:
+- Test if the proxy server can access the file
+- See detailed error messages if it fails
+- Common errors:
+  - `500 Internal Server Error` + "service account key file not found" → Missing `.service-account.json`
+  - `403 Access denied` → Service account lacks permission to the file
+  - `404 File not found` → File deleted or ID incorrect
+
+**3. Server Terminal Output**
+Watch the terminal running `pnpm server` for:
+```
+[timestamp] Proxying audio file: [fileId]
+[ERROR] Error proxying audio file: [error details]
+```
+
+**Setup Checklist:**
+1. ✅ Audio proxy server running (`pnpm server`)
+2. ✅ Service account file exists (`.service-account.json` in project root)
+3. ✅ Service account has access to Google Drive files
+4. ✅ No errors in proxy server terminal
+5. ✅ Audio URL Debug shows successful connection
 
 ### Network Security Warning?
 
