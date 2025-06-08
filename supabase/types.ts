@@ -1331,6 +1331,108 @@ export type Database = {
           },
         ]
       }
+      doc_archives: {
+        Row: {
+          archive_path: string
+          archive_reason: string | null
+          archived_at: string | null
+          content_hash: string | null
+          created_at: string | null
+          description: string | null
+          file_size: number | null
+          id: string
+          metadata: Json | null
+          original_path: string
+          related_living_docs: string[] | null
+          searchable_content: string | null
+          tags: string[] | null
+          title: string | null
+        }
+        Insert: {
+          archive_path: string
+          archive_reason?: string | null
+          archived_at?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          original_path: string
+          related_living_docs?: string[] | null
+          searchable_content?: string | null
+          tags?: string[] | null
+          title?: string | null
+        }
+        Update: {
+          archive_path?: string
+          archive_reason?: string | null
+          archived_at?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          original_path?: string
+          related_living_docs?: string[] | null
+          searchable_content?: string | null
+          tags?: string[] | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      doc_continuous_monitoring: {
+        Row: {
+          area: string
+          created_at: string | null
+          description: string | null
+          file_path: string
+          id: string
+          last_updated: string | null
+          metadata: Json | null
+          next_review_date: string
+          owner: string | null
+          priority: string | null
+          review_frequency_days: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          area: string
+          created_at?: string | null
+          description?: string | null
+          file_path: string
+          id?: string
+          last_updated?: string | null
+          metadata?: Json | null
+          next_review_date: string
+          owner?: string | null
+          priority?: string | null
+          review_frequency_days?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          area?: string
+          created_at?: string | null
+          description?: string | null
+          file_path?: string
+          id?: string
+          last_updated?: string | null
+          metadata?: Json | null
+          next_review_date?: string
+          owner?: string | null
+          priority?: string | null
+          review_frequency_days?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       doc_continuous_tracking: {
         Row: {
           category: string
@@ -1510,6 +1612,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      doc_monitoring_history: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string | null
+          doc_id: string | null
+          id: string
+          notes: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string | null
+          doc_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string | null
+          doc_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_monitoring_history_doc_id_fkey"
+            columns: ["doc_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_monitoring"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_types: {
         Row: {
@@ -4274,6 +4414,81 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_scripts_files: {
+        Row: {
+          archive_date: string
+          archive_id: string
+          archive_reason: string | null
+          archived_path: string
+          command_name: string | null
+          created_at: string | null
+          file_extension: string | null
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          last_command: string | null
+          last_modified: string | null
+          last_used: string | null
+          original_path: string
+          pipeline_name: string | null
+          replacement_command: string | null
+          restored: boolean | null
+          restored_by: string | null
+          restored_date: string | null
+          script_type: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          archive_date?: string
+          archive_id: string
+          archive_reason?: string | null
+          archived_path: string
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path: string
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          archive_date?: string
+          archive_id?: string
+          archive_reason?: string | null
+          archived_path?: string
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_cli_pipelines: {
         Row: {
           commands: Json | null
@@ -4972,6 +5187,87 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_scripts_active_view: {
+        Row: {
+          archive_date: string | null
+          archive_id: string | null
+          archive_reason: string | null
+          archived_path: string | null
+          command_name: string | null
+          created_at: string | null
+          file_extension: string | null
+          file_name: string | null
+          file_size_bytes: number | null
+          id: string | null
+          last_command: string | null
+          last_modified: string | null
+          last_used: string | null
+          original_path: string | null
+          pipeline_name: string | null
+          replacement_command: string | null
+          restored: boolean | null
+          restored_by: string | null
+          restored_date: string | null
+          script_type: string | null
+          time_archived: unknown | null
+          updated_at: string | null
+          usage_count: number | null
+          usage_status: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_id?: string | null
+          archive_reason?: string | null
+          archived_path?: string | null
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          id?: string | null
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string | null
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          time_archived?: never
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_status?: never
+        }
+        Update: {
+          archive_date?: string | null
+          archive_id?: string | null
+          archive_reason?: string | null
+          archived_path?: string | null
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          id?: string | null
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string | null
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          time_archived?: never
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_status?: never
+        }
+        Relationships: []
+      }
       sys_database_objects_info_view: {
         Row: {
           column_count: number | null
@@ -5378,6 +5674,18 @@ export type Database = {
           table_dependencies: string[]
         }[]
       }
+      get_docs_needing_review: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          file_path: string
+          title: string
+          area: string
+          last_updated: string
+          next_review_date: string
+          days_overdue: number
+        }[]
+      }
       get_document_type_counts: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -5761,6 +6069,18 @@ export type Database = {
           commands: string[]
           tags: string[]
           category: string
+          rank: number
+        }[]
+      }
+      search_doc_archives: {
+        Args: { search_query: string }
+        Returns: {
+          id: string
+          original_path: string
+          title: string
+          description: string
+          tags: string[]
+          related_living_docs: string[]
           rank: number
         }[]
       }
