@@ -49,6 +49,9 @@ out/
 .turbo/
 .cache/
 
+# Archived packages
+packages/.archived_packages/
+
 # Backups
 .backups/
 **/backups/

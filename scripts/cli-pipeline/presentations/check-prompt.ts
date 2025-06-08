@@ -1,14 +1,15 @@
-import { PromptQueryService } from '../../../packages/cli/src/services/prompt-query-service';
+import { PromptService } from '../../../packages/shared/services/prompt-service';
 import * as fs from 'fs';
 import * as path from 'path';
 
 async function checkPrompt() {
   console.log('Checking prompt in database vs file...');
-  const promptQueryService = PromptQueryService.getInstance();
+  const promptService = PromptService.getInstance();
   
   try {
     // Get prompt from database
-    const { prompt: dbPrompt } = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+    const result = await promptService.loadPrompt('final_video-summary-prompt');
+    const dbPrompt = result.prompt;
     
     console.log('Database prompt:');
     console.log('--------------');
