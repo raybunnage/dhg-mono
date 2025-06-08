@@ -4190,6 +4190,165 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_cli_pipeline_files: {
+        Row: {
+          archived_date: string | null
+          archived_file_path: string
+          command_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          last_used_date: string | null
+          original_file_path: string
+          pipeline_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          archived_date?: string | null
+          archived_file_path: string
+          command_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_date?: string | null
+          original_file_path: string
+          pipeline_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          archived_date?: string | null
+          archived_file_path?: string
+          command_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_date?: string | null
+          original_file_path?: string
+          pipeline_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_archived_package_files: {
+        Row: {
+          archive_reason: string | null
+          archived_path: string
+          created_at: string | null
+          created_by: string | null
+          dependencies_count: number | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          last_modified: string | null
+          original_path: string
+          package_name: string
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_path: string
+          created_at?: string | null
+          created_by?: string | null
+          dependencies_count?: number | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          last_modified?: string | null
+          original_path: string
+          package_name: string
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_path?: string
+          created_at?: string | null
+          created_by?: string | null
+          dependencies_count?: number | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          last_modified?: string | null
+          original_path?: string
+          package_name?: string
+        }
+        Relationships: []
+      }
+      sys_archived_scripts_files: {
+        Row: {
+          archive_date: string
+          archive_id: string
+          archive_reason: string | null
+          archived_path: string
+          command_name: string | null
+          created_at: string | null
+          file_extension: string | null
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          last_command: string | null
+          last_modified: string | null
+          last_used: string | null
+          original_path: string
+          pipeline_name: string | null
+          replacement_command: string | null
+          restored: boolean | null
+          restored_by: string | null
+          restored_date: string | null
+          script_type: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          archive_date?: string
+          archive_id: string
+          archive_reason?: string | null
+          archived_path: string
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path: string
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          archive_date?: string
+          archive_id?: string
+          archive_reason?: string | null
+          archived_path?: string
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_cli_pipelines: {
         Row: {
           commands: Json | null
@@ -4885,6 +5044,87 @@ export type Database = {
           service_category: string | null
           service_name: string | null
           usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_archived_scripts_active_view: {
+        Row: {
+          archive_date: string | null
+          archive_id: string | null
+          archive_reason: string | null
+          archived_path: string | null
+          command_name: string | null
+          created_at: string | null
+          file_extension: string | null
+          file_name: string | null
+          file_size_bytes: number | null
+          id: string | null
+          last_command: string | null
+          last_modified: string | null
+          last_used: string | null
+          original_path: string | null
+          pipeline_name: string | null
+          replacement_command: string | null
+          restored: boolean | null
+          restored_by: string | null
+          restored_date: string | null
+          script_type: string | null
+          time_archived: unknown | null
+          updated_at: string | null
+          usage_count: number | null
+          usage_status: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_id?: string | null
+          archive_reason?: string | null
+          archived_path?: string | null
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          id?: string | null
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string | null
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          time_archived?: never
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_status?: never
+        }
+        Update: {
+          archive_date?: string | null
+          archive_id?: string | null
+          archive_reason?: string | null
+          archived_path?: string | null
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          id?: string | null
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string | null
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          time_archived?: never
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_status?: never
         }
         Relationships: []
       }
