@@ -155,6 +155,85 @@ CREATE TABLE "web_concepts"(
   year INT
 )
 
+1. Add missing CLI pipeline domains - Update the list to include all
+  active pipelines
+  2. Add troubleshooting section for common TypeScript errors:
+    - "Cannot find module" errors
+    - Type mismatches with supabase/types.ts
+    - ESM/CommonJS compatibility issues
+  4. Enhance the database section:
+    - Add common Supabase RLS patterns
+    - Add guidance on when to use views vs tables
+    - Include foreign key best practices
+
+
+
+## Work Summary & Commit Management Snippet
+
+  **Name**: Complete Work & Commit with Task Tracking
+  **Category**: Development Workflow
+
+  **Snippet Text**:
+  I've completed some work and need to:
+
+  1. Create a work summary - Please analyze what I've done in this
+  session and create a summary that:
+    - Describes the main changes and their purpose
+    - Lists the key files modified
+    - Notes any significant functionality added or changed
+    - If there's an active dev_task in this worktree, link it to the
+  summary
+  2. Manage the Git workflow:
+    - Create a meaningful commit message based on the work done
+    - If there's a dev_task, include "Task: #" in the commit message
+    - Commit to the current branch
+    - Push the branch to origin
+    - Fetch and merge latest changes from development branch
+    - Show me the merge status
+  3. Update tracking records:
+    - Create or update a record in ai_work_summaries with:
+        - Title: Brief description of what was accomplished
+      - Summary content: Detailed summary of the work
+      - Files modified: List of changed files
+      - Commands used: Any key CLI commands executed
+      - Category: Type of work (feature, bugfix, refactor, docs, etc.)
+      - Tags: Relevant keywords for future searching
+    - If a dev_task exists for this worktree:
+        - Create a record in dev_task_commits linking the commit
+      - Update the task's git_commit_current and git_commits_count
+      - Add a summary to dev_task_work_sessions if appropriate
+    - Update any relevant worktree tracking information
+
+  Please check the current worktree path and look for any active
+  dev_tasks associated with it. Then guide me through this process step
+  by step, asking for any additional information needed.
+
+  Current working directory context will help determine which worktree
+  and tasks are relevant.
+
+  **Additional Context for Implementation**:
+
+  When you use this snippet, Claude will:
+
+  1. **Analyze Recent Changes**:
+     - Run `git status` and `git diff` to see what changed
+     - Check for active dev_tasks in the current worktree
+     - Identify the type of work done (feature, fix, refactor, etc.)
+
+  2. **Create Comprehensive Records**:
+     - Generate an `ai_work_summaries` entry for searchability
+     - Link commits to dev_tasks if they exist
+     - Update git tracking fields in the dev_tasks table
+     - Optionally create work session summaries
+
+  3. **Handle Git Operations**:
+     - Create atomic commits with proper messages
+     - Include task references when applicable
+     - Manage the branch update cycle safely
+
+  This snippet provides a complete workflow for documenting and 
+  committing work while maintaining traceability across the various 
+  tracking systems in the project.
 
 
 

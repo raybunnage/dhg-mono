@@ -88,7 +88,7 @@ async function listScripts(options: ListOptions = {}) {
   
   // Build query
   let query = supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select(`
       file_path,
       title,

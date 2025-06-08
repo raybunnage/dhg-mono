@@ -1,4 +1,4 @@
-# Claude Code Instructions (v1.04)
+# Claude Code Instructions (v1.06)
 
 ## ⚠️ CRITICAL: Database Tables Have Been Renamed
 
@@ -46,6 +46,23 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 
 **Note**: This is a temporary reference while code is being updated. Always check `supabase/types.ts` for the current schema.
 
+## ⚠️ Database Views Have Been Renamed
+
+All database views now follow a consistent naming convention:
+1. **Must end with `_view` suffix**
+2. **Must use the prefix of their primary table**
+
+| Old View Name | New View Name | Primary Table Prefix |
+|---------------|---------------|---------------------|
+| command_refactor_status_summary | command_refactor_status_summary_view | `command_` |
+| commands_needing_attention | command_refactor_needing_attention_view | `command_` |
+| dev_tasks_with_git | dev_tasks_with_git_view | `dev_` |
+| doc_continuous_status | doc_continuous_status_view | `doc_` |
+| learn_user_progress | learn_user_progress_view | `learn_` |
+| recent_ai_work_summaries | ai_work_summaries_recent_view | `ai_` |
+
+**Note**: Views must use their primary table's prefix so they sort together in database tools.
+
 ⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
 - **NEVER implement workarounds without explicit permission**
 - If you encounter an issue or error, STOP and explain the problem clearly
@@ -86,6 +103,39 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 - If moving functionality to shared services, test both before and after
 - Run appropriate tests for both the original behavior and any enhancements
 
+## Current Project State & Ongoing Refactoring
+
+⚠️ **The codebase is undergoing significant refactoring**. Here's what you need to know:
+
+### Database Table Renaming
+- **Major renaming effort completed** - Most tables now follow consistent prefix patterns
+- **Check renamed tables** - See the table at the top of this document
+- **Always verify table names** - Use `supabase/types.ts` as the source of truth
+- **Some code may still use old names** - Update as you encounter them
+
+### CLI Pipeline Consolidation
+- **14+ active pipelines** exist but may be consolidated
+- **New pipelines added**: `service_dependencies/`, `dev_tasks/`, `database/`
+- **Some pipelines may merge** - Check `command_pipelines` table for current status
+- **Command tracking is mandatory** - All new commands must be registered
+
+### Shared Services Migration
+- **Ongoing effort** to extract common functionality from apps to shared services
+- **UI pages in dhg-improve-experts** are being mined for reusable services
+- **Singleton patterns enforced** - Direct client creation is being eliminated
+- **Cross-environment compatibility** required for all new services
+
+### Type Generation & Schema Updates
+- **Types are auto-generated** after migrations: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+- **Schema changes frequent** - Always pull latest types after database updates
+- **RLS policies being standardized** - Most tables now have consistent policies
+
+### What This Means For You
+1. **Expect changes** - Table names, file locations, and APIs may shift
+2. **Check before assuming** - Verify table names, pipeline locations, service patterns
+3. **Update old code** - When you find outdated references, fix them
+4. **Document discoveries** - Add to this file when you solve tricky issues
+
 ## Code Organization Principles
 
 0. **⚠️ CRITICAL: NEVER ADD FILES TO THE ROOT DIRECTORY**: 
@@ -109,11 +159,33 @@ Many database tables have undergone a major renaming effort. When troubleshootin
 3. **CLI Pipeline Architecture**: 
    - ⚠️ **ALL new scripts MUST go in `scripts/cli-pipeline/{domain}/`**
    - ⚠️ **NEVER place scripts directly in `/scripts/` root folder**
-   - Available domains: `google_sync/`, `document/`, `document_types/`, `media-processing/`, `presentations/`, `prompt_service/`
+   
+   **Current Active Pipelines**:
+   - `all_pipelines/` - Master pipeline for managing all other pipelines
+   - `analysis/` - Script analysis and classification tools
+   - `auth/` - Authentication and user management
+   - `database/` - Database migrations and management
+   - `dev_tasks/` - Development task tracking and git integration
+   - `document/` - Document processing and management
+   - `document_types/` - Document type classification
+   - `gmail/` - Gmail integration and email processing
+   - `google_sync/` - Google Drive synchronization
+   - `media-processing/` - Audio/video processing pipelines
+   - `presentations/` - Presentation management
+   - `prompt_service/` - AI prompt management
+   - `service_dependencies/` - Service dependency mapping
+   - `viewers/` - Various file viewers and servers
+   
+   **Pipeline Standards**:
    - Keep flat file structure within pipeline folders - no nested subfolders
    - Each pipeline uses commander.js for CLI integration
    - Each pipeline has its own package.json with commander.js v11.0.0
    - Always implement command tracking for new commands
+   
+   **⚠️ Pipeline Refactoring in Progress**:
+   - Some pipelines may be consolidated or renamed
+   - Check `command_pipelines` table for current active pipelines
+   - New pipelines require proper registration in the database
 
 4. **Essential Patterns**:
 
@@ -146,7 +218,14 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - This is the single source of truth for all table structures and relationships
 
    **Database Table Naming Convention**:
-   When creating new tables, follow the established prefix pattern:
+   
+   ⚠️ **CRITICAL: Table Naming Rules**
+   1. **ALWAYS use one of the established prefixes** - no exceptions
+   2. **ALWAYS ask the user before creating ANY new table** - they may want to create a new prefix
+   3. **NEVER create a table without a prefix** - this breaks the naming convention
+   4. **NEVER overwrite existing table names** - always check if a table exists first
+   
+   **Established Prefixes**:
    - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
    - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
    - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
@@ -161,11 +240,21 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
    - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
    - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies, dev_merge_queue, dev_merge_checklist)
+   - `registry_` - Registry tables for cataloging items (e.g., registry_scripts, registry_services, registry_apps)
+   - `service_` - Service dependency & relationship tables (e.g., service_exports, service_command_dependencies)
+   - `worktree_` - Git worktree management (e.g., worktree_definitions, worktree_app_mappings)
+   - `import_` - **CRITICAL: Data import tables - ALWAYS use this prefix for SQLite imports** (e.g., import_urls, import_web_concepts)
    
    **Examples**: 
    - New authentication feature → `auth_password_resets`
    - New AI feature → `ai_embeddings`
    - New learning feature → `learn_quiz_results`
+   - SQLite data import → `import_document_types` (NEVER just `document_types` if it exists!)
+   
+   ⚠️ **If your table doesn't fit any existing prefix**:
+   - STOP and ask the user what to do
+   - They may want to create a new prefix category
+   - NEVER proceed without proper prefix assignment
    
    Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
    
@@ -174,6 +263,74 @@ Many database tables have undergone a major renaming effort. When troubleshootin
    -- After creating your table, add its metadata
    INSERT INTO sys_table_definitions (table_schema, table_name, description, purpose, created_date)
    VALUES ('public', 'your_new_table', 'Brief description', 'Purpose/use case', CURRENT_DATE);
+   ```
+   
+   **Database View Naming Convention**:
+   - All views MUST end with `_view` suffix for clarity
+   - ⚠️ **CRITICAL: Views MUST use the prefix of their primary table**
+   - This ensures views sort alphabetically with their related tables
+   - The prefix determines which functional area owns the view
+   
+   **Examples of Correct View Naming**:
+   - `command_refactor_status_summary_view` - Uses `command_` prefix (primary table: command_refactor_tracking)
+   - `dev_tasks_with_git_view` - Uses `dev_` prefix (primary table: dev_tasks)
+   - `learn_user_progress_view` - Uses `learn_` prefix (primary table: learn_user_analytics)
+   - `ai_work_summaries_recent_view` - Uses `ai_` prefix (primary table: ai_work_summaries)
+   - `google_sources_with_experts_view` - Uses `google_` prefix (primary table: google_sources)
+   
+   **Why This Matters**:
+   - Views appear next to their related tables in database tools
+   - Clear ownership - you know which subsystem the view belongs to
+   - Consistent organization across the entire schema
+   - Easy to find all views for a specific functional area
+
+   **Database Best Practices**:
+   
+   **When to Use Views vs Tables**:
+   - **Use Views** when:
+     - Combining data from multiple tables for read-only access
+     - Creating computed columns or aggregations
+     - Simplifying complex queries for app consumption
+     - Enforcing a consistent API over changing table structures
+   - **Use Tables** when:
+     - Data needs to be written/updated
+     - Performance is critical (views can be slower)
+     - You need triggers, constraints, or indexes
+     - Data represents a core business entity
+   
+   **Foreign Key Best Practices**:
+   ```sql
+   -- Always name constraints descriptively
+   ALTER TABLE google_expert_documents 
+   ADD CONSTRAINT fk_expert_documents_expert_profile 
+   FOREIGN KEY (expert_id) REFERENCES expert_profiles(id) ON DELETE CASCADE;
+   
+   -- Use appropriate cascade actions
+   ON DELETE CASCADE     -- Child records deleted with parent
+   ON DELETE RESTRICT    -- Prevent parent deletion if children exist
+   ON DELETE SET NULL    -- Set FK to null when parent deleted
+   ```
+   
+   **Common RLS (Row Level Security) Patterns**:
+   ```sql
+   -- Pattern 1: Public read, authenticated write
+   CREATE POLICY "Enable read access for all users" ON table_name
+       FOR SELECT USING (true);
+   CREATE POLICY "Enable insert for authenticated users" ON table_name
+       FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+   
+   -- Pattern 2: User-specific data
+   CREATE POLICY "Users can view own data" ON user_data
+       FOR SELECT USING (auth.uid() = user_id);
+   
+   -- Pattern 3: Admin override
+   CREATE POLICY "Admins can do anything" ON table_name
+       FOR ALL USING (
+         EXISTS (
+           SELECT 1 FROM auth_user_profiles
+           WHERE auth.uid() = id AND role = 'admin'
+         )
+       );
    ```
 
    **Security**:
@@ -263,6 +420,11 @@ ORDER BY cpt.table_name;
    - This ensures TypeScript interfaces always match the updated database schema
    - If type generation fails, the command provides manual instructions
    - Consider committing the updated types.ts file along with your migration
+   
+   **⚠️ Manual Type Generation** (when needed):
+   ```bash
+   pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+   ```
 
 3. **Safe Refactoring**:
    - ⚠️ **Never break existing functionality**
@@ -388,6 +550,29 @@ This ensures migrations are properly tested before applying to the database.
    - Each app should have ONE `lib/supabase.ts` file
    - If an app has multiple Supabase files, consolidate them into one
 
+8. **Incorrect Date Handling**:
+   - ❌ **Problem**: Using incorrect dates in file names or documentation
+   - ✅ **Solution**: Always check the actual date using system commands
+   - **Getting Current Date**:
+     ```bash
+     # For file names (YYYYMMDD format):
+     date +%Y%m%d  # Example: 20250607
+     
+     # For documentation headers:
+     date          # Example: Sat Jun  7 08:58:14 PDT 2025
+     
+     # For timestamp in file names:
+     date +%Y-%m-%dT%H-%M-%S  # Example: 2025-06-07T08-58-14
+     ```
+   - **In TypeScript/JavaScript**:
+     ```typescript
+     // Always use new Date() for current date
+     const currentDate = new Date();
+     const dateString = currentDate.toISOString().split('T')[0]; // 2025-06-07
+     const timestamp = currentDate.toISOString(); // 2025-06-07T15:58:14.000Z
+     ```
+   - ⚠️ **Important**: The environment shows today's date in `<env>` tags but should be verified with actual system date
+
 ## Debugging in a Monorepo Context
 
 1. **When an app has configuration issues**:
@@ -428,6 +613,51 @@ This ensures migrations are properly tested before applying to the database.
 - Handle undefined/null values properly
 - Use types from `supabase/types.ts` for database operations
 
+## TypeScript Troubleshooting
+
+### Common TypeScript Errors and Solutions
+
+1. **"Cannot find module" Errors**:
+   ```
+   ❌ Error: Cannot find module '@shared/services/...' or its corresponding type declarations
+   ```
+   **Solutions**:
+   - Check if the path is correct and file exists
+   - Verify tsconfig.json has proper path mappings
+   - For browser apps, check vite.config.ts alias configuration
+   - Try relative imports as a temporary workaround: `../../../packages/shared/...`
+   - Run `pnpm install` to ensure dependencies are linked
+
+2. **Type Mismatches with supabase/types.ts**:
+   ```
+   ❌ Error: Type 'string | null' is not assignable to type 'string'
+   ```
+   **Solutions**:
+   - Always check for null: `if (data.field) { ... }`
+   - Use nullish coalescing: `data.field ?? 'default'`
+   - Update types after schema changes: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - Use type assertions carefully: `data.field as string` (only when certain)
+
+3. **ESM/CommonJS Compatibility Issues**:
+   ```
+   ❌ Error: require() of ES Module not supported
+   ❌ Error: Cannot use import statement outside a module
+   ```
+   **Solutions**:
+   - For Node.js scripts, use `.mjs` extension or add `"type": "module"` to package.json
+   - For mixed environments, use dynamic imports: `const module = await import('./module.js')`
+   - In Vite apps, modules are ESM by default
+   - For CLI scripts using ts-node: `ts-node --esm script.ts`
+
+4. **Import.meta.env Errors in Shared Packages**:
+   ```
+   ❌ Error: Cannot access 'import.meta' outside a module
+   ```
+   **Solutions**:
+   - Shared packages cannot access `import.meta.env` directly
+   - Pass environment from the app: `createAdapter({ env: import.meta.env })`
+   - Use dependency injection pattern for environment-specific values
+
 ## Supabase Query Patterns
 
 **Connection Setup**:
@@ -462,7 +692,7 @@ const { data, error } = await supabase
 - Always handle errors properly with `if (error)` checks
 - Include `.select()` after inserts to get the created record
 - Consult `supabase/types.ts` for schema information (single source of truth)
-- Use proper column names: `experts.expert_name`, `document_types.name`
+- Use proper column names: `expert_profiles.expert_name`, `document_types.name`
 
 **Accessing auth.users Table**:
 ```typescript
@@ -478,6 +708,52 @@ const { data: { users }, error } = await supabase.auth.admin.listUsers();
 
 **Note**: The `auth.users` table is in the auth schema and requires special access. Use the auth admin API methods when working with user data from TypeScript/JavaScript code.
 
+## ⚠️ CRITICAL: SQLite to Supabase Migration Safety
+
+**ALWAYS CHECK FOR EXISTING TABLES BEFORE IMPORTING FROM SQLITE**
+
+When migrating data from SQLite to Supabase, you MUST verify that the target table name doesn't conflict with existing Supabase tables. Importing with the same name as an existing table can **permanently overwrite critical data**.
+
+**⚠️ CRITICAL Rules for SQLite Imports**:
+1. **ALWAYS prefix imported tables with `import_`** - no exceptions
+2. **ALWAYS check existing tables before creating any import table**
+3. **NEVER use the same name as an existing Supabase table**
+4. **ALWAYS verify the import script checks for existing tables**
+
+**❌ DANGEROUS Example**:
+```sql
+-- If 'document_types' already exists in Supabase, this will DESTROY it!
+CREATE TABLE document_types AS SELECT * FROM sqlite_export;
+pgloader sqlite://file.db postgresql://... -- Without checking target tables!
+```
+
+**✅ SAFE Approach**:
+```sql
+-- 1. Always check for existing tables first
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('web_concepts', 'import_web_concepts');
+
+-- 2. ALWAYS use import_ prefix for SQLite imports
+CREATE TABLE import_document_types (...);  -- CORRECT: import_ prefix
+CREATE TABLE import_web_concepts (...);    -- CORRECT: import_ prefix
+
+-- 3. Keep backups before any migration
+pg_dump ... > backup_before_migration.sql
+
+-- 4. In your import scripts, ALWAYS include existence checks:
+DROP TABLE IF EXISTS import_web_concepts;  -- Safe - only drops import table
+CREATE TABLE import_web_concepts (...);
+```
+
+**Real Incident**: Tables like `document_types` and `ai_prompts` were accidentally overwritten because they had the same names in both SQLite and Supabase. This caused significant data loss that required restoration from backups. **This MUST never happen again.**
+
+**Import Script Requirements**:
+- Must check for existing tables before creating
+- Must use `import_` prefix for all imported tables
+- Must NOT drop or modify non-import tables
+- Should include clear comments about what's being imported
+
 ## Claude Service Usage
 
 **Import and Use the Singleton**:
@@ -491,9 +767,9 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 
 ## Database Table Relationships
 
-### sources_google and expert_documents Recursive Search
+### google_sources (formerly sources_google) Recursive Search
 
-The `sources_google` table uses a hierarchical structure for Google Drive folders and files:
+The `google_sources` table uses a hierarchical structure for Google Drive folders and files:
 
 **Key Principles:**
 - **Use Google Drive IDs, not Supabase UUIDs** for navigation
@@ -506,14 +782,14 @@ The `sources_google` table uses a hierarchical structure for Google Drive folder
 WITH RECURSIVE folder_tree AS (
   -- Base case: start with target folder
   SELECT drive_id, parent_folder_id, name, path_depth, 0 as level
-  FROM sources_google 
+  FROM google_sources 
   WHERE drive_id = 'target_folder_id'
   
   UNION ALL
   
   -- Recursive case: find children
   SELECT s.drive_id, s.parent_folder_id, s.name, s.path_depth, ft.level + 1
-  FROM sources_google s
+  FROM google_sources s
   INNER JOIN folder_tree ft ON s.parent_folder_id = ft.drive_id
 )
 SELECT * FROM folder_tree;
@@ -822,10 +1098,13 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 **Vite App Ports**:
 | Port | App | Status |
 |------|-----|--------|
-| 5173 | dhg-a, dhg-hub-lovable | Shared (don't run together) |
-| 5174 | dhg-b, dhg-hub, dhg-admin-google | Shared (don't run together) |
+| 5173 | dhg-hub-lovable | Dedicated |
+| 5174 | dhg-hub | Dedicated |
 | 5175 | dhg-admin-suite | Dedicated |
+| 5176 | dhg-admin-google | Dedicated |
 | 5177 | dhg-admin-code | Dedicated |
+| 5178 | dhg-a | Dedicated |
+| 5179 | dhg-b | Dedicated |
 | 5194 | dhg-audio | Dedicated |
 | 8080 | dhg-improve-experts | Dedicated |
 
@@ -875,9 +1154,91 @@ If you encounter "address already in use" errors:
 
 3. **For Vite apps**, ensure you're not running multiple apps on the same port
 
-## ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
+## Git & Worktree Management
 
-### ❌ NEVER Create Pull Requests When Merging Between Worktrees
+### ⚠️ CRITICAL: This Repository is Managed by Claude Code
+
+**Important Context**:
+- **ALL git operations are handled by Claude Code** - not by humans
+- **NO manual git commands** should be run by users
+- **NO GitHub UI operations** for merging or PRs
+- **Worktrees are used** for parallel development work
+
+### Understanding Worktree Branch Management
+
+**The Unique Nature of Worktrees**:
+
+Each worktree is a **separate directory with its own branch**, allowing parallel development:
+```
+dhg-mono/                    # Main worktree (development branch)
+dhg-mono-improve-audio/      # Worktree for audio improvements
+dhg-mono-feature-xyz/        # Worktree for feature XYZ
+```
+
+**The Worktree Update Cycle** (unique to this workflow):
+
+1. **Branch lives independently** in its own directory
+   - You work in isolation without affecting other branches
+   - Changes accumulate over time in your worktree
+
+2. **Periodic merge to development**:
+   ```bash
+   # From worktree branch:
+   git push origin feature-branch:development
+   ```
+   - Your changes flow into the main development branch
+   - Other developers benefit from your work
+
+3. **Pull updates back from development**:
+   ```bash
+   # Still in worktree:
+   git fetch origin development
+   git merge origin/development
+   ```
+   - You receive everyone else's changes
+   - Your branch stays current with the project
+
+4. **The cycle repeats**:
+   - Work → Push to development → Pull from development → Work...
+   - This creates a "breathing" pattern of isolation and integration
+
+**Why This Is Different**:
+- Traditional branches require constant switching
+- Worktrees let each branch "live" permanently in its own space
+- No need to stash changes or switch contexts
+- Multiple features can progress simultaneously
+
+### Standard Git Workflow
+
+1. **Committing Changes**:
+   - Claude Code handles all commits
+   - Commits always include the 🤖 signature
+   - Co-authored commits credit Claude
+   - Task IDs are automatically included when applicable
+
+2. **Branch Management**:
+   - **Main branch**: `development` (not `main` or `master`)
+   - **Feature branches**: Created in worktrees for specific work
+   - **No feature branch PRs** - direct merges only
+
+3. **Merging Workflow** (Claude Code handles this):
+   ```bash
+   # 1. Commit all changes in current branch
+   git add .
+   git commit -m "Your commit message..."
+   
+   # 2. Push branch to remote
+   git push origin current-branch
+   
+   # 3. Merge to development (NO PR!)
+   git push origin current-branch:development
+   
+   # 4. Update local development
+   git fetch origin development
+   git merge origin/development
+   ```
+
+### ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
 
 **IMPORTANT**: When working with multiple worktrees, **DO NOT create pull requests**. This has caused deployment issues where the PR workflow got stuck or confused the branch states.
 
@@ -899,11 +1260,32 @@ git fetch origin development
 git merge origin/development
 ```
 
-### Why No PRs with Worktrees?
-- PRs can cause deployment pipeline issues
-- Worktrees have development checked out elsewhere
-- Direct pushes are cleaner and more reliable
-- Avoids branch state confusion
+### Why This Workflow?
+- **Claude Code automation** - Git operations are automated
+- **No PRs with worktrees** - Avoids deployment pipeline issues
+- **Direct pushes** - Cleaner and more reliable
+- **Consistent history** - All commits properly attributed
+- **Task integration** - Commits linked to dev_tasks automatically
+
+### Branch Strategy
+
+**Active Branches**:
+- `development` - Main development branch (default)
+- `production` - Production deployments (protected)
+- Feature branches - Created in worktrees for specific work
+
+**Important Notes**:
+- **Deployment happens from `development`** to staging environments
+- **Production deployments** require special approval
+- **Feature branches** are temporary and deleted after merging
+- **No long-lived feature branches** - merge frequently
+
+### What This Means for You (the User)
+
+1. **Just describe what you want** - Claude Code handles the git work
+2. **Don't run git commands manually** - Let Claude Code manage it
+3. **Review commits in GitHub** - After Claude Code pushes changes
+4. **Trust the process** - This workflow has been refined over time
 
 ## Handling pnpm-lock.yaml in Worktree Merges
 
@@ -928,7 +1310,7 @@ pnpm install                           # Regenerate with all dependencies
 
 ## Key Points Summary
 
-This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:
+This document provides the essential guidelines for working with Claude Code v1.05. The most important principles are:
 
 1. **Ask before implementing workarounds** - explain problems and get permission
 2. **Use proper file locations** - scripts go in `scripts/cli-pipeline/{domain}/`

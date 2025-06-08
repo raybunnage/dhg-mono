@@ -6,7 +6,7 @@
     "media_presentation_assets",
     "media_presentations",
     "google_sources",
-    "scripts_registry",
+    "registry_scripts",
     "ai_work_summaries",
     "auth_allowed_emails",
     "command_tracking",

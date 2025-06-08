@@ -303,7 +303,7 @@ class ServiceScanner {
       try {
         // Check if service already exists
         const { data: existing } = await this.supabase
-          .from('services_registry')
+          .from('registry_services')
           .select('id, service_name')
           .eq('service_name', service.serviceName)
           .single();
@@ -332,7 +332,7 @@ class ServiceScanner {
         if (existing) {
           // Update existing service
           const { error } = await this.supabase
-            .from('services_registry')
+            .from('registry_services')
             .update(serviceData)
             .eq('id', existing.id);
 
@@ -347,7 +347,7 @@ class ServiceScanner {
         } else {
           // Insert new service
           const { data: newService, error } = await this.supabase
-            .from('services_registry')
+            .from('registry_services')
             .insert(serviceData)
             .select()
             .single();

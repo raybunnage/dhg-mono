@@ -65,7 +65,7 @@ async function archiveScript(scriptPath?: string) {
     
     // Check if script exists in registry
     const { data: existingScript } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .select('id, file_path, metadata')
       .eq('file_path', filePath)
       .single();
@@ -82,7 +82,7 @@ async function archiveScript(scriptPath?: string) {
       };
       
       const { error: updateError } = await supabase
-        .from('scripts_registry')
+        .from('registry_scripts')
         .update({
           file_path: path.relative(process.cwd(), archivePath),
           metadata: newMetadata,

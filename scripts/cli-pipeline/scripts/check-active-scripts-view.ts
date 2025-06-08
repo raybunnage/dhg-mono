@@ -10,17 +10,17 @@ async function checkView() {
   
   try {
     // Check if view exists by querying it
-    console.log('Checking if active_scripts_view exists...');
+    console.log('Checking if registry_scripts_active_view exists...');
     const { data, error } = await supabase
-      .from('active_scripts_view')
+      .from('registry_scripts_active_view')
       .select('*')
       .limit(1);
     
     if (error) {
-      console.error('Error querying active_scripts_view:', error);
+      console.error('Error querying registry_scripts_active_view:', error);
       console.log('The view likely does not exist or has errors.');
     } else {
-      console.log('Success! active_scripts_view exists in the database.');
+      console.log('Success! registry_scripts_active_view exists in the database.');
       console.log('Sample data:', data);
     }
     
@@ -33,7 +33,7 @@ async function checkView() {
           SELECT table_name, view_definition
           FROM information_schema.views
           WHERE table_schema = 'public'
-          AND table_name = 'active_scripts_view';
+          AND table_name = 'registry_scripts_active_view';
         `
       }
     );

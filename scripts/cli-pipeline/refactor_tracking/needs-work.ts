@@ -10,7 +10,7 @@ const supabase = SupabaseClientService.getInstance().getClient();
 async function needsWork() {
   try {
     const { data: commands, error } = await supabase
-      .from('commands_needing_attention')
+      .from('command_refactor_needing_attention_view')
       .select('*')
       .order('priority')
       .order('command_name');

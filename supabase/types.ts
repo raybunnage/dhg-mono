@@ -3756,6 +3756,141 @@ export type Database = {
           },
         ]
       }
+      registry_apps: {
+        Row: {
+          app_name: string
+          app_path: string
+          app_type: string
+          created_at: string | null
+          description: string | null
+          display_name: string
+          framework: string | null
+          id: string
+          package_manager: string | null
+          port_number: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          app_path: string
+          app_type: string
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          framework?: string | null
+          id?: string
+          package_manager?: string | null
+          port_number?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          app_path?: string
+          app_type?: string
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          framework?: string | null
+          id?: string
+          package_manager?: string | null
+          port_number?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      registry_cli_pipelines: {
+        Row: {
+          command_count: number | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          domain: string | null
+          id: string
+          main_script: string | null
+          pipeline_name: string
+          pipeline_path: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          command_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          domain?: string | null
+          id?: string
+          main_script?: string | null
+          pipeline_name: string
+          pipeline_path: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          command_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          domain?: string | null
+          id?: string
+          main_script?: string | null
+          pipeline_name?: string
+          pipeline_path?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      registry_services: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          export_type: string | null
+          id: string
+          is_singleton: boolean | null
+          package_path: string
+          service_file: string | null
+          service_name: string
+          service_type: string
+          status: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          export_type?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          package_path: string
+          service_file?: string | null
+          service_name: string
+          service_type: string
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          export_type?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          package_path?: string
+          service_file?: string | null
+          service_name?: string
+          service_type?: string
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       scripts_registry: {
         Row: {
           ai_assessment: Json | null
@@ -3831,6 +3966,127 @@ export type Database = {
           summary?: Json | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      service_dependencies: {
+        Row: {
+          dependency_type: string
+          dependent_id: string
+          dependent_name: string
+          dependent_type: string
+          first_detected_at: string | null
+          id: string
+          import_path: string | null
+          is_critical: boolean | null
+          last_verified_at: string | null
+          notes: string | null
+          service_id: string | null
+          service_name: string
+          usage_context: string | null
+          usage_frequency: string | null
+        }
+        Insert: {
+          dependency_type: string
+          dependent_id: string
+          dependent_name: string
+          dependent_type: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          service_name: string
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Update: {
+          dependency_type?: string
+          dependent_id?: string
+          dependent_name?: string
+          dependent_type?: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          service_name?: string
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_service_usage_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_unused_services_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_dependency_analysis_runs: {
+        Row: {
+          completed_at: string | null
+          dependencies_found: number | null
+          errors_encountered: number | null
+          id: string
+          items_scanned: number | null
+          new_dependencies: number | null
+          notes: string | null
+          removed_dependencies: number | null
+          run_duration_ms: number | null
+          run_type: string
+          started_at: string | null
+          status: string | null
+          target_type: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          dependencies_found?: number | null
+          errors_encountered?: number | null
+          id?: string
+          items_scanned?: number | null
+          new_dependencies?: number | null
+          notes?: string | null
+          removed_dependencies?: number | null
+          run_duration_ms?: number | null
+          run_type: string
+          started_at?: string | null
+          status?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          dependencies_found?: number | null
+          errors_encountered?: number | null
+          id?: string
+          items_scanned?: number | null
+          new_dependencies?: number | null
+          notes?: string | null
+          removed_dependencies?: number | null
+          run_duration_ms?: number | null
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+          target_type?: string | null
         }
         Relationships: []
       }
@@ -4227,6 +4483,88 @@ export type Database = {
           },
         ]
       }
+      registry_app_dependencies_view: {
+        Row: {
+          app_name: string | null
+          app_type: string | null
+          critical_services: number | null
+          display_name: string | null
+          framework: string | null
+          id: string | null
+          service_count: number | null
+          services_used: string | null
+        }
+        Relationships: []
+      }
+      registry_pipeline_coverage_gaps_view: {
+        Row: {
+          app_usage_count: number | null
+          display_name: string | null
+          service_id: string | null
+          service_name: string | null
+          service_type: string | null
+          used_by_apps: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_service_usage_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_unused_services_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_service_usage_summary_view: {
+        Row: {
+          app_count: number | null
+          apps_using: string | null
+          critical_dependencies: number | null
+          display_name: string | null
+          id: string | null
+          pipeline_count: number | null
+          pipelines_using: string | null
+          service_name: string | null
+          service_type: string | null
+          status: string | null
+          total_dependents: number | null
+        }
+        Relationships: []
+      }
+      registry_unused_services_view: {
+        Row: {
+          created_at: string | null
+          dependency_count: number | null
+          description: string | null
+          display_name: string | null
+          export_type: string | null
+          id: string | null
+          is_singleton: boolean | null
+          is_unused: boolean | null
+          package_path: string | null
+          service_file: string | null
+          service_name: string | null
+          service_type: string | null
+          status: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_allowed_email: {
@@ -4356,6 +4694,17 @@ export type Database = {
       find_and_sync_scripts: {
         Args: { existing_files_json: Json }
         Returns: Json
+      }
+      find_archivable_services: {
+        Args: { days_threshold?: number }
+        Returns: {
+          service_id: string
+          service_name: string
+          service_type: string
+          last_command_usage: string
+          dependency_count: number
+          recommendation: string
+        }[]
       }
       find_mp4_files_in_folder: {
         Args: { folder_id: string }

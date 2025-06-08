@@ -264,7 +264,7 @@ class AppScanner {
       try {
         // Check if app already exists
         const { data: existing } = await this.supabase
-          .from('apps_registry')
+          .from('registry_apps')
           .select('id, app_name')
           .eq('app_name', app.appName)
           .single();
@@ -292,7 +292,7 @@ class AppScanner {
         if (existing) {
           // Update existing app
           const { error } = await this.supabase
-            .from('apps_registry')
+            .from('registry_apps')
             .update(appData)
             .eq('id', existing.id);
 
@@ -307,7 +307,7 @@ class AppScanner {
         } else {
           // Insert new app
           const { error } = await this.supabase
-            .from('apps_registry')
+            .from('registry_apps')
             .insert(appData);
 
           if (error) {

@@ -127,7 +127,7 @@ async function registerScript() {
     const supabase = SupabaseClientService.getInstance().getClient();
     
     const { data: existing } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .select('id')
       .eq('file_path', relativePath)
       .single();
@@ -197,7 +197,7 @@ async function registerScript() {
     console.log('💾 Adding to script registry...');
     
     const { error: insertError } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .insert(scriptData);
     
     if (insertError) {
