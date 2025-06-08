@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useMediaTracking } from '@shared/hooks/useMediaTracking';
+import { useMediaTracking } from '../hooks/useMediaTracking';
 import { useAuth } from '../hooks/useAuth';
 import { getAudioUrlOptions } from '../utils/google-drive-utils';
 

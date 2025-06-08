@@ -2,8 +2,8 @@ import { AudioServerDebug } from '@/components/AudioServerDebug';
 import { DriveFilterDebug } from '@/components/DriveFilterDebug';
 import { CompareSupabaseClients } from '@/components/CompareSupabaseClients';
 import { CheckRLS } from '@/components/CheckRLS';
-import { AudioUrlDebug } from '@/components/AudioUrlDebug';
 import { FilterServiceTest } from '@/components/FilterServiceTest';
+import { MediaTrackingDebug } from '@/components/MediaTrackingDebug';
 import { useState } from 'react';
 
 export const DebugPage = () => {
@@ -11,6 +11,7 @@ export const DebugPage = () => {
 
   const tabs = [
     { id: 'server', label: 'Audio Server', icon: '🎵' },
+    { id: 'tracking', label: 'Media Tracking', icon: '📊' },
     { id: 'drive', label: 'Drive Filters', icon: '📁' },
     { id: 'supabase', label: 'Supabase Clients', icon: '🔌' },
     { id: 'rls', label: 'RLS Check', icon: '🔒' },
@@ -92,7 +93,17 @@ export const DebugPage = () => {
         {activeTab === 'audio' && (
           <div>
             <h2 className="text-xl font-semibold mb-4">Audio URL Testing</h2>
-            <AudioUrlDebug />
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              <p>To test audio URLs, please select an audio file from the home page and click on the debug icon.</p>
+              <p className="mt-2">This tab requires an audio file to be selected for testing.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tracking' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Media Tracking Status</h2>
+            <MediaTrackingDebug />
           </div>
         )}
 
