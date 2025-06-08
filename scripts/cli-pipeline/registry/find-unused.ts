@@ -28,10 +28,10 @@ async function checkCommandUsage(serviceName: string, daysThreshold: number): Pr
   // Check command_tracking for any commands that might use this service
   const { data, error } = await supabase
     .from('command_tracking')
-    .select('executed_at')
+    .select('execution_time')
     .or(`command_name.ilike.%${serviceName}%,pipeline_name.ilike.%${serviceName}%`)
-    .gte('executed_at', new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString())
-    .order('executed_at', { ascending: false })
+    .gte('execution_time', new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString())
+    .order('execution_time', { ascending: false })
     .limit(1);
   
   if (error || !data || data.length === 0) {
@@ -43,10 +43,10 @@ async function checkCommandUsage(serviceName: string, daysThreshold: number): Pr
     .from('command_tracking')
     .select('*', { count: 'exact', head: true })
     .or(`command_name.ilike.%${serviceName}%,pipeline_name.ilike.%${serviceName}%`)
-    .gte('executed_at', new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString());
+    .gte('execution_time', new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString());
   
   return {
-    lastUsage: new Date(data[0].executed_at),
+    lastUsage: new Date(data[0].execution_time),
     usageCount: count || 0
   };
 }

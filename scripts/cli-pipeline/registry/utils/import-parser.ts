@@ -22,7 +22,7 @@ export function parseImports(content: string): ParsedImport[] {
   const imports: ParsedImport[] = [];
   
   // Parse ES6 imports
-  let match;
+  let match: RegExpExecArray | null;
   IMPORT_REGEX.lastIndex = 0;
   while ((match = IMPORT_REGEX.exec(content)) !== null) {
     const [fullMatch, namespaceImport, defaultImport, namedImports, importPath] = match;
@@ -38,9 +38,9 @@ export function parseImports(content: string): ParsedImport[] {
       const names = namedImports
         .replace(/{|}/g, '')
         .split(',')
-        .map(s => s.trim())
-        .filter(s => s)
-        .map(s => s.split(' as ')[0].trim());
+        .map((s: string) => s.trim())
+        .filter((s: string) => s)
+        .map((s: string) => s.split(' as ')[0].trim());
       importedItems.push(...names);
     }
     
@@ -57,7 +57,7 @@ export function parseImports(content: string): ParsedImport[] {
   // Parse CommonJS requires
   REQUIRE_REGEX.lastIndex = 0;
   while ((match = REQUIRE_REGEX.exec(content)) !== null) {
-    const [fullMatch, destructured, importPath] = match;
+    const [fullMatch, , importPath] = match;
     
     imports.push({
       statement: fullMatch,
@@ -113,10 +113,10 @@ export function classifyImport(importPath: string): ImportType {
 
 // Extract service name from import path
 export function extractServiceFromImport(importPath: string): string | null {
-  // Handle @shared/services imports
-  const sharedMatch = importPath.match(/@shared\/services\/([^/]+)/);
+  // Handle @shared/services imports with file-specific patterns
+  const sharedMatch = importPath.match(/@shared\/services\/(.+)/);
   if (sharedMatch) {
-    return sharedMatch[1];
+    return extractServiceFromSharedPath(sharedMatch[1]);
   }
   
   // Handle @shared/adapters imports (adapters are services too)
@@ -126,10 +126,10 @@ export function extractServiceFromImport(importPath: string): string | null {
     return adapterMatch[1].replace('-adapter', '');
   }
   
-  // Handle relative imports to shared services
-  const relativeMatch = importPath.match(/packages\/shared\/services\/([^/]+)/);
+  // Handle relative imports to shared services (multiple levels deep)
+  const relativeMatch = importPath.match(/packages\/shared\/services\/(.+)/);
   if (relativeMatch) {
-    return relativeMatch[1];
+    return extractServiceFromSharedPath(relativeMatch[1]);
   }
   
   // Handle relative imports to shared adapters
@@ -139,6 +139,81 @@ export function extractServiceFromImport(importPath: string): string | null {
   }
   
   return null;
+}
+
+// Enhanced service extraction from shared services path
+function extractServiceFromSharedPath(fullPath: string): string | null {
+  // Pattern 1: service-name/service-file
+  // e.g., filter-service/filter-service -> filter-service (from file)
+  const specificServiceMatch = fullPath.match(/([^/]+)\/([^/]+)$/);
+  if (specificServiceMatch) {
+    const [, directory, filename] = specificServiceMatch;
+    
+    // Priority 1: Extract from filename if it's a clear service name
+    const serviceFromFile = extractServiceNameFromFilename(filename);
+    if (serviceFromFile && serviceFromFile !== directory) {
+      // If filename differs from directory, it's likely the specific service
+      return serviceFromFile;
+    }
+    
+    // Priority 2: Handle same-name pattern (filter-service/filter-service)
+    if (filename === directory || filename === directory + '-service') {
+      return directory;
+    }
+    
+    // Priority 3: Handle service variants (auth-service/browser-auth-service)
+    if (filename.includes(directory)) {
+      return extractServiceNameFromFilename(filename) || filename;
+    }
+    
+    // Fallback to directory name
+    return directory;
+  }
+  
+  // Pattern 2: direct service file
+  // e.g., some-service or batch-processing-service.ts
+  return extractServiceNameFromFilename(fullPath) || fullPath;
+}
+
+// Helper function to extract service name from filename
+function extractServiceNameFromFilename(filename: string): string | null {
+  // Remove file extension
+  const withoutExt = filename.replace(/\.(ts|js|tsx|jsx)$/, '');
+  
+  // Handle index files - return null to use parent directory context
+  if (withoutExt === 'index') {
+    return null;
+  }
+  
+  // Handle common service patterns:
+  
+  // Pattern 1: Exact service suffix patterns
+  if (withoutExt.endsWith('-service')) {
+    return withoutExt.slice(0, -8); // Remove '-service'
+  }
+  
+  if (withoutExt.endsWith('-adapter')) {
+    return withoutExt.slice(0, -8); // Remove '-adapter'
+  }
+  
+  if (withoutExt.endsWith('.service')) {
+    return withoutExt.slice(0, -8); // Remove '.service'
+  }
+  
+  // Pattern 2: Service variations (browser-auth-service -> browser-auth)
+  if (withoutExt.includes('-') && withoutExt.endsWith('service')) {
+    // Handle cases like "browser-auth-service" -> "browser-auth"
+    const parts = withoutExt.split('-');
+    if (parts[parts.length - 1] === 'service') {
+      return parts.slice(0, -1).join('-');
+    }
+  }
+  
+  // Pattern 3: Standalone service names
+  // For files like "filter-service" in directory "filter-service"
+  // Keep the full name as the service identifier
+  
+  return withoutExt;
 }
 
 // Get normalized import path for comparison
