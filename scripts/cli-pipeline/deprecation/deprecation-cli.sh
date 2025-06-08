@@ -8,14 +8,26 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Load common functions
-source "$PROJECT_ROOT/scripts/cli-pipeline/common/functions.sh" 2>/dev/null || {
-  # Fallback if common functions don't exist
-  track_command() {
-    echo "🔍 Tracking command: $1"
+# Load environment variables
+ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+fi
+
+# Define track_command function
+track_command() {
+    local pipeline_name="deprecation"
+    local command_name="$1"
     shift
-    eval "$@"
-  }
+    local full_command="$@"
+    
+    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+    if [ -f "$TRACKER_TS" ]; then
+        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    else
+        echo "ℹ️ Tracking not available. Running command directly."
+        eval "$full_command"
+    fi
 }
 
 # Color codes for output
@@ -121,7 +133,7 @@ monitor_usage() {
 
 health_check() {
   echo "🏥 Checking deprecation tracking health..."
-  track_command "health-check" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/health-check.ts ${@}"
+  track_command "health-check" "$SCRIPT_DIR/health-check.sh"
 }
 
 usage_trends() {
@@ -212,5 +224,13 @@ case "${1:-}" in
     echo ""
     show_help
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for deprecation pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ deprecation pipeline is healthy"
     ;;
 esac

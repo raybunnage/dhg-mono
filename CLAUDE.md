@@ -868,6 +868,21 @@ pnpm install                           # Regenerate with all dependencies
 - **Keep backups** before major merge operations: `cp pnpm-lock.yaml pnpm-lock.yaml.backup`
 - If `pnpm install` fails, delete both `node_modules/` and `pnpm-lock.yaml`, then reinstall
 
+## TypeScript import.meta.env in Shared Services
+
+**❌ Problem**: Shared services using `import.meta.env` fail in CLI pipelines with CommonJS compilation errors
+**✅ Solution**: Use process.env directly in shared services since CLI pipelines run in Node.js context
+
+```typescript
+// ❌ WRONG - Causes "import.meta not allowed in CommonJS" errors
+this.apiKey = import.meta.env.VITE_CLAUDE_API_KEY || '';
+
+// ✅ CORRECT - Works in Node.js/CLI contexts
+this.apiKey = process.env.CLAUDE_API_KEY || '';
+```
+
+**Note**: Browser apps should handle environment variables through dependency injection or adapters, not direct import.meta.env usage in shared services.
+
 ## Key Points Summary
 
 This document provides the essential guidelines for working with Claude Code v1.05. The most important principles are:

@@ -1,19 +1,31 @@
 #!/bin/bash
 set -e
 
-source "$(dirname "$0")/../core/load-env.sh"
-source "$(dirname "$0")/../all_pipelines/all-pipelines-cli.sh"
-
-# Track command execution
-track_command() {
-    local command_name="$1"
-    local options="${2:-}"
-    ts-node "$(dirname "$0")/../core/command-history-tracker.ts" "documentation" "$command_name" "$options"
-}
-
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+# Load environment variables
+ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+fi
+
+# Track command execution
+track_command() {
+    local pipeline_name="documentation"
+    local command_name="$1"
+    shift
+    local full_command="$@"
+    
+    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+    if [ -f "$TRACKER_TS" ]; then
+        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    else
+        echo "ℹ️ Tracking not available. Running command directly."
+        eval "$full_command"
+    fi
+}
 DOCS_DIR="$PROJECT_ROOT/docs"
 CONTINUOUSLY_UPDATED_DIR="$DOCS_DIR/continuously-updated"
 
@@ -108,8 +120,7 @@ case "$1" in
         ;;
         
     "health-check")
-        track_command "health-check" ""
-        "$SCRIPT_DIR/health-check.sh"
+        track_command "health-check" "$SCRIPT_DIR/health-check.sh"
         ;;
         
     "--help"|"-h"|"")
@@ -121,4 +132,12 @@ case "$1" in
         show_help
         exit 1
         ;;
+  health-check)
+    echo "🏥 Running health check for documentation pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ documentation pipeline is healthy"
+    ;;
 esac

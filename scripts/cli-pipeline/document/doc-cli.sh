@@ -4,9 +4,9 @@
 
 # Get script directory and root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CLI_FILE="${SCRIPT_DIR}/simplified-cli.ts"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Command tracking function
 track_command() {
@@ -16,7 +16,7 @@ track_command() {
   local full_command="$@"
   
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -52,12 +52,12 @@ show_help() {
 
 # Load environment variables
 load_env() {
-  if [ -f "${ROOT_DIR}/.env.development" ]; then
-    source "${ROOT_DIR}/.env.development"
+  if [ -f "${PROJECT_ROOT}/.env.development" ]; then
+    source "${PROJECT_ROOT}/.env.development"
   fi
   
-  if [ -f "${ROOT_DIR}/.env.local" ]; then
-    source "${ROOT_DIR}/.env.local"
+  if [ -f "${PROJECT_ROOT}/.env.local" ]; then
+    source "${PROJECT_ROOT}/.env.local"
   fi
   
   # Ensure Claude API key is set

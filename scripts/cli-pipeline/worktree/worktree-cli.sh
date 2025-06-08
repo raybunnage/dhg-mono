@@ -3,12 +3,30 @@
 # Worktree CLI - Git worktree and merge management commands
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Source the common functions
-source "$SCRIPT_DIR/../core/load-env.sh"
+# Load environment variables
+ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  echo "Loading environment variables from $ENV_DEV_FILE"
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+fi
 
-# Initialize command tracking
-source "$SCRIPT_DIR/../core/command-history-tracker.sh"
+# Function to track command usage
+track_command() {
+    local pipeline_name="worktree"
+    local command_name="$1"
+    shift
+    local full_command="$@"
+    
+    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+    if [ -f "$TRACKER_TS" ]; then
+        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    else
+        echo "ℹ️ Tracking not available. Running command directly."
+        eval "$full_command"
+    fi
+}
 
 # Help function
 show_help() {
@@ -108,8 +126,7 @@ case "$1" in
         ;;
         
     health-check)
-        track_command "worktree" "health-check"
-        "$SCRIPT_DIR/health-check.sh"
+        track_command "health-check" "$SCRIPT_DIR/health-check.sh"
         ;;
         
     help|--help|-h|"")

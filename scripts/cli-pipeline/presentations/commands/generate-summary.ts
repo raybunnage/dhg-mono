@@ -227,7 +227,8 @@ generateSummaryCommand
           let summaryResponse: string;
           try {
             // Call Claude API to generate JSON summary
-            summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+            const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+            summaryResponse = claudeResponse.content?.[0]?.text || '';
             
             // Validate that response is valid JSON
             try {
@@ -442,7 +443,8 @@ async function processSingleExpertDocument(
   let summaryResponse: string;
   try {
     // Call Claude API to generate JSON summary
-    summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+    const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+    summaryResponse = claudeResponse.content?.[0]?.text || '';
     
     // Validate that response is valid JSON
     try {
@@ -634,7 +636,8 @@ async function processSinglePresentation(
   let summaryResponse: string;
   try {
     // Call Claude API to generate JSON summary
-    summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+    const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+    summaryResponse = claudeResponse.content?.[0]?.text || '';
     
     // Validate that response is valid JSON
     try {

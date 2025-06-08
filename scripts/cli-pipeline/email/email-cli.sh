@@ -104,4 +104,12 @@ case "$1" in
         show_help
         exit 1
         ;;
+  health-check)
+    echo "🏥 Running health check for email pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ email pipeline is healthy"
+    ;;
 esac

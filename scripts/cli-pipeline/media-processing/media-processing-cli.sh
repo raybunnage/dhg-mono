@@ -3,8 +3,8 @@
 # Processes media files through various stages (MP4 → MP3 → Transcript)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Check that ts-node is installed
 if ! command -v ts-node &> /dev/null; then
@@ -21,7 +21,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
