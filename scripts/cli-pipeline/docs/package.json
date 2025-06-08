@@ -1,0 +1,9 @@
+{
+  "name": "@dhg/docs-pipeline",
+  "version": "1.0.0",
+  "description": "Documentation management pipeline with continuous monitoring",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
