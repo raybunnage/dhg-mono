@@ -1,0 +1,2328 @@
+{
+  "validation_date": "2025-06-08T17:50:31.005Z",
+  "total_pipelines_checked": 21,
+  "broken_commands_count": 142,
+  "summary": {
+    "archived": 0,
+    "missing": 142,
+    "syntax_errors": 0
+  },
+  "broken_commands": [
+    {
+      "pipeline_name": "all_pipelines",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/all_pipelines/all_pipelines-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "all_pipelines",
+      "command_name": "quick-restart",
+      "script_path": "scripts/cli-pipeline/all_pipelines/commands/quick-restart.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "--api-key",
+      "script_path": "scripts/cli-pipeline/auth/commands/--api-key.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "whoami",
+      "script_path": "scripts/cli-pipeline/auth/commands/whoami.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "profile",
+      "script_path": "scripts/cli-pipeline/auth/commands/profile.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "sync-auth-ids",
+      "script_path": "scripts/cli-pipeline/auth/commands/sync-auth-ids.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "token",
+      "script_path": "scripts/cli-pipeline/auth/commands/token.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "--email",
+      "script_path": "scripts/cli-pipeline/auth/commands/--email.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "--password",
+      "script_path": "scripts/cli-pipeline/auth/commands/--password.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "login",
+      "script_path": "scripts/cli-pipeline/auth/commands/login.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "logout",
+      "script_path": "scripts/cli-pipeline/auth/commands/logout.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "create",
+      "script_path": "scripts/cli-pipeline/auth/commands/create.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "list",
+      "script_path": "scripts/cli-pipeline/auth/commands/list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "revoke",
+      "script_path": "scripts/cli-pipeline/auth/commands/revoke.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "test",
+      "script_path": "scripts/cli-pipeline/auth/commands/test.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "auth",
+      "command_name": "verify-migration",
+      "script_path": "scripts/cli-pipeline/auth/commands/verify-migration.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "get",
+      "script_path": "scripts/cli-pipeline/classify/commands/get.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "create",
+      "script_path": "scripts/cli-pipeline/classify/commands/create.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "update",
+      "script_path": "scripts/cli-pipeline/classify/commands/update.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "hierarchy",
+      "script_path": "scripts/cli-pipeline/classify/commands/hierarchy.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "batch-create",
+      "script_path": "scripts/cli-pipeline/classify/commands/batch-create.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "list",
+      "script_path": "scripts/cli-pipeline/classify/commands/list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "delete",
+      "script_path": "scripts/cli-pipeline/classify/commands/delete.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "debug-classification-status",
+      "script_path": "scripts/cli-pipeline/classify/commands/debug-classification-status.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "classify",
+      "command_name": "examine-document",
+      "script_path": "scripts/cli-pipeline/classify/commands/examine-document.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "check-auth-objects",
+      "script_path": "scripts/cli-pipeline/database/commands/check-auth-objects.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "verify-user-roles",
+      "script_path": "scripts/cli-pipeline/database/commands/verify-user-roles.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "find-tables",
+      "script_path": "scripts/cli-pipeline/database/commands/find-tables.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "create-backup",
+      "script_path": "scripts/cli-pipeline/database/commands/create-backup.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "list-backup-config",
+      "script_path": "scripts/cli-pipeline/database/commands/list-backup-config.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "migration",
+      "script_path": "scripts/cli-pipeline/database/commands/migration.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "validate",
+      "script_path": "scripts/cli-pipeline/database/commands/validate.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "add-backup-table",
+      "script_path": "scripts/cli-pipeline/database/commands/add-backup-table.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "dry-run",
+      "script_path": "scripts/cli-pipeline/database/commands/dry-run.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "test-light-auth-audit",
+      "script_path": "scripts/cli-pipeline/database/commands/test-light-auth-audit.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "check-rls-policies",
+      "script_path": "scripts/cli-pipeline/database/commands/check-rls-policies.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "test-auth-audit-simple",
+      "script_path": "scripts/cli-pipeline/database/commands/test-auth-audit-simple.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "test",
+      "script_path": "scripts/cli-pipeline/database/commands/test.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "run-staged",
+      "script_path": "scripts/cli-pipeline/database/commands/run-staged.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "rollback-rename",
+      "script_path": "scripts/cli-pipeline/database/commands/rollback-rename.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "list-migrations",
+      "script_path": "scripts/cli-pipeline/database/commands/list-migrations.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "database",
+      "command_name": "analyze-views",
+      "script_path": "scripts/cli-pipeline/database/commands/analyze-views.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "deprecation",
+      "command_name": "monitor-usage",
+      "script_path": "scripts/cli-pipeline/deprecation/commands/monitor-usage.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/dev_tasks/dev_tasks-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "create",
+      "script_path": "scripts/cli-pipeline/dev_tasks/commands/create.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "update",
+      "script_path": "scripts/cli-pipeline/dev_tasks/commands/update.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "complete",
+      "script_path": "scripts/cli-pipeline/dev_tasks/commands/complete.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "show",
+      "script_path": "scripts/cli-pipeline/dev_tasks/commands/show.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "list",
+      "script_path": "scripts/cli-pipeline/dev_tasks/commands/list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "dev_tasks",
+      "command_name": "commit",
+      "script_path": "scripts/cli-pipeline/dev_tasks/commands/commit.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "archive-reports",
+      "script_path": "scripts/cli-pipeline/documentation/commands/archive-reports.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "archive-specs",
+      "script_path": "scripts/cli-pipeline/documentation/commands/archive-specs.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "archive-solutions",
+      "script_path": "scripts/cli-pipeline/documentation/commands/archive-solutions.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "watch-continuous",
+      "script_path": "scripts/cli-pipeline/documentation/commands/watch-continuous.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "add-continuous",
+      "script_path": "scripts/cli-pipeline/documentation/commands/add-continuous.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "list-continuous",
+      "script_path": "scripts/cli-pipeline/documentation/commands/list-continuous.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "update-continuous",
+      "script_path": "scripts/cli-pipeline/documentation/commands/update-continuous.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "analyze-relevance",
+      "script_path": "scripts/cli-pipeline/documentation/commands/analyze-relevance.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "documentation",
+      "command_name": "clean-archived",
+      "script_path": "scripts/cli-pipeline/documentation/commands/clean-archived.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "document_types",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/document_types/document_types-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "drive_filter",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/drive_filter/drive_filter-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "drive_filter",
+      "command_name": "add-drive",
+      "script_path": "scripts/cli-pipeline/drive_filter/commands/add-drive.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "drive_filter",
+      "command_name": "list-drives",
+      "script_path": "scripts/cli-pipeline/drive_filter/commands/list-drives.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "drive_filter",
+      "command_name": "remove-drive",
+      "script_path": "scripts/cli-pipeline/drive_filter/commands/remove-drive.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "experts",
+      "command_name": "--mnemonic",
+      "script_path": "scripts/cli-pipeline/experts/commands/--mnemonic.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "experts",
+      "command_name": "--expert-name",
+      "script_path": "scripts/cli-pipeline/experts/commands/--expert-name.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "experts",
+      "command_name": "--core-group",
+      "script_path": "scripts/cli-pipeline/experts/commands/--core-group.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "experts",
+      "command_name": "--full-name",
+      "script_path": "scripts/cli-pipeline/experts/commands/--full-name.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "experts",
+      "command_name": "--metadata",
+      "script_path": "scripts/cli-pipeline/experts/commands/--metadata.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "list",
+      "script_path": "scripts/cli-pipeline/gmail/commands/list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "process-emails",
+      "script_path": "scripts/cli-pipeline/gmail/commands/process-emails.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "analyze-concepts",
+      "script_path": "scripts/cli-pipeline/gmail/commands/analyze-concepts.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "export-data",
+      "script_path": "scripts/cli-pipeline/gmail/commands/export-data.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "add",
+      "script_path": "scripts/cli-pipeline/gmail/commands/add.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "status",
+      "script_path": "scripts/cli-pipeline/gmail/commands/status.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "remove",
+      "script_path": "scripts/cli-pipeline/gmail/commands/remove.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "gmail",
+      "command_name": "import-sqlite",
+      "script_path": "scripts/cli-pipeline/gmail/commands/import-sqlite.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "google_sync",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/google_sync/google_sync-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "google_sync",
+      "command_name": "--video-name",
+      "script_path": "scripts/cli-pipeline/google_sync/commands/--video-name.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "google_sync",
+      "command_name": "--new-name",
+      "script_path": "scripts/cli-pipeline/google_sync/commands/--new-name.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "google_sync",
+      "command_name": "--folder-name",
+      "script_path": "scripts/cli-pipeline/google_sync/commands/--folder-name.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "google_sync",
+      "command_name": "--source-id",
+      "script_path": "scripts/cli-pipeline/google_sync/commands/--source-id.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "transcribe",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/transcribe.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "register-expert-docs",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/register-expert-docs.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "process",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/process.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "upload-m4a",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/upload-m4a.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "cache-stats",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/cache-stats.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "convert",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/convert.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "find-media",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/find-media.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "media-processing",
+      "command_name": "update-disk-status",
+      "script_path": "scripts/cli-pipeline/media-processing/commands/update-disk-status.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "queue-status",
+      "script_path": "scripts/cli-pipeline/merge/commands/queue-status.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "start-merge",
+      "script_path": "scripts/cli-pipeline/merge/commands/start-merge.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "queue-add",
+      "script_path": "scripts/cli-pipeline/merge/commands/queue-add.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "check-conflicts",
+      "script_path": "scripts/cli-pipeline/merge/commands/check-conflicts.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "complete-merge",
+      "script_path": "scripts/cli-pipeline/merge/commands/complete-merge.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "queue-list",
+      "script_path": "scripts/cli-pipeline/merge/commands/queue-list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "run-checks",
+      "script_path": "scripts/cli-pipeline/merge/commands/run-checks.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "merge",
+      "command_name": "queue-remove",
+      "script_path": "scripts/cli-pipeline/merge/commands/queue-remove.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "mime_types",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/mime_types/mime_types-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "mime_types",
+      "command_name": "sync",
+      "script_path": "scripts/cli-pipeline/mime_types/commands/sync.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "scan",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/scan.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "watch",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/watch.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "report",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/report.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "history",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/history.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "health",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/health.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "quick",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/quick.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "monitoring",
+      "command_name": "trends",
+      "script_path": "scripts/cli-pipeline/monitoring/commands/trends.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/prompt_service/prompt_service-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "select-prompt",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/select-prompt.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "set-prompt-mappings",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/set-prompt-mappings.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "delete-template",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/delete-template.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "generate-schema",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/generate-schema.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "view-template",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/view-template.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "update-template",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/update-template.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "list-associations",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/list-associations.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "dissociate-template",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/dissociate-template.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "test-stubs",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/test-stubs.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "execute-prompt",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/execute-prompt.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "prompt_service",
+      "command_name": "prompt-stats",
+      "script_path": "scripts/cli-pipeline/prompt_service/commands/prompt-stats.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/refactor_tracking-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "test-complete",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/test-complete.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "update",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/update.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "sign-off",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/sign-off.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "show",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/show.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "status",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/status.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "refactor_tracking",
+      "command_name": "list",
+      "script_path": "scripts/cli-pipeline/refactor_tracking/commands/list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "sync",
+      "script_path": "scripts/cli-pipeline/scripts/commands/sync.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "list",
+      "script_path": "scripts/cli-pipeline/scripts/commands/list.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "classify",
+      "script_path": "scripts/cli-pipeline/scripts/commands/classify.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "search",
+      "script_path": "scripts/cli-pipeline/scripts/commands/search.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "archive",
+      "script_path": "scripts/cli-pipeline/scripts/commands/archive.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "register",
+      "script_path": "scripts/cli-pipeline/scripts/commands/register.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "scripts",
+      "command_name": "stats",
+      "script_path": "scripts/cli-pipeline/scripts/commands/stats.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "work_summaries",
+      "command_name": "main CLI script",
+      "script_path": "scripts/cli-pipeline/work_summaries/work_summaries-cli.sh",
+      "error": "Main CLI script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "work_summaries",
+      "command_name": "add",
+      "script_path": "scripts/cli-pipeline/work_summaries/commands/add.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "work_summaries",
+      "command_name": "auto",
+      "script_path": "scripts/cli-pipeline/work_summaries/commands/auto.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "work_summaries",
+      "command_name": "import",
+      "script_path": "scripts/cli-pipeline/work_summaries/commands/import.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "worktree",
+      "command_name": "copy-env",
+      "script_path": "scripts/cli-pipeline/worktree/commands/copy-env.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "worktree",
+      "command_name": "merge-status",
+      "script_path": "scripts/cli-pipeline/worktree/commands/merge-status.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "worktree",
+      "command_name": "prepare-merge",
+      "script_path": "scripts/cli-pipeline/worktree/commands/prepare-merge.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "worktree",
+      "command_name": "merge-queue",
+      "script_path": "scripts/cli-pipeline/worktree/commands/merge-queue.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    },
+    {
+      "pipeline_name": "worktree",
+      "command_name": "execute-merge",
+      "script_path": "scripts/cli-pipeline/worktree/commands/execute-merge.ts",
+      "error": "Command script not found",
+      "is_missing": true,
+      "is_archived": false
+    }
+  ],
+  "grouped_by_pipeline": {
+    "all_pipelines": [
+      {
+        "pipeline_name": "all_pipelines",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/all_pipelines/all_pipelines-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "all_pipelines",
+        "command_name": "quick-restart",
+        "script_path": "scripts/cli-pipeline/all_pipelines/commands/quick-restart.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "auth": [
+      {
+        "pipeline_name": "auth",
+        "command_name": "--api-key",
+        "script_path": "scripts/cli-pipeline/auth/commands/--api-key.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "whoami",
+        "script_path": "scripts/cli-pipeline/auth/commands/whoami.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "profile",
+        "script_path": "scripts/cli-pipeline/auth/commands/profile.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "sync-auth-ids",
+        "script_path": "scripts/cli-pipeline/auth/commands/sync-auth-ids.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "token",
+        "script_path": "scripts/cli-pipeline/auth/commands/token.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "--email",
+        "script_path": "scripts/cli-pipeline/auth/commands/--email.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "--password",
+        "script_path": "scripts/cli-pipeline/auth/commands/--password.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "login",
+        "script_path": "scripts/cli-pipeline/auth/commands/login.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "logout",
+        "script_path": "scripts/cli-pipeline/auth/commands/logout.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "create",
+        "script_path": "scripts/cli-pipeline/auth/commands/create.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "list",
+        "script_path": "scripts/cli-pipeline/auth/commands/list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "revoke",
+        "script_path": "scripts/cli-pipeline/auth/commands/revoke.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "test",
+        "script_path": "scripts/cli-pipeline/auth/commands/test.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "auth",
+        "command_name": "verify-migration",
+        "script_path": "scripts/cli-pipeline/auth/commands/verify-migration.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "classify": [
+      {
+        "pipeline_name": "classify",
+        "command_name": "get",
+        "script_path": "scripts/cli-pipeline/classify/commands/get.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "create",
+        "script_path": "scripts/cli-pipeline/classify/commands/create.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "update",
+        "script_path": "scripts/cli-pipeline/classify/commands/update.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "hierarchy",
+        "script_path": "scripts/cli-pipeline/classify/commands/hierarchy.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "batch-create",
+        "script_path": "scripts/cli-pipeline/classify/commands/batch-create.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "list",
+        "script_path": "scripts/cli-pipeline/classify/commands/list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "delete",
+        "script_path": "scripts/cli-pipeline/classify/commands/delete.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "debug-classification-status",
+        "script_path": "scripts/cli-pipeline/classify/commands/debug-classification-status.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "classify",
+        "command_name": "examine-document",
+        "script_path": "scripts/cli-pipeline/classify/commands/examine-document.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "database": [
+      {
+        "pipeline_name": "database",
+        "command_name": "check-auth-objects",
+        "script_path": "scripts/cli-pipeline/database/commands/check-auth-objects.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "verify-user-roles",
+        "script_path": "scripts/cli-pipeline/database/commands/verify-user-roles.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "find-tables",
+        "script_path": "scripts/cli-pipeline/database/commands/find-tables.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "create-backup",
+        "script_path": "scripts/cli-pipeline/database/commands/create-backup.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "list-backup-config",
+        "script_path": "scripts/cli-pipeline/database/commands/list-backup-config.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "migration",
+        "script_path": "scripts/cli-pipeline/database/commands/migration.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "validate",
+        "script_path": "scripts/cli-pipeline/database/commands/validate.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "add-backup-table",
+        "script_path": "scripts/cli-pipeline/database/commands/add-backup-table.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "dry-run",
+        "script_path": "scripts/cli-pipeline/database/commands/dry-run.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "test-light-auth-audit",
+        "script_path": "scripts/cli-pipeline/database/commands/test-light-auth-audit.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "check-rls-policies",
+        "script_path": "scripts/cli-pipeline/database/commands/check-rls-policies.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "test-auth-audit-simple",
+        "script_path": "scripts/cli-pipeline/database/commands/test-auth-audit-simple.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "test",
+        "script_path": "scripts/cli-pipeline/database/commands/test.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "run-staged",
+        "script_path": "scripts/cli-pipeline/database/commands/run-staged.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "rollback-rename",
+        "script_path": "scripts/cli-pipeline/database/commands/rollback-rename.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "list-migrations",
+        "script_path": "scripts/cli-pipeline/database/commands/list-migrations.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "database",
+        "command_name": "analyze-views",
+        "script_path": "scripts/cli-pipeline/database/commands/analyze-views.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "deprecation": [
+      {
+        "pipeline_name": "deprecation",
+        "command_name": "monitor-usage",
+        "script_path": "scripts/cli-pipeline/deprecation/commands/monitor-usage.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "dev_tasks": [
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/dev_tasks/dev_tasks-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "create",
+        "script_path": "scripts/cli-pipeline/dev_tasks/commands/create.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "update",
+        "script_path": "scripts/cli-pipeline/dev_tasks/commands/update.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "complete",
+        "script_path": "scripts/cli-pipeline/dev_tasks/commands/complete.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "show",
+        "script_path": "scripts/cli-pipeline/dev_tasks/commands/show.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "list",
+        "script_path": "scripts/cli-pipeline/dev_tasks/commands/list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "dev_tasks",
+        "command_name": "commit",
+        "script_path": "scripts/cli-pipeline/dev_tasks/commands/commit.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "documentation": [
+      {
+        "pipeline_name": "documentation",
+        "command_name": "archive-reports",
+        "script_path": "scripts/cli-pipeline/documentation/commands/archive-reports.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "archive-specs",
+        "script_path": "scripts/cli-pipeline/documentation/commands/archive-specs.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "archive-solutions",
+        "script_path": "scripts/cli-pipeline/documentation/commands/archive-solutions.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "watch-continuous",
+        "script_path": "scripts/cli-pipeline/documentation/commands/watch-continuous.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "add-continuous",
+        "script_path": "scripts/cli-pipeline/documentation/commands/add-continuous.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "list-continuous",
+        "script_path": "scripts/cli-pipeline/documentation/commands/list-continuous.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "update-continuous",
+        "script_path": "scripts/cli-pipeline/documentation/commands/update-continuous.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "analyze-relevance",
+        "script_path": "scripts/cli-pipeline/documentation/commands/analyze-relevance.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "documentation",
+        "command_name": "clean-archived",
+        "script_path": "scripts/cli-pipeline/documentation/commands/clean-archived.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "document_types": [
+      {
+        "pipeline_name": "document_types",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/document_types/document_types-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "drive_filter": [
+      {
+        "pipeline_name": "drive_filter",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/drive_filter/drive_filter-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "drive_filter",
+        "command_name": "add-drive",
+        "script_path": "scripts/cli-pipeline/drive_filter/commands/add-drive.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "drive_filter",
+        "command_name": "list-drives",
+        "script_path": "scripts/cli-pipeline/drive_filter/commands/list-drives.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "drive_filter",
+        "command_name": "remove-drive",
+        "script_path": "scripts/cli-pipeline/drive_filter/commands/remove-drive.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "experts": [
+      {
+        "pipeline_name": "experts",
+        "command_name": "--mnemonic",
+        "script_path": "scripts/cli-pipeline/experts/commands/--mnemonic.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "experts",
+        "command_name": "--expert-name",
+        "script_path": "scripts/cli-pipeline/experts/commands/--expert-name.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "experts",
+        "command_name": "--core-group",
+        "script_path": "scripts/cli-pipeline/experts/commands/--core-group.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "experts",
+        "command_name": "--full-name",
+        "script_path": "scripts/cli-pipeline/experts/commands/--full-name.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "experts",
+        "command_name": "--metadata",
+        "script_path": "scripts/cli-pipeline/experts/commands/--metadata.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "gmail": [
+      {
+        "pipeline_name": "gmail",
+        "command_name": "list",
+        "script_path": "scripts/cli-pipeline/gmail/commands/list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "process-emails",
+        "script_path": "scripts/cli-pipeline/gmail/commands/process-emails.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "analyze-concepts",
+        "script_path": "scripts/cli-pipeline/gmail/commands/analyze-concepts.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "export-data",
+        "script_path": "scripts/cli-pipeline/gmail/commands/export-data.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "add",
+        "script_path": "scripts/cli-pipeline/gmail/commands/add.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "status",
+        "script_path": "scripts/cli-pipeline/gmail/commands/status.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "remove",
+        "script_path": "scripts/cli-pipeline/gmail/commands/remove.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "gmail",
+        "command_name": "import-sqlite",
+        "script_path": "scripts/cli-pipeline/gmail/commands/import-sqlite.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "google_sync": [
+      {
+        "pipeline_name": "google_sync",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/google_sync/google_sync-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "google_sync",
+        "command_name": "--video-name",
+        "script_path": "scripts/cli-pipeline/google_sync/commands/--video-name.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "google_sync",
+        "command_name": "--new-name",
+        "script_path": "scripts/cli-pipeline/google_sync/commands/--new-name.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "google_sync",
+        "command_name": "--folder-name",
+        "script_path": "scripts/cli-pipeline/google_sync/commands/--folder-name.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "google_sync",
+        "command_name": "--source-id",
+        "script_path": "scripts/cli-pipeline/google_sync/commands/--source-id.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "media-processing": [
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "transcribe",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/transcribe.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "register-expert-docs",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/register-expert-docs.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "process",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/process.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "upload-m4a",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/upload-m4a.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "cache-stats",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/cache-stats.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "convert",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/convert.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "find-media",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/find-media.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "media-processing",
+        "command_name": "update-disk-status",
+        "script_path": "scripts/cli-pipeline/media-processing/commands/update-disk-status.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "merge": [
+      {
+        "pipeline_name": "merge",
+        "command_name": "queue-status",
+        "script_path": "scripts/cli-pipeline/merge/commands/queue-status.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "start-merge",
+        "script_path": "scripts/cli-pipeline/merge/commands/start-merge.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "queue-add",
+        "script_path": "scripts/cli-pipeline/merge/commands/queue-add.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "check-conflicts",
+        "script_path": "scripts/cli-pipeline/merge/commands/check-conflicts.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "complete-merge",
+        "script_path": "scripts/cli-pipeline/merge/commands/complete-merge.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "queue-list",
+        "script_path": "scripts/cli-pipeline/merge/commands/queue-list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "run-checks",
+        "script_path": "scripts/cli-pipeline/merge/commands/run-checks.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "merge",
+        "command_name": "queue-remove",
+        "script_path": "scripts/cli-pipeline/merge/commands/queue-remove.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "mime_types": [
+      {
+        "pipeline_name": "mime_types",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/mime_types/mime_types-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "mime_types",
+        "command_name": "sync",
+        "script_path": "scripts/cli-pipeline/mime_types/commands/sync.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "monitoring": [
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "scan",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/scan.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "watch",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/watch.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "report",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/report.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "history",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/history.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "health",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/health.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "quick",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/quick.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "monitoring",
+        "command_name": "trends",
+        "script_path": "scripts/cli-pipeline/monitoring/commands/trends.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "prompt_service": [
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/prompt_service/prompt_service-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "select-prompt",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/select-prompt.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "set-prompt-mappings",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/set-prompt-mappings.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "delete-template",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/delete-template.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "generate-schema",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/generate-schema.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "view-template",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/view-template.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "update-template",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/update-template.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "list-associations",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/list-associations.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "dissociate-template",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/dissociate-template.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "test-stubs",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/test-stubs.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "execute-prompt",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/execute-prompt.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "prompt_service",
+        "command_name": "prompt-stats",
+        "script_path": "scripts/cli-pipeline/prompt_service/commands/prompt-stats.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "refactor_tracking": [
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/refactor_tracking-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "test-complete",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/test-complete.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "update",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/update.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "sign-off",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/sign-off.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "show",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/show.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "status",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/status.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "refactor_tracking",
+        "command_name": "list",
+        "script_path": "scripts/cli-pipeline/refactor_tracking/commands/list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "scripts": [
+      {
+        "pipeline_name": "scripts",
+        "command_name": "sync",
+        "script_path": "scripts/cli-pipeline/scripts/commands/sync.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "scripts",
+        "command_name": "list",
+        "script_path": "scripts/cli-pipeline/scripts/commands/list.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "scripts",
+        "command_name": "classify",
+        "script_path": "scripts/cli-pipeline/scripts/commands/classify.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "scripts",
+        "command_name": "search",
+        "script_path": "scripts/cli-pipeline/scripts/commands/search.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "scripts",
+        "command_name": "archive",
+        "script_path": "scripts/cli-pipeline/scripts/commands/archive.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "scripts",
+        "command_name": "register",
+        "script_path": "scripts/cli-pipeline/scripts/commands/register.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "scripts",
+        "command_name": "stats",
+        "script_path": "scripts/cli-pipeline/scripts/commands/stats.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "work_summaries": [
+      {
+        "pipeline_name": "work_summaries",
+        "command_name": "main CLI script",
+        "script_path": "scripts/cli-pipeline/work_summaries/work_summaries-cli.sh",
+        "error": "Main CLI script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "work_summaries",
+        "command_name": "add",
+        "script_path": "scripts/cli-pipeline/work_summaries/commands/add.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "work_summaries",
+        "command_name": "auto",
+        "script_path": "scripts/cli-pipeline/work_summaries/commands/auto.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "work_summaries",
+        "command_name": "import",
+        "script_path": "scripts/cli-pipeline/work_summaries/commands/import.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ],
+    "worktree": [
+      {
+        "pipeline_name": "worktree",
+        "command_name": "copy-env",
+        "script_path": "scripts/cli-pipeline/worktree/commands/copy-env.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "worktree",
+        "command_name": "merge-status",
+        "script_path": "scripts/cli-pipeline/worktree/commands/merge-status.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "worktree",
+        "command_name": "prepare-merge",
+        "script_path": "scripts/cli-pipeline/worktree/commands/prepare-merge.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "worktree",
+        "command_name": "merge-queue",
+        "script_path": "scripts/cli-pipeline/worktree/commands/merge-queue.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      },
+      {
+        "pipeline_name": "worktree",
+        "command_name": "execute-merge",
+        "script_path": "scripts/cli-pipeline/worktree/commands/execute-merge.ts",
+        "error": "Command script not found",
+        "is_missing": true,
+        "is_archived": false
+      }
+    ]
+  }
+}

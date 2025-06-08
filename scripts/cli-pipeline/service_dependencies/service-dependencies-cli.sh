@@ -8,12 +8,12 @@ set -e
 
 # Script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Load environment variables
-if [ -f "$ROOT_DIR/.env.development" ]; then
+if [ -f "$PROJECT_ROOT/.env.development" ]; then
   set -a
-  source "$ROOT_DIR/.env.development"
+  source "$PROJECT_ROOT/.env.development"
   set +a
 fi
 
@@ -44,10 +44,10 @@ track_command() {
     return
   fi
   
-  local TRACKER_TS="$ROOT_DIR/packages/shared/services/tracking-service/shell-command-tracker.ts"
+  local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
     echo "🔍 Tracking command: $command_name"
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -138,51 +138,51 @@ fi
 case "$1" in
   "scan-services")
     echo "🔍 Scanning for shared services..."
-    track_command "scan-services" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/scan-services.ts ${@:2}"
+    track_command "scan-services" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/scan-services.ts ${@:2}"
     ;;
   "scan-apps")
     echo "🔍 Scanning for applications..."
-    track_command "scan-apps" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/scan-apps.ts ${@:2}"
+    track_command "scan-apps" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/scan-apps.ts ${@:2}"
     ;;
   "scan-pipelines")
     echo "🔍 Scanning for CLI pipelines..."
-    track_command "scan-pipelines" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/scan-pipelines.ts ${@:2}"
+    track_command "scan-pipelines" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/scan-pipelines.ts ${@:2}"
     ;;
   "scan-commands")
     echo "🔍 Scanning for CLI commands..."
-    track_command "scan-commands" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/scan-commands.ts ${@:2}"
+    track_command "scan-commands" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/scan-commands.ts ${@:2}"
     ;;
   "update-registry")
     echo "🔄 Updating registry with latest data..."
-    track_command "update-registry" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/update-registry.ts ${@:2}"
+    track_command "update-registry" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/update-registry.ts ${@:2}"
     ;;
   "analyze-dependencies")
     echo "🔬 Analyzing service dependencies..."
-    track_command "analyze-dependencies" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/analyze-dependencies.ts ${@:2}"
+    track_command "analyze-dependencies" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/analyze-dependencies.ts ${@:2}"
     ;;
   "validate-dependencies")
     echo "✅ Validating dependency relationships..."
-    track_command "validate-dependencies" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/validate-dependencies.ts ${@:2}"
+    track_command "validate-dependencies" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/validate-dependencies.ts ${@:2}"
     ;;
   "cleanup-orphaned")
     echo "🧹 Cleaning up orphaned dependencies..."
-    track_command "cleanup-orphaned" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/cleanup-orphaned.ts ${@:2}"
+    track_command "cleanup-orphaned" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/cleanup-orphaned.ts ${@:2}"
     ;;
   "refresh-usage-stats")
     echo "📊 Refreshing usage statistics..."
-    track_command "refresh-usage-stats" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/refresh-usage-stats.ts ${@:2}"
+    track_command "refresh-usage-stats" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/refresh-usage-stats.ts ${@:2}"
     ;;
   "export-report")
     echo "📄 Generating dependency report..."
-    track_command "export-report" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/export-report.ts ${@:2}"
+    track_command "export-report" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/export-report.ts ${@:2}"
     ;;
   "service-usage")
     echo "📊 Analyzing service usage..."
-    track_command "service-usage" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/service-usage.ts ${@:2}"
+    track_command "service-usage" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/service-usage.ts ${@:2}"
     ;;
   "app-dependencies")
     echo "📊 Analyzing app dependencies..."
-    track_command "app-dependencies" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/app-dependencies.ts ${@:2}"
+    track_command "app-dependencies" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/app-dependencies.ts ${@:2}"
     ;;
   "health-check")
     echo "🏥 Running health check..."
@@ -190,11 +190,11 @@ case "$1" in
     ;;
   "init-system")
     echo "🚀 Initializing dependency mapping system..."
-    track_command "init-system" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/init-system.ts ${@:2}"
+    track_command "init-system" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/init-system.ts ${@:2}"
     ;;
   "reset-data")
     echo "⚠️  Resetting dependency data..."
-    track_command "reset-data" "cd $ROOT_DIR && ts-node --project "$ROOT_DIR/tsconfig.node.json" $SCRIPT_DIR/commands/reset-data.ts ${@:2}"
+    track_command "reset-data" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/reset-data.ts ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

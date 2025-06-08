@@ -1,7 +1,7 @@
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
-import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
+import { PromptService } from '../../../../packages/shared/services/prompt-service';
 import * as fs from 'fs';
 import * as path from 'path';
 // Let's skip using chalk since it's causing compatibility issues
@@ -33,7 +33,7 @@ export async function processMp4FilesAction(options: any) {
     
     // Get supabase client
     const supabase = SupabaseClientService.getInstance().getClient();
-    const promptQueryService = PromptQueryService.getInstance();
+    const promptService = PromptService.getInstance();
     
     // Get the summary prompt from the database with proper error handling
     Logger.info('Fetching video summary prompt from database...');
@@ -49,7 +49,7 @@ export async function processMp4FilesAction(options: any) {
     try {
       // Fetch the prompt from the database using the PromptQueryService
       writeDebugLog(`Attempting to load prompt 'final_video-summary-prompt' from database`);
-      const promptResult = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+      const promptResult = await promptService.loadPrompt('final_video-summary-prompt');
       
       if (promptResult.error) {
         writeDebugLog(`Error loading prompt: ${promptResult.error}`);

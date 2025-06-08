@@ -577,7 +577,8 @@ export class PromptService {
       if (mergedOptions.expectJson) {
         return await claudeService.getJsonResponse<T>(userMessage, mergedOptions.claudeOptions);
       } else {
-        return await claudeService.sendPrompt(userMessage, mergedOptions.claudeOptions);
+        const response = await claudeService.sendPrompt(userMessage, mergedOptions.claudeOptions);
+        return response.content?.[0]?.text || '';
       }
     } catch (error) {
       Logger.error(`Error using prompt with Claude: ${error instanceof Error ? error.message : 'Unknown error'}`);

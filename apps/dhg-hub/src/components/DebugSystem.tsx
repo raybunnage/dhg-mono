@@ -109,9 +109,12 @@ class DebugMonitor {
 }
 
 // Create global instance
+// TEMPORARILY DISABLED TO TEST FLASHING FIX
+/*
 if (typeof window !== 'undefined' && !window.debugMonitor) {
   window.debugMonitor = new DebugMonitor();
 }
+*/
 
 declare global {
   interface Window {
@@ -128,6 +131,9 @@ export function useDebugRender(componentName: string) {
 
 // Main debug panel component
 export function DebugSystem() {
+  // TEMPORARILY DISABLED TO TEST FLASHING FIX
+  return null;
+  
   const [events, setEvents] = useState<DebugEvent[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPaused, setPaused] = useState(false);

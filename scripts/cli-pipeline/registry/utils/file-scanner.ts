@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { glob } from 'glob';
+import { glob, globSync } from 'glob';
 
 // Get the monorepo root directory
 export const getMonorepoRoot = (): string => {
@@ -39,13 +39,91 @@ export async function scanDirectory(
     ? directory 
     : path.join(getMonorepoRoot(), directory);
     
-  const files = await glob(pattern, {
-    cwd: absoluteDir,
-    ignore: ignorePatterns,
-    absolute: true
-  });
+  // Check if directory exists
+  if (!fs.existsSync(absoluteDir)) {
+    console.error(`❌ Directory does not exist: ${absoluteDir}`);
+    return [];
+  }
   
-  return files;
+  // Debug: List what's actually in the directory
+  try {
+    const dirContents = fs.readdirSync(absoluteDir);
+    console.log(`📂 Directory contents (${dirContents.length} items):`, dirContents.slice(0, 5));
+  } catch (err) {
+    console.error(`❌ Cannot read directory contents:`, err);
+  }
+  
+  try {
+    // Use custom recursive file scanning as a fallback
+    const files: string[] = [];
+    
+    function scanRecursively(dirPath: string) {
+      const items = fs.readdirSync(dirPath);
+      
+      for (const item of items) {
+        const fullPath = path.join(dirPath, item);
+        const stat = fs.statSync(fullPath);
+        
+        if (stat.isDirectory()) {
+          // Check if directory should be ignored
+          const shouldIgnore = ignorePatterns.some(pattern => {
+            // Simple pattern matching for common ignore patterns
+            if (pattern === '**/node_modules/**' && item === 'node_modules') return true;
+            if (pattern === '**/dist/**' && item === 'dist') return true;
+            if (pattern === '**/build/**' && item === 'build') return true;
+            if (pattern === '**/.next/**' && item === '.next') return true;
+            if (pattern === '**/.vite/**' && item === '.vite') return true;
+            if (pattern === '**/coverage/**' && item === 'coverage') return true;
+            if (pattern === '**/.archived_*/**' && item.startsWith('.archived_')) return true;
+            return false;
+          });
+          
+          if (!shouldIgnore) {
+            scanRecursively(fullPath);
+          }
+        } else if (stat.isFile()) {
+          // Check if file matches pattern
+          const ext = path.extname(item);
+          let shouldInclude = false;
+          
+          if (pattern === '*') {
+            shouldInclude = true;
+          } else {
+            // Parse bracket notation like {ts,tsx,js,jsx}
+            const bracketMatch = pattern.match(/\{([^}]+)\}/);
+            if (bracketMatch) {
+              const extensions = bracketMatch[1].split(',').map(e => e.trim());
+              shouldInclude = extensions.some(extension => ext === `.${extension}`);
+            } else if (pattern.includes('*.ts')) {
+              shouldInclude = ext === '.ts';
+            } else if (pattern.includes('*.js')) {
+              shouldInclude = ext === '.js';
+            } else if (pattern.includes('*.tsx')) {
+              shouldInclude = ext === '.tsx';
+            } else if (pattern.includes('*.jsx')) {
+              shouldInclude = ext === '.jsx';
+            }
+          }
+          
+          // Additional filtering for test files
+          if (shouldInclude) {
+            const isTestFile = item.includes('.test.') || item.includes('.spec.');
+            if (!isTestFile) {
+              files.push(fullPath);
+            }
+          }
+        }
+      }
+    }
+    
+    scanRecursively(absoluteDir);
+    
+    console.log(`📁 scanDirectory found ${files.length} files in ${absoluteDir} with pattern ${pattern}`);
+    return files;
+  } catch (error) {
+    console.error(`❌ Error scanning directory ${absoluteDir}:`, error);
+    return [];
+  }
 }
 
 // Read file contents safely

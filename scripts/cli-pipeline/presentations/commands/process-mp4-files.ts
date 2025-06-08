@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
-import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
+import { PromptService } from '../../../../packages/shared/services/prompt-service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getActiveFilterProfile } from '../get-active-filter-profile';
@@ -47,7 +47,7 @@ processMp4FilesCommand
       
       // Get supabase client
       const supabase = SupabaseClientService.getInstance().getClient();
-      const promptQueryService = PromptQueryService.getInstance();
+      const promptService = PromptService.getInstance();
       
       // Get the summary prompt from the database
       console.log('Fetching video summary prompt from database...');
@@ -55,7 +55,8 @@ processMp4FilesCommand
       
       try {
         // Load from database
-        const { prompt: summaryPrompt } = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+        const result = await promptService.loadPrompt('final_video-summary-prompt');
+        const summaryPrompt = result.prompt;
         
         if (summaryPrompt) {
           console.log(`Found prompt in database: ${summaryPrompt.name}`);

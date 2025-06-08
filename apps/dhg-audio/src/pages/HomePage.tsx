@@ -54,8 +54,18 @@ export const HomePage = () => {
 
   return (
     <div>
-      {/* Audio Server Status */}
-      <AudioServerDebug />
+      {/* Quick Server Status Bar */}
+      <div className="mb-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex-1">
+          <AudioServerDebug />
+        </div>
+        <a 
+          href="/debug" 
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap ml-4"
+        >
+          Full Debug Info →
+        </a>
+      </div>
       
       {/* Drive Filter Selection - Prominent at the top */}
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">

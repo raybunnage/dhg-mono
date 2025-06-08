@@ -12,8 +12,8 @@
 
 # Get directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Function to execute a command with tracking
 track_command() {
@@ -28,8 +28,8 @@ track_command() {
 }
 
 # Load environment variables
-if [ -f "$ROOT_DIR/.env.development" ]; then
-  source "$ROOT_DIR/.env.development"
+if [ -f "$PROJECT_ROOT/.env.development" ]; then
+  source "$PROJECT_ROOT/.env.development"
   export SUPABASE_URL
   export SUPABASE_SERVICE_ROLE_KEY
   export SUPABASE_ANON_KEY
@@ -40,7 +40,7 @@ fi
 chmod +x "$SCRIPT_DIR/tracking-cli.sh"
 
 # Change to the root directory
-cd "$ROOT_DIR"
+cd "$PROJECT_ROOT"
 
 # Use the first argument as the command name or default to "main"
 COMMAND="${1:-main}"
@@ -49,6 +49,6 @@ COMMAND="${1:-main}"
 if [ "$COMMAND" = "health-check" ]; then
   track_command "$COMMAND" "$SCRIPT_DIR/health-check.sh"
 else
-  CMD="NODE_PATH=\"$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/cli.ts\" $*"
+  CMD="NODE_PATH=\"$PROJECT_ROOT/node_modules\" npx ts-node -P \"$PROJECT_ROOT/tsconfig.json\" \"$SCRIPT_DIR/cli.ts\" $*"
   track_command "$COMMAND" "$CMD"
 fi

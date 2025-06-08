@@ -10,7 +10,7 @@
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Show help if no arguments
 if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
@@ -56,5 +56,13 @@ case "$1" in
     echo "Unknown command: $1"
     echo "Run './work-summaries-cli.sh help' for usage"
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for work_summaries pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ work_summaries pipeline is healthy"
     ;;
 esac

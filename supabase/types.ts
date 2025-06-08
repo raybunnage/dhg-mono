@@ -3808,6 +3808,7 @@ export type Database = {
           description: string | null
           display_name: string
           domain: string | null
+          has_health_check: boolean | null
           id: string
           main_script: string | null
           pipeline_name: string
@@ -3821,6 +3822,7 @@ export type Database = {
           description?: string | null
           display_name: string
           domain?: string | null
+          has_health_check?: boolean | null
           id?: string
           main_script?: string | null
           pipeline_name: string
@@ -3834,6 +3836,7 @@ export type Database = {
           description?: string | null
           display_name?: string
           domain?: string | null
+          has_health_check?: boolean | null
           id?: string
           main_script?: string | null
           pipeline_name?: string
@@ -4184,6 +4187,90 @@ export type Database = {
           primary_purpose?: string | null
           status?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sys_archived_cli_pipeline_files: {
+        Row: {
+          archived_date: string | null
+          archived_file_path: string
+          command_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          last_used_date: string | null
+          original_file_path: string
+          pipeline_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          archived_date?: string | null
+          archived_file_path: string
+          command_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_date?: string | null
+          original_file_path: string
+          pipeline_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          archived_date?: string | null
+          archived_file_path?: string
+          command_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_date?: string | null
+          original_file_path?: string
+          pipeline_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_archived_package_files: {
+        Row: {
+          archive_reason: string | null
+          archived_path: string
+          created_at: string | null
+          created_by: string | null
+          dependencies_count: number | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          last_modified: string | null
+          original_path: string
+          package_name: string
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_path: string
+          created_at?: string | null
+          created_by?: string | null
+          dependencies_count?: number | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          last_modified?: string | null
+          original_path: string
+          package_name: string
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_path?: string
+          created_at?: string | null
+          created_by?: string | null
+          dependencies_count?: number | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          last_modified?: string | null
+          original_path?: string
+          package_name?: string
         }
         Relationships: []
       }

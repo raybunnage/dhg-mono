@@ -11,56 +11,10 @@ import * as fs from 'fs';
 import * as mammoth from 'mammoth';
 import { Database } from '../../../supabase/types';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
-import { promptService } from '../../../packages/shared/services/prompt-service';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
 
-// Define the prompt name to use for classification
-const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
-
-// Function to create a fallback classification when Claude API fails
-function createFallbackClassification(file: any): any {
-  const fileName = file.name || 'Unknown Document';
-  const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  
-  // Determine document type based on file extension and name
-  let documentType = 'unknown document type';
-  let documentTypeId = '9dbe32ff-5e82-4586-be63-1445e5bcc548'; // ID for unknown document type
-  
-  // Basic file type detection from extension and name patterns
-  if (extension === 'docx' || extension === 'doc') {
-    documentType = 'word document';
-    documentTypeId = 'bb90f01f-b6c4-4030-a3ea-db9dd8c4b55a';
-  } else if (extension === 'txt') {
-    documentType = 'text document';
-    documentTypeId = '99db0af9-0e09-49a7-8405-899849b8a86c';
-  } else if (extension === 'pdf') {
-    documentType = 'pdf document';
-    documentTypeId = 'e3e10835-61f5-4734-a088-cfe2a9a0b1d7'; // ID for PDF document type
-  }
-  
-  // Check if it's a transcript based on filename patterns
-  if (fileName.toLowerCase().includes('transcript')) {
-    documentType = 'presentation transcript';
-    documentTypeId = 'c1a7b78b-c61e-44a4-8b77-a27a38cbba7e';
-  }
-  
-  // Return a basic classification structure
-  return {
-    document_type: documentType,
-    document_type_id: documentTypeId,
-    classification_confidence: 0.6, // Lower confidence for fallback
-    classification_reasoning: `Fallback classification created automatically due to API issues. Determined type based on filename "${fileName}" and extension "${extension}".`,
-    document_summary: `This document could not be analyzed by AI due to service connectivity issues. The classification is based on the file's metadata.`,
-    key_topics: ['File analysis unavailable'],
-    target_audience: 'Unknown (automatic classification)',
-    unique_insights: [
-      'Document was classified automatically based on filename and extension'
-    ]
-  };
-}
-
-// Process a single file using the prompt service and Claude
+// Process a single file using the document classification service
 // Returns classification result and raw file content
 async function processFile(
   fileId: string,
@@ -353,20 +307,8 @@ async function processFile(
       }
     }
     
-    // 2. Use the prompt service to load the classification prompt
-    const promptResult = await promptService.loadPrompt(CLASSIFICATION_PROMPT, {
-      includeDatabaseQueries: true,
-      executeQueries: true,
-      includeRelationships: true,
-      includeRelatedFiles: true
-    });
-    
-    if (debug) {
-      console.log(`Loaded prompt with ${promptResult.combinedContent.length} characters of combined content`);
-    }
-    
-    // 3. Send the file content for classification
-    const userMessage = `Please classify this document:\n\n${fileContent}`;
+    // 2. Use the document classification service
+    console.log('Sending to Document Classification Service...');
     
     let classificationResult;
     let retries = 0;
@@ -374,23 +316,17 @@ async function processFile(
     
     while (retries < maxRetries) {
       try {
-        classificationResult = await promptService.usePromptWithClaude(
-          CLASSIFICATION_PROMPT,
-          userMessage,
-          {
-            expectJson: true,
-            claudeOptions: {
-              temperature: 0, // Ensure temperature is 0 for deterministic output
-              maxTokens: 4000
-            }
-          }
+        // Classify using the shared service
+        classificationResult = await documentClassificationService.classifyDocument(
+          fileContent,
+          fileName
         );
         
-        // If we got here, the API call succeeded
+        // If we got here, the classification succeeded
         break;
-      } catch (claudeError) {
+      } catch (classifyError) {
         retries++;
-        const errorMessage = claudeError instanceof Error ? claudeError.message : 'Unknown error';
+        const errorMessage = classifyError instanceof Error ? classifyError.message : 'Unknown error';
         
         // Check if this is a connection error (ECONNRESET)
         const isConnectionError = errorMessage.includes('ECONNRESET') || 
@@ -416,15 +352,17 @@ async function processFile(
           } else {
             console.error(`Maximum retries (${maxRetries}) reached. Using fallback classification.`);
             // Create a fallback classification based on file metadata
-            classificationResult = createFallbackClassification({
-              name: fileName || 'Unknown Document'
+            classificationResult = documentClassificationService.createFallbackClassification({
+              name: fileName || 'Unknown Document',
+              mime_type: mimeType
             });
           }
         } else {
           // For other types of errors, don't retry
           console.error(`Non-retryable Claude API error: ${errorMessage}`);
-          classificationResult = createFallbackClassification({
-            name: fileName || 'Unknown Document'
+          classificationResult = documentClassificationService.createFallbackClassification({
+            name: fileName || 'Unknown Document',
+            mime_type: mimeType
           });
           break;
         }
@@ -433,8 +371,9 @@ async function processFile(
     
     if (!classificationResult) {
       // Just in case we didn't set it in the error handlers
-      classificationResult = createFallbackClassification({
-        name: fileName || 'Unknown Document'
+      classificationResult = documentClassificationService.createFallbackClassification({
+        name: fileName || 'Unknown Document',
+        mime_type: mimeType
       });
     }
     
@@ -765,7 +704,7 @@ async function reclassifyDocuments(
 // Define CLI program
 program
   .name('reclassify-docs-with-service')
-  .description('Re-classify documents that were previously classified using temperature 0 for deterministic results')
+  .description('Re-classify documents that were previously classified using the Document Classification Service')
   .option('-l, --limit <number>', 'Limit the number of files to process', '10')
   .option('-o, --output <path>', 'Output file path for classification results')
   .option('-d, --debug', 'Enable debug logging', false)
@@ -783,7 +722,7 @@ program
       
       // Show header
       console.log('='.repeat(50));
-      console.log('DOCUMENT RE-CLASSIFICATION WITH PROMPT SERVICE');
+      console.log('DOCUMENT RE-CLASSIFICATION WITH SHARED SERVICE');
       console.log('='.repeat(50));
       console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
       console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
