@@ -15,9 +15,9 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CLI_DIR="$SCRIPT_DIR"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Function to execute a command with tracking
 track_command() {
@@ -28,7 +28,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -37,7 +37,7 @@ track_command() {
 }
 
 # Change to the project root directory (important for relative paths)
-cd "$ROOT_DIR" || { echo "Error: Could not change to project root directory"; exit 1; }
+cd "$PROJECT_ROOT" || { echo "Error: Could not change to project root directory"; exit 1; }
 
 # Use the first argument as the command name or default to "main"
 COMMAND="${1:-main}"
@@ -128,7 +128,7 @@ if [ "$COMMAND" = "add-expert" ]; then
   fi
   
   # Execute the command with properly formatted parameters
-  track_command "add-expert" "cd \"$ROOT_DIR\" && ts-node \"$CLI_DIR/add-expert-direct.ts\" $PARAMS"
+  track_command "add-expert" "cd \"$PROJECT_ROOT\" && ts-node \"$CLI_DIR/add-expert-direct.ts\" $PARAMS"
 else
   # Show help if requested
   if [ "$COMMAND" = "help" ] || [ "$COMMAND" = "--help" ] || [ "$COMMAND" = "-h" ]; then
@@ -199,7 +199,7 @@ else
   # Special case for health check to handle it differently
   if [ "$COMMAND" = "health-check" ]; then
     # Use a direct approach to health check to avoid document_type column issues
-    track_command "health-check" "cd \"$ROOT_DIR\" && node -e \"
+    track_command "health-check" "cd \"$PROJECT_ROOT\" && node -e \"
       const { createClient } = require('@supabase/supabase-js');
       
       async function testExpertsHealth() {
@@ -218,19 +218,19 @@ else
           console.log('🏥 Running experts pipeline health checks...');
           console.log('\\n🔍 Checking Supabase database connection...');
           
-          // Test connection with experts table first
+          // Test connection with expert_profiles table first
           const { data: experts, error: expertsError } = await supabase
-            .from('experts')
+            .from('expert_profiles')
             .select('id')
             .limit(1);
             
           if (expertsError) {
-            console.error('❌ Experts table connection failed:', expertsError.message);
+            console.error('❌ Expert profiles table connection failed:', expertsError.message);
             console.error('\\n📋 Overall Status:');
             console.error('❌ Experts service infrastructure has issues');
             process.exit(1);
           } else {
-            console.log('✅ Experts table accessible');
+            console.log('✅ Expert profiles table accessible');
           }
           
           // Test folder_expert_relationships table

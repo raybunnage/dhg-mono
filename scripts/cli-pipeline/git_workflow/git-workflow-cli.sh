@@ -1,16 +1,16 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Source common functions
-source "$ROOT_DIR/scripts/cli-pipeline/common-functions.sh" 2>/dev/null || true
+source "$PROJECT_ROOT/scripts/cli-pipeline/common-functions.sh" 2>/dev/null || true
 
 # Initialize command tracking
 track_command() {
     local command_name="$1"
     shift
-    "$ROOT_DIR/scripts/cli-pipeline/all_pipelines/cli.js" track-command \
+    "$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/cli.js" track-command \
         --pipeline "git_workflow" \
         --command "$command_name" \
         --args "$*" \
@@ -28,8 +28,8 @@ case "$1" in
     # Git Information Commands
     "info"|"git-info")
         track_command "git-info"
-        if [ -f "$ROOT_DIR/scripts/root/get-git-info.sh" ]; then
-            "$ROOT_DIR/scripts/root/get-git-info.sh"
+        if [ -f "$PROJECT_ROOT/scripts/root/get-git-info.sh" ]; then
+            "$PROJECT_ROOT/scripts/root/get-git-info.sh"
         else
             # Use TypeScript version if available
             cd "$SCRIPT_DIR" && npx ts-node git-info-detailed.ts
@@ -74,25 +74,25 @@ case "$1" in
     "test"|"run-tests")
         track_command "run-tests"
         echo "Running tests..."
-        cd "$ROOT_DIR" && pnpm test:run
+        cd "$PROJECT_ROOT" && pnpm test:run
         ;;
     
     "typecheck"|"check-types")
         track_command "check-types"
         echo "Checking TypeScript types..."
-        cd "$ROOT_DIR" && tsc --noEmit
+        cd "$PROJECT_ROOT" && tsc --noEmit
         ;;
     
     "lint"|"run-lint")
         track_command "run-lint"
         echo "Running linter..."
-        cd "$ROOT_DIR" && pnpm lint
+        cd "$PROJECT_ROOT" && pnpm lint
         ;;
     
     "check-all"|"pre-commit")
         track_command "pre-commit"
         echo "Running pre-commit checks..."
-        cd "$ROOT_DIR"
+        cd "$PROJECT_ROOT"
         
         echo "1. TypeScript check..."
         tsc --noEmit || { echo "TypeScript check failed"; exit 1; }
@@ -151,7 +151,7 @@ case "$1" in
         
         # Copy .env.development
         if [ -f "$source_path/.env.development" ]; then
-            cp "$source_path/.env.development" "$ROOT_DIR/.env.development"
+            cp "$source_path/.env.development" "$PROJECT_ROOT/.env.development"
             echo "✅ Copied .env.development from $2"
         else
             echo "Error: .env.development not found in $source_path"
@@ -211,4 +211,12 @@ case "$1" in
         echo "Run '$0 --help' for usage information"
         exit 1
         ;;
+  health-check)
+    echo "🏥 Running health check for git_workflow pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ git_workflow pipeline is healthy"
+    ;;
 esac

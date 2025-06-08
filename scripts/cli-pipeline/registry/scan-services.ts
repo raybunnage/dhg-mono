@@ -41,9 +41,21 @@ async function scanServices(options: { updateExisting?: boolean }): Promise<void
   try {
     // Scan the shared services directory
     const servicesDir = 'packages/shared/services';
-    const serviceFiles = await scanDirectory(servicesDir, '**/*-{service,adapter,utils,util,helper}.{ts,js}');
+    // Test with simple pattern first
+    console.log('🔍 Testing simple pattern: *');
+    const testFiles = await scanDirectory(servicesDir, '*');
+    console.log(`📁 Simple pattern found ${testFiles.length} items`);
+    
+    // Use broader pattern to catch all service files
+    const serviceFiles = await scanDirectory(servicesDir, '**/*.{ts,js}');
+    
+    // Ensure serviceFiles is an array
+    if (!Array.isArray(serviceFiles)) {
+      throw new Error(`scanDirectory returned non-array result: ${typeof serviceFiles}`);
+    }
     
     console.log(`📁 Found ${serviceFiles.length} service files in ${servicesDir}\n`);
+    result.totalFound = serviceFiles.length;
     
     for (const filePath of serviceFiles) {
       try {

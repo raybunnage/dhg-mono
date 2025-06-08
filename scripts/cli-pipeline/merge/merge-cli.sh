@@ -15,15 +15,28 @@
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Source the environment
-source "$ROOT_DIR/scripts/cli-pipeline/core/load-env.sh"
+# Load environment variables
+ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
+if [ -f "$ENV_DEV_FILE" ]; then
+  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
+fi
 
 # Track command usage
 track_command() {
-    local command="$1"
-    ts-node "$SCRIPT_DIR/../all_pipelines/track-command.ts" "merge" "$command" &
+    local pipeline_name="merge"
+    local command_name="$1"
+    shift
+    local full_command="$@"
+    
+    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+    if [ -f "$TRACKER_TS" ]; then
+        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    else
+        echo "ℹ️ Tracking not available. Running command directly."
+        eval "$full_command"
+    fi
 }
 
 # Show help if no arguments
@@ -105,8 +118,7 @@ case "$COMMAND" in
         ;;
     
     "health-check")
-        track_command "health-check"
-        "$SCRIPT_DIR/health-check.sh"
+        track_command "health-check" "$SCRIPT_DIR/health-check.sh"
         ;;
     
     *)
@@ -114,4 +126,12 @@ case "$COMMAND" in
         echo "Run './merge-cli.sh help' for usage information"
         exit 1
         ;;
+  health-check)
+    echo "🏥 Running health check for merge pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ merge pipeline is healthy"
+    ;;
 esac

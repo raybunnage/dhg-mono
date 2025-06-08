@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { PresentationService } from '../services/presentation-service';
 import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
-import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
+import { PromptService } from '../../../../packages/shared/services/prompt-service';
 import * as fs from 'fs';
 import * as path from 'path';
 // Use require for chalk to avoid ESM compatibility issues
@@ -42,13 +42,14 @@ generateSummaryCommand
       
       const presentationService = PresentationService.getInstance();
       // Using the PromptQueryService singleton
-      const promptQueryService = PromptQueryService.getInstance();
+      const promptService = PromptService.getInstance();
 
       // Get the summary prompt from the database
       Logger.info('Fetching video summary prompt from database...');
       let promptTemplate = '';
       try {
-        const { prompt: summaryPrompt } = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+        const result = await promptService.loadPrompt('final_video-summary-prompt');
+        const summaryPrompt = result.prompt;
         if (summaryPrompt) {
           promptTemplate = summaryPrompt.content;
           Logger.info(`Found prompt: ${summaryPrompt.name}`);
@@ -227,7 +228,8 @@ generateSummaryCommand
           let summaryResponse: string;
           try {
             // Call Claude API to generate JSON summary
-            summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+            const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+            summaryResponse = claudeResponse.content?.[0]?.text || '';
             
             // Validate that response is valid JSON
             try {
@@ -442,7 +444,8 @@ async function processSingleExpertDocument(
   let summaryResponse: string;
   try {
     // Call Claude API to generate JSON summary
-    summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+    const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+    summaryResponse = claudeResponse.content?.[0]?.text || '';
     
     // Validate that response is valid JSON
     try {
@@ -634,7 +637,8 @@ async function processSinglePresentation(
   let summaryResponse: string;
   try {
     // Call Claude API to generate JSON summary
-    summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+    const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+    summaryResponse = claudeResponse.content?.[0]?.text || '';
     
     // Validate that response is valid JSON
     try {

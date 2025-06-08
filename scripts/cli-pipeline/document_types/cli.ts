@@ -621,12 +621,13 @@ program
       
       // Check ClaudeService
       console.log('\nChecking Claude service...');
-      const claudeOk = claudeService.validateApiKey();
+      // Check if Claude API key is configured by examining environment
+      const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
       
-      if (!claudeOk) {
-        console.warn('⚠️ Claude service: No API key found');
+      if (!claudeApiKey) {
+        console.warn('⚠️ Claude service: No API key found in environment');
       } else {
-        console.log('✅ Claude service: API key found');
+        console.log('✅ Claude service: API key found in environment');
       }
       
       // Check DocumentTypeService
@@ -642,7 +643,7 @@ program
       console.log('==============================================================');
       console.log('✅ Basic services connectivity check completed');
       console.log('✅ Database connection is operational');
-      if (claudeOk) {
+      if (claudeApiKey) {
         console.log('✅ Claude AI service is properly configured');
       } else {
         console.log('⚠️ Claude AI service may not be properly configured (missing API key)');

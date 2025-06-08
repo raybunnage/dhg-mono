@@ -19,7 +19,7 @@
 
 # Get the directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Command tracking function
 track_command() {
@@ -156,5 +156,13 @@ case "$1" in
     echo "Unknown command: $1"
     echo "Run './dev-tasks-cli.sh help' for usage"
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for dev_tasks pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ dev_tasks pipeline is healthy"
     ;;
 esac

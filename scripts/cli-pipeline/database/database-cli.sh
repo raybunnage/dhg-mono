@@ -92,6 +92,7 @@ show_help() {
   echo "    rename-table         Rename a table with optional compatibility view"
   echo "    rollback-rename      Rollback a table rename operation"
   echo "    list-migrations      List all table migration history"
+  echo "    update-definitions   Update missing entries in sys_table_definitions"
   echo ""
   echo "CLI REGISTRY:"
   echo "    scan-cli-pipelines   Scan and import all CLI pipelines into command registry"
@@ -466,6 +467,10 @@ case "$1" in
     echo "📋 Listing table migration history..."
     track_command "list-migrations" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rollback-table-rename.ts list ${@:2}"
     ;;
+  "update-definitions")
+    echo "📝 Updating table definitions in sys_table_definitions..."
+    track_command "update-definitions" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/update-table-definitions.ts ${@:2}"
+    ;;
   "scan-cli-pipelines")
     echo "🔍 Scanning CLI pipelines for command registry..."
     track_command "scan-cli-pipelines" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/scan-cli-pipelines.ts ${@:2}"
@@ -494,5 +499,13 @@ case "$1" in
     echo ""
     show_help
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for database pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ database pipeline is healthy"
     ;;
 esac

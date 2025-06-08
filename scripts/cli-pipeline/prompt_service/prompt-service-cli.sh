@@ -5,8 +5,8 @@
 
 # Get directory of this script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Function to execute a command with tracking
 track_command() {
@@ -17,7 +17,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -26,20 +26,20 @@ track_command() {
 }
 
 # Load environment variables
-if [ -f "$ROOT_DIR/.env" ]; then
-  echo "Loading environment variables from $ROOT_DIR/.env"
-  source "$ROOT_DIR/.env"
+if [ -f "$PROJECT_ROOT/.env" ]; then
+  echo "Loading environment variables from $PROJECT_ROOT/.env"
+  source "$PROJECT_ROOT/.env"
 fi
 
-if [ -f "$ROOT_DIR/.env.local" ]; then
-  echo "Loading environment variables from $ROOT_DIR/.env.local"
-  source "$ROOT_DIR/.env.local" 
+if [ -f "$PROJECT_ROOT/.env.local" ]; then
+  echo "Loading environment variables from $PROJECT_ROOT/.env.local"
+  source "$PROJECT_ROOT/.env.local" 
 fi
 
-if [ -f "$ROOT_DIR/.env.development" ]; then
-  echo "Loading environment variables from $ROOT_DIR/.env.development"
-  source "$ROOT_DIR/.env.development"
-  echo "Loaded Supabase credentials successfully from $ROOT_DIR/.env.development"
+if [ -f "$PROJECT_ROOT/.env.development" ]; then
+  echo "Loading environment variables from $PROJECT_ROOT/.env.development"
+  source "$PROJECT_ROOT/.env.development"
+  echo "Loaded Supabase credentials successfully from $PROJECT_ROOT/.env.development"
   export SUPABASE_URL
   export SUPABASE_SERVICE_ROLE_KEY
   export SUPABASE_ANON_KEY
@@ -50,13 +50,13 @@ fi
 fix_database_queries() {
   # Execute the commands directly with proper quoting
   echo "Updating document-classification-prompt-new..."
-  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"document-classification-prompt-new\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'docx';\""
+  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$PROJECT_ROOT/node_modules\" npx ts-node -P \"$PROJECT_ROOT/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"document-classification-prompt-new\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'docx';\""
   
   echo "Updating scientific-document-analysis-prompt..."
-  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"scientific-document-analysis-prompt\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'pdf';\""
+  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$PROJECT_ROOT/node_modules\" npx ts-node -P \"$PROJECT_ROOT/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"scientific-document-analysis-prompt\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'pdf';\""
   
   echo "Updating scientific-powerpoint..."
-  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"scientific-powerpoint\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'powerpoint';\""
+  track_command "add-query" "NODE_PATH=\"$SCRIPT_DIR/node_modules:$PROJECT_ROOT/node_modules\" npx ts-node -P \"$PROJECT_ROOT/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" add-query \"scientific-powerpoint\" \"select id, category, document_type, description, mime_type, file_extension from document_types where classifier = 'powerpoint';\""
   
   echo "Database queries fixed successfully."
 }
@@ -65,7 +65,7 @@ fix_database_queries() {
 chmod +x "$SCRIPT_DIR/prompt-service-cli.sh"
 
 # Change to the root directory
-cd "$ROOT_DIR"
+cd "$PROJECT_ROOT"
 
 # Use the first argument as the command name or default to "main"
 COMMAND="${1:-main}"
@@ -242,6 +242,6 @@ elif [ "$COMMAND" = "fix-database-queries" ]; then
   fix_database_queries
 else
   # Default to running the normal CLI
-  CMD="NODE_PATH=\"$SCRIPT_DIR/node_modules:$ROOT_DIR/node_modules\" npx ts-node -P \"$ROOT_DIR/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" $*"
+  CMD="NODE_PATH=\"$SCRIPT_DIR/node_modules:$PROJECT_ROOT/node_modules\" npx ts-node -P \"$PROJECT_ROOT/tsconfig.json\" \"$SCRIPT_DIR/prompt-service-cli.ts\" $*"
   track_command "$COMMAND" "$CMD"
 fi
