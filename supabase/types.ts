@@ -4190,6 +4190,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_cli_pipeline_files: {
+        Row: {
+          archived_date: string | null
+          archived_file_path: string
+          command_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          last_used_date: string | null
+          original_file_path: string
+          pipeline_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          archived_date?: string | null
+          archived_file_path: string
+          command_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_date?: string | null
+          original_file_path: string
+          pipeline_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          archived_date?: string | null
+          archived_file_path?: string
+          command_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_used_date?: string | null
+          original_file_path?: string
+          pipeline_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_cli_pipelines: {
         Row: {
           commands: Json | null
