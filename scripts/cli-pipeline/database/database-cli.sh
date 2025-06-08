@@ -60,6 +60,10 @@ show_help() {
   echo "    list-views           List database views grouped by prefix (0 uses)"
   echo "    table-structure      Get detailed information about a table structure (3 uses)"
   echo "    find-tables          Search for specific tables in the database"
+  echo "    update-table-definitions  Update sys_table_definitions with missing tables"
+  echo "    update-table-purposes     Update table/view purposes with common use cases"
+  echo "    update-view-definitions   Update sys_table_definitions with database views"
+  echo "    analyze-views        Analyze all views registered in sys_table_definitions"
   echo ""
   echo "SYSTEM HEALTH:"
   echo "  * connection-test      Test connection to Supabase database (4 uses)"
@@ -465,6 +469,22 @@ case "$1" in
   "scan-cli-pipelines")
     echo "🔍 Scanning CLI pipelines for command registry..."
     track_command "scan-cli-pipelines" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/scan-cli-pipelines.ts ${@:2}"
+    ;;
+  "update-table-definitions")
+    echo "🔄 Updating sys_table_definitions..."
+    track_command "update-table-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-definitions.ts ${@:2}"
+    ;;
+  "update-table-purposes")
+    echo "📝 Updating table and view purposes with common use cases..."
+    track_command "update-table-purposes" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-purposes.ts ${@:2}"
+    ;;
+  "update-view-definitions")
+    echo "🔄 Updating view definitions in sys_table_definitions..."
+    track_command "update-view-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts ${@:2}"
+    ;;
+  "analyze-views")
+    echo "📊 Analyzing views in sys_table_definitions..."
+    track_command "analyze-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts analyze ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help
