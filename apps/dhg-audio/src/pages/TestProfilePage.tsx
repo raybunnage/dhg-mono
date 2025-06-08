@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabaseBrowserClient } from '@/services/supabase-browser';
+import { supabase } from '@/lib/supabase';
 
 export const TestProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -14,7 +14,7 @@ export const TestProfilePage: React.FC = () => {
     console.log('Testing direct save for user:', user.id);
 
     try {
-      const supabase = supabaseBrowserClient.getClient();
+      // Using standard supabase client from lib
       
       const testData = {
         id: user.id,

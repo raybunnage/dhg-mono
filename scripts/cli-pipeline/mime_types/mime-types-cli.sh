@@ -33,7 +33,7 @@ track_command() {
   
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"

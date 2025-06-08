@@ -38,7 +38,7 @@ async function scriptStats() {
   
   // Fetch all scripts
   const { data: scripts, error } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select('*')
     .order('last_modified_at', { ascending: false });
   

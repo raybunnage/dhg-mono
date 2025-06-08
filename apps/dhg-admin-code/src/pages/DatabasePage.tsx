@@ -7,6 +7,7 @@ interface TableInfo {
   table_name: string;
   table_schema: string;
   table_type: string;
+  object_type?: string; // 'table' | 'view' | 'materialized_view'
   row_count: number;
   size_pretty?: string;
   size_bytes?: number;
@@ -22,6 +23,10 @@ interface TableInfo {
   notes?: string;
   error?: string;
   columns?: string[];
+  is_updatable?: boolean;
+  is_insertable?: boolean;
+  depends_on?: string[];
+  dependency_count?: number;
 }
 
 interface PrefixInfo {
@@ -39,6 +44,8 @@ interface ViewInfo {
   has_rls: boolean;
   table_dependencies: string[];
   suggested_prefix: string;
+  description?: string;
+  purpose?: string;
 }
 
 export function DatabasePage() {
@@ -50,6 +57,7 @@ export function DatabasePage() {
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrefix, setSelectedPrefix] = useState<string | null>(null);
+  const [objectTypeFilter, setObjectTypeFilter] = useState<'all' | 'tables' | 'views'>('all');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -198,6 +206,7 @@ export function DatabasePage() {
       'ai_': { label: 'AI', description: 'AI & prompt management' },
       'auth_': { label: 'Auth', description: 'Authentication & users' },
       'batch_': { label: 'Batch', description: 'Batch operations' },
+      'clipboard_': { label: 'Clipboard', description: 'Clipboard snippets management' },
       'command_': { label: 'Command', description: 'Command & analytics' },
       'dev_': { label: 'Dev', description: 'Development tasks, merge queue & workflow' },
       'doc_': { label: 'Docs', description: 'Document management & continuous monitoring' },
@@ -206,10 +215,14 @@ export function DatabasePage() {
       'expert_': { label: 'Expert', description: 'Expert system' },
       'filter_': { label: 'Filter', description: 'User filters & preferences' },
       'google_': { label: 'Google', description: 'Google Drive integration' },
+      'import_': { label: 'Import', description: 'Data import & migration' },
       'learn_': { label: 'Learning', description: 'Learning platform' },
       'media_': { label: 'Media', description: 'Media & presentations' },
+      'registry_': { label: 'Registry', description: 'System registries & catalogs' },
       'scripts_': { label: 'Scripts', description: 'Script management' },
-      'sys_': { label: 'System', description: 'System & infrastructure' },
+      'service_': { label: 'Service', description: 'Service configurations & metadata' },
+      'sys_': { label: 'System', description: 'System & infrastructure, service registry' },
+      'worktree_': { label: 'Worktree', description: 'Git worktree management' },
       '_other': { label: 'Other', description: 'Other tables' }
     };
     
@@ -242,6 +255,14 @@ export function DatabasePage() {
   const getFilteredTables = () => {
     let filtered = [...tables];
     
+    // Apply object type filter for tables
+    if (objectTypeFilter === 'tables') {
+      filtered = filtered.filter(table => !table.object_type || table.object_type === 'table');
+    } else if (objectTypeFilter === 'views') {
+      // When views filter is selected, return empty array as views are handled separately
+      return [];
+    }
+    
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(table => 
@@ -253,9 +274,10 @@ export function DatabasePage() {
     // Apply prefix filter
     if (selectedPrefix) {
       if (selectedPrefix === '_other') {
-        const knownPrefixes = ['ai_', 'auth_', 'batch_', 'command_', 'dev_', 'doc_', 
-                               'document_', 'email_', 'expert_', 'filter_', 'google_', 'learn_', 
-                               'media_', 'scripts_', 'sys_'];
+        const knownPrefixes = ['ai_', 'auth_', 'batch_', 'clipboard_', 'command_', 'dev_', 'doc_', 
+                               'document_', 'email_', 'expert_', 'filter_', 'google_', 'import_', 
+                               'learn_', 'media_', 'registry_', 'scripts_', 'service_', 'sys_', 
+                               'worktree_'];
         filtered = filtered.filter(table => 
           !knownPrefixes.some(prefix => table.table_name.startsWith(prefix))
         );
@@ -303,6 +325,29 @@ export function DatabasePage() {
       return view.suggested_prefix === selectedPrefix;
     });
   };
+  
+  // Get filtered views based on all filters
+  const getFilteredViews = () => {
+    let filtered = [...views];
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(view => 
+        view.view_name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply prefix filter
+    if (selectedPrefix) {
+      if (selectedPrefix === '_other') {
+        filtered = filtered.filter(view => view.suggested_prefix === 'other');
+      } else {
+        filtered = filtered.filter(view => view.suggested_prefix === selectedPrefix);
+      }
+    }
+    
+    return filtered;
+  };
 
   // Calculate statistics
   const totalTables = tables.length;
@@ -338,8 +383,12 @@ export function DatabasePage() {
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100">
-            <div className="text-2xl font-bold text-green-900">{totalTables}</div>
-            <div className="text-sm text-green-600 mt-1">Total Tables</div>
+            <div className="text-2xl font-bold text-green-900">
+              {objectTypeFilter === 'views' ? views.length : totalTables}
+            </div>
+            <div className="text-sm text-green-600 mt-1">
+              {objectTypeFilter === 'views' ? 'Total Views' : 'Total Tables'}
+            </div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100">
             <div className="text-2xl font-bold text-green-900">{tablesWithData}</div>
@@ -397,7 +446,7 @@ export function DatabasePage() {
                   : 'bg-green-100 text-green-700 hover:bg-green-200'
               }`}
             >
-              All Tables ({tables.length})
+              All ({tables.length} tables, {views.length} views)
             </button>
             {getPrefixInfo().map(({ prefix, label, count }) => {
               const viewCount = views.filter(v => 
@@ -467,6 +516,40 @@ export function DatabasePage() {
                 }`}
               >
                 Empty Only
+              </button>
+              
+              <div className="border-l border-green-300 mx-2"></div>
+              
+              {/* Object type filter */}
+              <button
+                onClick={() => setObjectTypeFilter('all')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  objectTypeFilter === 'all'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setObjectTypeFilter('tables')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  objectTypeFilter === 'tables'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                }`}
+              >
+                Tables
+              </button>
+              <button
+                onClick={() => setObjectTypeFilter('views')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  objectTypeFilter === 'views'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                }`}
+              >
+                Views
               </button>
               
               <div className="border-l border-green-300 mx-2"></div>
@@ -576,7 +659,80 @@ export function DatabasePage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-green-100">
-                {getFilteredTables().map((table) => (
+                {objectTypeFilter === 'views' ? (
+                  // Render views when views filter is selected
+                  getFilteredViews().map((view) => (
+                    <tr 
+                      key={view.view_name} 
+                      className="hover:bg-green-50 cursor-pointer bg-blue-50/30 border-l-2 border-l-blue-300"
+                    >
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-green-900 flex items-center gap-2">
+                            <span>{view.view_name}</span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700" title="Database View">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              VIEW
+                            </span>
+                          </div>
+                          {/* Show view description */}
+                          {view.description && (
+                            <div className="text-xs text-gray-600 mt-1">{view.description}</div>
+                          )}
+                          {view.purpose && (
+                            <div className="text-xs text-gray-500 mt-0.5 italic">{view.purpose}</div>
+                          )}
+                          {/* Show view properties */}
+                          <div className="text-xs text-gray-500 mt-1">
+                            {view.is_insertable && 'Insertable'} {view.is_updatable && 'Updatable'}
+                            {!view.is_insertable && !view.is_updatable && 'Read-only'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-500">
+                          {view.table_dependencies && view.table_dependencies.length > 0 ? (
+                            <span title={`Depends on: ${view.table_dependencies.join(', ')}`}>
+                              {view.table_dependencies.length} deps
+                            </span>
+                          ) : (
+                            'View'
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">-</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-green-600 text-sm">✓ View</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs text-gray-600">
+                          {view.table_dependencies && view.table_dependencies.length > 0 && (
+                            <div>
+                              Tables: {view.table_dependencies.slice(0, 2).join(', ')}
+                              {view.table_dependencies.length > 2 && ` +${view.table_dependencies.length - 2} more`}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 text-xs">
+                          {view.has_rls ? (
+                            <span className="text-green-600" title="Row Level Security enabled">RLS</span>
+                          ) : (
+                            <span className="text-gray-400" title="No Row Level Security">No RLS</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  // Render tables when tables or all filter is selected
+                  getFilteredTables().map((table) => (
                   <tr 
                     key={table.table_name} 
                     className={`hover:bg-green-50 cursor-pointer ${
@@ -618,13 +774,25 @@ export function DatabasePage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        table.row_count > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {table.row_count.toLocaleString()}
-                      </span>
+                      {table.object_type === 'view' ? (
+                        <span className="text-sm text-gray-500">
+                          {table.depends_on && table.depends_on.length > 0 ? (
+                            <span title={`Depends on: ${table.depends_on.join(', ')}`}>
+                              {table.depends_on.length} deps
+                            </span>
+                          ) : (
+                            'View'
+                          )}
+                        </span>
+                      ) : (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          table.row_count > 0 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {table.row_count.toLocaleString()}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-600">
@@ -659,15 +827,35 @@ export function DatabasePage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
-                        {table.has_primary_key && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Has Primary Key">
-                            PK
-                          </span>
-                        )}
-                        {table.has_rls && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Row Level Security Enabled">
-                            RLS
-                          </span>
+                        {table.object_type === 'view' ? (
+                          <>
+                            {table.is_updatable && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded" title="Updatable View">
+                                UPD
+                              </span>
+                            )}
+                            {table.is_insertable && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Insertable View">
+                                INS
+                              </span>
+                            )}
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Database View">
+                              VIEW
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            {table.has_primary_key && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Has Primary Key">
+                                PK
+                              </span>
+                            )}
+                            {table.has_rls && (
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" title="Row Level Security Enabled">
+                                RLS
+                              </span>
+                            )}
+                          </>
                         )}
                         {table.table_schema === 'auth' && (
                           <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded" title="Auth Schema">
@@ -677,7 +865,8 @@ export function DatabasePage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -718,9 +907,14 @@ export function DatabasePage() {
                   <tbody className="bg-white divide-y divide-green-100">
                     {getViewsForPrefix().map((view) => (
                       <tr key={view.view_name} className="hover:bg-green-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-green-900">
-                            {view.view_schema}.{view.view_name}
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="text-sm font-medium text-green-900">
+                              {view.view_schema}.{view.view_name}
+                            </div>
+                            {view.description && (
+                              <div className="text-xs text-gray-600 mt-1">{view.description}</div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

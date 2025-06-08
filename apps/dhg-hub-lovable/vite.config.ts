@@ -21,12 +21,12 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
     },
     server: {
-      port: 5179,      // Unique port for dhg-hub-lovable
+      port: 5173,      // Dedicated port for dhg-hub-lovable
       host: "::",      // Keep host setting from lovable
       ...baseConfig.server,
     },
     preview: {
-      port: 4173,
+      port: 4173,      // Preview port for dhg-hub-lovable
     },
     test: {
       globals: true,

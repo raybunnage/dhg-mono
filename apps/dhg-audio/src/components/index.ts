@@ -7,3 +7,12 @@ export * from './Transcript';
 // Auth components
 export * from './LightEmailAuth';
 export * from './LoginPage';
+
+// Debug components
+export * from './DriveFilterDebug';
+export * from './FilterProfileTest';
+export * from './DriveFilterComboboxDebug';
+export * from './SimpleFilterTest';
+export * from './FilterServiceTest';
+export * from './CompareSupabaseClients';
+export * from './CheckRLS';

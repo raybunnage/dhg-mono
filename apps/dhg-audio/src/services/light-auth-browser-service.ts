@@ -5,7 +5,7 @@
  * that uses the browser-specific Supabase client
  */
 
-import { supabaseBrowserClient } from './supabase-browser';
+import { supabase } from '../lib/supabase';
 import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 import type { ProfileFormData } from '@shared/services/user-profile-service';
 import { userProfileBrowserService } from './user-profile-browser-service';
@@ -32,7 +32,7 @@ class LightAuthBrowserService {
   private readonly SESSION_KEY = 'dhg-audio-session';
 
   constructor() {
-    this.supabase = supabaseBrowserClient.getClient();
+    this.supabase = supabase;
   }
 
   async isEmailAllowed(email: string): Promise<boolean> {

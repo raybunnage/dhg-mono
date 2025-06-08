@@ -21,7 +21,7 @@ track_command() {
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
     # Run command through tracking service but allow console output to be seen
-    npx ts-node "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
+    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"

@@ -14,6 +14,7 @@
 #   add-file     Add file references to a task
 #   show         Show detailed task information
 #   copy-request Format task for copying to Claude
+#   commit       Commit changes with automatic task linking
 #   help         Show this help message
 
 # Get the directory of this script
@@ -44,6 +45,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  add-file     Add file references to a task"
   echo "  show         Show detailed task information"
   echo "  copy-request Format task for copying to Claude"
+  echo "  commit       Commit changes with automatic task linking"
   echo "  health-check Run health check for dev tasks pipeline"
   echo ""
   echo "Examples:"
@@ -71,6 +73,9 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  # Show task details and copy-friendly format"
   echo "  ./dev-tasks-cli.sh show <task-id>"
   echo "  ./dev-tasks-cli.sh copy-request <task-id>"
+  echo ""
+  echo "  # Commit with automatic task linking"
+  echo "  ./dev-tasks-cli.sh commit \"Fix authentication bug in OAuth flow\""
   exit 0
 fi
 
@@ -139,6 +144,12 @@ case "$1" in
     track_command "dev-tasks" "dhg-research"
     shift
     ts-node "$SCRIPT_DIR/dhg-research.ts" "$@"
+    ;;
+    
+  "commit")
+    track_command "dev-tasks" "commit"
+    shift
+    ts-node "$SCRIPT_DIR/commit-with-task.ts" "$@"
     ;;
     
   *)

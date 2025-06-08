@@ -4,6 +4,7 @@ import { TaskService } from '../services/task-service';
 import type { DevTask } from '../services/task-service';
 import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { getWorktreeByPath } from '../utils/worktree-mapping';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<DevTask[]>([]);
@@ -329,12 +330,23 @@ export default function TasksPage() {
                             {task.git_branch}
                           </span>
                         )}
-                        {task.worktree_active && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700" title={`Worktree: ${task.worktree_path}`}>
-                            <FolderOpen className="w-3 h-3" />
-                            Worktree
-                          </span>
-                        )}
+                        {task.worktree_path && (() => {
+                          const worktree = getWorktreeByPath(task.worktree_path);
+                          return worktree ? (
+                            <span 
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700" 
+                              title={worktree.description}
+                            >
+                              <span>{worktree.alias.emoji}</span>
+                              <span>{worktree.alias.name}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              <FolderOpen className="w-3 h-3" />
+                              {task.worktree_path.split('/').pop()}
+                            </span>
+                          );
+                        })()}
                         <span className="text-xs text-gray-500">
                           Created {new Date(task.created_at).toLocaleDateString()}
                         </span>

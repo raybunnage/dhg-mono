@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit, Trash2, Search, Users, Info, BookOpen, FileText } from 'lucide-react';
-import { supabase } from '../utils/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import { DashboardLayout } from '../components/DashboardLayout';
 
 // Interface for expert profile based on supabase/types.ts

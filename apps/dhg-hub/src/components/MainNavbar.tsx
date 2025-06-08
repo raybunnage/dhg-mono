@@ -1,8 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 
+let navbarRenderCount = 0;
+
 export function MainNavbar() {
+  navbarRenderCount++;
+  console.log(`🧭 NAVBAR RENDER #${navbarRenderCount} at ${new Date().toLocaleTimeString()}`);
+  
   const location = useLocation();
   const currentPath = location.pathname;
+  
+  console.log(`📍 NAVBAR: Current path = ${currentPath}`);
+  console.log(`📍 NAVBAR: Location object:`, location);
   
   const navigation = [
     { name: 'Home', href: '/' },

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-const http = require('http');
-const path = require('path');
-const { exec, execSync } = require('child_process');
-const os = require('os');
+import http from 'http';
+import path from 'path';
+import { exec, execSync } from 'child_process';
+import os from 'os';
+import fs from 'fs';
 
 const PORT = process.env.WORKTREE_SWITCHER_PORT || 3010;
 
@@ -52,7 +53,6 @@ function getWorktrees() {
       let peacockColor = null;
       let hasPeacock = false;
       try {
-        const fs = require('fs');
         const settingsPath = path.join(wt.path, '.vscode', 'settings.json');
         if (fs.existsSync(settingsPath)) {
           const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));

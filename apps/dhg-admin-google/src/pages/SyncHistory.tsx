@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import { format } from 'date-fns';
 import { Clock, CheckCircle, AlertCircle, XCircle, Loader, RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
