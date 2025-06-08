@@ -6,15 +6,12 @@
  */
 
 import { config as dotenvConfig } from 'dotenv';
-// Use the project's SupabaseClient type to avoid version conflicts
-import { SupabaseClient } from '../../packages/cli/src/services/supabase-client';
 import * as path from 'path';
 import * as readline from 'readline';
 import * as fs from 'fs';
-import { Logger } from '../../packages/cli/src/utils/logger';
-import { ErrorHandler } from '../../packages/cli/src/utils/error-handler';
-import { SupabaseClientService } from '../../packages/cli/src/services/supabase-client';
-import config from '../../packages/cli/src/utils/config';
+import { Logger } from '../../../packages/shared/utils/logger';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Define interfaces for type safety and consistent return values
 interface MenuResult {
@@ -59,8 +56,8 @@ async function promptForAction(): Promise<string> {
 async function initSupabase(): Promise<SupabaseClient> {
   try {
     // Get configuration from shared config utility
-    const supabaseUrl = config.supabaseUrl;
-    const supabaseKey = config.supabaseKey;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase connection details in configuration');
@@ -70,18 +67,10 @@ async function initSupabase(): Promise<SupabaseClient> {
     Logger.info('Supabase key is present: YES');
     
     // Use the SupabaseClientService singleton pattern
-    const supabaseService = SupabaseClientService.getInstance();
-    
-    // Initialize if needed
-    if (!supabaseService.isInitialized()) {
-      supabaseService.initialize(supabaseUrl, supabaseKey);
-    }
-    
-    // Get client from service
-    return supabaseService.getClient();
+    return SupabaseClientService.getInstance().getClient();
     
   } catch (error) {
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     throw error;
   }
 }
@@ -134,7 +123,7 @@ async function countDocumentationFiles(supabase: SupabaseClient): Promise<MenuRe
     };
     
   } catch (error) {
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
@@ -183,7 +172,7 @@ async function viewSampleFilePaths(supabase: SupabaseClient): Promise<MenuResult
     };
     
   } catch (error) {
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
@@ -256,7 +245,7 @@ async function checkFilesWithoutDocTypes(supabase: SupabaseClient): Promise<Menu
     };
     
   } catch (error) {
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
@@ -323,7 +312,7 @@ async function viewDocumentTypes(supabase: SupabaseClient): Promise<MenuResult> 
     };
     
   } catch (error) {
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
@@ -392,7 +381,7 @@ async function main(): Promise<{success: boolean, error?: string}> {
     
   } catch (error) {
     // Use ErrorHandler for standardized error handling
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     return {
       success: false, 
       error: error instanceof Error ? error.message : String(error)
@@ -410,7 +399,7 @@ main()
   })
   .catch(error => {
     // Handle any unexpected errors
-    ErrorHandler.handle(error as Error);
+    Logger.error("Error:", error);
     Logger.error('Unhandled error in main');
     process.exit(1);
   });

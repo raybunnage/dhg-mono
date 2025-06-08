@@ -1,9 +1,8 @@
 #!/bin/bash
 # Google Drive CLI Pipeline Health Check
-# This script verifies that all required commands are defined in index.ts
+# This script verifies that all required commands are implemented in google-sync-cli.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INDEX_TS="$SCRIPT_DIR/index.ts"
 LOG_DIR="$SCRIPT_DIR/../../../logs"
 LOG_FILE="$LOG_DIR/google-sync-health-check.log"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
@@ -108,17 +107,18 @@ main() {
   fi
   echo "Results will be logged to $LOG_FILE"
   
-  # Check if index.ts exists
-  if [ ! -f "$INDEX_TS" ]; then
-    echo "❌ FAILED: index.ts not found at $INDEX_TS" | tee -a "$LOG_FILE"
+  # Check if google-sync-cli.sh exists (this pipeline uses shell-based commands)
+  CLI_SH="$SCRIPT_DIR/google-sync-cli.sh"
+  if [ ! -f "$CLI_SH" ]; then
+    echo "❌ FAILED: google-sync-cli.sh not found at $CLI_SH" | tee -a "$LOG_FILE"
     exit 1
   fi
   
   if [ "$VERBOSE" = true ]; then
-    echo "Checking for commands in index.ts..." | tee -a "$LOG_FILE"
+    echo "Checking for commands in google-sync-cli.sh..." | tee -a "$LOG_FILE"
     echo "" | tee -a "$LOG_FILE"
   else
-    echo "Checking for commands in index.ts..." >> "$LOG_FILE"
+    echo "Checking for commands in google-sync-cli.sh..." >> "$LOG_FILE"
   fi
   
   # Variables to track results
@@ -149,21 +149,22 @@ main() {
       continue
     fi
     
-    # Check if command is defined in index.ts
-    local found=$(grep -c ".command('$cmd')" "$INDEX_TS")
+    # Check if command is implemented in google-sync-cli.sh
+    # Look for case statement, conditional checks, or track_command calls for this command
+    local found=$(grep -c -E "(^\s*$cmd\)|track_command.*\"$cmd\"|=\"$cmd\"|\"$cmd\".*\))" "$CLI_SH")
     
     if [ "$found" -gt 0 ]; then
       if [ "$VERBOSE" = true ]; then
-        echo "✅ PASSED: Command $cmd is defined in index.ts" | tee -a "$LOG_FILE"
+        echo "✅ PASSED: Command $cmd is implemented in google-sync-cli.sh" | tee -a "$LOG_FILE"
       else
-        echo "✅ PASSED: Command $cmd is defined in index.ts" >> "$LOG_FILE" 
+        echo "✅ PASSED: Command $cmd is implemented in google-sync-cli.sh" >> "$LOG_FILE" 
       fi
       ((passed++))
     else
       if [ "$VERBOSE" = true ]; then
-        echo "❌ FAILED: Command $cmd not found in index.ts" | tee -a "$LOG_FILE"
+        echo "❌ FAILED: Command $cmd not found in google-sync-cli.sh" | tee -a "$LOG_FILE"
       else
-        echo "❌ FAILED: Command $cmd not found in index.ts" >> "$LOG_FILE"
+        echo "❌ FAILED: Command $cmd not found in google-sync-cli.sh" >> "$LOG_FILE"
       fi
       ((failed++))
     fi
@@ -218,7 +219,7 @@ main() {
   
   echo "" >> "$LOG_FILE"
   echo "=== Test Results Summary ===" | tee -a "$LOG_FILE"
-  echo "Index.ts Commands:" | tee -a "$LOG_FILE"
+  echo "google-sync-cli.sh Commands:" | tee -a "$LOG_FILE"
   echo "  Total commands checked: $total_index" | tee -a "$LOG_FILE"
   echo "  Commands found: $passed" | tee -a "$LOG_FILE"
   echo "  Commands missing: $failed" | tee -a "$LOG_FILE"
@@ -234,7 +235,7 @@ main() {
   else
     echo "" | tee -a "$LOG_FILE"
     if [ "${failed:-0}" -gt 0 ]; then
-      echo "❌ $failed command(s) are missing from index.ts." | tee -a "$LOG_FILE"
+      echo "❌ $failed command(s) are missing from google-sync-cli.sh." | tee -a "$LOG_FILE"
     fi
     if [ "${untracked:-0}" -gt 0 ]; then
       echo "❌ $untracked command(s) are not properly tracked in the CLI shell script." | tee -a "$LOG_FILE"
