@@ -4232,6 +4232,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_package_files: {
+        Row: {
+          archive_reason: string | null
+          archived_path: string
+          created_at: string | null
+          created_by: string | null
+          dependencies_count: number | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          last_modified: string | null
+          original_path: string
+          package_name: string
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_path: string
+          created_at?: string | null
+          created_by?: string | null
+          dependencies_count?: number | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          last_modified?: string | null
+          original_path: string
+          package_name: string
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_path?: string
+          created_at?: string | null
+          created_by?: string | null
+          dependencies_count?: number | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          last_modified?: string | null
+          original_path?: string
+          package_name?: string
+        }
+        Relationships: []
+      }
       sys_cli_pipelines: {
         Row: {
           commands: Json | null

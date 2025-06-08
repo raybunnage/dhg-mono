@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
-import { PromptQueryService } from '../../../../packages/cli/src/services/prompt-query-service';
+import { PromptService } from '../../../../packages/shared/services/prompt-service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -34,7 +34,7 @@ testProcessDocumentCommand
       
       // Get supabase client
       const supabase = SupabaseClientService.getInstance().getClient();
-      const promptQueryService = PromptQueryService.getInstance();
+      const promptService = PromptService.getInstance();
       
       // Get document ID
       const documentId = options.documentId;
@@ -59,7 +59,8 @@ testProcessDocumentCommand
       Logger.info('Fetching video summary prompt from database...');
       let promptTemplate = '';
       try {
-        const { prompt: summaryPrompt } = await promptQueryService.getPromptWithQueryResults('final_video-summary-prompt');
+        const result = await promptService.loadPrompt('final_video-summary-prompt');
+        const summaryPrompt = result.prompt;
         if (summaryPrompt) {
           promptTemplate = summaryPrompt.content;
           Logger.info(`Found prompt: ${summaryPrompt.name}`);
