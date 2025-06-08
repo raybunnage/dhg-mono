@@ -169,26 +169,7 @@ async function checkLocalFile(fileId) {
   return null;
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  const serviceAccountExists = fs.existsSync(path.resolve(__dirname, '../../.service-account.json'));
-  const googleDrivePath = findGoogleDriveBasePath();
-  
-  res.json({
-    status: 'running',
-    port: PORT,
-    timestamp: new Date().toISOString(),
-    serviceAccount: serviceAccountExists ? 'found' : 'missing',
-    localGoogleDrive: googleDrivePath ? 'found' : 'not found',
-    localGoogleDrivePath: googleDrivePath,
-    supabaseConnected: supabase !== null,
-    possiblePaths: [
-      { path: '.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '.service-account.json')) },
-      { path: '../../.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '../../.service-account.json')) },
-      { path: '../../../.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '../../../.service-account.json')) }
-    ]
-  });
-});
+// Note: Health endpoints removed from app servers - use CLI health-check commands instead
 
 // Function to get Google Drive service account credentials
 function getGoogleAuthClient() {
