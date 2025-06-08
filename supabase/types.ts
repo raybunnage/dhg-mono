@@ -3756,6 +3756,141 @@ export type Database = {
           },
         ]
       }
+      registry_apps: {
+        Row: {
+          app_name: string
+          app_path: string
+          app_type: string
+          created_at: string | null
+          description: string | null
+          display_name: string
+          framework: string | null
+          id: string
+          package_manager: string | null
+          port_number: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          app_path: string
+          app_type: string
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          framework?: string | null
+          id?: string
+          package_manager?: string | null
+          port_number?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          app_path?: string
+          app_type?: string
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          framework?: string | null
+          id?: string
+          package_manager?: string | null
+          port_number?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      registry_cli_pipelines: {
+        Row: {
+          command_count: number | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          domain: string | null
+          id: string
+          main_script: string | null
+          pipeline_name: string
+          pipeline_path: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          command_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          domain?: string | null
+          id?: string
+          main_script?: string | null
+          pipeline_name: string
+          pipeline_path: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          command_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          domain?: string | null
+          id?: string
+          main_script?: string | null
+          pipeline_name?: string
+          pipeline_path?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      registry_services: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          export_type: string | null
+          id: string
+          is_singleton: boolean | null
+          package_path: string
+          service_file: string | null
+          service_name: string
+          service_type: string
+          status: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          export_type?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          package_path: string
+          service_file?: string | null
+          service_name: string
+          service_type: string
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          export_type?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          package_path?: string
+          service_file?: string | null
+          service_name?: string
+          service_type?: string
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       scripts_registry: {
         Row: {
           ai_assessment: Json | null
@@ -3834,6 +3969,260 @@ export type Database = {
         }
         Relationships: []
       }
+      service_dependencies: {
+        Row: {
+          dependency_type: string
+          dependent_id: string
+          dependent_name: string
+          dependent_type: string
+          first_detected_at: string | null
+          id: string
+          import_path: string | null
+          is_critical: boolean | null
+          last_verified_at: string | null
+          notes: string | null
+          service_id: string | null
+          service_name: string
+          usage_context: string | null
+          usage_frequency: string | null
+        }
+        Insert: {
+          dependency_type: string
+          dependent_id: string
+          dependent_name: string
+          dependent_type: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          service_name: string
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Update: {
+          dependency_type?: string
+          dependent_id?: string
+          dependent_name?: string
+          dependent_type?: string
+          first_detected_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_critical?: boolean | null
+          last_verified_at?: string | null
+          notes?: string | null
+          service_id?: string | null
+          service_name?: string
+          usage_context?: string | null
+          usage_frequency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_service_usage_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_unused_services_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_dependency_analysis_runs: {
+        Row: {
+          completed_at: string | null
+          dependencies_found: number | null
+          errors_encountered: number | null
+          id: string
+          items_scanned: number | null
+          new_dependencies: number | null
+          notes: string | null
+          removed_dependencies: number | null
+          run_duration_ms: number | null
+          run_type: string
+          started_at: string | null
+          status: string | null
+          target_type: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          dependencies_found?: number | null
+          errors_encountered?: number | null
+          id?: string
+          items_scanned?: number | null
+          new_dependencies?: number | null
+          notes?: string | null
+          removed_dependencies?: number | null
+          run_duration_ms?: number | null
+          run_type: string
+          started_at?: string | null
+          status?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          dependencies_found?: number | null
+          errors_encountered?: number | null
+          id?: string
+          items_scanned?: number | null
+          new_dependencies?: number | null
+          notes?: string | null
+          removed_dependencies?: number | null
+          run_duration_ms?: number | null
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      sys_app_service_dependencies: {
+        Row: {
+          app_id: string
+          created_at: string | null
+          features_used: Json | null
+          id: string
+          import_path: string | null
+          notes: string | null
+          service_id: string
+          usage_type: string | null
+        }
+        Insert: {
+          app_id: string
+          created_at?: string | null
+          features_used?: Json | null
+          id?: string
+          import_path?: string | null
+          notes?: string | null
+          service_id: string
+          usage_type?: string | null
+        }
+        Update: {
+          app_id?: string
+          created_at?: string | null
+          features_used?: Json | null
+          id?: string
+          import_path?: string | null
+          notes?: string | null
+          service_id?: string
+          usage_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_app_service_dependencies_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "sys_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_app_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_app_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sys_applications: {
+        Row: {
+          app_name: string
+          app_path: string
+          app_type: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          port_dev: number | null
+          port_preview: number | null
+          primary_purpose: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          app_path: string
+          app_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          port_dev?: number | null
+          port_preview?: number | null
+          primary_purpose?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          app_path?: string
+          app_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          port_dev?: number | null
+          port_preview?: number | null
+          primary_purpose?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sys_cli_pipelines: {
+        Row: {
+          commands: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          pipeline_name: string
+          pipeline_path: string
+          shell_script: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commands?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          pipeline_name: string
+          pipeline_path: string
+          shell_script?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commands?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          pipeline_name?: string
+          pipeline_path?: string
+          shell_script?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_mime_types: {
         Row: {
           category: string | null
@@ -3870,39 +4259,213 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_pipeline_service_dependencies: {
+        Row: {
+          command_name: string | null
+          created_at: string | null
+          features_used: Json | null
+          id: string
+          import_path: string | null
+          notes: string | null
+          pipeline_id: string
+          service_id: string
+          usage_type: string | null
+        }
+        Insert: {
+          command_name?: string | null
+          created_at?: string | null
+          features_used?: Json | null
+          id?: string
+          import_path?: string | null
+          notes?: string | null
+          pipeline_id: string
+          service_id: string
+          usage_type?: string | null
+        }
+        Update: {
+          command_name?: string | null
+          created_at?: string | null
+          features_used?: Json | null
+          id?: string
+          import_path?: string | null
+          notes?: string | null
+          pipeline_id?: string
+          service_id?: string
+          usage_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_pipeline_service_dependencies_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "sys_cli_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_pipeline_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_pipeline_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sys_service_dependencies: {
+        Row: {
+          created_at: string | null
+          dependency_type: string | null
+          depends_on_service_id: string
+          id: string
+          notes: string | null
+          service_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_service_id: string
+          id?: string
+          notes?: string | null
+          service_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dependency_type?: string | null
+          depends_on_service_id?: string
+          id?: string
+          notes?: string | null
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_service_dependencies_depends_on_service_id_fkey"
+            columns: ["depends_on_service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_service_dependencies_depends_on_service_id_fkey"
+            columns: ["depends_on_service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sys_shared_services: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          dependencies: Json | null
+          description: string | null
+          exports: Json | null
+          has_browser_variant: boolean | null
+          id: string
+          is_singleton: boolean | null
+          service_name: string
+          service_path: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          dependencies?: Json | null
+          description?: string | null
+          exports?: Json | null
+          has_browser_variant?: boolean | null
+          id?: string
+          is_singleton?: boolean | null
+          service_name: string
+          service_path: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          dependencies?: Json | null
+          description?: string | null
+          exports?: Json | null
+          has_browser_variant?: boolean | null
+          id?: string
+          is_singleton?: boolean | null
+          service_name?: string
+          service_path?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_table_definitions: {
         Row: {
           created_by: string | null
           created_date: string | null
+          depends_on: string[] | null
           description: string | null
           id: string
+          is_insertable: boolean | null
+          is_updatable: boolean | null
           last_modified: string | null
           notes: string | null
+          object_type: string | null
           purpose: string | null
           table_name: string
           table_schema: string
+          view_definition: string | null
         }
         Insert: {
           created_by?: string | null
           created_date?: string | null
+          depends_on?: string[] | null
           description?: string | null
           id?: string
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
           last_modified?: string | null
           notes?: string | null
+          object_type?: string | null
           purpose?: string | null
           table_name: string
           table_schema?: string
+          view_definition?: string | null
         }
         Update: {
           created_by?: string | null
           created_date?: string | null
+          depends_on?: string[] | null
           description?: string | null
           id?: string
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
           last_modified?: string | null
           notes?: string | null
+          object_type?: string | null
           purpose?: string | null
           table_name?: string
           table_schema?: string
+          view_definition?: string | null
         }
         Relationships: []
       }
@@ -4227,6 +4790,193 @@ export type Database = {
           },
         ]
       }
+      registry_app_dependencies_view: {
+        Row: {
+          app_name: string | null
+          app_type: string | null
+          critical_services: number | null
+          display_name: string | null
+          framework: string | null
+          id: string | null
+          service_count: number | null
+          services_used: string | null
+        }
+        Relationships: []
+      }
+      registry_pipeline_coverage_gaps_view: {
+        Row: {
+          app_usage_count: number | null
+          display_name: string | null
+          service_id: string | null
+          service_name: string | null
+          service_type: string | null
+          used_by_apps: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_service_usage_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_dependencies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "registry_unused_services_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_service_usage_summary_view: {
+        Row: {
+          app_count: number | null
+          apps_using: string | null
+          critical_dependencies: number | null
+          display_name: string | null
+          id: string | null
+          pipeline_count: number | null
+          pipelines_using: string | null
+          service_name: string | null
+          service_type: string | null
+          status: string | null
+          total_dependents: number | null
+        }
+        Relationships: []
+      }
+      registry_unused_services_view: {
+        Row: {
+          created_at: string | null
+          dependency_count: number | null
+          description: string | null
+          display_name: string | null
+          export_type: string | null
+          id: string | null
+          is_singleton: boolean | null
+          is_unused: boolean | null
+          package_path: string | null
+          service_file: string | null
+          service_name: string | null
+          service_type: string | null
+          status: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Relationships: []
+      }
+      sys_app_dependencies_view: {
+        Row: {
+          app_description: string | null
+          app_name: string | null
+          app_type: string | null
+          features_used: Json | null
+          import_path: string | null
+          service_category: string | null
+          service_name: string | null
+          usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_database_objects_info_view: {
+        Row: {
+          column_count: number | null
+          column_names: unknown[] | null
+          created_by: string | null
+          created_date: string | null
+          depends_on: string[] | null
+          description: string | null
+          id: string | null
+          is_currently_insertable: boolean | null
+          is_currently_updatable: boolean | null
+          is_insertable: boolean | null
+          is_updatable: boolean | null
+          last_modified: string | null
+          notes: string | null
+          object_type: string | null
+          purpose: string | null
+          table_name: string | null
+          table_schema: string | null
+          view_definition: string | null
+        }
+        Insert: {
+          column_count?: never
+          column_names?: never
+          created_by?: string | null
+          created_date?: string | null
+          depends_on?: string[] | null
+          description?: string | null
+          id?: string | null
+          is_currently_insertable?: never
+          is_currently_updatable?: never
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
+          last_modified?: string | null
+          notes?: string | null
+          object_type?: string | null
+          purpose?: string | null
+          table_name?: string | null
+          table_schema?: string | null
+          view_definition?: string | null
+        }
+        Update: {
+          column_count?: never
+          column_names?: never
+          created_by?: string | null
+          created_date?: string | null
+          depends_on?: string[] | null
+          description?: string | null
+          id?: string | null
+          is_currently_insertable?: never
+          is_currently_updatable?: never
+          is_insertable?: boolean | null
+          is_updatable?: boolean | null
+          last_modified?: string | null
+          notes?: string | null
+          object_type?: string | null
+          purpose?: string | null
+          table_name?: string | null
+          table_schema?: string | null
+          view_definition?: string | null
+        }
+        Relationships: []
+      }
+      sys_pipeline_dependencies_view: {
+        Row: {
+          command_name: string | null
+          features_used: Json | null
+          import_path: string | null
+          pipeline_description: string | null
+          pipeline_name: string | null
+          service_category: string | null
+          service_name: string | null
+          usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_service_dependency_summary_view: {
+        Row: {
+          category: string | null
+          depended_by_count: number | null
+          depends_on_count: number | null
+          description: string | null
+          has_browser_variant: boolean | null
+          id: string | null
+          is_singleton: boolean | null
+          service_name: string | null
+          status: string | null
+          used_by_apps_count: number | null
+          used_by_pipelines_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_allowed_email: {
@@ -4357,6 +5107,17 @@ export type Database = {
         Args: { existing_files_json: Json }
         Returns: Json
       }
+      find_archivable_services: {
+        Args: { days_threshold?: number }
+        Returns: {
+          service_id: string
+          service_name: string
+          service_type: string
+          last_command_usage: string
+          dependency_count: number
+          recommendation: string
+        }[]
+      }
       find_mp4_files_in_folder: {
         Args: { folder_id: string }
         Returns: {
@@ -4433,6 +5194,8 @@ export type Database = {
           has_rls: boolean
           table_dependencies: string[]
           suggested_prefix: string
+          description: string
+          purpose: string
         }[]
       }
       get_app_service_dependencies: {
@@ -4837,8 +5600,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      populate_initial_services: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       populate_sources_with_fixed_user_id: {
         Args: { user_email_address: string }
+        Returns: undefined
+      }
+      populate_view_definitions: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       queue_documentation_file_for_processing: {

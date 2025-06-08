@@ -15,6 +15,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174, // Use a different port than other apps
+    port: 5176, // Dedicated port for dhg-admin-google
+  },
+  preview: {
+    port: 4176  // Preview port for dhg-admin-google
   }
 })

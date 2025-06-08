@@ -1,134 +1,61 @@
-# Claude Code Instructions (v1.04)
+# Claude Code Instructions (v1.06)
 
-## ⚠️ CRITICAL: Database Tables Have Been Renamed
+## ⚠️ Database Tables Renamed
 
-Many database tables have undergone a major renaming effort. When troubleshooting issues with missing tables or outdated code references, consult the `sys_table_migrations` table or use the reference below:
+For table/view renaming mappings, see `docs/database/table-view-renaming-reference.md`.
+- Tables use prefixes: auth_, ai_, google_, learn_, media_, doc_, etc.
+- Views end with `_view` suffix
+- Check `supabase/types.ts` for current schema
 
-| Old Table Name | New Table Name | Purpose |
-|----------------|----------------|---------|
-| allowed_emails | auth_allowed_emails | Authentication email allowlist |
-| citation_expert_aliases | expert_citation_aliases | Expert citation aliases (intermediate) |
-| cli_auth_tokens | auth_cli_tokens | CLI authentication tokens |
-| cli_command_tracking | command_tracking | CLI command usage tracking |
-| documentation_files | doc_files | Documentation file storage |
-| document_concepts | learn_document_concepts | Document concept mapping |
-| emails | email_messages | Email message storage |
-| expert_citation_aliases | expert_profile_aliases | Expert profile aliases |
-| expert_documents | google_expert_documents | Expert documents from Google Drive |
-| experts | expert_profiles | Expert information storage |
-| learning_topics | learn_topics | Learning topic definitions |
-| media_bookmarks | learn_media_bookmarks | Media bookmarks |
-| media_playback_events | learn_media_playback_events | Media playback tracking |
-| media_sessions | learn_media_sessions | Media session tracking |
-| media_topic_segments | learn_media_topic_segments | Media topic segments |
-| mime_types | sys_mime_types | System MIME type registry |
-| presentation_assets | media_presentation_assets | Presentation media assets |
-| presentations | media_presentations | Media presentations |
-| processing_batches | batch_processing | Batch processing operations |
-| prompt_categories | ai_prompt_categories | Prompt categorization |
-| prompt_output_templates | ai_prompt_output_templates | Prompt output templates |
-| prompt_relationships | ai_prompt_relationships | Prompt relationships |
-| prompts | ai_prompts | AI prompt storage |
-| prompt_template_associations | ai_prompt_template_associations | Template associations |
-| scripts | scripts_registry | Script management registry |
-| sources_google | google_sources | Google Drive file metadata |
-| sources_google_experts | google_sources_experts | Google sources expert mapping |
-| subject_classifications | learn_subject_classifications | Subject classifications |
-| sync_history | google_sync_history | Google Drive sync tracking |
-| sync_statistics | google_sync_statistics | Sync operation statistics |
-| table_classifications | learn_document_classifications | Document classification tracking |
-| user_content_scores | learn_user_scores | User content scores |
-| user_filter_profile_drives | filter_user_profile_drives | User drive filters |
-| user_filter_profiles | filter_user_profiles | User filter profiles |
-| user_learning_analytics | learn_user_analytics | Learning analytics data |
-| user_profiles_v2 | auth_user_profiles | User profile information |
-| user_subject_interests | learn_user_interests | User learning interests |
+## ⚠️ Critical Rules
 
-**Note**: This is a temporary reference while code is being updated. Always check `supabase/types.ts` for the current schema.
+1. **No workarounds without permission** - Explain issues and get approval
+2. **No PRs with worktrees** - Use `git push origin branch:development`
+3. **Check shared services first** - `packages/shared/services/`
+4. **Use health checks** - `./scripts/cli-pipeline/maintenance-cli.sh health-check`
 
-## ⚠️ Database Views Have Been Renamed
+## Code Review Checklist
 
-All database views now follow a consistent naming convention with `_view` suffix:
+**Before writing:**
+- Check shared services, proper file locations, existing functionality
+- Use `supabase/types.ts` as single source of truth
+- Never hardcode secrets - use .env files
 
-| Old View Name | New View Name |
-|---------------|---------------|
-| command_refactor_status_summary | command_refactor_status_summary_view |
-| commands_needing_attention | command_refactor_needing_attention_view |
-| dev_tasks_with_git | dev_tasks_with_git_view |
-| doc_continuous_status | doc_continuous_status_view |
-| learn_user_progress | learn_user_progress_view |
-| recent_ai_work_summaries | ai_work_summaries_recent_view |
+**Before submitting:**
+- Run `tsc --noEmit`
+- Test with real data
+- Verify CLI integration
+- No hardcoded credentials
 
-**Note**: `media_content_view` already had the `_view` suffix and was not changed.
+## Project State
 
-⚠️ **CRITICAL: ASK BEFORE WORKAROUNDS**
-- **NEVER implement workarounds without explicit permission**
-- If you encounter an issue or error, STOP and explain the problem clearly
-- Present options for proceeding, including proper solutions vs. temporary workarounds
-- Let the user decide how to proceed - don't try to "make things work" by circumventing issues
-- When problems arise, focus on fixing root causes, not symptoms
-
-⚠️ **CRITICAL: NO PULL REQUESTS WITH WORKTREES**
-- **NEVER create pull requests when working with worktrees**
-- **ALWAYS use direct push**: `git push origin branch-name:development`
-- PRs have caused deployment pipeline failures - avoid them completely
-- See "Worktree Merging" section below for proper merge workflow
-
-⚠️ **SHARED SERVICES AVAILABLE**
-- Check `packages/shared/services/` for existing functionality before implementing new features
-- Health check tools: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
-
-⚠️ **CRITICAL: CODE REVIEW CHECKLIST**
-
-## BEFORE WRITING ANY CODE:
-- Review this CLAUDE.md file completely to understand project standards
-- Check if existing shared services can solve the problem (`packages/shared/services`)
-- Identify the appropriate location for new code (CLI pipeline, shared services, etc.)
-- Check if similar functionality already exists that can be reused
-- Look for opportunities to create or enhance singleton services
-- Verify which environment variables are needed (always use .env files, never hardcode secrets)
-- Ensure database operations will properly handle IDs (never null, use UUIDs)
-- Use ONLY `supabase/types.ts` for database schema information (the single source of truth)
-
-## AFTER WRITING CODE BUT BEFORE SUBMITTING:
-- Run `tsc --noEmit` to check for TypeScript errors
-- Verify all parameters and variables have explicit types (avoid implicit 'any')
-- Ensure no hardcoded credentials or secrets exist in the code
-- Check if any functionality should be moved to shared services
-- Verify CLI commands are properly integrated into the pipeline structure
-- Test the code with real data to ensure it works as expected
-- For refactored code, thoroughly verify the functionality is unchanged
-- If moving functionality to shared services, test both before and after
-- Run appropriate tests for both the original behavior and any enhancements
+**Ongoing refactoring:**
+- Tables renamed with consistent prefixes (see renaming doc)
+- 14+ CLI pipelines - check `command_pipelines` table
+- Shared services being extracted from apps
+- Types auto-generated after migrations
+- Update old code as you find it
 
 ## Code Organization Principles
 
-0. **⚠️ CRITICAL: NEVER ADD FILES TO THE ROOT DIRECTORY**: 
-   - ⚠️ **NEVER create any files in the root of the project directory**
-   - ⚠️ **NEVER put scripts or tests in the root - use the dedicated `scripts/` folder structure**
-   - All new files MUST be placed in the appropriate subdirectory:
-     - **New scripts/CLI commands**: `scripts/cli-pipeline/{domain}/` (e.g., `scripts/cli-pipeline/google_sync/`, `scripts/cli-pipeline/document/`)
-     - **New services**: `packages/shared/services/`
-     - **New documentation**: `docs/{appropriate-category}/`
-   - The `scripts/cli-pipeline/` folder contains domain-specific pipelines - this is where ALL new script files belong
-   - If unsure where a file should go, ask for clarification rather than defaulting to the root
+## Code Organization
+
+1. **Never add files to root** - Use proper locations:
+   - Scripts: `scripts/cli-pipeline/{domain}/`
+   - Services: `packages/shared/services/`
+   - Docs: `docs/{category}/`
+
+2. **Shared services first** - Check existing before creating new
+
+3. **UI pages as service sources** - Extract reusable functionality
+
+4. **CLI Pipelines** - Scripts go in `scripts/cli-pipeline/{domain}/`:
+   - all_pipelines, analysis, auth, database, dev_tasks
+   - document, document_types, gmail, google_sync
+   - media-processing, presentations, prompt_service
+   - service_dependencies, viewers
    
-1. **Shared Services First**: Always prioritize using and enhancing the shared services in `packages/shared`. Before implementing any functionality, check if an existing service can be used or extended.
-   - Check for existing services in `packages/shared/services` that could solve the problem
-   - Consider creating new shared services when implementing functionality that could be reused
-   - Avoid duplicating functionality that already exists in shared services
-   - When enhancing CLI scripts, first check if the functionality can be implemented by using shared services
-
-2. **UI Pages as Service Sources**: When examining UI pages in `apps/dhg-improve-experts`, treat them as potential sources for shared services. These comprehensive pages often contain functionality that can be abstracted into reusable services. Future refactoring will create "New" + page name versions that leverage these shared services while preserving the React UI components.
-
-3. **CLI Pipeline Architecture**: 
-   - ⚠️ **ALL new scripts MUST go in `scripts/cli-pipeline/{domain}/`**
-   - ⚠️ **NEVER place scripts directly in `/scripts/` root folder**
-   - Available domains: `google_sync/`, `document/`, `document_types/`, `media-processing/`, `presentations/`, `prompt_service/`
-   - Keep flat file structure within pipeline folders - no nested subfolders
-   - Each pipeline uses commander.js for CLI integration
-   - Each pipeline has its own package.json with commander.js v11.0.0
-   - Always implement command tracking for new commands
+   Standards: Flat structure, commander.js, command tracking
 
 4. **Essential Patterns**:
 
@@ -160,88 +87,35 @@ All database views now follow a consistent naming convention with `_view` suffix
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
    - This is the single source of truth for all table structures and relationships
 
-   **Database Table Naming Convention**:
+   **Table Naming** - Always use prefixes:
+   - auth_, ai_, google_, learn_, media_, doc_
+   - expert_, email_, command_, filter_, batch_
+   - scripts_, sys_, dev_, registry_, service_
+   - worktree_, import_ (for SQLite imports)
    
-   ⚠️ **IMPORTANT: Always ask the user before naming any new database table or view** - naming consistency is critical to the project.
+   Ask before creating tables without matching prefix.
    
-   When creating new tables, follow the established prefix pattern:
-   - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
-   - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
-   - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
-   - `learn_` - Learning platform features (e.g., learn_courses, learn_progress)
-   - `media_` - Media & presentations (e.g., media_thumbnails, media_transcripts)
-   - `doc_` - Document management (e.g., doc_versions, doc_comments, doc_continuous_monitoring)
-   - `expert_` - Expert system (e.g., expert_ratings, expert_specialties)
-   - `email_` - Email system (e.g., email_templates, email_logs)
-   - `command_` - Command & analytics (e.g., command_aliases, command_logs)
-   - `filter_` - User filtering & preferences (e.g., filter_rules, filter_history)
-   - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
-   - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
-   - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies, dev_merge_queue, dev_merge_checklist)
-   - `registry_` - Registry tables for cataloging items (e.g., registry_scripts, registry_services, registry_apps)
-   - `service_` - Service dependency & relationship tables (e.g., service_exports, service_command_dependencies)
-   - `worktree_` - Git worktree management (e.g., worktree_definitions, worktree_app_mappings)
-   - `import_` - Data import tables (e.g., import_emails, import_attachments)
-   
-   **Examples**: 
-   - New authentication feature → `auth_password_resets`
-   - New AI feature → `ai_embeddings`
-   - New learning feature → `learn_quiz_results`
-   
-   Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
-   
-   **Table Creation Dates**: When creating new tables, always add an entry to `sys_table_definitions` with the creation date:
-   ```sql
-   -- After creating your table, add its metadata
-   INSERT INTO sys_table_definitions (table_schema, table_name, description, purpose, created_date)
-   VALUES ('public', 'your_new_table', 'Brief description', 'Purpose/use case', CURRENT_DATE);
+   **Views** - Must end with `_view` and use primary table prefix
+
+   **DB Best Practices**:
+   - Views: read-only, aggregations
+   - Tables: writable data, core entities
+   - Name FK constraints descriptively
+   - Use RLS for security
+   - Never hardcode credentials
+
+5. **Archiving** - Use `.archived_scripts` folders with dates
+
+
+## CLI Integration
+
+1. **Integrate all scripts** into CLI pipelines (never standalone)
+2. **Track commands** - use `track_command` function
+3. **Register new commands**:
+   ```bash
+   ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh populate-command-registry
+   ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh sync-command-status
    ```
-   
-   **Database View Naming Convention**:
-   - All views MUST end with `_view` suffix for clarity
-   - Use the primary table's prefix for the view (e.g., `command_refactor_status_summary_view` for command-related views)
-   - Examples:
-     - `dev_tasks_with_git_view` - View based on dev_tasks table
-     - `learn_user_progress_view` - View for learning user progress
-     - `ai_work_summaries_recent_view` - View for recent AI work summaries
-   - This ensures views are easily distinguishable from tables and sort alphabetically near their related tables
-
-   **Security**:
-   - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
-   - Check for hardcoded secrets before submitting any code
-
-5. **Archiving Strategy**: 
-   - Archive temporary or unused code in `.archived_scripts` folders within the appropriate domain directory
-   - Archive outdated documentation in `.archive_docs` folders within doc markdown directories
-   - Append the date to archived filenames (e.g., `scripts/cli-pipeline/google_sync/.archived_scripts/some-script.20250330.ts`)
-   - This keeps the active codebase clean while preserving code history for potential future reference
-   - Before archiving, ensure the code is not referenced elsewhere in the project
-
-
-## CLI Pipeline Integration Requirements
-
-1. **Always Integrate New Commands**:
-   - ⚠️ **EVERY new script MUST be integrated into the appropriate CLI pipeline**
-   - ⚠️ **Always integrate into the shell script CLI** (e.g., `google-sync-cli.sh`) - this is what I actually use
-   - ⚠️ **NEVER provide standalone `ts-node` scripts** - make commands accessible via the CLI pipeline
-   - Identify the correct domain: `document/`, `google_sync/`, `media-processing/`, `presentations/`, etc.
-   - Add proper help text and ensure commands appear in `--help` output
-
-2. **Command Tracking**:
-   - ⚠️ **ALWAYS implement command tracking** for new CLI commands
-   - Add to shell script wrapper using `track_command` function
-   - Copy structure from existing pipelines (e.g., google-sync-cli.sh)
-   - ⚠️ **After adding new commands, ALWAYS run**:
-     ```bash
-     ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh populate-command-registry
-     ./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh sync-command-status
-     ```
-     This ensures new commands are registered and tracking is enabled
-
-3. **Implementation Standards**:
-   - Implement full functionality, not placeholder code
-   - Include proper error handling and logging
-   - Test commands with real data before submitting
 
 ## CLI Command Registry
 
@@ -281,31 +155,10 @@ ORDER BY cpt.table_name;
 
 ## Development Workflow
 
-1. **Quality Assurance**:
-   - Run `tsc --noEmit` to check TypeScript errors before submitting
-   - Test commands with real data and proper arguments
-   - Verify no hardcoded credentials exist in code
-   - Ensure CLI commands are properly integrated into pipeline structure
-
-2. **Database Migration Workflow**:
-   - ✅ **Types.ts is automatically regenerated after successful migrations**
-   - The run-staged command now automatically runs: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
-   - This ensures TypeScript interfaces always match the updated database schema
-   - If type generation fails, the command provides manual instructions
-   - Consider committing the updated types.ts file along with your migration
-
-3. **Safe Refactoring**:
-   - ⚠️ **Never break existing functionality**
-   - Make small, incremental changes and test after each step
-   - When moving code to shared services: make it work first, then extract, then replace
-   - Ask for permission before major architectural changes
-
-4. **Document Solutions After Struggles**:
-   - ⚠️ **After overcoming significant challenges, update this CLAUDE.md file**
-   - Add concise troubleshooting guidance for future reference
-   - Include specific error messages, root causes, and solutions
-   - Follow the existing format with ❌ Problem and ✅ Solution examples
-   - Focus on patterns that could help with similar issues in the future
+1. **QA**: Run `tsc --noEmit`, test with real data
+2. **DB Migrations**: Types auto-generated after migrations
+3. **Refactoring**: Small incremental changes, test each step
+4. **Document**: Add troubleshooting to CLAUDE.md after solving issues
 
 ## Task-Aware Git Commits
 
@@ -350,113 +203,49 @@ When the user asks you to commit changes, follow this workflow:
 **Note**: The task tracking is automatic - the CLI will find tasks based on the current worktree path
 
 ## Final Checklist
+1. Run `tsc --noEmit`
+2. No hardcoded credentials
+3. Test with real data
+4. Scripts in `scripts/cli-pipeline/{domain}/`
+5. Commands integrated into CLI
 
-⚠️ **BEFORE SUBMITTING CODE:**
-1. Run `tsc --noEmit` to check TypeScript errors
-2. Verify no hardcoded credentials in source files
-3. Test CLI command functionality with real data
-4. Ensure scripts are in proper `scripts/cli-pipeline/{domain}/` location
-5. Check that commands are integrated into shell script CLI
+## DB Migrations
+```bash
+./scripts/cli-pipeline/database/database-cli.sh migration validate [file]
+./scripts/cli-pipeline/database/database-cli.sh migration test [file]
+./scripts/cli-pipeline/database/database-cli.sh migration run-staged [file]
+```
 
-## Project Structure
-- **Monorepo with multiple apps** - When debugging issues, check working apps for patterns
-- `apps/` - Multiple applications (dhg-hub, dhg-audio, dhg-improve-experts, etc.)
-- `packages/shared/services/` - Reusable services (preferred for new functionality)
-- `scripts/cli-pipeline/{domain}/` - CLI commands (ONLY place for new scripts)
-- `supabase/types.ts` - Database schema (single source of truth)
+## Common Issues
 
-## Database Migration Workflow
+1. **Wrong file locations** - Scripts go in `scripts/cli-pipeline/{domain}/`
+2. **Direct DB clients** - Use adapters/singletons, not `createClient()`
+3. **Hardcoded secrets** - Use `.env.development`
+4. **Workarounds** - Ask permission first
+5. **Standalone scripts** - Integrate into CLI pipelines
+6. **SQL ambiguity** - Qualify columns: `table.column`
+7. **Multiple Supabase files** - One `lib/supabase.ts` per app
+8. **Date handling** - Use `date +%Y%m%d` or `new Date()`
 
-When creating database migrations, use the CLI pipeline commands:
-1. **Validate**: `./scripts/cli-pipeline/database/database-cli.sh migration validate [migration.sql]`
-2. **Test**: `./scripts/cli-pipeline/database/database-cli.sh migration test [migration.sql]`
-3. **Apply**: `./scripts/cli-pipeline/database/database-cli.sh migration run-staged [migration.sql]`
+## Debugging Tips
 
-This ensures migrations are properly tested before applying to the database.
+1. **Config issues** - Compare with working apps (dhg-hub, dhg-improve-experts)
+2. **React Router** - Check `BrowserRouter` in main.tsx
+3. **Import fails** - Use specific paths: `@shared/components/profile/ProfileForm`
+4. **Refactoring** - Test incrementally, keep error handling
 
-## Common Issues to Avoid
+## TypeScript
+- Explicit types for all parameters/returns
+- No `any` - use `unknown` with guards
+- Handle null/undefined
+- Use `supabase/types.ts` for DB types
 
-1. **Creating files in wrong locations**: 
-   - ❌ NEVER put scripts in the root directory
-   - ❌ NEVER put scripts directly in `/scripts/` folder
-   - ✅ ALWAYS use `scripts/cli-pipeline/{domain}/`
-   - ✅ Example: `/scripts/cli-pipeline/prompt_service/check-prompt.ts`
+## TypeScript Errors
 
-2. **Direct database clients**: 
-   - ❌ NEVER create your own Supabase clients with `createClient()`
-   - ✅ BROWSER APPS: Use `createSupabaseAdapter({ env: import.meta.env as any })`
-   - ✅ CLI/SERVER: Use `SupabaseClientService.getInstance().getClient()`
-
-3. **Hardcoded credentials**: 
-   - ❌ NEVER hardcode API keys or secrets
-   - ✅ ALWAYS use environment variables from `.env.development`
-
-4. **Implementing workarounds**: 
-   - ❌ NEVER implement workarounds without permission
-   - ✅ ALWAYS ask before taking shortcuts or temporary solutions
-
-5. **Standalone scripts**: 
-   - ❌ NEVER create standalone `ts-node` scripts
-   - ✅ ALWAYS integrate into shell script CLI pipelines
-
-6. **SQL Function Column Ambiguity**:
-   - ❌ **Problem**: "column reference is ambiguous" errors in PostgreSQL functions
-   - ✅ **Solution**: Always qualify column names with table alias in ORDER BY/WHERE clauses
-   - Example fix:
-     ```sql
-     -- ❌ WRONG: Ambiguous column reference
-     SELECT * FROM table_info ORDER BY table_name;
-     
-     -- ✅ CORRECT: Qualified column reference
-     SELECT * FROM table_info ORDER BY table_info.table_name;
-     ```
-   - This commonly occurs when RETURNS TABLE has columns with same names as query columns
-
-7. **Multiple Supabase Client Instances in Apps**:
-   - ❌ **Problem**: Apps creating multiple Supabase client files/instances (e.g., supabase.ts, supabase-browser.ts, supabase-browser-adapter.ts)
-   - ✅ **Solution**: See "Essential Patterns > Supabase Connection Patterns" above for the correct approach
-   - Each app should have ONE `lib/supabase.ts` file
-   - If an app has multiple Supabase files, consolidate them into one
-
-## Debugging in a Monorepo Context
-
-1. **When an app has configuration issues**:
-   - ✅ **Compare with working apps** - Check how dhg-hub, dhg-improve-experts configure similar features
-   - ✅ **Look for patterns** - Router setup, imports, environment variables
-   - Example: If Vite config fails in dhg-audio, check dhg-hub's working vite.config.ts
-
-2. **React Router common patterns**:
-   - Most apps use `BrowserRouter` in main.tsx, not App.tsx
-   - Check working apps for the correct pattern before making changes
-
-3. **Import resolution issues**:
-   - If `@shared/components` imports fail, it may be a deeper config issue
-   - Don't assume simple fixes - check if other apps successfully import from shared
-   - Consider using temporary placeholders while investigating root cause
-   
-   **Shared Component Import Pattern Fix (dhg-audio example)**:
-   - ❌ **Problem**: `import { ProfileForm } from '@shared/components'` - General export may not be configured
-   - ✅ **Solution**: Use specific path imports like working apps do
-   - Example fix: `import { ProfileForm } from '@shared/components/profile/ProfileForm'`
-   - **Debugging steps**:
-     1. Check how working apps (dhg-admin-config, dhg-improve-experts) import the same component
-     2. Look for the component's actual file location in `packages/shared/components/`
-     3. Use the specific path import instead of relying on index.ts re-exports
-     4. If multiple apps use different patterns, follow the most recent/working pattern
-
-4. **Cleanup and refactoring**:
-   - ⚠️ **Test incrementally** - Don't remove multiple files at once
-   - ⚠️ **Understand file purpose** - Some files (like auth-service.ts) may be for future use
-   - ⚠️ **Keep essential debug logs** - Remove verbose logs but keep error handling
-   - After cleanup, always test the app still works before committing
-
-## TypeScript Best Practices
-
-- Explicitly type ALL function parameters, variables, and return types
-- Avoid `any` type; use `unknown` with type guards instead
-- Always run `tsc --noEmit` before submitting code
-- Handle undefined/null values properly
-- Use types from `supabase/types.ts` for database operations
+1. **Module not found** - Check paths, run `pnpm install`
+2. **Type mismatches** - Handle nulls: `data.field ?? 'default'`
+3. **ESM/CommonJS** - Use `.mjs` or `"type": "module"`
+4. **import.meta.env** - Pass env from app, not shared packages
 
 ## Supabase Query Patterns
 
@@ -492,7 +281,7 @@ const { data, error } = await supabase
 - Always handle errors properly with `if (error)` checks
 - Include `.select()` after inserts to get the created record
 - Consult `supabase/types.ts` for schema information (single source of truth)
-- Use proper column names: `experts.expert_name`, `document_types.name`
+- Use proper column names: `expert_profiles.expert_name`, `document_types.name`
 
 **Accessing auth.users Table**:
 ```typescript
@@ -508,32 +297,22 @@ const { data: { users }, error } = await supabase.auth.admin.listUsers();
 
 **Note**: The `auth.users` table is in the auth schema and requires special access. Use the auth admin API methods when working with user data from TypeScript/JavaScript code.
 
-## ⚠️ CRITICAL: SQLite to Supabase Migration Safety
+## SQLite Import Safety
 
-**ALWAYS CHECK FOR EXISTING TABLES BEFORE IMPORTING FROM SQLITE**
+**⚠️ ALWAYS use `import_` prefix for SQLite imports**
 
-When migrating data from SQLite to Supabase, you MUST verify that the target table name doesn't conflict with existing Supabase tables. Importing with the same name as an existing table can **permanently overwrite critical data**.
-
-**❌ DANGEROUS Example**:
 ```sql
--- If 'document_types' already exists in Supabase, this will DESTROY it!
-CREATE TABLE document_types AS SELECT * FROM sqlite_export;
+-- Check existing tables first
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+
+-- Use import_ prefix
+CREATE TABLE import_document_types (...);
+
+-- Safe drop
+DROP TABLE IF EXISTS import_web_concepts;
 ```
 
-**✅ SAFE Approach**:
-```sql
--- 1. Always check for existing tables first
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' AND table_name = 'your_table_name';
-
--- 2. Use prefixed names for imports
-CREATE TABLE import_document_types (...);  -- Note the 'import_' prefix
-
--- 3. Keep backups before any migration
-pg_dump ... > backup_before_migration.sql
-```
-
-**Lesson Learned**: Tables like `document_types` and `ai_prompts` exist in both SQLite and Supabase databases. Always use unique import names (e.g., `import_web_concepts`) to avoid data loss. Regular backups saved the day when this mistake was made.
+**Real incident**: Tables were overwritten causing data loss. Never repeat.
 
 ## Claude Service Usage
 
@@ -546,458 +325,157 @@ const response = await claudeService.sendPrompt('Your prompt');
 const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 ```
 
-## Database Table Relationships
+## google_sources Hierarchy
 
-### sources_google and expert_documents Recursive Search
+Use `drive_id` and `parent_folder_id` for navigation (not Supabase UUIDs):
 
-The `sources_google` table uses a hierarchical structure for Google Drive folders and files:
-
-**Key Principles:**
-- **Use Google Drive IDs, not Supabase UUIDs** for navigation
-- **path_depth field**: High-level folders have `path_depth = 0`, with nested folders incrementing this value
-- **Hierarchy navigation**: Use `drive_id` and `parent_folder_id` fields to traverse the folder structure
-
-**Example Recursive Query Pattern:**
 ```sql
--- Find all documents in a folder and its subfolders
 WITH RECURSIVE folder_tree AS (
-  -- Base case: start with target folder
-  SELECT drive_id, parent_folder_id, name, path_depth, 0 as level
-  FROM sources_google 
+  SELECT drive_id, parent_folder_id, name FROM google_sources 
   WHERE drive_id = 'target_folder_id'
-  
   UNION ALL
-  
-  -- Recursive case: find children
-  SELECT s.drive_id, s.parent_folder_id, s.name, s.path_depth, ft.level + 1
-  FROM sources_google s
+  SELECT s.drive_id, s.parent_folder_id, s.name
+  FROM google_sources s
   INNER JOIN folder_tree ft ON s.parent_folder_id = ft.drive_id
 )
 SELECT * FROM folder_tree;
 ```
 
-**Important:** When implementing recursive folder traversal or searching operations, always use the `drive_id` and `parent_folder_id` fields to navigate the hierarchy, not the Supabase UUIDs.
+## Cross-Environment Services
 
-## Cross-Environment Shared Services
-
-### Environment-Aware Service Design
-
-When creating shared services that work across different environments (browser vs server/CLI), follow these patterns:
-
-**❌ Problem**: Singleton services that auto-initialize clients in constructors
+**Use dependency injection** - Services should accept clients, not create them:
 ```typescript
-export class MyService {
-  private static instance: MyService;
-  private supabase = SupabaseClientService.getInstance().getClient(); // Fails in browser!
-  
-  private constructor() {}
-  static getInstance() { return this.instance ||= new MyService(); }
+// ❌ Wrong: Auto-initialize in constructor
+private supabase = SupabaseClientService.getInstance().getClient();
+
+// ✅ Right: Accept as parameter
+constructor(supabaseClient: SupabaseClient<any>) {
+  this.supabase = supabaseClient;
 }
 ```
 
-**✅ Solution**: Dependency injection pattern with environment-specific client configuration
-```typescript
-export class MyService {
-  private supabase: SupabaseClient<any>;
-  
-  constructor(supabaseClient: SupabaseClient<any>) {
-    this.supabase = supabaseClient;
-  }
-}
+### Vite Cache Issues
 
-// Browser usage: new MyService(browserConfiguredSupabaseClient)
-// CLI usage: new MyService(SupabaseClientService.getInstance().getClient())
+**Not seeing code changes?** Clear caches:
+```bash
+./scripts/clear-all-caches.sh        # All apps
+./scripts/clear-app-cache.sh dhg-audio  # Specific app
+./scripts/dev-fresh.sh dhg-audio     # Clear + start dev
 ```
+Also: Hard refresh browser (Cmd+Shift+R)
 
-**Key Lessons:**
-- Browser apps use `VITE_` prefixed environment variables, CLI/server use standard names
-- Shared services should accept configured clients rather than creating them
-- Use adapter pattern in apps to maintain backward compatibility
-- Each environment handles its own client configuration needs
+### Supabase Adapter
 
-### Vite Cache Issues - Not Seeing Latest Code Changes
-
-**❌ Problem**: After making code changes, running `pnpm dev` doesn't show the latest changes - old code still runs
-- Vite aggressively caches modules in `node_modules/.vite`
-- Browser caches can also prevent seeing updates
-- Hot Module Replacement (HMR) sometimes fails silently
-- TypeScript build artifacts can get stale
-
-**✅ Solution**: Use the cache clearing scripts to ensure fresh builds
-1. **For all apps**: `./scripts/clear-all-caches.sh`
-2. **For specific app**: `./scripts/clear-app-cache.sh dhg-audio`
-3. **Best practice**: `./scripts/dev-fresh.sh dhg-audio` (clears cache AND starts dev server)
-
-**Additional steps**:
-- Always hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux)
-- Or in DevTools: Right-click refresh → "Empty Cache and Hard Reload"
-- If issues persist, restart your terminal session
-
-**Root causes**:
-- Vite stores compiled modules in `.vite` cache directory
-- File watchers sometimes miss changes in monorepo setups
-- Symlinked packages can confuse the module resolution
-- Browser ServiceWorkers can serve stale content
-
-### Universal Supabase Adapter
-
-**✅ Solution**: The project includes a universal Supabase adapter that handles both browser and server environments.
-
-**Location**: `packages/shared/adapters/supabase-adapter.ts`
-
-**Usage Pattern for Browser Apps (Vite)**:
+**Browser apps** - Pass environment:
 ```typescript
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
-
-// Browser apps MUST pass their environment variables to the adapter
-const supabase = createSupabaseAdapter({
-  env: import.meta.env as any
-});
-```
-
-**Usage Pattern for CLI/Server**:
-```typescript
-import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
-
-// CLI/Server can use without parameters (reads from process.env)
-const supabase = createSupabaseAdapter();
-```
-
-**Important**: Due to CommonJS/ESM compatibility issues, browser apps must explicitly pass `import.meta.env` to the adapter. The shared package cannot access `import.meta.env` directly.
-
-**Setting Up @shared Alias in Vite Apps**:
-```typescript
-// vite.config.ts
-export default defineConfig({
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@shared': path.resolve(__dirname, '../../packages/shared'),
-    },
-  },
-});
-```
-
-**Common Errors and Fixes**:
-
-1. **Missing environment variable error**:
-```
-❌ Error: Missing required Vite environment variable: VITE_SUPABASE_ANON_KEY
-```
-Fix: Pass environment variables to adapter:
-```typescript
-// ❌ Wrong - doesn't work in browser
-const supabase = createSupabaseAdapter();
-
-// ✅ Correct - pass environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
 ```
 
-2. **Module resolution error (500 Internal Server Error)**:
-```
-❌ Error: Cannot find module '@shared/adapters/supabase-adapter'
-```
-Fix: Add @shared alias to vite.config.ts (see above)
-
-3. **Obsolete adapter methods**:
-```
-❌ Error: Cannot find name 'supabaseAdapter'
-```
-The old `supabaseAdapter` object with methods like `getDiagnostics()` and `ensureAuth()` no longer exists. Use the Supabase client directly:
+**CLI/Server** - No params needed:
 ```typescript
-// ❌ Old way
-const { success } = await supabaseAdapter.ensureAuth();
-
-// ✅ New way
-const { data, error } = await supabase.from('table').select();
+const supabase = createSupabaseAdapter();
 ```
 
-**When to Use**:
-- All browser apps (dhg-hub, dhg-audio, dhg-admin-code, etc.)
-- CLI scripts and server-side code
-- Any situation where you need Supabase access across environments
-
-### Browser Compatibility for Node.js Dependencies
-
-**❌ Problem**: Browser apps importing shared services that use Node.js-specific modules
-- Error: `Module "node:events" has been externalized for browser compatibility`
-- Error: `Cannot read properties of undefined (reading 'isTTY')`
-- Error: `Class extends value undefined is not a constructor`
-- These occur when shared services import Node.js modules like `googleapis`, `google-auth-library`, or use Node.js globals
-
-**✅ Solution**: Create browser-safe imports and provide Node.js polyfills
-
-1. **Create Browser-Safe Export Files**:
-   ```typescript
-   // packages/shared/services/google-drive/browser-index.ts
-   export { GoogleDriveBrowserService, googleDriveBrowser } from './google-drive-browser-service';
-   // Only export browser-compatible services, exclude Node.js-specific ones
-   ```
-
-2. **Configure Vite Aliases**:
-   ```typescript
-   // vite.config.ts
-   resolve: {
-     alias: {
-       '@shared/services/google-drive': path.resolve(__dirname, '../../packages/shared/services/google-drive/browser-index.ts'),
-     }
-   }
-   ```
-
-3. **Add Node.js Polyfills in HTML**:
-   ```html
-   <!-- index.html - Add before main script -->
-   <script>
-     if (typeof global === 'undefined') window.global = window;
-     if (typeof process === 'undefined') {
-       window.process = {
-         env: {},
-         stdout: { isTTY: false },
-         stderr: { isTTY: false },
-         stdin: { isTTY: false },
-         platform: 'browser',
-         version: 'v16.0.0',
-         versions: { node: '16.0.0' }
-       };
-     }
-   </script>
-   ```
-
-4. **Add Required Environment Variables**:
-   ```env
-   # .env.development for browser apps
-   VITE_CLAUDE_API_KEY=your-api-key
-   VITE_ANTHROPIC_API_KEY=your-api-key
-   ```
-
-**Key Principles**:
-- Browser apps cannot use Node.js modules (`fs`, `path`, `crypto`, `events`, etc.)
-- Create separate browser-safe exports that exclude Node.js dependencies
-- Use Vite aliases to redirect imports to browser-safe versions
-- Provide polyfills for Node.js globals that some libraries expect
-- Always check if a shared service imports Node.js modules before using in browser
-
-**When Issues Persist**:
-- Run `./scripts/cli-pipeline/all_pipelines/app-reinstall.sh app-name` to clean dependencies
-- Check for indirect Node.js dependencies in shared services
-- Consider creating browser-specific service implementations
-
-## Google Drive Service Account Integration
-
-The project requires a valid Google Drive service account for accessing files in Google Drive.
-
-### Setting Up Service Account Authentication
-
-When working with scripts that access Google Drive, you need a valid service account configuration:
-
-1. **Service Account Setup**:
-   - The project expects a `.service-account.json` file in the project root directory
-   - This is the standard approach used by all commands that access Google Drive
-   - The `.service-account.json` file should contain your Google Cloud service account credentials
-
-2. **Environment Variables**:
-   - The service account credentials are automatically loaded from `.service-account.json`
-   - Some commands may also use these environment variables:
-     - `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Service account email address
-     - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` - Service account private key
-
-3. **Commands That Require Google Drive Access**:
-   - `sync` - Syncs files from Google Drive to the database
-   - `find-folder` - Searches for folders/files in Google Drive
-   - `get-current-drive-id` - Gets the current drive_id for a file
-   - `check-duplicates --check-current` - Verifies if drive_ids still exist
-   - Any command that needs to read or verify files in Google Drive
-
-4. **Troubleshooting**:
-   - If you see "Could not initialize Google Drive API", check that `.service-account.json` exists
-   - Ensure the service account has proper permissions to access the Google Drive folders
-   - The service account needs at least read-only access to the drives/folders being accessed
-
-### Displaying Google Drive Files in Browser (iframe previews)
-
-When displaying Google Drive files in browser applications, use the `/preview` endpoint to avoid Content Security Policy restrictions:
-
-**❌ Problem**: Embedding Google Drive directly causes CSP errors
+**Vite config** - Add alias:
 ```typescript
-// This will fail with "frame-ancestors" CSP errors
-<iframe src="https://drive.google.com/file/..." />
+alias: {
+  '@shared': path.resolve(__dirname, '../../packages/shared'),
+}
 ```
 
-**✅ Solution**: Use the preview endpoint with extracted Drive ID
+### Browser Node.js Compatibility
+
+**Node.js module errors?**
+1. Create browser-safe exports
+2. Use Vite aliases to redirect imports
+3. Add polyfills in index.html:
+```html
+<script>
+if (typeof global === 'undefined') window.global = window;
+if (typeof process === 'undefined') {
+  window.process = { env: {}, platform: 'browser' };
+}
+</script>
+```
+
+## Google Drive Setup
+
+**Required**: `.service-account.json` in project root
+
+**Commands needing Drive access**:
+- `sync`, `find-folder`, `get-current-drive-id`
+- `check-duplicates --check-current`
+
+**Error "Could not initialize Google Drive API"?**
+- Check `.service-account.json` exists
+- Verify service account permissions
+
+### Google Drive iframe Previews
+
+**Use `/preview` endpoint** to avoid CSP errors:
 ```typescript
-// Extract Drive ID from web_view_link
 const extractDriveId = (url: string | null): string | null => {
-  if (!url) return null;
-  const match = url.match(/\/d\/([^/]+)/);
+  const match = url?.match(/\/d\/([^/]+)/);
   return match ? match[1] : null;
 };
 
-// Use the preview endpoint
-<iframe 
-  src={`https://drive.google.com/file/d/${extractDriveId(file.web_view_link)}/preview`}
-  className="w-full h-full"
-  allow="autoplay"
-  title="File preview"
-/>
+<iframe src={`https://drive.google.com/file/d/${extractDriveId(url)}/preview`} />
 ```
 
-**Key Points**:
-- Always use `/preview` endpoint for embedding Google Drive files
-- Extract the Drive ID from the web_view_link URL
-- Different file types need different iframe styling:
-  - Documents/PDFs: Full height (`h-full`)
-  - Videos: Aspect ratio preserved (`aspect-video`)
-  - Audio: Small player height (`h-20`)
-  - Images: Centered with max dimensions
-- The preview endpoint works for all file types without CSP restrictions
+## Port Management
 
-## Port Management for Servers and Apps
+**Ranges**: 3000-3099 (servers), 5000-5999 (Vite dev), 4000-4999 (preview)
 
-### Port Allocation Strategy
+**Start all servers**: `pnpm servers`
 
-To avoid port collisions in the monorepo, follow these standardized port ranges:
-
-**Port Ranges**:
-- **3000-3099**: Backend/API servers
-- **5000-5999**: Vite development servers  
-- **4000-4999**: Vite preview servers
-
-**Reserved Ports**:
-| Port | Service | Location |
-|------|---------|----------|
-| 3001 | Markdown Server | `scripts/cli-pipeline/viewers/simple-md-server.js` |
-| 3002 | Script Server | `scripts/cli-pipeline/viewers/simple-script-server.js` |
-| 3003 | Docs Archive Server | `scripts/cli-pipeline/viewers/docs-archive-server.js` |
-| 3004 | (Available) | - |
-| 3005 | Git Server | `apps/dhg-admin-code/git-server.cjs` |
-| 3006 | Audio Proxy Server | `apps/dhg-audio/server.js` |
-| 3007 | Experts Markdown Server | `apps/dhg-improve-experts/md-server.mjs` |
-| 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
-| 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
-| 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
-
-**Vite App Ports**:
-| Port | App | Status |
-|------|-----|--------|
-| 5173 | dhg-a, dhg-hub-lovable | Shared (don't run together) |
-| 5174 | dhg-b, dhg-hub, dhg-admin-google | Shared (don't run together) |
-| 5175 | dhg-admin-suite | Dedicated |
-| 5177 | dhg-admin-code | Dedicated |
-| 5194 | dhg-audio | Dedicated |
-| 8080 | dhg-improve-experts | Dedicated |
-
-### Starting All Servers
-
-Use the centralized server management script:
+**Port in use?**
 ```bash
-# Start all backend servers with proper port assignments
-pnpm servers
-
-# Or manually with:
-node scripts/start-all-servers.js
+lsof -i :3001
+kill -9 $(lsof -t -i:3001)
 ```
 
-This script automatically:
-- Assigns unique ports using environment variables
-- Prevents port collisions
-- Shows status of all running servers
-- Handles graceful shutdown
+**Key ports**: 3001-3010 (various servers), 5173-5179/5194/8080 (Vite apps)
 
-### Adding New Servers
+## Git & Worktrees
 
-When creating a new server:
+### Claude Code Manages All Git Operations
 
-1. **Check available ports** in the 3000-3099 range
-2. **Update `start-all-servers.js`** to include your server
-3. **Use environment variables** for port configuration:
-   ```javascript
-   const PORT = process.env.YOUR_SERVER_PORT || 3009;
-   ```
-4. **Update this documentation** with the new port assignment
-
-### Troubleshooting Port Issues
-
-If you encounter "address already in use" errors:
-
-1. **Check running processes**:
-   ```bash
-   # Find what's using a port
-   lsof -i :3001
-   
-   # Kill process using a port
-   kill -9 $(lsof -t -i:3001)
-   ```
-
-2. **Use the start-all-servers script** which handles port assignments automatically
-
-3. **For Vite apps**, ensure you're not running multiple apps on the same port
-
-## ⚠️ CRITICAL: Worktree Merging - NO PULL REQUESTS!
-
-### ❌ NEVER Create Pull Requests When Merging Between Worktrees
-
-**IMPORTANT**: When working with multiple worktrees, **DO NOT create pull requests**. This has caused deployment issues where the PR workflow got stuck or confused the branch states.
-
-**❌ WRONG - Do NOT do this**:
-```bash
-# NEVER DO THIS in worktrees:
-gh pr create ...
-# NEVER create PRs through GitHub UI
-# NEVER use any PR-based workflow
+**Worktrees** = separate directories for parallel work:
+```
+dhg-mono/                # Main (development branch)
+dhg-mono-feature-xyz/    # Feature worktree
 ```
 
-**✅ CORRECT - Direct push to development**:
-```bash
-# Push your branch directly to development:
-git push origin your-branch:development
+**Workflow cycle**:
+1. Work in isolation
+2. Push to development: `git push origin branch:development`
+3. Pull updates: `git fetch origin development && git merge origin/development`
+4. Repeat
 
-# Then fetch and merge back:
-git fetch origin development
-git merge origin/development
+**⚠️ NO PULL REQUESTS** - Direct push only:
+```bash
+# ❌ Wrong: gh pr create
+# ✅ Right: git push origin branch:development
 ```
 
-### Why No PRs with Worktrees?
-- PRs can cause deployment pipeline issues
-- Worktrees have development checked out elsewhere
-- Direct pushes are cleaner and more reliable
-- Avoids branch state confusion
+**Branches**: development (main), production (protected), feature branches (temporary)
 
-## Handling pnpm-lock.yaml in Worktree Merges
+## pnpm-lock.yaml Conflicts
 
-When working with multiple worktrees and merging branches, `pnpm-lock.yaml` conflicts are common. Follow these guidelines:
-
-**❌ Problem**: Manual merge conflict resolution in pnpm-lock.yaml leads to inconsistent dependencies
-**✅ Solution**: Always accept incoming version and regenerate the lock file
-
-### Standard Merge Process with Lock File Handling:
 ```bash
-# If pnpm-lock.yaml conflicts arise during merge:
-git checkout --theirs pnpm-lock.yaml  # Accept incoming version
+git checkout --theirs pnpm-lock.yaml
 git add pnpm-lock.yaml
-pnpm install                           # Regenerate with all dependencies
+pnpm install
 ```
+Never manually edit - always regenerate.
 
-### Key Principles:
-- **Never manually edit** pnpm-lock.yaml during merge conflicts
-- **Always regenerate** after accepting changes to ensure consistency
-- **Keep backups** before major merge operations: `cp pnpm-lock.yaml pnpm-lock.yaml.backup`
-- If `pnpm install` fails, delete both `node_modules/` and `pnpm-lock.yaml`, then reinstall
-
-## Key Points Summary
-
-This document provides the essential guidelines for working with Claude Code v1.03. The most important principles are:
-
-1. **Ask before implementing workarounds** - explain problems and get permission
-2. **Use proper file locations** - scripts go in `scripts/cli-pipeline/{domain}/`
-3. **Use singleton services** - never create direct clients for Supabase, Claude, etc.
-4. **Design for cross-environment compatibility** - use dependency injection for shared services
-5. **Integrate CLI commands** - always add to shell script wrappers
-6. **Follow TypeScript best practices** - run `tsc --noEmit` before submitting
-7. **Leverage the monorepo** - when debugging, compare with working apps for patterns
-8. **Test incrementally** - especially during cleanup or refactoring
-9. **Configure Google Drive access** - ensure `.service-account.json` exists for Drive commands
-10. **Handle pnpm-lock.yaml properly** - accept incoming and regenerate during merges
-11. **⚠️ NEVER create PRs with worktrees** - use direct push to development instead
-
-When in doubt, ask for clarification rather than making assumptions or implementing temporary solutions.
+## Key Points
+1. No workarounds without permission
+2. Scripts in `scripts/cli-pipeline/{domain}/`
+3. Use singleton services
+4. No PRs with worktrees - direct push only
+5. Test before submitting
+6. `.service-account.json` for Google Drive
+7. Ask when unsure
 

@@ -15,11 +15,11 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
     },
     server: {
-      port: 5173,      // Vite's default for development
+      port: 5178,      // Dedicated port for dhg-a
       ...baseConfig.server,
     },
     preview: {
-      port: 4173,      // Vite's default for preview
+      port: 4178,      // Preview port for dhg-a
     },
     test: {
       globals: true,
