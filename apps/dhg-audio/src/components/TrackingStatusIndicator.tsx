@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -31,7 +31,7 @@ export function TrackingStatusIndicator() {
           }
         }
       } catch (error) {
-        console.error('Error checking tracking status:', error);
+        // Silently fail - tracking status is not critical
       } finally {
         setLoading(false);
       }

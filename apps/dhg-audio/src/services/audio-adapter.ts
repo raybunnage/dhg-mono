@@ -37,20 +37,6 @@ export class AudioAdapter {
     }
   }
 
-  /**
-   * Get all available audio files with raw data for debugging
-   * @param rootDriveId - Optional root drive ID to filter by
-   */
-  static async getAudioFilesWithDebug(rootDriveId?: string | null): Promise<AudioFilesResult> {
-    try {
-      const rawFiles = await audioBrowserService.getAudioFiles(100, rootDriveId);
-      const files = rawFiles.map(file => this.formatAudioFile(file));
-      return { files, rawData: rawFiles };
-    } catch (error) {
-      console.error('Error in AudioAdapter.getAudioFilesWithDebug:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get a single audio file by ID

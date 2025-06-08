@@ -1,15 +1,12 @@
 import { AudioFile } from '@/services/audio-adapter';
 import { Link } from 'react-router-dom';
-import { AudioFileDebug } from './AudioFileDebug';
-import { AudioUrlDebug } from './AudioUrlDebug';
 
 interface AudioListProps {
   audioFiles: AudioFile[];
   isLoading: boolean;
-  rawFiles?: any[]; // Raw data from the database for debugging
 }
 
-export const AudioList = ({ audioFiles, isLoading, rawFiles }: AudioListProps) => {
+export const AudioList = ({ audioFiles, isLoading }: AudioListProps) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-52">
@@ -29,11 +26,7 @@ export const AudioList = ({ audioFiles, isLoading, rawFiles }: AudioListProps) =
 
   return (
     <div className="grid gap-4 grid-cols-1">
-      {audioFiles.map((file, index) => {
-        // Find the corresponding raw data for this file
-        const rawFile = rawFiles?.find(rf => rf.id === file.id);
-        
-        return (
+      {audioFiles.map((file) => (
         <div key={file.id} className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
@@ -85,12 +78,8 @@ export const AudioList = ({ audioFiles, isLoading, rawFiles }: AudioListProps) =
               </a>
             </div>
           </div>
-          
-          {/* Debug info */}
-          <AudioFileDebug file={file} rawData={rawFile} />
-          <AudioUrlDebug audioFile={file} />
         </div>
-      )})}
+      ))}
     </div>
   );
 };
