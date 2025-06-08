@@ -1,4 +1,5 @@
-import { supabaseBrowser } from './supabase-browser-adapter';
+import { supabase } from '../lib/supabase';
+import { FilterService } from '@shared/services/filter-service/filter-service';
 
 /**
  * Browser-compatible audio service
@@ -8,10 +9,12 @@ import { supabaseBrowser } from './supabase-browser-adapter';
 class AudioBrowserService {
   private static instance: AudioBrowserService;
   private supabase: any;
+  private filterService: FilterService;
 
   private constructor() {
     try {
-      this.supabase = supabaseBrowser.getClient();
+      this.supabase = supabase;
+      this.filterService = new FilterService(this.supabase);
       console.log('Supabase client initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Supabase client:', error);

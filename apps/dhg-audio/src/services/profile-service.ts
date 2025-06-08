@@ -5,7 +5,7 @@
  * Bypasses the shared service complexity for reliable profile operations
  */
 
-import { supabaseBrowserClient } from './supabase-browser';
+import { supabase } from '../lib/supabase';
 import type { ProfileFormData } from '@shared/components/profile/ProfileForm';
 
 interface ProfileServiceResult {
@@ -36,7 +36,7 @@ class ProfileService {
     console.log('[ProfileService] Profile data:', profileData);
 
     try {
-      const supabase = supabaseBrowserClient.getClient();
+      const supabase = supabase;
 
       // Map the component data to database format
       const dbProfile = {
@@ -106,7 +106,7 @@ class ProfileService {
    */
   async getProfile(userId: string): Promise<ProfileServiceResult> {
     try {
-      const supabase = supabaseBrowserClient.getClient();
+      const supabase = supabase;
 
       const { data, error } = await supabase
         .from('auth_user_profiles')
