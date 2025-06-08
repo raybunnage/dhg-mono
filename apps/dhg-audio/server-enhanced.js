@@ -307,8 +307,14 @@ app.get('/api/audio/:fileId', async (req, res) => {
     });
     
     const fileName = fileMetadata.data.name;
-    const mimeType = fileMetadata.data.mimeType;
+    let mimeType = fileMetadata.data.mimeType;
     const fileSize = fileMetadata.data.size;
+    
+    // Fix MIME type for browser compatibility
+    const ext = path.extname(fileName).toLowerCase();
+    if (ext === '.m4a' && mimeType === 'audio/x-m4a') {
+      mimeType = 'audio/mp4'; // Browsers prefer audio/mp4 for M4A files
+    }
     
     console.log(`File info: ${fileName}, ${mimeType}, ${fileSize} bytes`);
     
