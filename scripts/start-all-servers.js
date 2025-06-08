@@ -49,13 +49,13 @@ const SERVERS = [
     description: 'Git worktree management'
   },
   {
-    name: 'Audio Proxy Server (dhg-audio)',
+    name: 'Enhanced Audio Server (dhg-audio)',
     port: 3006,
     command: 'node',
-    args: ['server.js'],
+    args: ['server-enhanced.js'],
     cwd: path.join(process.cwd(), 'apps/dhg-audio'),
     env: { PORT: '3006' },
-    description: 'Google Drive proxy for audio files'
+    description: 'Local Google Drive + API audio server with 10-100x performance boost'
   },
   {
     name: 'Experts Markdown Server',
