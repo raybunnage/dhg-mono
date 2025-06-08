@@ -20,35 +20,10 @@ import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
-import { promptService } from '../../../packages/shared/services/prompt-service';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
-
-// Define the prompt name to use for classification
-const CLASSIFICATION_PROMPT = 'document-classification-prompt-new';
+import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';
 
 // The ID we want to avoid
 const EXCLUDED_DOCUMENT_TYPE_ID = '554ed67c-35d1-4218-abba-8d1b0ff7156d';
-
-// Interface for classification result
-interface ClassificationResult {
-  document_type_id?: string;
-  category?: string;
-  name?: string;
-  suggested_title?: string;
-  classification_confidence?: number;
-  classification_reasoning?: string;
-  concepts?: Array<{
-    name: string;
-    weight: number;
-  }>;
-  
-  // Legacy fields - might be returned by some Claude models
-  generalCategory?: string;
-  specificDocumentType?: string;
-  keyConcepts?: string[];
-  confidence?: number;
-  reasoning?: string;
-}
 
 // Process a single file with content
 async function processFile(
@@ -112,7 +87,7 @@ async function processFile(
     }
     
     // Process the document with its content - classification only
-    const classificationResult = await processDocument(sourceId, expertDocId, fileContent, debug);
+    const classificationResult = await processDocument(sourceId, expertDocId, fileContent, fileName, mimeType, debug);
     
     return { 
       classificationResult: classificationResult || {}, 
@@ -130,56 +105,24 @@ async function processDocument(
   sourceId: string,
   expertDocId: string, 
   expertDocContent: string,
+  fileName: string,
+  mimeType: string,
   debug: boolean = false
-): Promise<ClassificationResult | null> {
+): Promise<any | null> {
   try {
     if (debug) {
       console.log(`Processing expert document ID: ${expertDocId} for source ID: ${sourceId}`);
       console.log(`Content length: ${expertDocContent.length} characters`);
     }
     
-    // Retrieve the prompt with all related data
-    const promptResult = await promptService.loadPrompt(CLASSIFICATION_PROMPT, {
-      includeDatabaseQueries: true,
-      includeRelationships: true,
-      includeRelatedFiles: true,
-      executeQueries: true
-    });
-
-    if (!promptResult.prompt) {
-      console.error('❌ Failed to retrieve prompt "document-classification-prompt-new"');
-      return null;
-    }
-
-    // Process the content through Claude API for classification
-    console.log('Sending to Claude API for classification...');
+    // Use the document classification service
+    console.log('Sending to Document Classification Service...');
     
-    // Add specific instructions to ensure complete JSON response with document_type_id
-    const fullPrompt = `${promptResult.combinedContent}
-
-### Document Content:
-${expertDocContent}
-
-Please analyze this document and provide a complete classification with the following fields:
-1. document_type_id - The UUID of the specific document type (must be one from the provided list)
-2. category - The general document category (must be one of the categories from the provided list)
-3. name - The specific document type name (must be one of the document types from the provided list)
-4. classification_confidence - A number between 0 and 1 representing your confidence
-5. classification_reasoning - Detailed explanation of why you chose this classification
-6. concepts - An array of key concepts from the document, each with a name and weight
-
-It is CRITICAL that you include the document_type_id field with the actual UUID from the database queries.
-Do NOT use placeholder IDs like "uuid-1" - use the actual UUIDs from the document_types table.
-
-Return your classification as a complete, valid JSON object with all of these fields.`;
-    
-    // Log the prompt length for debugging
-    if (debug) {
-      console.log(`Prompt length: ${fullPrompt.length} characters`);
-    }
-    
-    // Get classification from Claude
-    const classificationResponse = await claudeService.getJsonResponse<ClassificationResult>(fullPrompt);
+    // Classify using the shared service
+    const classificationResponse = await documentClassificationService.classifyDocument(
+      expertDocContent,
+      fileName
+    );
     
     if (classificationResponse) {
       if (debug) {
@@ -188,21 +131,36 @@ Return your classification as a complete, valid JSON object with all of these fi
         
         // Display detailed document_type_id verification
         console.log('\n--- DOCUMENT TYPE ID VERIFICATION ---');
-        console.log(`Raw document_type_id from Claude: ${JSON.stringify(classificationResponse.document_type_id)}`);
+        console.log(`Raw document_type_id from service: ${JSON.stringify(classificationResponse.document_type_id)}`);
         console.log(`Type of document_type_id: ${typeof classificationResponse.document_type_id}`);
-        console.log(`Raw category from Claude: ${JSON.stringify(classificationResponse.category)}`);
-        console.log(`Raw name from Claude: ${JSON.stringify(classificationResponse.name)}`);
+        console.log(`Raw name from service: ${JSON.stringify(classificationResponse.name)}`);
         console.log('-----------------------------------\n');
       }
       
       return classificationResponse;
     } else {
-      console.error('❌ Classification failed: No response from Claude API');
-      return null;
+      console.error('❌ Classification failed: No response from classification service');
+      
+      // Use fallback classification from the service
+      console.log('Using fallback classification...');
+      const fallbackResult = documentClassificationService.createFallbackClassification({
+        name: fileName,
+        mime_type: mimeType
+      });
+      
+      return fallbackResult;
     }
   } catch (error) {
     console.error('❌ Error during document classification:', error instanceof Error ? error.message : String(error));
-    return null;
+    
+    // Use fallback classification from the service
+    console.log('Using fallback classification due to error...');
+    const fallbackResult = documentClassificationService.createFallbackClassification({
+      name: fileName,
+      mime_type: mimeType
+    });
+    
+    return fallbackResult;
   }
 }
 
@@ -456,8 +414,8 @@ async function classifyMissingDocuments(
         );
         
         // Show classification result regardless of debug mode
-        if (classificationResult && classificationResult.document_type) {
-          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.document_type}`);
+        if (classificationResult && classificationResult.name) {
+          console.log(`[${index+1}/${files.length}] ✅ Classified as: ${classificationResult.name}`);
           console.log(`[${index+1}/${files.length}] 📊 Confidence: ${(classificationResult.classification_confidence * 100).toFixed(1)}%`);
         } else {
           console.log(`[${index+1}/${files.length}] ❌ Classification failed`);
@@ -617,7 +575,7 @@ async function classifyMissingDocuments(
 // Define CLI program
 program
   .name('classify-missing-docs-with-service')
-  .description('Classify Google Drive files missing document types using the PromptService')
+  .description('Classify Google Drive files missing document types using the Document Classification Service')
   .option('-l, --limit <number>', 'Limit the number of files to process', '10')
   .option('-o, --output <path>', 'Output file path for classification results')
   .option('-d, --debug', 'Enable debug logging', false)
@@ -634,7 +592,7 @@ program
       
       // Show header
       console.log('='.repeat(50));
-      console.log('DOCUMENT CLASSIFICATION WITH PROMPT SERVICE');
+      console.log('DOCUMENT CLASSIFICATION WITH SHARED SERVICE');
       console.log('='.repeat(50));
       console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
       console.log(`Debug: ${debug ? 'ON' : 'OFF'}`);
@@ -671,7 +629,7 @@ program
       results.forEach(r => {
         const id = r.file.id.substring(0, 36).padEnd(36);
         const name = (r.file.name || 'Unknown').substring(0, 60).padEnd(60);
-        const docType = r.result ? (r.result.document_type || '').substring(0, 30).padEnd(30) : ''.padEnd(30);
+        const docType = r.result ? (r.result.name || '').substring(0, 30).padEnd(30) : ''.padEnd(30);
         const status = r.result ? 'Success' : 'Failed';
         console.log(`| ${id} | ${name} | ${docType} | ${status.padEnd(9)} |`);
       });

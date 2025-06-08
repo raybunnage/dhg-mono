@@ -7,13 +7,15 @@ const fs = require('fs');
 const cors = require('./cors-middleware');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.AUDIO_PROXY_PORT || process.env.PORT || 3006;
 
 // Apply CORS middleware
 app.use(cors);
 
 // Serve static files from the 'dist' directory
 app.use(express.static(path.join(__dirname, 'dist')));
+
+// Note: Health endpoints removed from app servers - use CLI health-check commands instead
 
 // Function to get Google Drive service account credentials
 function getGoogleAuthClient() {
@@ -64,10 +66,10 @@ app.get('/api/audio/:fileId', async (req, res) => {
   const fileId = req.params.fileId;
   
   if (!fileId) {
-    return res.status(400).send('File ID is required');
+    return res.status(400).json({ error: 'File ID is required' });
   }
   
-  console.log(`Proxying audio file: ${fileId}`);
+  console.log(`[${new Date().toISOString()}] Proxying audio file: ${fileId}`);
   
   try {
     // Get Google auth client
@@ -132,18 +134,49 @@ app.get('/api/audio/:fileId', async (req, res) => {
       response.data.pipe(res);
     }
   } catch (error) {
-    console.error('Error proxying audio file:', error);
+    console.error('[ERROR] Error proxying audio file:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response data'
+    });
     
-    if (error.response && error.response.status === 404) {
-      return res.status(404).send('File not found');
+    if (error.message && error.message.includes('service account key file not found')) {
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        message: 'Google service account key file not found. Please ensure .service-account.json exists in the project root.',
+        details: error.message
+      });
     }
     
-    res.status(500).send('Error fetching audio file');
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ 
+        error: 'File not found',
+        message: `Google Drive file with ID ${fileId} not found or not accessible`
+      });
+    }
+    
+    if (error.response && error.response.status === 403) {
+      return res.status(403).json({ 
+        error: 'Access denied',
+        message: 'Service account does not have permission to access this file'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Error fetching audio file',
+      message: error.message || 'Unknown error occurred',
+      fileId: fileId
+    });
   }
 });
 
 // SPA fallback - Serve index.html for any other requests
-app.get('*', (req, res) => {
+app.get('*', (_, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

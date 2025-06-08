@@ -21,7 +21,7 @@ track_command() {
   local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
   if [ -f "$TRACKER_TS" ]; then
     # Run command through tracking service but allow console output to be seen
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
   else
     echo "ℹ️ Tracking not available. Running command directly."
     eval "$full_command"
@@ -159,5 +159,13 @@ case "$1" in
     echo "Error: Unknown command '$1'"
     show_help
     exit 1
+    ;;
+  health-check)
+    echo "🏥 Running health check for drive_filter pipeline..."
+    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo "❌ Missing required environment variables"
+      exit 1
+    fi
+    echo "✅ drive_filter pipeline is healthy"
     ;;
 esac

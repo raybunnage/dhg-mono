@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useMediaTracking } from '@shared/hooks/useMediaTracking';
+import { useMediaTracking } from '../hooks/useMediaTracking';
 import { useAuth } from '../hooks/useAuth';
+import { getAudioUrlOptions } from '../utils/google-drive-utils';
 
 interface TrackedAudioPlayerProps {
   url: string;
@@ -26,10 +27,12 @@ export const TrackedAudioPlayer = ({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastReportedTime = useRef<number>(0);
   const { user } = useAuth();
+  const urlOptions = getAudioUrlOptions(url);
   
   // Initialize media tracking
   const tracking = useMediaTracking({
@@ -44,12 +47,17 @@ export const TrackedAudioPlayer = ({
     setError(null);
     setLoadingState('loading');
     setIsPlaying(false);
+    setCurrentUrlIndex(0);
     
     // Set the initial time when the component mounts or URL changes
     if (audioRef.current) {
       audioRef.current.currentTime = initialTime;
+      // Set the first URL option (Google Drive direct download)
+      if (urlOptions.length > 0) {
+        audioRef.current.src = urlOptions[0];
+      }
     }
-  }, [url, initialTime]);
+  }, [url, initialTime, urlOptions]);
   
   useEffect(() => {
     // Set up event listeners for the audio element
@@ -59,7 +67,6 @@ export const TrackedAudioPlayer = ({
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setLoadingState('loaded');
-      console.log('Audio loaded successfully:', title);
     };
     
     const handleTimeUpdate = () => {
@@ -84,11 +91,23 @@ export const TrackedAudioPlayer = ({
       tracking.endSession(completion);
     };
     
-    const handleError = (e: ErrorEvent) => {
-      console.error('Audio error:', e);
-      setError('Failed to load audio. Browser tracking prevention may be blocking access to Google Drive.');
-      setLoadingState('error');
-      setIsPlaying(false);
+    const handleError = () => {
+      // Try the next URL option if available
+      if (currentUrlIndex < urlOptions.length - 1) {
+        setCurrentUrlIndex(prev => prev + 1);
+        setLoadingState('loading');
+        
+        // Load the next URL
+        if (audio) {
+          audio.src = urlOptions[currentUrlIndex + 1];
+          audio.load();
+        }
+      } else {
+        // All URL options failed
+        setError('Failed to load audio. Please try again later.');
+        setLoadingState('error');
+        setIsPlaying(false);
+      }
     };
     
     // Add event listeners
@@ -120,11 +139,13 @@ export const TrackedAudioPlayer = ({
   // Play/pause toggle
   const togglePlay = async () => {
     if (loadingState === 'error') {
-      // If in error state, try to reload the audio
+      // If in error state, try to reload from the first URL option
       setError(null);
       setLoadingState('loading');
+      setCurrentUrlIndex(0);
       
-      if (audioRef.current) {
+      if (audioRef.current && urlOptions.length > 0) {
+        audioRef.current.src = urlOptions[0];
         audioRef.current.load();
         return;
       }
@@ -145,7 +166,6 @@ export const TrackedAudioPlayer = ({
               await tracking.trackPlay(audioRef.current!.currentTime);
             })
             .catch((err) => {
-              console.error('Play error:', err);
               setError(`Couldn't play audio: ${err.message}`);
               setIsPlaying(false);
             });
@@ -209,25 +229,18 @@ export const TrackedAudioPlayer = ({
         )}
       </div>
       
-      <audio ref={audioRef} src={url} preload="metadata" className="hidden" />
+      <audio ref={audioRef} preload="metadata" className="hidden" />
       
       {/* Error message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
           <p className="font-medium">{error}</p>
-          <p className="text-sm mt-1">
-            This may be due to browser tracking prevention. Try opening in Chrome or disabling tracking prevention.
-          </p>
-          <div className="mt-2">
-            <a 
-              href={url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm font-medium"
-            >
-              Open audio in new tab
-            </a>
-          </div>
+          <button
+            onClick={togglePlay}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Try Again
+          </button>
         </div>
       )}
       

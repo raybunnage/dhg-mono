@@ -106,14 +106,137 @@ export async function updateAnalysisRun(
 
 export async function getServiceByName(serviceName: string): Promise<RegistryService | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
+  
+  // Try the exact name first
+  let { data, error } = await supabase
     .from('registry_services')
     .select('*')
     .eq('service_name', serviceName)
     .single();
   
+  if (data) return data;
+  
+  // If not found, try variations (Phase 2 enhanced for complex patterns)
+  const variations = generateServiceNameVariations(serviceName);
+  
+  for (const variation of variations) {
+    const { data: varData } = await supabase
+      .from('registry_services')
+      .select('*')
+      .eq('service_name', variation)
+      .single();
+    
+    if (varData) return varData;
+  }
+  
+  // If still not found, do a partial match search
+  const { data: partialMatches } = await supabase
+    .from('registry_services')
+    .select('*')
+    .ilike('service_name', `%${serviceName.split('-')[0]}%`);
+  
+  if (partialMatches && partialMatches.length > 0) {
+    // Return the first match (could be improved with better scoring)
+    return partialMatches[0];
+  }
+  
   if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
-  return data;
+  return null;
+}
+
+// Phase 2: Generate comprehensive service name variations for better matching
+function generateServiceNameVariations(serviceName: string): string[] {
+  const variations = new Set<string>();
+  
+  // Basic suffix variations
+  variations.add(serviceName.replace('-service', '')); // claude-service -> claude
+  variations.add(serviceName.replace('-adapter', '')); // supabase-adapter -> supabase
+  variations.add(serviceName + '-service');           // claude -> claude-service
+  variations.add(serviceName + '-adapter');           // supabase -> supabase-adapter
+  
+  // Handle file vs directory naming (filter-service/filter-service pattern)
+  if (serviceName.includes('-')) {
+    const parts = serviceName.split('-');
+    
+    // Try removing last part if it's "service"
+    if (parts[parts.length - 1] === 'service') {
+      variations.add(parts.slice(0, -1).join('-'));
+    }
+    
+    // Try first part only (document-classification-service -> document)
+    variations.add(parts[0]);
+    
+    // Try first two parts (document-classification-service -> document-classification)  
+    if (parts.length > 2) {
+      variations.add(parts.slice(0, 2).join('-'));
+    }
+    
+    // Try last part only (google-drive-browser -> browser)
+    if (parts.length > 1) {
+      variations.add(parts[parts.length - 1]);
+    }
+    
+    // Try without first part (google-drive-browser -> drive-browser)
+    if (parts.length > 2) {
+      variations.add(parts.slice(1).join('-'));
+    }
+  }
+  
+  // Browser/CLI environment-specific patterns
+  variations.add(serviceName.replace('browser-', ''));    // browser-auth -> auth
+  variations.add(serviceName.replace('cli-', ''));        // cli-tracking -> tracking
+  variations.add('browser-' + serviceName);               // auth -> browser-auth
+  variations.add('cli-' + serviceName);                   // tracking -> cli-tracking
+  
+  // Handle compound service names
+  if (serviceName.includes('-') && serviceName.split('-').length === 2) {
+    const [first, second] = serviceName.split('-');
+    variations.add(second + '-' + first);  // google-drive -> drive-google
+    variations.add(first);                 // google-drive -> google
+    variations.add(second);                // google-drive -> drive
+  }
+  
+  // Handle specific patterns we've seen in the codebase
+  
+  // Pattern: service-name-service -> service-name
+  if (serviceName.endsWith('-service')) {
+    const base = serviceName.slice(0, -8);
+    variations.add(base);
+    variations.add(base + '-browser');     // Add browser variant
+    variations.add(base + '-cli');         // Add CLI variant
+  }
+  
+  // Pattern: parent-child-service naming (auth-service directory)
+  const authPatterns = ['browser-auth', 'cli-auth', 'auth-browser', 'auth-cli'];
+  if (serviceName.includes('auth')) {
+    authPatterns.forEach(pattern => variations.add(pattern));
+  }
+  
+  // Pattern: google-drive variations
+  if (serviceName.includes('google') || serviceName.includes('drive')) {
+    ['google-drive', 'google-drive-browser', 'google-drive-sync', 'google-auth'].forEach(pattern => {
+      variations.add(pattern);
+    });
+  }
+  
+  // Pattern: tracking variations  
+  if (serviceName.includes('tracking')) {
+    ['tracking', 'cli-tracking-wrapper', 'shell-command-tracker', 'command-tracking'].forEach(pattern => {
+      variations.add(pattern);
+    });
+  }
+  
+  // Remove invalid variations
+  const filtered = Array.from(variations).filter(v => 
+    v && 
+    v !== serviceName && 
+    v.length > 0 && 
+    !v.endsWith('-') && 
+    !v.startsWith('-') &&
+    !v.includes('--')
+  );
+  
+  return filtered;
 }
 
 export async function getAppByName(appName: string): Promise<RegistryApp | null> {

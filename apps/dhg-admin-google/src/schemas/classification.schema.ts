@@ -1,8 +1,9 @@
-// Classification response schema for validation
+// Classification response schema for hierarchical document types
 
 export interface ClassificationResponse {
   document_type_id: string;
   document_type_name: string;
+  document_type_category: string;
   confidence: number;
   reasoning: string;
   keywords?: string[];
@@ -21,6 +22,10 @@ export const ClassificationResponseSchema = {
       throw new Error('Invalid document_type_name');
     }
     
+    if (!data.document_type_category || typeof data.document_type_category !== 'string') {
+      throw new Error('Invalid document_type_category');
+    }
+    
     if (typeof data.confidence !== 'number' || data.confidence < 0 || data.confidence > 1) {
       throw new Error('Invalid confidence score');
     }
@@ -33,6 +38,7 @@ export const ClassificationResponseSchema = {
     return {
       document_type_id: data.document_type_id,
       document_type_name: data.document_type_name,
+      document_type_category: data.document_type_category,
       confidence: data.confidence,
       reasoning: data.reasoning,
       keywords: Array.isArray(data.keywords) ? data.keywords : undefined,

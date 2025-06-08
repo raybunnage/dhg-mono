@@ -9,7 +9,9 @@ import {
   History,
   LogOut,
   FileText,
-  Users
+  Users,
+  Settings,
+  Zap
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -36,6 +38,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { id: 'history', label: 'Sync History', path: '/sync-history', icon: History },
     { id: 'classify', label: 'Classification', path: '/classify', icon: FileText },
     { id: 'expert-profiles', label: 'Expert Profiles', path: '/expert-profiles', icon: Users },
+    { id: 'document-types', label: 'Document Types', path: '/document-types', icon: Settings },
+    { id: 'prompt-service', label: 'Prompt Service', path: '/prompt-service', icon: Zap },
   ];
 
   const activeTab = tabs.find(tab => location.pathname === tab.path)?.id || 'explorer';

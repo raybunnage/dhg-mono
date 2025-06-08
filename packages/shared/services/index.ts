@@ -11,8 +11,8 @@ export * from "./document-classification-service"; // Document classification se
 export * from "./pdf-processor-service"; // PDF processor service for PDF file handling
 export * from "./filter-service"; // Filter service for query filtering
 export * from "./user-profile-service"; // User profile service for comprehensive user data management
-export * from "./light-auth-service"; // Light authentication service for email whitelist authentication
 export * from "./light-auth-enhanced-service"; // Enhanced light authentication with profile management
 export * from "./env-config-service"; // Environment configuration service for cross-platform env vars
-export * from "./theme-service"; // Theme service for dark/light mode management
 export * from "./ai-processing-service"; // AI processing service for document analysis and classification
+export * from "./file-system-service"; // File system service with progress tracking and parallel processing
+export * from "./batch-database-service"; // Batch database service with retry logic and progress tracking

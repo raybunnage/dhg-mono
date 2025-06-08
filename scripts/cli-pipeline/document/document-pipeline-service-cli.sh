@@ -3,9 +3,9 @@
 
 # Get script directory and root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CLI_FILE="${SCRIPT_DIR}/cli.ts"
-TRACKER_TS="${ROOT_DIR}/packages/shared/services/tracking-service/shell-command-tracker.ts"
+TRACKER_TS="${PROJECT_ROOT}/packages/shared/services/tracking-service/shell-command-tracker.ts"
 
 # Command tracking function - works with new tracking service
 track_command() {
@@ -16,7 +16,7 @@ track_command() {
   
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
-    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -58,17 +58,17 @@ show_help() {
 }
 
 # Load environment variables from .env files
-if [ -f "${ROOT_DIR}/.env.development" ]; then
+if [ -f "${PROJECT_ROOT}/.env.development" ]; then
   echo "Loading environment variables from .env.development..."
   set -a # automatically export all variables
-  source "${ROOT_DIR}/.env.development"
+  source "${PROJECT_ROOT}/.env.development"
   set +a
 fi
 
-if [ -f "${ROOT_DIR}/.env.local" ]; then
+if [ -f "${PROJECT_ROOT}/.env.local" ]; then
   echo "Loading environment variables from .env.local..."
   set -a
-  source "${ROOT_DIR}/.env.local"
+  source "${PROJECT_ROOT}/.env.local"
   set +a
 fi
 
@@ -86,12 +86,12 @@ if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
 fi
 
 # Create a log file
-LOG_DIR="${ROOT_DIR}/document-analysis-results"
+LOG_DIR="${PROJECT_ROOT}/document-analysis-results"
 mkdir -p "${LOG_DIR}"
 LOG_FILE="${LOG_DIR}/document-pipeline-$(date +%Y-%m-%d_%H-%M-%S).log"
 
 # Run the TypeScript CLI, pipe stdout and stderr to the log file while also displaying them
-cd "${ROOT_DIR}"
+cd "${PROJECT_ROOT}"
 
 # Extract command name
 COMMAND=${1:-"help"}

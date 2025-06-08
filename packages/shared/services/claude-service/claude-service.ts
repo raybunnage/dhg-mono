@@ -1,32 +1,31 @@
-/**
- * Claude Service - Browser Version
- * 
- * Simplified version without server-side logging for browser environments
- */
-import axios from 'axios';
+// Type definitions
+interface ClaudeOptions {
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
+  system?: string;
+}
 
-/**
- * Claude API response structure
- */
 interface ClaudeResponse {
-  id: string;
-  type: string;
-  role: string;
-  content: Array<{
-    type: string;
-    text: string;
-  }>;
-  model: string;
-  stop_reason: string;
-  stop_sequence: string | null;
-  usage: {
-    input_tokens: number;
-    output_tokens: number;
-  };
+  content?: Array<{ text: string }>;
+  [key: string]: any;
 }
 
 /**
- * Claude Service implementation for browser
+ * ClaudeService - Singleton service for interacting with Claude API
+ * 
+ * This service handles communication with the Claude AI API, including:
+ * - Sending prompts and receiving responses
+ * - Parsing JSON responses
+ * - Managing API configuration and authentication
+ * 
+ * Usage:
+ * ```typescript
+ * import { claudeService } from '@shared/services/claude-service';
+ * 
+ * const response = await claudeService.sendPrompt('Your prompt here');
+ * const jsonData = await claudeService.getJsonResponse('Return JSON data');
+ * ```
  */
 export class ClaudeService {
   private static instance: ClaudeService;
@@ -34,25 +33,22 @@ export class ClaudeService {
   private baseUrl: string;
   private apiVersion: string;
   private defaultModel: string;
-  
-  /**
-   * Create a new Claude service
-   * Private constructor to enforce singleton pattern
-   */
+
   private constructor() {
-    // In browser, these would come from Vite env vars
-    this.apiKey = import.meta.env.VITE_CLAUDE_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY || '';
-    this.baseUrl = import.meta.env.VITE_CLAUDE_API_BASE_URL || 'https://api.anthropic.com';
-    this.apiVersion = import.meta.env.VITE_CLAUDE_API_VERSION || '2023-12-15';
-    this.defaultModel = import.meta.env.VITE_DEFAULT_MODEL || 'claude-sonnet-4-20250514';
-    
+    // In Node.js/CommonJS contexts (like CLI pipelines), use process.env
+    // The browser apps should pass config through dependency injection instead
+    this.apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '';
+    this.baseUrl = process.env.CLAUDE_API_BASE_URL || 'https://api.anthropic.com';
+    this.apiVersion = process.env.CLAUDE_API_VERSION || '2023-12-15';
+    this.defaultModel = process.env.DEFAULT_MODEL || 'claude-sonnet-4-20250514';
+
     if (!this.apiKey) {
-      console.error('Claude API key is not set. Please set VITE_CLAUDE_API_KEY or VITE_ANTHROPIC_API_KEY environment variable.');
+      console.error('Claude API key is not configured. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY in your environment variables.');
     }
   }
-  
+
   /**
-   * Get the singleton instance
+   * Get the singleton instance of ClaudeService
    */
   public static getInstance(): ClaudeService {
     if (!ClaudeService.instance) {
@@ -60,7 +56,7 @@ export class ClaudeService {
     }
     return ClaudeService.instance;
   }
-  
+
   /**
    * Validate that the service is properly configured
    */
@@ -69,109 +65,68 @@ export class ClaudeService {
       throw new Error('Claude API key is not configured');
     }
   }
-  
+
   /**
-   * Send a prompt to Claude
-   * @param prompt The prompt to send
-   * @param options Additional options
-   * @returns The response from Claude
+   * Send a prompt to Claude API
    */
-  public async sendPrompt(
-    prompt: string,
-    options: {
-      maxTokens?: number;
-      temperature?: number;
-      model?: string;
-      system?: string;
-    } = {}
-  ): Promise<string> {
+  public async sendPrompt(prompt: string, options: ClaudeOptions = {}): Promise<ClaudeResponse> {
     this.validateConfiguration();
-    
-    const requestData = {
-      anthropic_version: this.apiVersion,
-      max_tokens: options.maxTokens || 150000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      model: options.model || this.defaultModel,
-      temperature: options.temperature || 0,
-      ...(options.system && { system: options.system })
-    };
-    
+
+    const model = options.model || this.defaultModel;
+    const maxTokens = options.maxTokens || 4096;
+    const temperature = options.temperature ?? 0.3;
+
     try {
-      const response = await axios.post<ClaudeResponse>(
-        `${this.baseUrl}/v1/messages`,
-        requestData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': this.apiKey,
-            'anthropic-version': this.apiVersion
-          }
-        }
-      );
-      
-      return response.data.content[0]?.text || '';
-    } catch (error: any) {
-      if (error.response) {
-        console.error(`Error calling Claude API: ${error.response?.data || error.message}`);
-        throw new Error(`Claude API error: ${error.response.status} ${error.response.statusText}`);
-      } else {
-        console.error(`Unknown error calling Claude API: ${error}`);
-        throw error;
+      const response = await fetch(`${this.baseUrl}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': this.apiVersion,
+          'x-api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
+          temperature,
+          ...(options.system && { system: options.system }),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Claude API error: ${response.status} - ${errorData}`);
       }
+
+      const data = await response.json() as ClaudeResponse;
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to communicate with Claude API: ${error.message}`);
+      }
+      throw error;
     }
   }
-  
+
   /**
    * Send a prompt and parse the response as JSON
-   * @param prompt The prompt to send
-   * @param options Additional options
-   * @returns The parsed JSON response
    */
-  public async getJsonResponse<T = any>(
-    prompt: string,
-    options: {
-      maxTokens?: number;
-      temperature?: number;
-      model?: string;
-      system?: string;
-    } = {}
-  ): Promise<T> {
-    const responseText = await this.sendPrompt(prompt, options);
+  public async getJsonResponse<T = any>(prompt: string, options: ClaudeOptions = {}): Promise<T> {
+    const enhancedPrompt = `${prompt}\n\nPlease respond with valid JSON only, no additional text or markdown formatting.`;
+    const response = await this.sendPrompt(enhancedPrompt, options);
+    
+    if (!response.content?.[0]?.text) {
+      throw new Error('No content in Claude response');
+    }
+
+    const text = response.content[0].text.trim();
     
     try {
-      // First try direct JSON parsing
-      return JSON.parse(responseText);
-    } catch (parseError) {
-      // Try extracting JSON from markdown code blocks
-      const jsonMatch = responseText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-      if (jsonMatch && jsonMatch[1]) {
-        try {
-          return JSON.parse(jsonMatch[1].trim());
-        } catch {
-          // Continue to next attempt
-        }
-      }
-      
-      // Try to find JSON object pattern
-      const jsonPattern = /\{[\s\S]*\}/;
-      const jsonText = responseText.match(jsonPattern)?.[0];
-      if (jsonText) {
-        try {
-          return JSON.parse(jsonText);
-        } catch {
-          // Continue to error handling
-        }
-      }
-      
-      console.error(`Error parsing JSON from Claude API response: ${parseError}`);
-      console.error(`Response text: ${responseText.substring(0, 200)}...`);
-      
-      throw new Error('Failed to parse JSON from Claude response. The response may not be valid JSON.');
+      // Remove any markdown code blocks if present
+      const jsonText = text.replace(/^```json\s*\n?/, '').replace(/\n?```$/, '');
+      return JSON.parse(jsonText);
+    } catch (error) {
+      throw new Error(`Failed to parse Claude response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

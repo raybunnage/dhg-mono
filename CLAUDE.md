@@ -627,7 +627,7 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 ```
 
 ## Google Drive Usage
-  for any issues with gooogle drive open and read docs/apps/claude_info_special/google_drive_claude_info.md 
+  for any issues with gooogle drive open and read docs/claude_info_special/google_drive_claude_info.md 
 
 
 ## Port Management for Servers and Apps
@@ -656,17 +656,18 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
 
 **Vite App Ports**:
-| Port | App | Status |
-|------|-----|--------|
-| 5173 | dhg-hub-lovable | Dedicated |
-| 5174 | dhg-hub | Dedicated |
-| 5175 | dhg-admin-suite | Dedicated |
-| 5176 | dhg-admin-google | Dedicated |
-| 5177 | dhg-admin-code | Dedicated |
-| 5178 | dhg-a | Dedicated |
-| 5179 | dhg-b | Dedicated |
-| 5194 | dhg-audio | Dedicated |
-| 8080 | dhg-improve-experts | Dedicated |
+| Port | App | Preview Port | Status |
+|------|-----|--------------|--------|
+| 5173 | dhg-hub-lovable | 4173 | Dedicated |
+| 5174 | dhg-hub | 4174 | Dedicated |
+| 5175 | dhg-admin-suite | 4175 | Dedicated |
+| 5176 | dhg-admin-google | 4176 | Dedicated |
+| 5177 | dhg-admin-code | 4177 | Dedicated |
+| 5178 | dhg-a | 4178 | Dedicated |
+| 5179 | dhg-b | 4179 | Dedicated |
+| 5194 | dhg-audio | - | Dedicated |
+| 5005 | dhg-research | - | Dedicated |
+| 8080 | dhg-improve-experts | - | Dedicated |
 
 ### Starting All Servers
 
@@ -867,6 +868,21 @@ pnpm install                           # Regenerate with all dependencies
 - **Always regenerate** after accepting changes to ensure consistency
 - **Keep backups** before major merge operations: `cp pnpm-lock.yaml pnpm-lock.yaml.backup`
 - If `pnpm install` fails, delete both `node_modules/` and `pnpm-lock.yaml`, then reinstall
+
+## TypeScript import.meta.env in Shared Services
+
+**❌ Problem**: Shared services using `import.meta.env` fail in CLI pipelines with CommonJS compilation errors
+**✅ Solution**: Use process.env directly in shared services since CLI pipelines run in Node.js context
+
+```typescript
+// ❌ WRONG - Causes "import.meta not allowed in CommonJS" errors
+this.apiKey = import.meta.env.VITE_CLAUDE_API_KEY || '';
+
+// ✅ CORRECT - Works in Node.js/CLI contexts
+this.apiKey = process.env.CLAUDE_API_KEY || '';
+```
+
+**Note**: Browser apps should handle environment variables through dependency injection or adapters, not direct import.meta.env usage in shared services.
 
 ## Key Points Summary
 
