@@ -39,14 +39,15 @@ export class DocumentTypeService {
   }
 
   /**
-   * Get all document types
+   * Get all document types with hierarchical structure
    */
   async getAllDocumentTypes() {
     try {
       const { data, error } = await this.getClient()
         .from('document_types')
-        .select('id, document_type, description')
-        .order('document_type');
+        .select('id, name, category, description, is_general_type, is_ai_generated, mnemonic, prompt_id')
+        .order('is_general_type', { ascending: false })
+        .order('name');
       
       if (error) {
         logger.error('Error fetching document types:', error);
@@ -67,7 +68,7 @@ export class DocumentTypeService {
     try {
       const { data, error } = await this.getClient()
         .from('document_types')
-        .select('id, document_type, description')
+        .select('id, name, category, description, is_general_type, is_ai_generated, mnemonic, prompt_id')
         .eq('id', typeId)
         .single();
       
@@ -90,8 +91,8 @@ export class DocumentTypeService {
     try {
       const { data, error } = await this.getClient()
         .from('document_types')
-        .select('id, document_type, description')
-        .ilike('document_type', typeName)
+        .select('id, name, category, description, is_general_type, is_ai_generated, mnemonic, prompt_id')
+        .ilike('name', typeName)
         .limit(1);
       
       if (error) {
@@ -107,6 +108,112 @@ export class DocumentTypeService {
     } catch (error) {
       logger.error(`Error in getDocumentTypeByName for ${typeName}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Get only general document type categories
+   */
+  async getGeneralDocumentTypes() {
+    try {
+      const { data, error } = await this.getClient()
+        .from('document_types')
+        .select('id, name, category, description, is_general_type')
+        .eq('is_general_type', true)
+        .order('name');
+      
+      if (error) {
+        logger.error('Error fetching general document types:', error);
+        return [];
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error in getGeneralDocumentTypes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get only specific document types (non-general)
+   */
+  async getSpecificDocumentTypes() {
+    try {
+      const { data, error } = await this.getClient()
+        .from('document_types')
+        .select('id, name, category, description, is_general_type, is_ai_generated, mnemonic, prompt_id')
+        .eq('is_general_type', false)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
+      
+      if (error) {
+        logger.error('Error fetching specific document types:', error);
+        return [];
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error in getSpecificDocumentTypes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get specific document types for a general category
+   */
+  async getDocumentTypesByCategory(categoryName: string) {
+    try {
+      const { data, error } = await this.getClient()
+        .from('document_types')
+        .select('id, name, category, description, is_general_type, is_ai_generated, mnemonic, prompt_id')
+        .eq('is_general_type', false)
+        .eq('category', categoryName)
+        .order('name');
+      
+      if (error) {
+        logger.error(`Error fetching document types for category ${categoryName}:`, error);
+        return [];
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error(`Error in getDocumentTypesByCategory for ${categoryName}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Build hierarchical document type structure
+   */
+  async getHierarchicalDocumentTypes() {
+    try {
+      const allTypes = await this.getAllDocumentTypes();
+      const generalTypes = allTypes.filter(dt => dt.is_general_type === true);
+      const specificTypes = allTypes.filter(dt => dt.is_general_type === false);
+
+      const hierarchy = generalTypes.map(generalType => ({
+        ...generalType,
+        children: specificTypes.filter(specificType => 
+          specificType.category === generalType.name
+        )
+      }));
+
+      const ungroupedTypes = specificTypes.filter(specificType => 
+        !generalTypes.some(generalType => generalType.name === specificType.category)
+      );
+
+      return {
+        generalTypes: hierarchy,
+        specificTypes,
+        ungroupedTypes
+      };
+    } catch (error) {
+      logger.error('Error in getHierarchicalDocumentTypes:', error);
+      return {
+        generalTypes: [],
+        specificTypes: [],
+        ungroupedTypes: []
+      };
     }
   }
 }

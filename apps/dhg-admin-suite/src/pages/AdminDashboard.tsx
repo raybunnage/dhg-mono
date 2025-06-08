@@ -4,13 +4,12 @@ import { useAuth } from '../hooks/useAuth';
 import { UserManagement } from '../components/UserManagement';
 import { AllowedEmailsManagement } from '../components/AllowedEmailsManagement';
 import { LoginStatistics } from '../components/LoginStatistics';
-import { DriveFilterManagement } from '../components/DriveFilterManagement';
 import { MediaTracking } from '../components/MediaTracking';
 
 export const AdminDashboard: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'stats' | 'filters' | 'media'>('emails');
+  const [activeTab, setActiveTab] = useState<'emails' | 'users' | 'stats' | 'media'>('emails');
 
   const handleSignOut = async () => {
     await signOut();
@@ -99,18 +98,6 @@ export const AdminDashboard: React.FC = () => {
               Login Statistics
             </button>
             <button
-              onClick={() => setActiveTab('filters')}
-              className={`
-                py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'filters'
-                  ? 'border-blue-500 text-blue-700 font-medium'
-                  : 'border-transparent text-blue-600 hover:text-blue-800 hover:border-blue-300'
-                }
-              `}
-            >
-              Drive Filters
-            </button>
-            <button
               onClick={() => setActiveTab('media')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
@@ -132,8 +119,6 @@ export const AdminDashboard: React.FC = () => {
           <UserManagement />
         ) : activeTab === 'stats' ? (
           <LoginStatistics />
-        ) : activeTab === 'filters' ? (
-          <DriveFilterManagement />
         ) : (
           <MediaTracking />
         )}
