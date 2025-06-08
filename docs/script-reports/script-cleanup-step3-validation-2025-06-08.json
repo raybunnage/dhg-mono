@@ -1,0 +1,34 @@
+{
+  "generated_at": "2025-06-08T20:58:31.718Z",
+  "step": "Step 3: Root Scripts Review",
+  "original_count": 60,
+  "remaining_count": 15,
+  "archived_count": 3,
+  "migrated_count": 42,
+  "reduction_percentage": 75,
+  "pipelines_enhanced": 5,
+  "remaining_scripts": [
+    "clean-and-import-urls.sql",
+    "clean-and-import-web-concepts.sql",
+    "fix/fix-permissions.sh",
+    "root/classify-markdowns.sh",
+    "root/deploy.sh",
+    "root/ensure-sync-script.sh",
+    "root/get-git-info.sh",
+    "root/markdown-report.sh",
+    "root/migrate-cli-scripts.sh",
+    "root/process-documentation.ts",
+    "root/show-tree.js",
+    "root/sync-scripts-direct.js",
+    "root/track.sh",
+    "root/verify-cli-scripts.sh",
+    "start-all-servers.js"
+  ],
+  "migration_details": {
+    "auth": 1,
+    "database": 24,
+    "experts": 1,
+    "media-processing": 13,
+    "system": 3
+  }
+}
