@@ -4,7 +4,7 @@
  * This wraps the shared user profile service but uses the browser-specific Supabase client
  */
 
-import { supabaseBrowserClient } from './supabase-browser';
+import { supabase } from '../lib/supabase';
 import type { ProfileFormData } from '@shared/services/user-profile-service';
 
 export interface ProfileResult {
@@ -14,7 +14,7 @@ export interface ProfileResult {
 }
 
 class UserProfileBrowserService {
-  private supabase = supabaseBrowserClient.getClient();
+  private supabase = supabase;
 
   /**
    * Create or update a user profile

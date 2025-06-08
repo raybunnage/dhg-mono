@@ -173,17 +173,66 @@ let renderCount = 0;
 
 // Track all useEffect calls
 const effectTracker: Record<string, number> = {};
+const componentMountTime = Date.now();
 
 function trackEffect(name: string) {
   if (!effectTracker[name]) effectTracker[name] = 0;
   effectTracker[name]++;
-  console.log(`⚡ EFFECT [${name}] run #${effectTracker[name]} at ${new Date().toLocaleTimeString()}`);
+  const elapsed = Date.now() - componentMountTime;
+  console.log(`⚡ EFFECT [${name}] run #${effectTracker[name]} at ${new Date().toLocaleTimeString()} (+${elapsed}ms since mount)`);
+}
+
+// Global render tracking
+if (typeof window !== 'undefined') {
+  if (!window.globalRenderTracker) {
+    window.globalRenderTracker = {
+      renders: 0,
+      lastRender: Date.now(),
+      startTime: Date.now()
+    };
+    
+    // Track if browser is causing repaints
+    let frameCount = 0;
+    function trackAnimationFrames() {
+      frameCount++;
+      if (frameCount % 120 === 0) { // Every ~2 seconds at 60fps
+        console.log(`🎬 Animation frame check: ${frameCount} frames rendered`);
+      }
+      requestAnimationFrame(trackAnimationFrames);
+    }
+    requestAnimationFrame(trackAnimationFrames);
+    
+    // Track any global errors
+    window.addEventListener('error', (e) => {
+      console.error('🚨 GLOBAL ERROR:', e.error, e.filename, e.lineno);
+    });
+    
+    // Track unhandled promise rejections
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('🚨 UNHANDLED PROMISE REJECTION:', e.reason);
+    });
+  }
 }
 
 export function Home() {
-  // Track renders
+  // Track renders with timing
   renderCount++;
+  const renderTime = Date.now();
+  const timeSinceLastRender = window.globalRenderTracker ? renderTime - window.globalRenderTracker.lastRender : 0;
+  
+  if (window.globalRenderTracker) {
+    window.globalRenderTracker.renders++;
+    window.globalRenderTracker.lastRender = renderTime;
+  }
+  
   console.log(`🔄 HOME COMPONENT RENDER #${renderCount} at ${new Date().toLocaleTimeString()}`);
+  console.log(`⏱️ Time since last render: ${timeSinceLastRender}ms`);
+  
+  // Log stack trace every 5th render to see what's triggering it
+  if (renderCount % 5 === 0) {
+    console.log('📍 RENDER STACK TRACE (every 5th render):');
+    console.trace();
+  }
   // State variables with debug tracking
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -1393,9 +1442,11 @@ export function Home() {
     }
   }, [showExpertProfileModal, showDebugModal, selectedExpertId, loadingMetadata]);
 
-  // Debug - track which components are rendering
+  // Debug - comprehensive debugging panel
   const DebugPanel = () => {
     const [localTime, setLocalTime] = useState(new Date().toLocaleTimeString());
+    const [debugExpanded, setDebugExpanded] = useState(false);
+    
     useEffect(() => {
       const timer = setInterval(() => {
         setLocalTime(new Date().toLocaleTimeString());
@@ -1403,13 +1454,46 @@ export function Home() {
       return () => clearInterval(timer);
     }, []);
     
+    const globalTracker = window.globalRenderTracker;
+    const timeSinceMount = Date.now() - componentMountTime;
+    
     return (
-      <div className="fixed top-0 right-0 bg-black text-white p-2 z-50 text-xs">
-        <div>Render #{renderCount}</div>
+      <div className="fixed top-0 right-0 bg-black text-white p-2 z-50 text-xs max-w-sm">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-yellow-300 font-bold">DEBUG PANEL</span>
+          <button 
+            onClick={() => setDebugExpanded(!debugExpanded)}
+            className="text-white hover:text-yellow-300"
+          >
+            {debugExpanded ? '▼' : '▶'}
+          </button>
+        </div>
+        
+        <div>HOME Renders: #{renderCount}</div>
         <div>Loading: {loading.toString()}</div>
-        <div>Presentations: {presentations.length}</div>
         <div>Time: {localTime}</div>
-        <div className="text-yellow-300">If only time updates = good</div>
+        <div className="text-yellow-300">Time since mount: {Math.round(timeSinceMount/1000)}s</div>
+        
+        {debugExpanded && (
+          <div className="mt-2 border-t border-gray-600 pt-2">
+            <div>Global Renders: {globalTracker?.renders || 0}</div>
+            <div>Presentations: {presentations.length}</div>
+            <div>Assets: {presentationAssets.length}</div>
+            <div>Selected: {selectedPresentation?.id || 'none'}</div>
+            <div>Search: '{searchQuery}'</div>
+            <div>Subjects: [{selectedSubjects.join(',')}]</div>
+            <div>Error: {error ? 'YES' : 'NO'}</div>
+            <div className="mt-1 text-gray-400">
+              StrictMode: {window.location.search.includes('no-strict') ? 'OFF' : 'ON'}
+            </div>
+            <div className="mt-1 text-red-300">
+              If render count keeps growing → component issue
+            </div>
+            <div className="text-green-300">
+              If only time updates → browser/external issue
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -1438,16 +1522,40 @@ export function Home() {
 
   return (
     <div className="container mx-auto p-4">
+      {/* New Debug System */}
+      <DebugSystem />
+      
       {/* Debug Panel */}
       <DebugPanel />
       
-      {/* Test Mode Toggle */}
-      <button 
-        onClick={() => setTestMode(true)}
-        className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded z-50"
-      >
-        Test Mode
-      </button>
+      {/* Debug Controls */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        <button 
+          onClick={() => setTestMode(true)}
+          className="block w-full bg-red-500 text-white px-4 py-2 rounded text-sm"
+        >
+          Test Mode
+        </button>
+        
+        <button 
+          onClick={() => {
+            console.log('🚫 MANUAL DEBUGGER BREAK');
+            debugger; // This will pause execution if DevTools is open
+          }}
+          className="block w-full bg-purple-500 text-white px-4 py-2 rounded text-sm"
+        >
+          Pause JS
+        </button>
+        
+        <button 
+          onClick={() => {
+            window.location.href = window.location.pathname + '?no-strict';
+          }}
+          className="block w-full bg-orange-500 text-white px-4 py-2 rounded text-sm"
+        >
+          Disable StrictMode
+        </button>
+      </div>
       {/* Expert Profile Modal - Used for both debug and regular viewing */}
       {(showDebugModal || showExpertProfileModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

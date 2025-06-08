@@ -1,11 +1,11 @@
 import React from 'react';
-import { supabaseBrowser } from '../services/supabase-browser-adapter';
+import { supabase } from '../lib/supabase';
 import { FilterService } from '@shared/services/filter-service/filter-service';
 import { DriveFilterCombobox } from '@shared/components/filter';
 
 export const DriveFilterPage: React.FC = () => {
   // Create filter service instance
-  const filterService = new FilterService(supabaseBrowser.getClient() as any);
+  const filterService = new FilterService(supabase as any);
 
   const handleFilterChange = (profileId: string | null, profile: any) => {
     console.log('Filter changed:', { profileId, profileName: profile?.name });
