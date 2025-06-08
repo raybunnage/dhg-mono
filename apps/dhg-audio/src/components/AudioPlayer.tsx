@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getAudioUrlOptions } from '../utils/google-drive-utils';
+import { AudioSourceDebug } from './AudioSourceDebug';
 
 interface AudioPlayerProps {
   url: string;
@@ -306,6 +307,9 @@ export const AudioPlayer = ({ url, title, onTimeUpdate, initialTime = 0 }: Audio
           </div>
         </div>
       </div>
+      
+      {/* Debug info showing which server is being used */}
+      <AudioSourceDebug url={urlOptions[currentUrlIndex] || url} />
     </div>
   );
 };
