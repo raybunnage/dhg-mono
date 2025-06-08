@@ -7,7 +7,7 @@ import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
 import { DocumentsPage } from './pages/DocumentsPage';
-import { HiMomPage } from './pages/HiMomPage';
+// import { HiMomPage } from './pages/HiMomPage'; // Archived
 import { PromptService } from './pages/PromptService';
 import { DocumentTypes } from './pages/DocumentTypes';
 import { ScriptsManagement } from './pages/ScriptsManagement';
@@ -18,6 +18,9 @@ import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 import ClipboardManager from './pages/ClipboardManager';
+import WorktreeMappings from './pages/WorktreeMappings';
+import ServiceDependencies from './pages/ServiceDependencies';
+import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -98,6 +101,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        {/* Archived Hi Mom page
         <Route 
           path="/hi-mom" 
           element={
@@ -105,7 +109,7 @@ function App() {
               <HiMomPage />
             </ProtectedRoute>
           } 
-        />
+        /> */}
         <Route 
           path="/prompts" 
           element={
@@ -159,6 +163,30 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <ClipboardManager />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/worktree-mappings" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <WorktreeMappings />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/service-dependencies" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <ServiceDependencies />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/deprecation-analysis" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <DeprecationAnalysis />
             </ProtectedRoute>
           } 
         />

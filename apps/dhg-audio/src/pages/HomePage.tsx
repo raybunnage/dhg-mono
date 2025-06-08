@@ -11,8 +11,8 @@ export const HomePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Create filter service instance
-  const filterService = new FilterService(supabase as any);
+  // Create filter service instance with the single supabase client
+  const filterService = new FilterService(supabase);
 
   useEffect(() => {
     const fetchAudioFiles = async () => {

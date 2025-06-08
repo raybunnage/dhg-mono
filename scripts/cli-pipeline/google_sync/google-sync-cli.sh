@@ -1365,3 +1365,10 @@ if [ "$1" = "show-statistics" ]; then
   track_command "show-statistics" "ts-node $SCRIPT_DIR/show-statistics.ts $*"
   exit $?
 fi
+
+# FILTER COMMANDS
+if [ "$1" = "create-sample-filters" ]; then
+  shift
+  track_command "create-sample-filters" "ts-node $SCRIPT_DIR/create-sample-filters.ts $*"
+  exit $?
+fi

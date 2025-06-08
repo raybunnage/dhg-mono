@@ -39,7 +39,7 @@ track_command() {
   # Check if we have a TS tracking wrapper
   if [ -f "$TRACKER_TS" ]; then
     # Use 2>&1 to ensure both stdout and stderr are passed through
-    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
+    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command" 2>&1
   else
     # Fallback to direct execution without tracking
     echo "ℹ️ Tracking not available. Running command directly."
@@ -219,7 +219,7 @@ if [[ "$1" == "--help" || "$1" == "-h" || "$#" -eq 0 ]]; then
   # Use the proper tracking mechanism for help
   if [ -f "$TRACKER_TS" ]; then
     # Use the tracker script in the background to avoid hanging
-    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "presentations" "--help" "Display help for presentations pipeline" &>/dev/null &
+    npx ts-node --project "$ROOT_DIR/tsconfig.node.json" "$TRACKER_TS" "presentations" "--help" "Display help for presentations pipeline" &>/dev/null &
   fi
   exit 0
 fi

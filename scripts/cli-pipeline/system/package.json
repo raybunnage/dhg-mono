@@ -1,0 +1,11 @@
+{
+  "name": "system-cli-pipeline",
+  "version": "1.0.0",
+  "description": "System utilities and service registry management",
+  "scripts": {
+    "populate": "ts-node populate-service-registry.ts"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  }
+}

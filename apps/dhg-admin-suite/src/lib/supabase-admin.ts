@@ -1,4 +1,4 @@
-import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
 // Admin client using service role key for bypassing RLS
 // This should only be used in admin contexts where we need full access
@@ -6,7 +6,7 @@ import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 console.log('=== Supabase Admin Client Setup ===');
 
 // Create admin client using the universal adapter with service role configuration
-// Browser apps MUST pass their environment variables to the adapter
+// Browser apps MUST pass environment variables to the adapter
 export const supabaseAdmin = createSupabaseAdapter({ 
   env: import.meta.env as any,
   useServiceRole: true,

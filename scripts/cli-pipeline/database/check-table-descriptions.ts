@@ -1,16 +1,8 @@
 #!/usr/bin/env ts-node
 
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env.development') });
-
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY!
-);
+const supabase = SupabaseClientService.getInstance().getClient();
 
 async function checkTableDescriptions() {
   // Get all tables with metadata

@@ -1,10 +1,10 @@
 // Using the shared Supabase adapter for cross-environment compatibility
-import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+import { createSupabaseAdapter } from '../../../../packages/shared/adapters/supabase-adapter';
 
 console.log('=== Supabase Client Setup ===');
 console.log('Using shared Supabase adapter for cross-environment compatibility');
 
-// Browser apps MUST pass their environment variables to the adapter
+// Browser apps MUST pass environment variables to the adapter
 export const supabase = createSupabaseAdapter({
   env: import.meta.env as any
 });

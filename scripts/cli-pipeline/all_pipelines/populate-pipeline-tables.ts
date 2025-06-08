@@ -145,7 +145,7 @@ const pipelineTableUsage: PipelineTableUsage[] = [
   {
     pipeline: 'scripts',
     tables: [
-      { name: 'scripts_registry', operation: 'both', description: 'Script registry management' }
+      { name: 'registry_scripts', operation: 'both', description: 'Script registry management' }
     ]
   },
   {

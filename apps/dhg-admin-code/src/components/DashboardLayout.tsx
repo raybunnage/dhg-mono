@@ -24,9 +24,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/scripts')) return 'scripts';
     if (location.pathname.startsWith('/git-branches')) return 'git-branches';
     if (location.pathname.startsWith('/git')) return 'git';
-    if (location.pathname.startsWith('/hi-mom')) return 'hi-mom';
+    // if (location.pathname.startsWith('/hi-mom')) return 'hi-mom'; // Archived
     if (location.pathname.startsWith('/clipboard')) return 'clipboard';
     if (location.pathname.startsWith('/continuous-docs')) return 'continuous-docs';
+    if (location.pathname.startsWith('/worktree-mappings')) return 'worktree-mappings';
+    if (location.pathname.startsWith('/service-dependencies')) return 'service-dependencies';
+    if (location.pathname.startsWith('/deprecation-analysis')) return 'deprecation';
     return 'tasks'; // default
   };
   
@@ -97,7 +100,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 }
               `}
             >
-              Claude Code Tasks
+              Claude Tasks
             </button>
             <button
               onClick={() => navigate('/work-summaries')}
@@ -133,7 +136,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 }
               `}
             >
-              CLI Commands Registry
+              CLI Registry
             </button>
             <button
               onClick={() => navigate('/database')}
@@ -231,6 +234,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             >
               Git Branches
             </button>
+            {/* Archived Hi Mom button
             <button
               onClick={() => navigate('/hi-mom')}
               className={`
@@ -242,7 +246,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Hi Mom! 💚
-            </button>
+            </button> */}
             <button
               onClick={() => navigate('/clipboard')}
               className={`
@@ -254,6 +258,42 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Clipboard 📋
+            </button>
+            <button
+              onClick={() => navigate('/worktree-mappings')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'worktree-mappings'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Worktree Maps 🌳
+            </button>
+            <button
+              onClick={() => navigate('/service-dependencies')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'service-dependencies'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Services 🔗
+            </button>
+            <button
+              onClick={() => navigate('/deprecation-analysis')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'deprecation'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Deprecation 🗑️
             </button>
           </nav>
         </div>

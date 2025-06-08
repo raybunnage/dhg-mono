@@ -101,7 +101,7 @@ async function searchScripts(query?: string) {
   
   // Search in database first (title, tags, purpose)
   const { data: scripts, error } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select(`
       file_path,
       title,
@@ -124,7 +124,7 @@ async function searchScripts(query?: string) {
   
   // Also search for scripts with matching tags
   const { data: taggedScripts } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select('*')
     .contains('ai_generated_tags', [query.toLowerCase()]);
   

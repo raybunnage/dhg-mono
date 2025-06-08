@@ -29,8 +29,12 @@ export async function initializeSupabase(): Promise<boolean> {
       );
     }
     
-    // Test the connection using the standard client
-    const { error } = await supabase.from('auth_allowed_emails').select('id').limit(1);
+    // Test the connection with a simple query
+    const { error } = await supabase
+      .from('auth_allowed_emails')
+      .select('id')
+      .limit(1);
+    
     const connected = !error;
     
     if (!connected) {

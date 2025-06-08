@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { supabase } from '../utils/supabase-adapter';
+import { supabase } from '../lib/supabase';
 import { 
   FolderOpen, 
   FileText, 

@@ -1,0 +1,26 @@
+{
+  "name": "registry-cli-pipeline",
+  "version": "1.0.0",
+  "description": "Service dependency registry and analysis CLI pipeline",
+  "scripts": {
+    "scan-services": "ts-node scan-services.ts",
+    "scan-apps": "ts-node scan-apps.ts",
+    "scan-pipelines": "ts-node scan-pipelines.ts",
+    "populate-registry": "ts-node populate-registry.ts",
+    "analyze-dependencies": "ts-node analyze-dependencies.ts",
+    "find-unused": "ts-node find-unused.ts",
+    "generate-report": "ts-node generate-report.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.26.0",
+    "commander": "^11.0.0",
+    "dotenv": "^16.0.3",
+    "glob": "^10.2.7",
+    "typescript": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.4.0",
+    "ts-node": "^10.9.1"
+  }
+}

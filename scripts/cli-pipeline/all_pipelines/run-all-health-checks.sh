@@ -83,6 +83,7 @@ run_health_check "mime_types" "MIME Types" "$ROOT_DIR/scripts/cli-pipeline/mime_
 run_health_check "refactor_tracking" "Refactor Tracking" "$ROOT_DIR/scripts/cli-pipeline/refactor_tracking/refactor-tracking-cli.sh health-check"
 run_health_check "tracking" "Command Tracking" "$ROOT_DIR/scripts/cli-pipeline/tracking/tracking-cli.sh health-check"
 run_health_check "monitoring" "Monitoring" "$ROOT_DIR/scripts/cli-pipeline/monitoring/monitoring-cli.sh health-check"
+run_health_check "deprecation" "Deprecation Analysis" "$ROOT_DIR/scripts/cli-pipeline/deprecation/deprecation-cli.sh health-check"
 
 echo -e "\n${BOLD}DOCUMENTATION:${NC}"
 run_health_check "documentation" "Documentation" "$ROOT_DIR/scripts/cli-pipeline/documentation/documentation-cli.sh health-check"
