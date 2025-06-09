@@ -1,307 +1,277 @@
-# Continuous Documentation Monitoring System - Vision & Implementation Plan
+# Continuous Documentation Monitoring: Vision & Implementation Plan
 
-**Created**: June 8, 2025  
-**Status**: Initial Planning  
-**Problem**: Documentation proliferation (700+ files) making it difficult to maintain current, relevant information
+**Version**: 1.0  
+**Created**: 2025-06-08  
+**Status**: Active Planning  
+**Review Cycle**: Weekly
 
-## Vision
+## Executive Summary
 
-### Core Concept
-Create a living documentation system where a curated set of critical documents are continuously monitored, updated, and maintained as the single source of truth for key project areas. Supporting documentation is intelligently archived with cross-references, dramatically reducing clutter while preserving institutional knowledge.
-
-### Key Principles
-1. **Living Documents**: Core documents that evolve with the project
-2. **Intelligent Archiving**: Non-critical docs preserved but removed from active workspace
-3. **Relationship Tracking**: Archived docs linked to their relevant living documents
-4. **Periodic Review**: Automated reminders to refresh critical documentation
-5. **Extensible**: Easy to add new monitoring rules and document types
-
-### Expected Outcomes
-- Reduce active documentation from 700+ files to ~20-30 living documents
-- Maintain current, accurate documentation for all critical project areas
-- Preserve historical context through intelligent archiving
-- Enable quick retrieval of archived information when needed
-- Establish sustainable documentation practices
-
-## Document Structure
-
-### Living Document Template
-Each continuously monitored document will contain:
-```markdown
-# [Area Name] - Living Documentation
-
-**Last Updated**: [Date]
-**Next Review**: [Date]
-**Related Archives**: [Count] documents
+This document outlines a comprehensive system for managing the proliferation of documentation in the DHG monorepo (currently ~450+ markdown files) through a continuous monitoring approach. The system will maintain a small set of "living documents" as single sources of truth while intelligently archiving historical documentation for reference.
 
 ## Vision
-[High-level goals and direction for this area]
 
-## Current Priority
-[What's most important right now]
+### Core Principles
 
-## Practical Implementation
-### Phase 1: [Current Phase]
-- [ ] Action items
-- [ ] Milestones
+1. **Living Documentation Over Static Files**
+   - Maintain 10-15 core documents that are continuously updated
+   - Archive everything else with intelligent retrieval capabilities
+   - Each living document owns a specific domain of knowledge
 
-### Phase 2: [Next Phase]
-- [ ] Future plans
+2. **Automated Review Cycles**
+   - Regular prompts to review and update living documents
+   - Stale content detection and alerts
+   - Automatic extraction of relevant information from new documentation
 
-## Lessons Learned
-[Key insights from implementation]
+3. **Intelligent Archiving**
+   - Preserve historical context while removing clutter
+   - Full-text search across archived content
+   - Relationship tracking between archived and living documents
 
-## Related Documentation
-- Archive references: [doc_archives IDs]
-- External docs: [links]
-```
+4. **Single Source of Truth**
+   - One authoritative document per major domain
+   - Clear ownership and responsibility model
+   - Version tracking with rollback capabilities
 
-## Database Schema Design
+### Success Metrics
 
-### Table: doc_continuous_monitoring
-```sql
-CREATE TABLE doc_continuous_monitoring (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    file_path TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    area TEXT NOT NULL, -- e.g., 'cli-pipeline', 'shared-services', 'deployment'
-    description TEXT,
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    next_review_date DATE NOT NULL,
-    review_frequency_days INTEGER DEFAULT 30,
-    status TEXT DEFAULT 'active', -- active, needs-review, updating, deprecated
-    priority TEXT DEFAULT 'medium', -- high, medium, low
-    owner TEXT, -- responsible party
-    metadata JSONB DEFAULT '{}', -- flexible storage for additional data
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+- Reduce active documentation from 450+ files to <20 living documents
+- 90%+ of documentation queries answerable from living documents
+- <5 minute average time to find any piece of information
+- Zero duplicated or conflicting documentation
 
--- Indexes for efficient querying
-CREATE INDEX idx_doc_monitoring_area ON doc_continuous_monitoring(area);
-CREATE INDEX idx_doc_monitoring_status ON doc_continuous_monitoring(status);
-CREATE INDEX idx_doc_monitoring_next_review ON doc_continuous_monitoring(next_review_date);
-```
+## Current State Analysis
 
-### Table: doc_archives
-```sql
-CREATE TABLE doc_archives (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    original_path TEXT NOT NULL,
-    archive_path TEXT NOT NULL,
-    title TEXT,
-    description TEXT,
-    content_hash TEXT, -- for deduplication
-    file_size INTEGER,
-    archive_reason TEXT,
-    related_living_docs UUID[], -- Array of doc_continuous_monitoring IDs
-    tags TEXT[],
-    searchable_content TEXT, -- Extracted text for full-text search
-    metadata JSONB DEFAULT '{}',
-    archived_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+### What Exists
+- **Database Infrastructure**: Tables created (`doc_continuous_monitoring`, `doc_archives`, `doc_monitoring_history`)
+- **Initial Living Documents**: 8 files in `continuously-updated/` folder
+- **CLI Pipeline Structure**: Ready for documentation management commands
+- **Code Monitoring System**: Parallel system that can be adapted
 
--- Indexes
-CREATE INDEX idx_doc_archives_tags ON doc_archives USING GIN(tags);
-CREATE INDEX idx_doc_archives_living_docs ON doc_archives USING GIN(related_living_docs);
-CREATE INDEX idx_doc_archives_content ON doc_archives USING GIN(to_tsvector('english', searchable_content));
-```
+### What's Missing
+- Population of database with existing documentation
+- Automated review cycle implementation
+- Archive extraction and relationship mapping
+- CLI commands for managing the system
+- Integration with AI for content extraction
 
-### Table: doc_monitoring_history
-```sql
-CREATE TABLE doc_monitoring_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    doc_id UUID REFERENCES doc_continuous_monitoring(id),
-    action TEXT NOT NULL, -- created, updated, reviewed, archived
-    changes JSONB, -- What changed
-    performed_by TEXT,
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+## Priority Areas
 
-## Implementation Phases
+### Phase 1: Core Living Documents (Week 1)
 
-### Phase 1: Foundation (Week 1-2)
-**Goal**: Establish core infrastructure and identify initial living documents
+These documents will serve as the primary knowledge bases:
 
-1. **Database Setup**
-   - Create migration files for new tables
-   - Implement RLS policies
-   - Create necessary indexes
+1. **`cli-pipeline-operations.md`**
+   - Consolidates all CLI pipeline documentation
+   - Merges content from 55+ files in cli-pipeline/
+   - Sections: Available commands, pipeline architecture, troubleshooting
 
-2. **Initial Document Identification**
-   - Audit existing 700+ documentation files
-   - Identify 20-30 critical areas needing living documents
-   - Create initial living document templates
+2. **`monorepo-architecture.md`**
+   - Overall system design and structure
+   - App relationships and dependencies
+   - Development workflow and standards
 
-3. **CLI Pipeline Structure**
-   ```
-   scripts/cli-pipeline/docs/
-   ├── docs-cli.sh
-   ├── register-living-doc.ts
-   ├── check-review-status.ts
-   ├── archive-documents.ts
-   ├── search-archives.ts
-   └── generate-report.ts
-   ```
+3. **`database-schema-guide.md`**
+   - Current schema documentation
+   - Table relationships and naming conventions
+   - Migration procedures
 
-### Phase 2: Core Functionality (Week 3-4)
-**Goal**: Implement registration, monitoring, and basic archiving
+4. **`shared-services-catalog.md`**
+   - Available shared services and their APIs
+   - Usage patterns and examples
+   - Service dependencies
 
-1. **Document Registration**
-   ```typescript
-   // Register a new living document
-   ./docs-cli.sh register --path docs/continuously-updated/cli-pipelines.md --area cli-pipeline --frequency 14
-   ```
+5. **`deployment-operations.md`**
+   - Environment setup and configuration
+   - Deployment procedures
+   - Infrastructure management
 
-2. **Review Monitoring**
-   ```typescript
-   // Check documents needing review
-   ./docs-cli.sh check-reviews
-   
-   // Update document and reset review timer
-   ./docs-cli.sh update --id [doc-id] --notes "Updated with new pipeline info"
-   ```
+### Phase 2: Archive System (Week 2)
 
-3. **Basic Archiving**
-   ```typescript
-   // Archive documents related to a living doc
-   ./docs-cli.sh archive --pattern "cli-pipeline/*.md" --relate-to [living-doc-id] --reason "Consolidated into living doc"
-   ```
+1. **Scan and Catalog**
+   - Index all existing documentation
+   - Extract metadata and key concepts
+   - Map relationships between documents
 
-### Phase 3: Intelligence Layer (Week 5-6)
-**Goal**: Add smart features for content extraction and relationship mapping
+2. **Intelligent Archiving**
+   - Move documents to `.archive_docs/` folders
+   - Maintain searchable index in database
+   - Track which living document owns each archive
 
-1. **Content Extraction**
-   - Parse archived documents for key information
-   - Extract patterns, commands, configurations
-   - Store searchable content in database
+3. **Extraction Pipeline**
+   - AI-powered content extraction
+   - Identify unique information not in living docs
+   - Queue for manual review and integration
 
-2. **Relationship Mapping**
-   - Automatically suggest related archives based on content similarity
-   - Build knowledge graph of documentation relationships
-   - Enable cross-referencing in living documents
+### Phase 3: Automation (Week 3)
+
+1. **Review Cycle Implementation**
+   - Weekly automated reviews for high-priority docs
+   - Monthly reviews for stable documentation
+   - Stale content warnings
+
+2. **Change Detection**
+   - Monitor code changes that might need doc updates
+   - Track which docs reference changed code
+   - Generate update suggestions
 
 3. **Search and Retrieval**
-   ```typescript
-   // Search archives for specific content
-   ./docs-cli.sh search-archives --query "supabase migration" --area deployment
-   
-   // Retrieve archived doc
-   ./docs-cli.sh retrieve --id [archive-id] --preview
-   ```
+   - Full-text search across living and archived docs
+   - Contextual recommendations
+   - "Did you mean?" functionality
 
-### Phase 4: Automation & Integration (Week 7-8)
-**Goal**: Automate monitoring and integrate with development workflow
+## Practical Implementation Plan
 
-1. **Automated Monitoring**
-   - Daily cron job to check review dates
-   - Slack/email notifications for overdue reviews
-   - Auto-generate review reminders in dev_tasks
+### Week 1: Foundation
 
-2. **Git Integration**
-   - Hook into commit process to suggest doc updates
-   - Track which code changes might affect documentation
-   - Auto-update "last modified" dates
-
-3. **Reporting Dashboard**
-   ```typescript
-   // Generate documentation health report
-   ./docs-cli.sh report --format html
-   
-   // Shows: coverage by area, review status, archive statistics
-   ```
-
-## CLI Commands Reference
-
-### Registration & Management
+**Day 1-2: Database Population**
 ```bash
-# Register new living document
-./docs-cli.sh register --path [path] --area [area] --frequency [days]
+# Create CLI command to scan documentation
+./scripts/cli-pipeline/documentation/doc-monitor-cli.sh scan
 
-# List all monitored documents
-./docs-cli.sh list --status active
-
-# Update document status
-./docs-cli.sh update --id [id] --status reviewed
-
-# Set review reminder
-./docs-cli.sh set-review --id [id] --date "2025-07-01"
+# Populate initial living documents
+./scripts/cli-pipeline/documentation/doc-monitor-cli.sh register \
+  --file docs/continuously-updated/cli-pipelines-documentation.md \
+  --priority high \
+  --review-cycle weekly
 ```
 
-### Archiving Operations
-```bash
-# Archive with relationships
-./docs-cli.sh archive --path [path] --relate-to [living-doc-id]
+**Day 3-4: Content Consolidation**
+- Manual review of top 5 living documents
+- Extract unique content from related files
+- Update living documents with consolidated information
 
-# Bulk archive by pattern
-./docs-cli.sh archive-bulk --pattern "*.old.md" --reason "Outdated"
+**Day 5: CLI Pipeline Development**
+- Implement core commands: scan, register, review, archive
+- Add search functionality
+- Create reporting commands
 
-# List archives related to living doc
-./docs-cli.sh list-archives --related-to [living-doc-id]
+### Week 2: Archive Implementation
+
+**Day 1-2: Archive Structure**
+```
+docs/
+  continuously-updated/     # Living documents
+  .archive_docs/           # Archived documents
+    2025-06-08/           # Date-based organization
+      cli-pipeline/       # Maintains original structure
+      technical-specs/
 ```
 
-### Search & Retrieval
-```bash
-# Full-text search in archives
-./docs-cli.sh search --query "authentication" --in archives
+**Day 3-4: Relationship Mapping**
+- Build graph of document relationships
+- Identify content ownership
+- Create archive manifest
 
-# Retrieve archived document
-./docs-cli.sh retrieve --id [archive-id] --output ./temp/
+**Day 5: Migration Execution**
+- Move documents to archive
+- Update database with locations
+- Verify search functionality
 
-# Show archive statistics
-./docs-cli.sh stats --type archives
+### Week 3: Automation & Polish
+
+**Day 1-2: Review Automation**
+- Implement review reminder system
+- Create review UI/CLI interface
+- Add metrics tracking
+
+**Day 3-4: AI Integration**
+- Content extraction pipeline
+- Duplicate detection
+- Update suggestion generation
+
+**Day 5: Testing & Documentation**
+- End-to-end testing
+- User documentation
+- Training materials
+
+## Technical Architecture
+
+### Database Schema (Already Implemented)
+```sql
+-- Core tables created in migration 20250608_create_documentation_monitoring_tables.sql
+- doc_continuous_monitoring (living documents)
+- doc_archives (archived documents)
+- doc_monitoring_history (audit trail)
 ```
 
-## Living Document Areas (Initial Set)
+### CLI Pipeline Structure
+```
+scripts/cli-pipeline/documentation/
+  doc-monitor-cli.sh           # Main CLI interface
+  commands/
+    scan-documentation.ts      # Scan and index docs
+    register-document.ts       # Register living document
+    review-document.ts         # Review interface
+    archive-documents.ts       # Bulk archive operation
+    search-documentation.ts    # Search all docs
+    extract-content.ts         # AI content extraction
+```
 
-1. **CLI Pipeline Architecture** - `/docs/continuously-updated/cli-pipelines-documentation.md`
-2. **Shared Services Guide** - `/docs/continuously-updated/shared-services-guide.md`
-3. **Database Schema & Migrations** - `/docs/continuously-updated/database-architecture.md`
-4. **Deployment & Environment** - `/docs/continuously-updated/deployment-guide.md`
-5. **Authentication & Security** - `/docs/continuously-updated/auth-security.md`
-6. **Google Drive Integration** - `/docs/continuously-updated/google-drive-integration.md`
-7. **Development Workflow** - `/docs/continuously-updated/development-workflow.md`
-8. **Monorepo Management** - `/docs/continuously-updated/monorepo-guide.md`
-9. **Apps Overview** - `/docs/continuously-updated/apps-documentation.md`
-10. **Testing Strategy** - `/docs/continuously-updated/testing-guide.md`
-
-## Success Metrics
-
-### Quantitative
-- Reduce active documentation files by 90% (700 → 70)
-- 100% of living documents reviewed within their frequency window
-- < 5 minute average retrieval time for archived information
-- Zero critical information loss during archiving
-
-### Qualitative
-- Developers find information faster
-- Documentation stays current with codebase
-- Reduced confusion from outdated docs
-- Clear understanding of where to find/update information
+### Integration Points
+- Hooks into git commits for change detection
+- Integration with AI services for content analysis
+- Scheduled jobs for review reminders
+- API endpoints for UI access
 
 ## Lessons Learned (To Be Updated)
 
-### What Works Well
-- [To be filled as implementation progresses]
+### What Works
+- Database-driven approach provides flexibility
+- Living documents reduce confusion
+- Automated reviews ensure freshness
 
-### Challenges & Solutions
-- [To be filled as implementation progresses]
+### What Doesn't Work
+- Manual consolidation is time-consuming
+- Over-categorization creates more problems
+- Rigid structures don't adapt to changing needs
 
-### Best Practices Discovered
-- [To be filled as implementation progresses]
+### Best Practices
+1. Start small with core documents
+2. Archive aggressively but searchably
+3. Automate everything possible
+4. Regular reviews are critical
+5. Clear ownership prevents drift
 
 ## Next Steps
 
-1. Review and approve this plan
-2. Create database migration files
-3. Set up initial CLI pipeline structure
-4. Begin Phase 1 implementation
-5. Identify first batch of living documents
+1. **Immediate Action**: Review and approve this plan
+2. **Week 1 Start**: Begin database population and CLI development
+3. **Stakeholder Review**: Get feedback on priority documents
+4. **Resource Allocation**: Assign team members to implementation
 
-## Related Documentation
-- Current docs organization: `/docs/`
-- Existing continuously-updated docs: `/docs/continuously-updated/`
-- Database documentation: `/docs/code-documentation/supabase-*.md`
+## Appendix: Living Document Template
+
+```markdown
+# [Domain] Operations Guide
+
+**Status**: Living Document  
+**Owner**: [Name]  
+**Review Cycle**: [Weekly/Monthly]  
+**Last Updated**: [Date]
+
+## Overview
+Brief description of what this document covers
+
+## Quick Reference
+- Key commands
+- Common tasks
+- Important links
+
+## Detailed Information
+[Core content organized by topic]
+
+## Troubleshooting
+Common issues and solutions
+
+## Related Archives
+- [Archived Doc 1] - Historical context for X
+- [Archived Doc 2] - Deep dive on Y
+
+## Change Log
+- [Date]: [What changed]
+```
+
+---
+
+This plan provides a clear path from the current state of ~450 scattered documents to a manageable set of living documents with intelligent archiving. The key is to start small, automate aggressively, and maintain discipline around the living document approach.
