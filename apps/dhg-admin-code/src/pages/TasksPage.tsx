@@ -5,6 +5,18 @@ import type { DevTask } from '../services/task-service';
 import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { getWorktreeByPath } from '../utils/worktree-mapping';
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+
+const supabase = createSupabaseAdapter({ env: import.meta.env as any });
+
+interface WorktreeDefinition {
+  id: string;
+  path: string;
+  alias_name: string;
+  alias_number: string;
+  emoji: string;
+  description: string | null;
+}
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<DevTask[]>([]);
@@ -15,10 +27,13 @@ export default function TasksPage() {
   const [appFilter, setAppFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCompleted, setShowCompleted] = useState(false); // Default to hiding completed tasks
+  const [worktreeFilter, setWorktreeFilter] = useState<string>('');
+  const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
 
   useEffect(() => {
     loadTasks();
-  }, [statusFilter, priorityFilter, appFilter, searchQuery]);
+    loadWorktrees();
+  }, [statusFilter, priorityFilter, appFilter, searchQuery, worktreeFilter]);
 
   const loadTasks = async () => {
     try {
@@ -35,6 +50,22 @@ export default function TasksPage() {
       setError(err instanceof Error ? err.message : 'Failed to load tasks');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadWorktrees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('worktree_definitions')
+        .select('*')
+        .order('alias_number');
+      
+      if (error) throw error;
+      if (data) {
+        setWorktrees(data);
+      }
+    } catch (err) {
+      console.error('Failed to load worktrees:', err);
     }
   };
 
@@ -140,6 +171,85 @@ export default function TasksPage() {
           <Plus className="w-4 h-4 mr-2" />
           New Task
         </Link>
+      </div>
+
+      {/* Worktree Pills */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Worktrees:</span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setWorktreeFilter('')}
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                worktreeFilter === ''
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All Tasks
+              {worktreeFilter === '' && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-gray-800 bg-gray-200 rounded-full">
+                  {tasks.length}
+                </span>
+              )}
+            </button>
+            
+            {worktrees.map((worktree) => {
+              const taskCount = tasks.filter(t => t.worktree_path === worktree.path).length;
+              const isActive = worktreeFilter === worktree.path;
+              
+              return (
+                <button
+                  key={worktree.id}
+                  onClick={() => setWorktreeFilter(worktree.path)}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                  }`}
+                  title={worktree.description || `Worktree: ${worktree.path}`}
+                >
+                  <span>{worktree.emoji}</span>
+                  <span>{worktree.alias_name}</span>
+                  {taskCount > 0 && (
+                    <span className={`ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none rounded-full ${
+                      isActive ? 'text-purple-600 bg-purple-200' : 'text-purple-200 bg-purple-600'
+                    }`}>
+                      {taskCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            
+            {/* Show unassigned tasks pill */}
+            {(() => {
+              const unassignedCount = tasks.filter(t => !t.worktree_path).length;
+              if (unassignedCount > 0) {
+                return (
+                  <button
+                    onClick={() => setWorktreeFilter('unassigned')}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      worktreeFilter === 'unassigned'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                    }`}
+                    title="Tasks without worktree assignment"
+                  >
+                    <span>❓</span>
+                    <span>Unassigned</span>
+                    <span className={`ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none rounded-full ${
+                      worktreeFilter === 'unassigned' ? 'text-orange-600 bg-orange-200' : 'text-orange-200 bg-orange-600'
+                    }`}>
+                      {unassignedCount}
+                    </span>
+                  </button>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -253,6 +363,7 @@ export default function TasksPage() {
                 setStatusFilter('');
                 setPriorityFilter('');
                 setAppFilter('');
+                setWorktreeFilter('');
               }}
               className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
             >
@@ -267,6 +378,13 @@ export default function TasksPage() {
         {(() => {
           // Apply client-side filtering for completed tasks
           let filteredTasks = tasks;
+          
+          // Apply worktree filter
+          if (worktreeFilter === 'unassigned') {
+            filteredTasks = filteredTasks.filter(task => !task.worktree_path);
+          } else if (worktreeFilter) {
+            filteredTasks = filteredTasks.filter(task => task.worktree_path === worktreeFilter);
+          }
           
           // If status filter is explicitly set to "completed", show only completed tasks
           // Otherwise, respect the showCompleted toggle
