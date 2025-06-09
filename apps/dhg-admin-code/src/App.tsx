@@ -19,6 +19,7 @@ import ClipboardManager from './pages/ClipboardManager';
 import WorktreeMappings from './pages/WorktreeMappings';
 import ServiceDependencies from './pages/ServiceDependencies';
 import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
+import { AIPage } from './pages/AIPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -169,6 +170,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <DeprecationAnalysis />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/ai" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <AIPage />
             </ProtectedRoute>
           } 
         />

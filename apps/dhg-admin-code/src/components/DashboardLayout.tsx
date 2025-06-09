@@ -28,6 +28,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/worktree-mappings')) return 'worktree-mappings';
     if (location.pathname.startsWith('/service-dependencies')) return 'service-dependencies';
     if (location.pathname.startsWith('/deprecation-analysis')) return 'deprecation';
+    if (location.pathname.startsWith('/ai')) return 'ai';
     return 'tasks'; // default
   };
   
@@ -268,6 +269,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Deprecation 🗑️
+            </button>
+            <button
+              onClick={() => navigate('/ai')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'ai'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              AI 🤖
             </button>
           </nav>
         </div>
