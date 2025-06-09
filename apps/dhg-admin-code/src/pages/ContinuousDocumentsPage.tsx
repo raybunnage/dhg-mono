@@ -3,6 +3,11 @@ import { DashboardLayout } from '../components/DashboardLayout';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { extractNextPhase, formatNextPhaseSummary } from '@shared/utils/markdown-phase-extractor';
+import type { PhaseInfo } from '@shared/utils/markdown-phase-extractor';
+import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
+import { useNavigate } from 'react-router-dom';
+import { PlusCircleIcon } from '@heroicons/react/24/outline';
 
 interface ContinuousDocument {
   fileName: string;
@@ -13,6 +18,7 @@ interface ContinuousDocument {
   priority: 'high' | 'medium' | 'low';
   status: 'active' | 'draft' | 'archived';
   category: string;
+  nextPhase?: PhaseInfo;
 }
 
 export function ContinuousDocumentsPage() {
@@ -23,6 +29,8 @@ export function ContinuousDocumentsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
+  const [creatingTaskFor, setCreatingTaskFor] = useState<{doc: ContinuousDocument, phase: PhaseInfo} | null>(null);
+  const navigate = useNavigate();
 
   // Load documents from the continuously-updated folder
   const loadDocuments = async () => {
@@ -170,6 +178,86 @@ export function ContinuousDocumentsPage() {
           priority: 'medium',
           status: 'active',
           category: 'git'
+        },
+        {
+          fileName: 'dev-tasks-system.md',
+          path: '/docs/continuously-updated/dev-tasks-system.md',
+          description: 'Comprehensive dev task management system that bridges structured planning with AI-assisted development.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'management'
+        },
+        {
+          fileName: 'database-architecture-guide.md',
+          path: '/docs/continuously-updated/database-architecture-guide.md',
+          description: 'Database architecture, naming conventions, and migration procedures with comprehensive table organization.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'database'
+        },
+        {
+          fileName: 'service-dependency-system.md',
+          path: '/docs/continuously-updated/service-dependency-system.md',
+          description: 'Service dependency mapping system for understanding relationships between apps, pipelines, and shared services.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'architecture'
+        },
+        {
+          fileName: 'google-drive-integration.md',
+          path: '/docs/continuously-updated/google-drive-integration.md',
+          description: 'Google Drive integration with audio streaming, local optimization, and AI-powered content analysis.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'integration'
+        },
+        {
+          fileName: 'documentation-management-system.md',
+          path: '/docs/continuously-updated/documentation-management-system.md',
+          description: 'Living documentation system for managing 700+ docs with continuous monitoring and intelligent archiving.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'documentation'
+        },
+        {
+          fileName: 'batch-processing-system.md',
+          path: '/docs/continuously-updated/batch-processing-system.md',
+          description: 'Scalable batch processing system for handling large document sets with monitoring and error recovery.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'processing'
+        },
+        {
+          fileName: 'claude-md-management-guide.md',
+          path: '/docs/continuously-updated/claude-md-management-guide.md',
+          description: 'Comprehensive guide for managing CLAUDE.md size under 40k limit with tracking and optimization strategies.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'critical',
+          status: 'active',
+          category: 'management'
+        },
+        {
+          fileName: 'claude-md-candidates.md',
+          path: '/docs/continuously-updated/claude-md-candidates.md',
+          description: 'Tracking document for potential CLAUDE.md additions with review process and size impact analysis.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'management'
         }
       ];
       
@@ -211,7 +299,18 @@ export function ContinuousDocumentsPage() {
       }
       
       const data = await response.json();
-      setMarkdownContent(data.content || 'Unable to load content');
+      const content = data.content || 'Unable to load content';
+      setMarkdownContent(content);
+      
+      // Extract phase information from the content
+      const phaseInfo = extractNextPhase(content);
+      if (phaseInfo && document) {
+        document.nextPhase = phaseInfo;
+        // Update the document in the state
+        setDocuments(docs => docs.map(doc => 
+          doc.path === document.path ? { ...doc, nextPhase: phaseInfo } : doc
+        ));
+      }
     } catch (err) {
       console.error('Error loading markdown:', err);
       setMarkdownContent('Error loading document content. Make sure the markdown server is running on port 3001.');
@@ -284,6 +383,8 @@ export function ContinuousDocumentsPage() {
   // Get priority badge color
   const getPriorityBadgeColor = (priority: string) => {
     switch (priority) {
+      case 'critical':
+        return 'bg-purple-100 text-purple-800';
       case 'high':
         return 'bg-red-100 text-red-800';
       case 'medium':
@@ -321,7 +422,10 @@ export function ContinuousDocumentsPage() {
       'ai': 'bg-red-100 text-red-800',
       'management': 'bg-yellow-100 text-yellow-800',
       'testing': 'bg-teal-100 text-teal-800',
-      'git': 'bg-gray-100 text-gray-800'
+      'git': 'bg-gray-100 text-gray-800',
+      'integration': 'bg-emerald-100 text-emerald-800',
+      'documentation': 'bg-amber-100 text-amber-800',
+      'processing': 'bg-lime-100 text-lime-800'
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
@@ -436,8 +540,34 @@ export function ContinuousDocumentsPage() {
                   </span>
                 </div>
 
+                {/* Next Phase Section */}
+                {doc.nextPhase && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="text-xs font-medium text-blue-900 mb-1">
+                          Next Phase: {doc.nextPhase.phaseName}
+                        </div>
+                        <div className="text-xs text-blue-700">
+                          {formatNextPhaseSummary(doc.nextPhase)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCreatingTaskFor({ doc, phase: doc.nextPhase });
+                        }}
+                        className="ml-2 p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded transition-colors"
+                        title="Create implementation task"
+                      >
+                        <PlusCircleIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Update Info */}
-                <div className="flex justify-between items-center text-xs text-gray-500">
+                <div className="flex justify-between items-center text-xs text-gray-500 mt-3">
                   <span>Updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}</span>
                   <span className={needsUpdate(doc) ? 'text-orange-600 font-medium' : ''}>
                     Next: {getNextUpdateTime(doc)}
@@ -505,6 +635,21 @@ export function ContinuousDocumentsPage() {
           )}
         </div>
       </div>
+
+      {/* Create Task Modal */}
+      {creatingTaskFor && (
+        <CreateTaskFromPhase
+          phaseInfo={creatingTaskFor.phase}
+          docTitle={creatingTaskFor.doc.fileName.replace('.md', '')}
+          docPath={creatingTaskFor.doc.path}
+          onTaskCreated={(taskId) => {
+            setCreatingTaskFor(null);
+            // Navigate to the task detail page
+            navigate(`/tasks/${taskId}`);
+          }}
+          onCancel={() => setCreatingTaskFor(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }
