@@ -22,17 +22,18 @@ export class DatabaseService {
   }
 
   /**
-   * Get a list of all tables and their record counts
+   * Get a list of all tables and views with their record counts
    */
-  public async getTablesWithRecordCounts(): Promise<{ tableName: string; count: number }[]> {
+  public async getTablesWithRecordCounts(): Promise<{ tableName: string; count: number; type: string }[]> {
     try {
-      // Query the information_schema directly with RPC since we can't query information_schema directly
+      // Query the information_schema directly with RPC to get both tables and views
       let { data: tables, error: tablesError } = await this.supabase
         .rpc('execute_sql', {
-          sql_query: `SELECT table_name 
+          sql_query: `SELECT table_name, table_type
                 FROM information_schema.tables 
                 WHERE table_schema = 'public' 
-                AND table_type = 'BASE TABLE'`
+                AND table_type IN ('BASE TABLE', 'VIEW')
+                ORDER BY table_type, table_name`
         });
 
       if (tablesError) {
@@ -41,11 +42,18 @@ export class DatabaseService {
       
       // If no tables were returned, try a fallback approach
       if (!tables || tables.length === 0) {
-        // Fallback: Hardcode a list of known tables 
+        // Fallback: Get tables and views separately and combine
         console.log("Using fallback approach for table listing");
         const { data: fallbackTables, error: fallbackError } = await this.supabase
           .rpc('execute_sql', {
-            sql_query: `SELECT tablename as table_name FROM pg_tables WHERE schemaname = 'public' LIMIT 125`
+            sql_query: `
+              SELECT tablename as table_name, 'BASE TABLE' as table_type 
+              FROM pg_tables WHERE schemaname = 'public'
+              UNION ALL
+              SELECT viewname as table_name, 'VIEW' as table_type 
+              FROM pg_views WHERE schemaname = 'public'
+              ORDER BY table_type, table_name
+              LIMIT 150`
           });
           
         if (fallbackError) {
@@ -57,24 +65,27 @@ export class DatabaseService {
         }
       }
 
-      // Get record counts for each table
+      // Get record counts for each table and view
       const result = await Promise.all(
-        tables.map(async (table: { table_name: string }) => {
+        tables.map(async (table: { table_name: string; table_type: string }) => {
           const { count, error: countError } = await this.supabase
             .from(table.table_name)
             .select('*', { count: 'exact', head: true });
 
           if (countError) {
-            console.error(`Error getting count for ${table.table_name}: ${countError.message}`);
+            // Some views might have permission issues or complex queries, log but don't fail
+            console.warn(`Warning getting count for ${table.table_type} ${table.table_name}: ${countError.message}`);
             return {
               tableName: table.table_name,
               count: -1, // Indicates error
+              type: table.table_type,
             };
           }
 
           return {
             tableName: table.table_name,
             count: count || 0,
+            type: table.table_type,
           };
         })
       );
@@ -87,16 +98,31 @@ export class DatabaseService {
   }
 
   /**
-   * Get a list of empty tables (tables with 0 records)
+   * Get a list of empty tables and views (with 0 records)
    */
-  public async getEmptyTables(): Promise<string[]> {
+  public async getEmptyTables(): Promise<{ tableName: string; type: string }[]> {
     try {
       const tablesWithCounts = await this.getTablesWithRecordCounts();
       return tablesWithCounts
-        .filter((table) => table.count === 0)
-        .map((table) => table.tableName);
+        .filter((table) => table.count === 0) // Only include tables/views with exactly 0 records
+        .map((table) => ({ tableName: table.tableName, type: table.type }));
     } catch (error) {
       console.error('Error in getEmptyTables:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a list of tables and views that couldn't be queried (permission/access issues)
+   */
+  public async getInaccessibleTables(): Promise<{ tableName: string; type: string }[]> {
+    try {
+      const tablesWithCounts = await this.getTablesWithRecordCounts();
+      return tablesWithCounts
+        .filter((table) => table.count === -1) // Tables/views that had query errors
+        .map((table) => ({ tableName: table.tableName, type: table.type }));
+    } catch (error) {
+      console.error('Error in getInaccessibleTables:', error);
       throw error;
     }
   }
