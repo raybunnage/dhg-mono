@@ -5,31 +5,8 @@ import type { DevTask } from '../services/task-service';
 import { getWorktreeByPath } from '../utils/worktree-mapping';
 import { EditTaskModal } from './EditTaskModal';
 
-interface EnhancedDevTask extends DevTask {
-  submitted_to_claude?: boolean;
-  submitted_at?: string;
-  submitted_on_worktree?: string;
-  has_commits?: boolean;
-  last_commit_at?: string;
-  progress_status?: string;
-  // Enhanced success criteria tracking
-  success_criteria_defined?: boolean;
-  validation_status?: string;
-  quality_gates_status?: string;
-  completion_confidence?: number;
-  risk_assessment?: string;
-  current_lifecycle_stage?: string;
-  success_criteria_count?: number;
-  success_criteria_met?: number;
-  criteria_completion_percentage?: number;
-  total_quality_gates?: number;
-  passed_quality_gates?: number;
-  failed_quality_gates?: number;
-  overall_completion_score?: number;
-}
-
 interface TaskCardProps {
-  task: EnhancedDevTask;
+  task: DevTask;
   onTaskUpdate?: (updatedTask: DevTask) => void;
 }
 

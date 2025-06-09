@@ -121,34 +121,34 @@ FROM dev_tasks dt
 LEFT JOIN (
     -- Success criteria aggregation
     SELECT 
-        task_id,
+        sc.task_id,
         COUNT(*) as criteria_count,
         COUNT(CASE WHEN v.validation_status = 'passed' THEN 1 END) as criteria_met
     FROM dev_task_success_criteria sc
     LEFT JOIN dev_task_validations v ON sc.id = v.criteria_id 
-    GROUP BY task_id
+    GROUP BY sc.task_id
 ) sc ON dt.id = sc.task_id
 LEFT JOIN (
     -- Quality gates aggregation
     SELECT 
-        task_id,
+        dev_task_quality_gates.task_id,
         COUNT(*) as total_gates,
         COUNT(CASE WHEN status = 'passed' THEN 1 END) as passed_gates,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_gates
     FROM dev_task_quality_gates
-    GROUP BY task_id
+    GROUP BY dev_task_quality_gates.task_id
 ) qg ON dt.id = qg.task_id
 LEFT JOIN (
     -- Current lifecycle stage
-    SELECT DISTINCT ON (task_id)
-        task_id,
+    SELECT DISTINCT ON (dev_task_lifecycle_stages.task_id)
+        dev_task_lifecycle_stages.task_id,
         stage_name as current_stage_name,
         stage_status as current_stage_status,
         confidence_score as current_stage_confidence,
         risk_level as current_stage_risk
     FROM dev_task_lifecycle_stages
     WHERE stage_status = 'active' OR stage_status = 'completed'
-    ORDER BY task_id, completed_at DESC NULLS FIRST, started_at DESC
+    ORDER BY dev_task_lifecycle_stages.task_id, completed_at DESC NULLS FIRST, started_at DESC
 ) ls ON dt.id = ls.task_id;
 
 -- Create function to update success criteria counts

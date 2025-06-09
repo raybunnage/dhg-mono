@@ -36,6 +36,25 @@ export interface DevTask {
   has_commits?: boolean;
   last_commit_at?: string;
   progress_status?: 'not_started' | 'claude_submitted' | 'in_development' | 'has_commits' | 'ready_for_review' | 'completed';
+  // Success criteria fields
+  success_criteria_defined?: boolean;
+  validation_status?: string;
+  quality_gates_status?: string;
+  completion_confidence?: number;
+  risk_assessment?: string;
+  current_lifecycle_stage?: string;
+  success_criteria_count?: number;
+  success_criteria_met?: number;
+  criteria_completion_percentage?: number;
+  total_quality_gates?: number;
+  passed_quality_gates?: number;
+  failed_quality_gates?: number;
+  overall_completion_score?: number;
+  // View-specific fields
+  current_stage_name?: string;
+  current_stage_status?: string;
+  current_stage_confidence?: number;
+  current_stage_risk?: string;
 }
 
 export interface DevTaskTag {
@@ -84,7 +103,7 @@ export class TaskService {
     app?: string;
   }) {
     let query = supabase
-      .from('dev_tasks')
+      .from('dev_tasks_enhanced_view')
       .select('*')
       .order('created_at', { ascending: false });
 
