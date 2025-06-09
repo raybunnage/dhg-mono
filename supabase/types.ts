@@ -4570,6 +4570,48 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_services: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          id: string
+          is_singleton: boolean | null
+          service_name: string
+          service_path: string | null
+          updated_at: string | null
+          used_by_apps: string[] | null
+          used_by_pipelines: string[] | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          service_name: string
+          service_path?: string | null
+          updated_at?: string | null
+          used_by_apps?: string[] | null
+          used_by_pipelines?: string[] | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          service_name?: string
+          service_path?: string | null
+          updated_at?: string | null
+          used_by_apps?: string[] | null
+          used_by_pipelines?: string[] | null
+        }
+        Relationships: []
+      }
       sys_app_service_dependencies: {
         Row: {
           app_id: string
@@ -5174,6 +5216,13 @@ export type Database = {
             foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
             columns: ["worktree_id"]
             isOneToOne: false
+            referencedRelation: "worktree_assignments_complete_view"
+            referencedColumns: ["worktree_id"]
+          },
+          {
+            foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
             referencedRelation: "worktree_definitions"
             referencedColumns: ["id"]
           },
@@ -5234,6 +5283,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_assignments_complete_view"
+            referencedColumns: ["worktree_id"]
+          },
+          {
+            foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worktree_service_mappings: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          notes: string | null
+          service_id: string | null
+          worktree_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          worktree_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          worktree_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worktree_service_mappings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "shared_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worktree_service_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_assignments_complete_view"
+            referencedColumns: ["worktree_id"]
+          },
+          {
+            foreignKeyName: "worktree_service_mappings_worktree_id_fkey"
             columns: ["worktree_id"]
             isOneToOne: false
             referencedRelation: "worktree_definitions"
@@ -5778,6 +5883,22 @@ export type Database = {
           status: string | null
           used_by_apps_count: number | null
           used_by_pipelines_count: number | null
+        }
+        Relationships: []
+      }
+      worktree_assignments_complete_view: {
+        Row: {
+          app_count: number | null
+          assigned_apps: string[] | null
+          assigned_pipelines: string[] | null
+          assigned_services: string[] | null
+          pipeline_count: number | null
+          service_count: number | null
+          worktree_alias: string | null
+          worktree_description: string | null
+          worktree_emoji: string | null
+          worktree_id: string | null
+          worktree_path: string | null
         }
         Relationships: []
       }
