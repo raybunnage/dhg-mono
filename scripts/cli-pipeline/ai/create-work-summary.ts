@@ -4,9 +4,9 @@ import chalk from 'chalk';
 
 interface WorkSummaryData {
   title: string;
-  summary: string;
+  summary_content: string;
   files_modified: string[];
-  commands_used: string[];
+  commands: string[];
   category: 'feature' | 'bugfix' | 'refactor' | 'docs' | 'chore';
   tags: string[];
   worktree_path?: string;
@@ -22,15 +22,16 @@ export async function createWorkSummary(data: WorkSummaryData) {
       .from('ai_work_summaries')
       .insert({
         title: data.title,
-        summary: data.summary,
+        summary_content: data.summary_content,
         files_modified: data.files_modified,
-        commands_used: data.commands_used,
+        commands: data.commands,
         category: data.category,
         tags: data.tags,
-        worktree_path: data.worktree_path,
-        git_branch: data.git_branch,
-        git_commit: data.git_commit,
-        created_at: new Date().toISOString()
+        metadata: {
+          worktree_path: data.worktree_path,
+          git_branch: data.git_branch,
+          git_commit: data.git_commit
+        }
       })
       .select()
       .single();
@@ -51,7 +52,7 @@ export async function createWorkSummary(data: WorkSummaryData) {
 async function main() {
   const workSummary: WorkSummaryData = {
     title: 'Enhanced database CLI pipeline with comprehensive audit commands',
-    summary: `Implemented three major database audit commands to help maintain database consistency and best practices:
+    summary_content: `Implemented three major database audit commands to help maintain database consistency and best practices:
 
 1. **table-audit**: Comprehensive table evaluation that checks naming conventions, standard fields, constraints, indexes, RLS policies, triggers, and data types. Provides a health score (0-100) for each table and specific fix recommendations.
 
@@ -80,7 +81,7 @@ Also created:
       'supabase/migrations/20250608_database_audit_functions.sql',
       'docs/continuously-updated/database-maintenance-guide.md'
     ],
-    commands_used: [
+    commands: [
       './database-cli.sh table-audit',
       './database-cli.sh function-audit',
       './database-cli.sh consistency-check',
@@ -92,7 +93,8 @@ Also created:
     category: 'feature',
     tags: ['database', 'cli', 'audit', 'maintenance', 'consistency', 'best-practices'],
     worktree_path: '/Users/raybunnage/Documents/github/dhg-mono-feature/dhg-mono-docs',
-    git_branch: 'feature/continuous-documentation-archiving'
+    git_branch: 'feature/continuous-documentation-archiving',
+    git_commit: '16d3d8d9'
   };
   
   await createWorkSummary(workSummary);
