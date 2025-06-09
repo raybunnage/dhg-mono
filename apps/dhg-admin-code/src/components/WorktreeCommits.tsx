@@ -52,7 +52,12 @@ export function WorktreeCommits({ worktreePath, onClose }: WorktreeCommitsProps)
 
       // Fetch commits from git server
       const response = await fetch(
-        `http://localhost:3005/api/git/worktree-commits/${encodeURIComponent(worktreePath)}?limit=100`
+        `http://localhost:3005/api/git/worktree-commits?limit=100`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ worktreePath })
+        }
       );
 
       if (!response.ok) {

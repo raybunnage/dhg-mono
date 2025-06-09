@@ -310,9 +310,9 @@ app.post('/api/git/execute', async (req, res) => {
 });
 
 // Get commits for a specific worktree
-app.get('/api/git/worktree-commits/:worktreePath', async (req, res) => {
+app.post('/api/git/worktree-commits', async (req, res) => {
   try {
-    const { worktreePath } = req.params;
+    const { worktreePath } = req.body;
     const { limit = 50 } = req.query;
     
     // Decode the path (it might be URL encoded)
@@ -331,6 +331,7 @@ app.get('/api/git/worktree-commits/:worktreePath', async (req, res) => {
         const [hash, subject, authorName, authorEmail, relativeTime, date] = line.split('|');
         
         // Extract task ID from commit message if present
+        // Look for "Task: #task-id" pattern (the # is part of the format)
         const taskIdMatch = subject.match(/Task:\s*#([a-f0-9-]+)/i);
         const taskId = taskIdMatch ? taskIdMatch[1] : null;
         
@@ -370,7 +371,7 @@ app.listen(PORT, () => {
   console.log(`Git server running on http://localhost:${PORT}`);
   console.log('Available endpoints:');
   console.log('  GET    /api/git/worktrees      - Get list of git worktrees with status');
-  console.log('  GET    /api/git/worktree-commits/:path - Get commits for a specific worktree');
+  console.log('  POST   /api/git/worktree-commits - Get commits for a specific worktree');
   console.log('  GET    /api/git/branches       - Get all branches with detailed info');
   console.log('  DELETE /api/git/branches/:name - Delete a specific branch');
   console.log('  POST   /api/git/cleanup-branches - Cleanup multiple branches');
