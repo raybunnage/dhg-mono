@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask } from '../services/task-service';
-import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen } from 'lucide-react';
+import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen, Search } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { getWorktreeByPath } from '../utils/worktree-mapping';
 
@@ -14,11 +14,12 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [appFilter, setAppFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Separate state for input field
   const [showCompleted, setShowCompleted] = useState(false); // Default to hiding completed tasks
 
   useEffect(() => {
     loadTasks();
-  }, [statusFilter, priorityFilter, appFilter, searchQuery]);
+  }, [statusFilter, priorityFilter, appFilter, searchQuery]); // searchQuery triggers load, not searchInput
 
   const loadTasks = async () => {
     try {
@@ -149,13 +150,31 @@ export default function TasksPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Search
             </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setSearchQuery(searchInput);
+            }} className="relative">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setSearchQuery(searchInput);
+                  }
+                }}
+                placeholder="Search tasks... (Press Enter)"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title="Search"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </form>
           </div>
           
           <div>
@@ -250,6 +269,7 @@ export default function TasksPage() {
             <button
               onClick={() => {
                 setSearchQuery('');
+                setSearchInput('');
                 setStatusFilter('');
                 setPriorityFilter('');
                 setAppFilter('');
