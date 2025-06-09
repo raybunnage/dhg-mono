@@ -23,9 +23,14 @@ import tableStructureCommand from './commands/table-structure';
 import schemaHealthCommand from './commands/schema-health';
 
 // Import backup commands
-import createBackupCommand from './commands/backup/create-backup';
-import addBackupTableCommand from './commands/backup/add-backup-table';
-import listBackupConfigCommand from './commands/backup/list-backup-config';
+import createBackupCommand from './commands/backup/create-backup-cmd';
+import addBackupTableCommand from './commands/backup/add-backup-table-cmd';
+import listBackupConfigCommand from './commands/backup/list-backup-config-cmd';
+
+// Import audit commands
+import tableAuditCommand from './commands/table-audit-cmd';
+import functionAuditCommand from './commands/function-audit-cmd';
+import consistencyCheckCommand from './commands/consistency-check-cmd';
 
 // Add commands to program
 program.addCommand(tableRecordsCommand);
@@ -38,6 +43,11 @@ program.addCommand(schemaHealthCommand);
 program.addCommand(createBackupCommand);
 program.addCommand(addBackupTableCommand);
 program.addCommand(listBackupConfigCommand);
+
+// Add audit commands
+program.addCommand(tableAuditCommand);
+program.addCommand(functionAuditCommand);
+program.addCommand(consistencyCheckCommand);
 
 // Process command line arguments
 program.parse(process.argv);
