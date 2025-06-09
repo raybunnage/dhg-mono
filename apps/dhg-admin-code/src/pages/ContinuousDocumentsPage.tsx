@@ -1,57 +1,194 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-interface TrackedDocument {
-  originalPath: string;
+interface ContinuousDocument {
   fileName: string;
-  category: string;
-  addedDate: string;
+  path: string;
+  description: string;
+  updateFrequency: 'daily' | 'weekly' | 'on-change';
   lastUpdated: string;
-  updateFrequency?: 'daily' | 'weekly' | 'on-change';
-  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  status: 'active' | 'draft' | 'archived';
+  category: string;
 }
 
-type UpdateFrequency = 'daily' | 'weekly' | 'on-change';
-
 export function ContinuousDocumentsPage() {
-  const [documents, setDocuments] = useState<TrackedDocument[]>([]);
+  const [documents, setDocuments] = useState<ContinuousDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<ContinuousDocument | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [editingDoc, setEditingDoc] = useState<string | null>(null);
-  const [newFrequency, setNewFrequency] = useState<UpdateFrequency>('weekly');
+  const [markdownContent, setMarkdownContent] = useState<string>('');
+  const [loadingMarkdown, setLoadingMarkdown] = useState(false);
 
-  // Load documents from the tracking file
+  // Load documents from the continuously-updated folder
   const loadDocuments = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3008/api/continuous-docs');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch continuous documents');
-      }
-      
-      const data = await response.json();
-      setDocuments(data.documents || []);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load continuous documents. Make sure the continuous docs server is running.');
-      console.error('Error loading documents:', err);
-      
-      // Show sample data if server is not running
-      const sampleDocs: TrackedDocument[] = [
+      // Define the documents with their descriptions and metadata
+      const continuouslyUpdatedDocs: ContinuousDocument[] = [
         {
-          originalPath: '/CLAUDE.md',
-          fileName: 'CLAUDE.md',
-          category: 'project-instructions',
-          addedDate: '2025-01-15T10:00:00Z',
-          lastUpdated: '2025-02-04T14:30:00Z',
+          fileName: 'CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
+          path: '/docs/continuously-updated/CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
+          description: 'Template and guidelines for maintaining continuously updated documentation with proper structure and review schedules.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'template'
+        },
+        {
+          fileName: 'apps-documentation.md',
+          path: '/docs/continuously-updated/apps-documentation.md',
+          description: 'Comprehensive documentation for all DHG monorepo applications including configuration, deployment, and usage patterns.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'architecture'
+        },
+        {
+          fileName: 'cli-pipelines-documentation.md',
+          path: '/docs/continuously-updated/cli-pipelines-documentation.md',
+          description: 'Architecture and usage documentation for CLI pipeline system including command structure and integration patterns.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'architecture'
+        },
+        {
+          fileName: 'claude-tasks-editing-implementation.md',
+          path: '/docs/continuously-updated/claude-tasks-editing-implementation.md',
+          description: 'Implementation guide for Claude task editing system including modal components, form validation, and database integration.',
           updateFrequency: 'weekly',
-          description: 'Main project instructions for Claude Code'
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'implementation'
+        },
+        {
+          fileName: 'code-continuous-monitoring.md',
+          path: '/docs/continuously-updated/code-continuous-monitoring.md',
+          description: 'System for monitoring code changes and automatically updating documentation to maintain synchronization.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'monitoring'
+        },
+        {
+          fileName: 'database-maintenance-guide.md',
+          path: '/docs/continuously-updated/database-maintenance-guide.md',
+          description: 'Guidelines for database maintenance including migrations, cleanup procedures, and performance optimization.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'database'
+        },
+        {
+          fileName: 'git-history-analysis-server.md',
+          path: '/docs/continuously-updated/git-history-analysis-server.md',
+          description: 'Server implementation for analyzing git history and extracting insights about code changes and development patterns.',
+          updateFrequency: 'on-change',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'tools'
+        },
+        {
+          fileName: 'mp4-pipeline-auto-update-system.md',
+          path: '/docs/continuously-updated/mp4-pipeline-auto-update-system.md',
+          description: 'Automated system for processing MP4 files including conversion, metadata extraction, and storage management.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'media'
+        },
+        {
+          fileName: 'mp4-to-m4a-pipeline-implementation.md',
+          path: '/docs/continuously-updated/mp4-to-m4a-pipeline-implementation.md',
+          description: 'Implementation details for converting MP4 files to M4A audio format with quality preservation and batch processing.',
+          updateFrequency: 'on-change',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'media'
+        },
+        {
+          fileName: 'prompt-service-implementation-progress.md',
+          path: '/docs/continuously-updated/prompt-service-implementation-progress.md',
+          description: 'Progress tracking for AI prompt service implementation including features, testing, and deployment status.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'ai'
+        },
+        {
+          fileName: 'script-and-prompt-management-guide.md',
+          path: '/docs/continuously-updated/script-and-prompt-management-guide.md',
+          description: 'Comprehensive guide for managing scripts and AI prompts including organization, versioning, and best practices.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'management'
+        },
+        {
+          fileName: 'testing-quick-start-dhg-apps.md',
+          path: '/docs/continuously-updated/testing-quick-start-dhg-apps.md',
+          description: 'Quick start guide for setting up and running tests across all DHG applications with common patterns and utilities.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'testing'
+        },
+        {
+          fileName: 'testing-vision-and-implementation-guide.md',
+          path: '/docs/continuously-updated/testing-vision-and-implementation-guide.md',
+          description: 'Strategic vision and implementation roadmap for testing infrastructure including tools, processes, and quality standards.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'testing'
+        },
+        {
+          fileName: 'worktree-assignment-system.md',
+          path: '/docs/continuously-updated/worktree-assignment-system.md',
+          description: 'System for managing git worktree assignments and task allocation including automation and tracking capabilities.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'git'
         }
       ];
-      setDocuments(sampleDocs);
+      
+      // Sort documents: template first, then by priority and name
+      const sortedDocs = continuouslyUpdatedDocs.sort((a, b) => {
+        if (a.category === 'template') return -1;
+        if (b.category === 'template') return 1;
+        if (a.priority !== b.priority) {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
+        return a.fileName.localeCompare(b.fileName);
+      });
+      
+      setDocuments(sortedDocs);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load continuous documents.');
+      console.error('Error loading documents:', err);
     } finally {
       setLoading(false);
     }
@@ -60,6 +197,28 @@ export function ContinuousDocumentsPage() {
   useEffect(() => {
     loadDocuments();
   }, []);
+
+  // Load markdown content for preview
+  const loadMarkdownContent = async (document: ContinuousDocument) => {
+    try {
+      setLoadingMarkdown(true);
+      setSelectedDocument(document);
+      
+      const response = await fetch(`http://localhost:3001/api/markdown-file?path=${encodeURIComponent(document.path)}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch markdown content');
+      }
+      
+      const data = await response.json();
+      setMarkdownContent(data.content || 'Unable to load content');
+    } catch (err) {
+      console.error('Error loading markdown:', err);
+      setMarkdownContent('Error loading document content. Make sure the markdown server is running on port 3001.');
+    } finally {
+      setLoadingMarkdown(false);
+    }
+  };
 
   // Get unique categories
   const categories = Array.from(new Set(documents.map(doc => doc.category))).sort();
@@ -70,7 +229,7 @@ export function ContinuousDocumentsPage() {
     : documents;
 
   // Check if document needs update
-  const needsUpdate = (doc: TrackedDocument): boolean => {
+  const needsUpdate = (doc: ContinuousDocument): boolean => {
     const lastUpdate = new Date(doc.lastUpdated);
     const now = new Date();
     
@@ -88,7 +247,7 @@ export function ContinuousDocumentsPage() {
   };
 
   // Get time until next update
-  const getNextUpdateTime = (doc: TrackedDocument): string => {
+  const getNextUpdateTime = (doc: ContinuousDocument): string => {
     const lastUpdate = new Date(doc.lastUpdated);
     const now = new Date();
     
@@ -122,78 +281,52 @@ export function ContinuousDocumentsPage() {
     return `${daysUntil} days`;
   };
 
-  // Handle frequency update
-  const handleFrequencyUpdate = async (docPath: string) => {
-    try {
-      const response = await fetch(`http://localhost:3008/api/continuous-docs/${encodeURIComponent(docPath)}/frequency`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frequency: newFrequency })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update frequency');
-      }
-      
-      const result = await response.json();
-      
-      // Update local state
-      setDocuments(docs => 
-        docs.map(doc => 
-          doc.originalPath === docPath 
-            ? { ...doc, updateFrequency: newFrequency }
-            : doc
-        )
-      );
-      
-      setEditingDoc(null);
-    } catch (err) {
-      console.error('Error updating frequency:', err);
-      alert('Failed to update frequency');
+  // Get priority badge color
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  // Handle manual update
-  const handleManualUpdate = async (docPath: string) => {
-    try {
-      const response = await fetch(`http://localhost:3008/api/continuous-docs/${encodeURIComponent(docPath)}/update`, {
-        method: 'POST'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to trigger update');
-      }
-      
-      const result = await response.json();
-      
-      // Update last updated time locally
-      setDocuments(docs => 
-        docs.map(doc => 
-          doc.originalPath === docPath 
-            ? { ...doc, lastUpdated: new Date().toISOString() }
-            : doc
-        )
-      );
-      
-      alert('Document update triggered successfully');
-    } catch (err) {
-      console.error('Error updating document:', err);
-      alert('Failed to trigger update');
+  // Get status badge color
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getCategoryBadgeColor = (category: string) => {
     const colors: Record<string, string> = {
-      'project-instructions': 'bg-purple-100 text-purple-800',
-      'technical-specs': 'bg-blue-100 text-blue-800',
-      'solution-guides': 'bg-green-100 text-green-800',
-      'deployment': 'bg-orange-100 text-orange-800',
-      'general': 'bg-gray-100 text-gray-800'
+      'template': 'bg-purple-100 text-purple-800',
+      'architecture': 'bg-blue-100 text-blue-800',
+      'implementation': 'bg-green-100 text-green-800',
+      'monitoring': 'bg-orange-100 text-orange-800',
+      'database': 'bg-indigo-100 text-indigo-800',
+      'tools': 'bg-cyan-100 text-cyan-800',
+      'media': 'bg-pink-100 text-pink-800',
+      'ai': 'bg-red-100 text-red-800',
+      'management': 'bg-yellow-100 text-yellow-800',
+      'testing': 'bg-teal-100 text-teal-800',
+      'git': 'bg-gray-100 text-gray-800'
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
-  const getFrequencyBadgeColor = (frequency?: UpdateFrequency) => {
+  const getFrequencyBadgeColor = (frequency: string) => {
     switch (frequency) {
       case 'daily':
         return 'bg-red-100 text-red-800';
@@ -234,194 +367,142 @@ export function ContinuousDocumentsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Continuously Updated Documents</h1>
-          <p className="mt-2 text-gray-600">
-            Manage documents that are tracked for continuous updates to keep them current.
-          </p>
-        </div>
-
-        {/* Actions Bar */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            {/* Category Filter */}
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Category:</label>
-              <select
-                value={selectedCategory || ''}
-                onChange={(e) => setSelectedCategory(e.target.value || null)}
-                className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+      <div className="flex h-screen">
+        {/* Left Panel - Document Cards */}
+        <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-200">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Continuously Updated Documents</h1>
+            <p className="mt-2 text-gray-600">
+              Live documentation that updates automatically to stay current.
+            </p>
           </div>
 
-          <div className="flex space-x-3">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Add Document
-            </button>
-            <button 
-              onClick={loadDocuments}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+          {/* Category Filter */}
+          <div className="mb-4">
+            <select
+              value={selectedCategory || ''}
+              onChange={(e) => setSelectedCategory(e.target.value || null)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Total Documents</div>
-            <div className="mt-1 text-2xl font-semibold text-gray-900">{documents.length}</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Need Updates</div>
-            <div className="mt-1 text-2xl font-semibold text-orange-600">
-              {documents.filter(needsUpdate).length}
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Daily Updates</div>
-            <div className="mt-1 text-2xl font-semibold text-gray-900">
-              {documents.filter(d => d.updateFrequency === 'daily').length}
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Weekly Updates</div>
-            <div className="mt-1 text-2xl font-semibold text-gray-900">
-              {documents.filter(d => d.updateFrequency === 'weekly').length}
-            </div>
-          </div>
-        </div>
-
-        {/* Documents Table */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Document
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Frequency
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Updated
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Next Update
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredDocuments.map((doc) => (
-                <tr key={doc.originalPath} className={needsUpdate(doc) ? 'bg-yellow-50' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{doc.fileName}</div>
-                      <div className="text-sm text-gray-500">{doc.originalPath}</div>
-                      {doc.description && (
-                        <div className="text-xs text-gray-400 mt-1">{doc.description}</div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryBadgeColor(doc.category)}`}>
-                      {doc.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingDoc === doc.originalPath ? (
-                      <div className="flex items-center space-x-2">
-                        <select
-                          value={newFrequency}
-                          onChange={(e) => setNewFrequency(e.target.value as UpdateFrequency)}
-                          className="text-sm border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="daily">Daily</option>
-                          <option value="weekly">Weekly</option>
-                          <option value="on-change">On Change</option>
-                        </select>
-                        <button
-                          onClick={() => handleFrequencyUpdate(doc.originalPath)}
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingDoc(null)}
-                          className="text-xs text-gray-600 hover:text-gray-800"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
-                          {doc.updateFrequency || 'weekly'}
-                        </span>
-                        <button
-                          onClick={() => {
-                            setEditingDoc(doc.originalPath);
-                            setNewFrequency(doc.updateFrequency || 'weekly');
-                          }}
-                          className="text-xs text-gray-400 hover:text-gray-600"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {format(new Date(doc.lastUpdated), 'MMM d, yyyy HH:mm')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm ${needsUpdate(doc) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                      {getNextUpdateTime(doc)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleManualUpdate(doc.originalPath)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Update Now
-                    </button>
-                    <a
-                      href={`/api/markdown-file?path=${encodeURIComponent(doc.originalPath)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      View
-                    </a>
-                  </td>
-                </tr>
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
               ))}
-            </tbody>
-          </table>
+            </select>
+          </div>
+
+          {/* Document Cards */}
+          <div className="space-y-4">
+            {filteredDocuments.map((doc) => (
+              <div
+                key={doc.path}
+                onClick={() => loadMarkdownContent(doc)}
+                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                  selectedDocument?.path === doc.path ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                } ${
+                  needsUpdate(doc) ? 'border-l-4 border-l-orange-500' : ''
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-semibold text-gray-900 text-sm">
+                    {doc.fileName.replace('.md', '')}
+                  </h3>
+                  {doc.category === 'template' && (
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                      TEMPLATE
+                    </span>
+                  )}
+                </div>
+
+                {/* Description */}
+                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                  {doc.description}
+                </p>
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryBadgeColor(doc.category)}`}>
+                    {doc.category}
+                  </span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityBadgeColor(doc.priority)}`}>
+                    {doc.priority} priority
+                  </span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
+                    {doc.updateFrequency}
+                  </span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusBadgeColor(doc.status)}`}>
+                    {doc.status}
+                  </span>
+                </div>
+
+                {/* Update Info */}
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}</span>
+                  <span className={needsUpdate(doc) ? 'text-orange-600 font-medium' : ''}>
+                    Next: {getNextUpdateTime(doc)}
+                  </span>
+                </div>
+
+                {needsUpdate(doc) && (
+                  <div className="mt-2 text-xs text-orange-600 font-medium">
+                    ⚠️ Update overdue
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Help Text */}
-        <div className="mt-6 text-sm text-gray-600">
-          <p className="font-medium mb-2">Update Frequencies:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Daily</strong>: Document is checked and updated every 24 hours</li>
-            <li><strong>Weekly</strong>: Document is checked and updated every 7 days</li>
-            <li><strong>On Change</strong>: Document is updated whenever the source file changes</li>
-          </ul>
+        {/* Right Panel - Document Preview */}
+        <div className="w-1/2 p-6 bg-gray-50">
+          {selectedDocument ? (
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {selectedDocument.fileName.replace('.md', '')}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedDocument.description}
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryBadgeColor(selectedDocument.category)}`}>
+                    {selectedDocument.category}
+                  </span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${getFrequencyBadgeColor(selectedDocument.updateFrequency)}`}>
+                    {selectedDocument.updateFrequency}
+                  </span>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto">
+                {loadingMarkdown ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600">Loading document...</span>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg p-6 h-full border border-gray-200 overflow-y-auto">
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {markdownContent}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="text-center">
+                <div className="text-6xl mb-4">📄</div>
+                <p className="text-lg font-medium">Select a document to preview</p>
+                <p className="text-sm mt-2">Click on any document card to view its content</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

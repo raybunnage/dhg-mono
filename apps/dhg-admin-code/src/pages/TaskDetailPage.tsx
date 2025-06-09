@@ -37,20 +37,41 @@ export default function TaskDetailPage() {
     
     try {
       setLoading(true);
-      const [taskData, tagsData, filesData, commitsData, sessionsData] = await Promise.all([
-        TaskService.getTask(id),
-        TaskService.getTaskTags(id),
-        TaskService.getTaskFiles(id),
-        TaskService.getTaskCommits(id),
-        TaskService.getTaskWorkSessions(id)
-      ]);
+      // Load task data first
+      const taskData = await TaskService.getTask(id);
       setTask(taskData);
-      setTags(tagsData);
-      setFiles(filesData);
-      setCommits(commitsData);
-      setWorkSessions(sessionsData);
       if (taskData.claude_response) {
         setClaudeResponse(taskData.claude_response);
+      }
+      
+      // Then load related data with individual error handling
+      try {
+        const tagsData = await TaskService.getTaskTags(id);
+        setTags(tagsData);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      }
+      
+      try {
+        const filesData = await TaskService.getTaskFiles(id);
+        setFiles(filesData);
+      } catch (err) {
+        console.error('Failed to load files:', err);
+      }
+      
+      try {
+        const commitsData = await TaskService.getTaskCommits(id);
+        setCommits(commitsData);
+      } catch (err) {
+        console.error('Failed to fetch commits:', err);
+        // Don't show error for commits - just log it
+      }
+      
+      try {
+        const sessionsData = await TaskService.getTaskWorkSessions(id);
+        setWorkSessions(sessionsData);
+      } catch (err) {
+        console.error('Failed to load work sessions:', err);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load task');
