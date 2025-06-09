@@ -211,6 +211,8 @@ export type Database = {
           ui_components: string[] | null
           updated_at: string | null
           work_date: string
+          worktree: string | null
+          worktree_path: string | null
         }
         Insert: {
           category?: string | null
@@ -226,6 +228,8 @@ export type Database = {
           ui_components?: string[] | null
           updated_at?: string | null
           work_date?: string
+          worktree?: string | null
+          worktree_path?: string | null
         }
         Update: {
           category?: string | null
@@ -241,6 +245,8 @@ export type Database = {
           ui_components?: string[] | null
           updated_at?: string | null
           work_date?: string
+          worktree?: string | null
+          worktree_path?: string | null
         }
         Relationships: []
       }

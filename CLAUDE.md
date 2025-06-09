@@ -659,6 +659,7 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
 | 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
 | 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
+| 3011 | Git History Analysis Server | `scripts/cli-pipeline/dev_tasks/git-history-server.js` |
 
 **Vite App Ports**:
 | Port | App | Preview Port | Status |
