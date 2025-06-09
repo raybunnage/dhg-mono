@@ -251,22 +251,23 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
   };
 
   return (
-    <Link
-      to={`/tasks/${task.id}`}
-      className="block hover:bg-gray-50 transition-colors"
-    >
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-start gap-3">
-              {getStatusIcon(task.status)}
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-gray-900">
-                  {task.title}
-                </h3>
-                <p className="mt-1 text-sm text-gray-600 line-clamp-2">
-                  {task.description}
-                </p>
+    <>
+      <Link
+        to={`/tasks/${task.id}`}
+        className="block hover:bg-gray-50 transition-colors"
+      >
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-start gap-3">
+                {getStatusIcon(task.status)}
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {task.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                    {task.description}
+                  </p>
                 
                 {/* Enhanced Status Section */}
                 <div className="mt-2 mb-2 space-y-2">
@@ -361,14 +362,15 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
           </div>
         </div>
       </div>
-      
-      {/* Edit Modal */}
-      <EditTaskModal
-        task={task}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleTaskUpdate as (task: DevTask) => void}
-      />
     </Link>
+    
+    {/* Edit Modal - Outside of Link to prevent navigation issues */}
+    <EditTaskModal
+      task={task}
+      isOpen={isEditModalOpen}
+      onClose={() => setIsEditModalOpen(false)}
+      onSave={handleTaskUpdate as (task: DevTask) => void}
+    />
+  </>
   );
 }

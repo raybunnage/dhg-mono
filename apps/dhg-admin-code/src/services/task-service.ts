@@ -127,7 +127,7 @@ export class TaskService {
 
   static async getTask(id: string) {
     const { data, error } = await supabase
-      .from('dev_tasks')
+      .from('dev_tasks_enhanced_view')
       .select('*')
       .eq('id', id)
       .single();
@@ -159,7 +159,8 @@ export class TaskService {
     const { data: { user } } = await supabase.auth.getUser();
     console.log('Auth status in updateTask:', user ? `Authenticated as ${user.email}` : 'Not authenticated');
     
-    const { data, error } = await supabase
+    // Update the task in dev_tasks table
+    const { data: updateData, error: updateError } = await supabase
       .from('dev_tasks')
       .update({
         ...updates,
@@ -169,19 +170,34 @@ export class TaskService {
       .select()
       .single();
     
-    if (error) {
-      console.error('Error updating task:', error);
+    if (updateError) {
+      console.error('Error updating task:', updateError);
       console.error('Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        code: updateError.code
       });
-      throw new Error(`Failed to update task: ${error.message}`);
+      throw new Error(`Failed to update task: ${updateError.message}`);
     }
     
-    console.log('Task updated successfully:', data);
-    return data as DevTask;
+    console.log('Task updated in dev_tasks table:', updateData);
+    
+    // Now fetch the updated task from the enhanced view to get computed fields
+    const { data: enhancedData, error: fetchError } = await supabase
+      .from('dev_tasks_enhanced_view')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching enhanced task data:', fetchError);
+      // Fall back to the basic update data if enhanced view fails
+      return updateData as DevTask;
+    }
+    
+    console.log('Task fetched from enhanced view:', enhancedData);
+    return enhancedData as DevTask;
   }
 
   static async deleteTask(id: string) {

@@ -71,6 +71,8 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
   };
 
   const handleSave = async () => {
+    console.log('EditTaskModal: Starting save process...');
+    
     if (!formData.title.trim()) {
       setError('Title is required');
       return;
@@ -85,6 +87,9 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
     setError(null);
 
     try {
+      // Log what we're sending
+      console.log('EditTaskModal: Preparing updates for task:', task.id);
+      
       const updates: Partial<DevTask> = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -93,24 +98,60 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
         priority: formData.priority,
         app: formData.app.trim() || undefined,
         claude_request: formData.claude_request.trim() || undefined,
-        worktree_path: formData.worktree_path.trim() || undefined
+        worktree_path: formData.worktree_path || undefined
       };
+      
+      console.log('EditTaskModal: Updates to send:', updates);
 
       const updatedTask = await TaskService.updateTask(task.id, updates);
+      
+      console.log('EditTaskModal: Task updated successfully:', updatedTask);
+      
+      // Call onSave callback to update parent component
       onSave(updatedTask);
+      
+      // Close modal after successful save
       onClose();
     } catch (err) {
+      console.error('EditTaskModal: Error during save:', err);
       setError(err instanceof Error ? err.message : 'Failed to update task');
+      // Don't close modal on error so user can see the error message
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent closing modal on Enter key in form fields
+    if (e.key === 'Enter' && e.target instanceof HTMLTextAreaElement) {
+      // Allow Enter in textareas
+      return;
+    }
+    if (e.key === 'Enter' && !saving) {
+      e.preventDefault();
+      handleSave();
+    }
+    if (e.key === 'Escape' && !saving) {
+      onClose();
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        // Close modal if clicking on backdrop
+        if (e.target === e.currentTarget && !saving) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onKeyDown={handleKeyDown}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Edit Task</h2>
@@ -118,6 +159,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             disabled={saving}
+            type="button"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -127,38 +169,39 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
         <div className="p-6 space-y-6">
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <AlertCircle className="w-4 h-4" />
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span className="text-sm">{error}</span>
             </div>
           )}
 
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-1">
               Title *
             </label>
             <input
-              id="title"
+              id="edit-title"
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter task title"
               disabled={saving}
+              autoFocus
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">
               Description *
             </label>
             <textarea
-              id="description"
+              id="edit-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               placeholder="Describe the task in detail"
               disabled={saving}
             />
@@ -168,14 +211,14 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Task Type */}
             <div>
-              <label htmlFor="task_type" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="edit-task_type" className="block text-sm font-medium text-gray-700 mb-1">
                 Type
               </label>
               <select
-                id="task_type"
+                id="edit-task_type"
                 value={formData.task_type}
                 onChange={(e) => setFormData({ ...formData, task_type: e.target.value as DevTask['task_type'] })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={saving}
               >
                 <option value="bug">Bug</option>
@@ -188,14 +231,14 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
 
             {/* Status */}
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 mb-1">
                 Status
               </label>
               <select
-                id="status"
+                id="edit-status"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as DevTask['status'] })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={saving}
               >
                 <option value="pending">Pending</option>
@@ -210,14 +253,14 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
 
             {/* Priority */}
             <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="edit-priority" className="block text-sm font-medium text-gray-700 mb-1">
                 Priority
               </label>
               <select
-                id="priority"
+                id="edit-priority"
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as DevTask['priority'] })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={saving}
               >
                 <option value="low">Low</option>
@@ -231,15 +274,15 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* App/Pipeline */}
             <div>
-              <label htmlFor="app" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="edit-app" className="block text-sm font-medium text-gray-700 mb-1">
                 App/Pipeline
               </label>
               <input
-                id="app"
+                id="edit-app"
                 type="text"
                 value={formData.app}
                 onChange={(e) => setFormData({ ...formData, app: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g., dhg-admin-code, google-sync, etc."
                 disabled={saving}
               />
@@ -247,14 +290,14 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
 
             {/* Worktree */}
             <div>
-              <label htmlFor="worktree_path" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="edit-worktree_path" className="block text-sm font-medium text-gray-700 mb-1">
                 Worktree Assignment
               </label>
               <select
-                id="worktree_path"
+                id="edit-worktree_path"
                 value={formData.worktree_path}
                 onChange={(e) => setFormData({ ...formData, worktree_path: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={saving}
               >
                 <option value="">No worktree assignment</option>
@@ -269,15 +312,15 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
 
           {/* Claude Request */}
           <div>
-            <label htmlFor="claude_request" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="edit-claude_request" className="block text-sm font-medium text-gray-700 mb-1">
               Claude Request
             </label>
             <textarea
-              id="claude_request"
+              id="edit-claude_request"
               value={formData.claude_request}
               onChange={(e) => setFormData({ ...formData, claude_request: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               placeholder="Additional context or specific request for Claude"
               disabled={saving}
             />
@@ -288,8 +331,9 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={saving}
+            type="button"
           >
             Cancel
           </button>
@@ -297,6 +341,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             onClick={handleSave}
             disabled={saving || !formData.title.trim() || !formData.description.trim()}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            type="button"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Changes'}
