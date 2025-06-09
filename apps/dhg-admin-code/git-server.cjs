@@ -318,20 +318,30 @@ app.get('/api/git/worktree-commits/:worktreePath', async (req, res) => {
     // Decode the path (it might be URL encoded)
     const decodedPath = decodeURIComponent(worktreePath);
     
-    // Get commits with task references
-    const { stdout: commitsOutput } = await execAsync(
-      `cd "${decodedPath}" && git log --format="%H|%s|%an|%ae|%ar|%ai" -${limit}`
+    // Get commit hashes first
+    const { stdout: hashesOutput } = await execAsync(
+      `cd "${decodedPath}" && git log --format="%H" -${limit}`
     );
     
-    const commits = commitsOutput
-      .trim()
-      .split('\n')
-      .filter(line => line)
-      .map(line => {
-        const [hash, subject, authorName, authorEmail, relativeTime, date] = line.split('|');
+    const hashes = hashesOutput.trim().split('\n').filter(h => h);
+    
+    // Get detailed info for each commit
+    const commits = await Promise.all(hashes.map(async (hash) => {
+      try {
+        // Get basic commit info
+        const { stdout: commitInfo } = await execAsync(
+          `cd "${decodedPath}" && git log --format="%s|%an|%ae|%ar|%ai" -1 ${hash}`
+        );
         
-        // Extract task ID from commit message if present
-        const taskIdMatch = subject.match(/Task:\s*#([a-f0-9-]+)/i);
+        // Get full commit message to extract task ID
+        const { stdout: fullMessage } = await execAsync(
+          `cd "${decodedPath}" && git log --format="%B" -1 ${hash}`
+        );
+        
+        const [subject, authorName, authorEmail, relativeTime, date] = commitInfo.trim().split('|');
+        
+        // Extract task ID from full commit message if present
+        const taskIdMatch = fullMessage.match(/Task:\s*#([a-f0-9-]+)/i);
         const taskId = taskIdMatch ? taskIdMatch[1] : null;
         
         return {
@@ -343,7 +353,19 @@ app.get('/api/git/worktree-commits/:worktreePath', async (req, res) => {
           date,
           taskId
         };
-      });
+      } catch (error) {
+        console.error(`Error processing commit ${hash}:`, error);
+        return {
+          hash,
+          subject: 'Error retrieving commit',
+          authorName: 'Unknown',
+          authorEmail: '',
+          relativeTime: 'Unknown',
+          date: '',
+          taskId: null
+        };
+      }
+    }));
     
     // Get current branch name
     const { stdout: branchName } = await execAsync(
