@@ -28,6 +28,14 @@ export interface DevTask {
   worktree_active?: boolean;
   work_mode?: 'single-file' | 'feature' | 'exploration' | 'cross-repo';
   requires_branch?: boolean;
+  worktree?: string;
+  // Progress tracking fields
+  submitted_to_claude?: boolean;
+  submitted_at?: string;
+  submitted_on_worktree?: string;
+  has_commits?: boolean;
+  last_commit_at?: string;
+  progress_status?: 'not_started' | 'claude_submitted' | 'in_development' | 'has_commits' | 'ready_for_review' | 'completed';
 }
 
 export interface DevTaskTag {

@@ -145,33 +145,6 @@ All database views now follow a consistent naming convention:
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
    - This is the single source of truth for all table structures and relationships
 
-   **Database Table Naming Convention**:
-   
-   ⚠️ **CRITICAL: Table Naming Rules**
-   1. **ALWAYS use one of the established prefixes** - no exceptions
-   2. **ALWAYS ask the user before creating ANY new table** - they may want to create a new prefix
-   3. **NEVER create a table without a prefix** - this breaks the naming convention
-   4. **NEVER overwrite existing table names** - always check if a table exists first
-   
-   **Established Prefixes**:
-   - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
-   - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
-   - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
-   - `learn_` - Learning platform features (e.g., learn_courses, learn_progress)
-   - `media_` - Media & presentations (e.g., media_thumbnails, media_transcripts)
-   - `doc_` - Document management (e.g., doc_versions, doc_comments, doc_continuous_monitoring)
-   - `expert_` - Expert system (e.g., expert_ratings, expert_specialties)
-   - `email_` - Email system (e.g., email_templates, email_logs)
-   - `command_` - Command & analytics (e.g., command_aliases, command_logs)
-   - `filter_` - User filtering & preferences (e.g., filter_rules, filter_history)
-   - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
-   - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
-   - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
-   - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies, dev_merge_queue, dev_merge_checklist)
-   - `registry_` - Registry tables for cataloging items (e.g., registry_scripts, registry_services, registry_apps)
-   - `service_` - Service dependency & relationship tables (e.g., service_exports, service_command_dependencies)
-   - `worktree_` - Git worktree management (e.g., worktree_definitions, worktree_app_mappings)
-   - `import_` - **CRITICAL: Data import tables - ALWAYS use this prefix for SQLite imports** (e.g., import_urls, import_web_concepts)
    
    ⚠️ **If your table doesn't fit any existing prefix**:
    - STOP and ask the user what to do
@@ -686,6 +659,7 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
 | 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
 | 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
+| 3011 | Git History Analysis Server | `scripts/cli-pipeline/dev_tasks/git-history-server.js` |
 
 **Vite App Ports**:
 | Port | App | Preview Port | Status |

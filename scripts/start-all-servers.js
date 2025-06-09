@@ -90,6 +90,15 @@ const SERVERS = [
     cwd: process.cwd(),
     env: { WORKTREE_SWITCHER_PORT: '3010' },
     description: 'Visual worktree switcher for Cursor instances'
+  },
+  {
+    name: 'Git History Analysis Server',
+    port: 3011,
+    command: 'node',
+    args: ['scripts/cli-pipeline/dev_tasks/git-history-server.js'],
+    cwd: process.cwd(),
+    env: { GIT_HISTORY_PORT: '3011' },
+    description: 'Git history analysis and worktree assignment'
   }
 ];
 

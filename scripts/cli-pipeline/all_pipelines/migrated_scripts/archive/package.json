@@ -1,0 +1,14 @@
+{
+  "name": "archive-cli-pipeline",
+  "version": "1.0.0",
+  "description": "Archive management CLI pipeline",
+  "type": "commonjs",
+  "scripts": {
+    "archive": "./archive-cli.sh"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "date-fns": "^3.0.0",
+    "glob": "^10.3.10"
+  }
+}

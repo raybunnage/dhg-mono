@@ -3,6 +3,7 @@ import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { format } from 'date-fns';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { getWorktreeAliasInfo } from '../utils/worktree-alias-mapping';
+import { WorktreeCommits } from '../components/WorktreeCommits';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -98,6 +99,7 @@ export function GitManagement() {
   const [selectedBranches, setSelectedBranches] = useState<Set<string>>(new Set());
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [branchFilter, setBranchFilter] = useState<'all' | 'cleanup' | 'merged' | 'unmerged'>('all');
+  const [selectedWorktreeForCommits, setSelectedWorktreeForCommits] = useState<string | null>(null);
 
   // Function to execute CLI commands
   const executeCliCommand = async (command: string): Promise<string> => {
@@ -538,8 +540,15 @@ export function GitManagement() {
       {/* Worktrees Tab */}
       {activeTab === 'worktrees' && (
         <div className="space-y-4">
+          <p className="text-sm text-gray-600 mb-2">
+            💡 Click on any worktree card to view its commit history
+          </p>
           {worktrees.map((worktree, index) => (
-            <div key={index} className="bg-white p-6 rounded-lg border border-gray-200">
+            <div 
+              key={index} 
+              className="bg-white p-6 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all"
+              onClick={() => setSelectedWorktreeForCommits(worktree.path)}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
@@ -641,14 +650,20 @@ export function GitManagement() {
                 
                 <div className="flex space-x-2 ml-4">
                   <button 
-                    onClick={() => handleWorktreeAction(worktree, 'status')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWorktreeAction(worktree, 'status');
+                    }}
                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
                     title="Check status"
                   >
                     📊
                   </button>
                   <button 
-                    onClick={() => handleWorktreeAction(worktree, 'update')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWorktreeAction(worktree, 'update');
+                    }}
                     className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded"
                     title="Update from remote"
                   >
@@ -1117,6 +1132,14 @@ export function GitManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Worktree Commits Modal */}
+      {selectedWorktreeForCommits && (
+        <WorktreeCommits
+          worktreePath={selectedWorktreeForCommits}
+          onClose={() => setSelectedWorktreeForCommits(null)}
+        />
       )}
     </div>
     </DashboardLayout>
