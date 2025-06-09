@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GitBranch, FolderOpen, ChevronRight, CheckCircle, Clock, AlertCircle, GitCommit, Send, Code } from 'lucide-react';
+import { GitBranch, FolderOpen, ChevronRight, CheckCircle, Clock, AlertCircle, GitCommit, Send, Code, Edit3 } from 'lucide-react';
 import type { DevTask } from '../services/task-service';
 import { getWorktreeByPath } from '../utils/worktree-mapping';
+import { EditTaskModal } from './EditTaskModal';
 
 interface TaskCardProps {
   task: DevTask & {
@@ -13,9 +14,23 @@ interface TaskCardProps {
     last_commit_at?: string;
     progress_status?: string;
   };
+  onTaskUpdate?: (updatedTask: DevTask) => void;
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation
+    e.stopPropagation();
+    setIsEditModalOpen(true);
+  };
+
+  const handleTaskUpdate = (updatedTask: DevTask) => {
+    if (onTaskUpdate) {
+      onTaskUpdate(updatedTask);
+    }
+  };
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -225,11 +240,28 @@ export function TaskCard({ task }: TaskCardProps) {
                   </span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  onClick={handleEditClick}
+                  className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                  title="Edit task"
+                >
+                  <Edit3 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                </button>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Edit Modal */}
+      <EditTaskModal
+        task={task}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleTaskUpdate}
+      />
     </Link>
   );
 }

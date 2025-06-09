@@ -4,7 +4,7 @@ export interface DevTask {
   id: string;
   title: string;
   description: string;
-  task_type: 'bug' | 'feature' | 'refactor' | 'question';
+  task_type: 'bug' | 'feature' | 'refactor' | 'question' | 'documentation';
   status: 'pending' | 'in_progress' | 'testing' | 'revision' | 'completed' | 'merged' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
   app?: string;
