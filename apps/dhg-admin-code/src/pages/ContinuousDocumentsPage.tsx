@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ContinuousDocument {
   fileName: string;
@@ -482,10 +484,12 @@ export function ContinuousDocumentsPage() {
                     <span className="ml-3 text-gray-600">Loading document...</span>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg p-6 h-full border border-gray-200">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
-                      {markdownContent}
-                    </pre>
+                  <div className="bg-white rounded-lg p-6 h-full border border-gray-200 overflow-y-auto">
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {markdownContent}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>
