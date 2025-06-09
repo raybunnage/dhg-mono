@@ -309,3 +309,119 @@ pnpm build --filter=app-name
 ---
 
 *This document is automatically updated. For manual updates, use the documentation CLI pipeline.*
+
+**Last Updated**: June 8, 2025  
+**Area**: Applications  
+**Review Frequency**: Every 14-30 days  
+**Status**: Active
+
+> ⚠️ **Important Notes**: This is a living document that is continuously monitored and updated. 
+> If you notice outdated information or have updates to add, please use the docs CLI pipeline 
+> to update this document and reset the review timer.
+
+## 📋 Table of Contents
+
+- [🎯 Latest Lessons Learned & Current Status](#latest-lessons-learned-current-status)\n- [📰 What's Been Happening Lately](#what-s-been-happening-lately)\n- [🚀 Next Phase to Tackle](#next-phase-to-tackle)\n- [📅 Implementation Phases](#implementation-phases)\n- [⚖️ Priorities & Trade-offs](#priorities-trade-offs)\n- [🎨 Original Vision](#original-vision)\n- [📚 Detailed Documentation](#detailed-documentation)
+
+---
+
+## 🎯 Latest Lessons Learned & Current Status
+
+**Last Review**: June 8, 2025
+
+### Key Insights
+- *[Add recent lessons learned and insights]*
+- *[What worked well in recent implementations]*
+- *[What challenges were encountered and how they were resolved]*
+
+### Recent Accomplishments
+- *[List recent achievements and completed milestones]*
+- *[Successful implementations or improvements]*
+
+### Current State
+- *[Brief overview of current implementation status]*
+- *[What's working well and what needs attention]*
+- *[Any blockers or dependencies]*
+
+---
+
+## 📰 What's Been Happening Lately
+
+*[Paragraph describing what's been happening lately with this area of the project. Include recent changes, implementations, discoveries, or shifts in approach. This should be updated each time the document is reviewed.]*
+
+Recent highlights:
+- *[Key recent developments]*
+- *[Important changes or updates]*
+- *[New insights or approaches]*
+
+---
+
+## 🚀 Next Phase to Tackle
+
+### Immediate Next Steps
+- *[Most important items to tackle next]*
+- *[Clear actionable items with priority]*
+- *[Dependencies that need to be resolved]*
+
+### Success Criteria
+- *[How we'll know this phase is complete]*
+- *[Measurable outcomes]*
+
+---
+
+## 📅 Implementation Phases
+
+### Phase 2: *[Future phase title]*
+- *[Goals and objectives]*
+- *[Key deliverables]*
+
+### Phase 3: *[Future phase title]*
+- *[Longer-term objectives]*
+- *[Strategic improvements]*
+
+---
+
+## ⚖️ Priorities & Trade-offs
+
+### High Priority Items
+- *[Most critical areas requiring attention]*
+- *[Items with high impact or blocking other work]*
+
+### Pros & Cons of Current Approach
+**Pros:**
+- *[Benefits of current implementation]*
+- *[What's working well]*
+
+**Cons:**
+- *[Limitations or challenges]*
+- *[Areas for improvement]*
+
+### Trade-offs to Consider
+- *[Key decisions and their implications]*
+- *[Balance between competing priorities]*
+
+---
+
+## 🎨 Original Vision
+
+*[Original vision and high-level goals for this area. This should remain relatively stable over time and provide context for all the tactical decisions and implementations.]*
+
+### Core Objectives
+- *[Primary goals this area aims to achieve]*
+- *[Long-term vision for where this should be]*
+
+### Success Metrics
+- *[How success will be measured]*
+- *[Key performance indicators]*
+
+---
+
+## 📚 Detailed Documentation
+
+## Implementation Details
+
+*[Detailed technical information, procedures, and reference material that supports the above strategic content.]*
+
+---
+
+*This document is managed by the docs CLI pipeline. Use `./scripts/cli-pipeline/docs/docs-cli.sh` to update.*
