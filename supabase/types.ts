@@ -5422,6 +5422,21 @@ export type Database = {
           match_percentage: number
         }[]
       }
+      analyze_function_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          function_name: string
+          function_schema: string
+          argument_types: string
+          return_type: string
+          is_used: boolean
+          used_in_views: number
+          used_in_functions: number
+          used_in_triggers: number
+          total_usage_count: number
+          can_be_safely_removed: boolean
+        }[]
+      }
       analyze_table_constraints: {
         Args: { p_table_name: string }
         Returns: string
@@ -5882,12 +5897,18 @@ export type Database = {
         }[]
       }
       get_table_columns: {
-        Args: { p_table_name: string }
+        Args:
+          | { p_table_name: string }
+          | { schema_name: string; table_name: string }
         Returns: {
           column_name: string
           data_type: string
           is_nullable: string
           column_default: string
+          character_maximum_length: number
+          numeric_precision: number
+          numeric_scale: number
+          is_identity: string
           ordinal_position: number
         }[]
       }
@@ -5929,23 +5950,44 @@ export type Database = {
         }[]
       }
       get_table_constraints: {
-        Args: { p_table_name: string }
-        Returns: Json
+        Args:
+          | { p_table_name: string }
+          | { schema_name: string; table_name: string }
+        Returns: {
+          constraint_name: string
+          constraint_type: string
+          column_names: string[]
+          foreign_table_name: string
+          foreign_column_names: string[]
+        }[]
       }
       get_table_definition: {
         Args: { p_table_name: string }
         Returns: string[]
       }
       get_table_foreign_keys: {
-        Args: { p_table_name: string }
+        Args:
+          | { p_table_name: string }
+          | { schema_name: string; table_name: string }
         Returns: {
-          table_schema: string
           constraint_name: string
-          table_name: string
           column_name: string
           foreign_table_schema: string
           foreign_table_name: string
           foreign_column_name: string
+          delete_rule: string
+          update_rule: string
+        }[]
+      }
+      get_table_indexes: {
+        Args: { schema_name: string; table_name: string }
+        Returns: {
+          index_name: string
+          is_unique: boolean
+          is_primary: boolean
+          column_names: string[]
+          index_type: string
+          index_size: number
         }[]
       }
       get_table_info: {
@@ -5977,9 +6019,32 @@ export type Database = {
         Args: { p_target_table: string }
         Returns: Json
       }
+      get_table_policies: {
+        Args: { schema_name: string; table_name: string }
+        Returns: {
+          policy_name: string
+          command: string
+          permissive: string
+          roles: string[]
+          qual: string
+          with_check: string
+        }[]
+      }
       get_table_row_count: {
         Args: { p_table_name: string }
         Returns: number
+      }
+      get_table_triggers: {
+        Args: { schema_name: string; table_name: string }
+        Returns: {
+          trigger_name: string
+          event_manipulation: string
+          event_object_table: string
+          action_timing: string
+          action_orientation: string
+          action_statement: string
+          is_enabled: boolean
+        }[]
       }
       get_triggers: {
         Args: { schema_name: string }
