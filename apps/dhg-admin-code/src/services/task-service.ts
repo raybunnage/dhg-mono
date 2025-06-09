@@ -48,6 +48,10 @@ export interface DevTask {
   criteria_completion_percentage?: number;
   total_quality_gates?: number;
   passed_quality_gates?: number;
+  // Source document fields
+  source_doc_id?: string;
+  source_doc_path?: string;
+  source_doc_phase?: string;
   failed_quality_gates?: number;
   overall_completion_score?: number;
   // View-specific fields

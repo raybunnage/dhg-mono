@@ -1117,6 +1117,13 @@ export type Database = {
             foreignKeyName: "dev_task_commits_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
@@ -1157,6 +1164,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
             referencedColumns: ["id"]
           },
           {
@@ -1224,6 +1238,13 @@ export type Database = {
             foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
@@ -1276,6 +1297,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_quality_gates_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
             referencedColumns: ["id"]
           },
           {
@@ -1349,6 +1377,13 @@ export type Database = {
             foreignKeyName: "dev_task_success_criteria_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_success_criteria_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
@@ -1386,6 +1421,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
             referencedColumns: ["id"]
           },
           {
@@ -1460,6 +1502,13 @@ export type Database = {
             foreignKeyName: "dev_task_validations_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_validations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
@@ -1515,6 +1564,13 @@ export type Database = {
             foreignKeyName: "dev_task_work_sessions_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
           },
@@ -1546,6 +1602,9 @@ export type Database = {
           requires_branch: boolean | null
           revision_count: number | null
           risk_assessment: string | null
+          source_doc_id: string | null
+          source_doc_path: string | null
+          source_doc_phase: string | null
           status: string | null
           submitted_at: string | null
           submitted_on_worktree: string | null
@@ -1587,6 +1646,9 @@ export type Database = {
           requires_branch?: boolean | null
           revision_count?: number | null
           risk_assessment?: string | null
+          source_doc_id?: string | null
+          source_doc_path?: string | null
+          source_doc_phase?: string | null
           status?: string | null
           submitted_at?: string | null
           submitted_on_worktree?: string | null
@@ -1628,6 +1690,9 @@ export type Database = {
           requires_branch?: boolean | null
           revision_count?: number | null
           risk_assessment?: string | null
+          source_doc_id?: string | null
+          source_doc_path?: string | null
+          source_doc_phase?: string | null
           status?: string | null
           submitted_at?: string | null
           submitted_on_worktree?: string | null
@@ -1663,7 +1728,21 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_source_doc_id_fkey"
+            columns: ["source_doc_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_monitoring"
             referencedColumns: ["id"]
           },
         ]
@@ -4570,6 +4649,48 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_services: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          id: string
+          is_singleton: boolean | null
+          service_name: string
+          service_path: string | null
+          updated_at: string | null
+          used_by_apps: string[] | null
+          used_by_pipelines: string[] | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          service_name: string
+          service_path?: string | null
+          updated_at?: string | null
+          used_by_apps?: string[] | null
+          used_by_pipelines?: string[] | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          id?: string
+          is_singleton?: boolean | null
+          service_name?: string
+          service_path?: string | null
+          updated_at?: string | null
+          used_by_apps?: string[] | null
+          used_by_pipelines?: string[] | null
+        }
+        Relationships: []
+      }
       sys_app_service_dependencies: {
         Row: {
           app_id: string
@@ -5174,6 +5295,13 @@ export type Database = {
             foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
             columns: ["worktree_id"]
             isOneToOne: false
+            referencedRelation: "worktree_assignments_complete_view"
+            referencedColumns: ["worktree_id"]
+          },
+          {
+            foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
             referencedRelation: "worktree_definitions"
             referencedColumns: ["id"]
           },
@@ -5234,6 +5362,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_assignments_complete_view"
+            referencedColumns: ["worktree_id"]
+          },
+          {
+            foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worktree_service_mappings: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          notes: string | null
+          service_id: string | null
+          worktree_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          worktree_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          worktree_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worktree_service_mappings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "shared_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worktree_service_mappings_worktree_id_fkey"
+            columns: ["worktree_id"]
+            isOneToOne: false
+            referencedRelation: "worktree_assignments_complete_view"
+            referencedColumns: ["worktree_id"]
+          },
+          {
+            foreignKeyName: "worktree_service_mappings_worktree_id_fkey"
             columns: ["worktree_id"]
             isOneToOne: false
             referencedRelation: "worktree_definitions"
@@ -5363,7 +5547,100 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_tasks_with_continuous_docs_view: {
+        Row: {
+          app: string | null
+          claude_request: string | null
+          claude_response: string | null
+          completed_at: string | null
+          completion_confidence: number | null
+          created_at: string | null
+          created_by: string | null
+          current_lifecycle_stage: string | null
+          description: string | null
+          git_branch: string | null
+          git_commit_current: string | null
+          git_commit_start: string | null
+          git_commits_count: number | null
+          has_commits: boolean | null
+          id: string | null
+          is_subtask: boolean | null
+          last_commit_at: string | null
+          parent_task_id: string | null
+          priority: string | null
+          progress_status: string | null
+          quality_gates_status: string | null
+          requires_branch: boolean | null
+          revision_count: number | null
+          risk_assessment: string | null
+          source_doc_area: string | null
+          source_doc_id: string | null
+          source_doc_next_review: string | null
+          source_doc_path: string | null
+          source_doc_phase: string | null
+          source_doc_title: string | null
+          status: string | null
+          submitted_at: string | null
+          submitted_on_worktree: string | null
+          submitted_to_claude: boolean | null
+          success_criteria_count: number | null
+          success_criteria_defined: boolean | null
+          success_criteria_met: number | null
+          task_type: string | null
+          testing_notes: string | null
+          title: string | null
+          updated_at: string | null
+          validation_status: string | null
+          work_mode: string | null
+          worktree_active: boolean | null
+          worktree_path: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_source_doc_id_fkey"
+            columns: ["source_doc_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_monitoring"
             referencedColumns: ["id"]
           },
         ]
@@ -5408,6 +5685,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
             referencedColumns: ["id"]
           },
           {
@@ -5778,6 +6062,22 @@ export type Database = {
           status: string | null
           used_by_apps_count: number | null
           used_by_pipelines_count: number | null
+        }
+        Relationships: []
+      }
+      worktree_assignments_complete_view: {
+        Row: {
+          app_count: number | null
+          assigned_apps: string[] | null
+          assigned_pipelines: string[] | null
+          assigned_services: string[] | null
+          pipeline_count: number | null
+          service_count: number | null
+          worktree_alias: string | null
+          worktree_description: string | null
+          worktree_emoji: string | null
+          worktree_id: string | null
+          worktree_path: string | null
         }
         Relationships: []
       }
