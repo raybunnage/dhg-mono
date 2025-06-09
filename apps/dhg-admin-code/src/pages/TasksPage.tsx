@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask } from '../services/task-service';
-import { Plus, Eye, EyeOff } from 'lucide-react';
+import { Plus, Eye, EyeOff, Search } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskCard } from '../components/TaskCard';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
@@ -26,14 +26,51 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [appFilter, setAppFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Separate state for input
   const [completionFilter, setCompletionFilter] = useState<'all' | 'completed' | 'unfinished'>('unfinished'); // 3-state filter
   const [worktreeFilter, setWorktreeFilter] = useState<string>('');
   const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadTasks();
     loadWorktrees();
   }, [statusFilter, priorityFilter, appFilter, searchQuery, worktreeFilter]);
+
+  // Handle search input with debounce
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInput(value);
+    
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    
+    // Set new timer for debounced search
+    const newTimer = setTimeout(() => {
+      setSearchQuery(value);
+    }, 500); // 500ms delay
+    
+    setDebounceTimer(newTimer);
+  }, [debounceTimer]);
+
+  // Handle immediate search on Enter key or button click
+  const handleSearchSubmit = useCallback(() => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      setDebounceTimer(null);
+    }
+    setSearchQuery(searchInput);
+  }, [searchInput, debounceTimer]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [debounceTimer]);
 
   const loadTasks = async () => {
     try {
@@ -204,13 +241,28 @@ export default function TasksPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Search
             </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchSubmit();
+                  }
+                }}
+                placeholder="Search tasks..."
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                onClick={handleSearchSubmit}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title="Search now"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Press Enter or click search icon to search immediately</p>
           </div>
           
           <div>
@@ -311,6 +363,7 @@ export default function TasksPage() {
             <button
               onClick={() => {
                 setSearchQuery('');
+                setSearchInput('');
                 setStatusFilter('');
                 setPriorityFilter('');
                 setAppFilter('');
