@@ -21,6 +21,19 @@ interface Mapping {
   pipeline_name?: string;
 }
 
+interface ServiceMapping {
+  id: string;
+  worktree_id: string;
+  service_name: string;
+}
+
+interface SharedService {
+  id: string;
+  service_name: string;
+  category: string;
+  description: string | null;
+}
+
 // List of all apps (can be fetched from database if stored there)
 const ALL_APPS = [
   'dhg-hub',
@@ -39,7 +52,9 @@ export default function WorktreeMappings() {
   const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
   const [appMappings, setAppMappings] = useState<Mapping[]>([]);
   const [pipelineMappings, setPipelineMappings] = useState<Mapping[]>([]);
+  const [serviceMappings, setServiceMappings] = useState<ServiceMapping[]>([]);
   const [allPipelines, setAllPipelines] = useState<string[]>([]);
+  const [allServices, setAllServices] = useState<SharedService[]>([]);
   const [selectedWorktree, setSelectedWorktree] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,6 +63,7 @@ export default function WorktreeMappings() {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [pendingAppChanges, setPendingAppChanges] = useState<Map<string, Set<string>>>(new Map());
   const [pendingPipelineChanges, setPendingPipelineChanges] = useState<Map<string, Set<string>>>(new Map());
+  const [pendingServiceChanges, setPendingServiceChanges] = useState<Map<string, Set<string>>>(new Map());
 
   // Load worktrees and mappings
   useEffect(() => {
@@ -93,6 +109,24 @@ export default function WorktreeMappings() {
       
       if (pipelinesError) throw pipelinesError;
       setAllPipelines(pipelinesData?.map(p => p.name) || []);
+
+      // Load service mappings
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('worktree_service_mappings')
+        .select('*');
+      
+      if (serviceError) throw serviceError;
+      setServiceMappings(serviceData || []);
+
+      // Load all shared services
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('shared_services')
+        .select('*')
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
+      
+      if (servicesError) throw servicesError;
+      setAllServices(servicesData || []);
 
       // Select first worktree by default
       if (worktreeData && worktreeData.length > 0 && !selectedWorktree) {
@@ -142,6 +176,24 @@ export default function WorktreeMappings() {
     setPendingPipelineChanges(changes);
   };
 
+  const toggleServiceMapping = (worktreeId: string, serviceName: string) => {
+    setUnsavedChanges(true);
+    
+    const changes = new Map(pendingServiceChanges);
+    if (!changes.has(worktreeId)) {
+      changes.set(worktreeId, new Set());
+    }
+    
+    const worktreeChanges = changes.get(worktreeId)!;
+    if (worktreeChanges.has(serviceName)) {
+      worktreeChanges.delete(serviceName);
+    } else {
+      worktreeChanges.add(serviceName);
+    }
+    
+    setPendingServiceChanges(changes);
+  };
+
   const isAppMapped = (worktreeId: string, appName: string) => {
     const isCurrentlyMapped = appMappings.some(m => m.worktree_id === worktreeId && m.app_name === appName);
     const hasPendingChange = pendingAppChanges.get(worktreeId)?.has(appName) || false;
@@ -151,6 +203,12 @@ export default function WorktreeMappings() {
   const isPipelineMapped = (worktreeId: string, pipelineName: string) => {
     const isCurrentlyMapped = pipelineMappings.some(m => m.worktree_id === worktreeId && m.pipeline_name === pipelineName);
     const hasPendingChange = pendingPipelineChanges.get(worktreeId)?.has(pipelineName) || false;
+    return hasPendingChange ? !isCurrentlyMapped : isCurrentlyMapped;
+  };
+
+  const isServiceMapped = (worktreeId: string, serviceName: string) => {
+    const isCurrentlyMapped = serviceMappings.some(m => m.worktree_id === worktreeId && m.service_name === serviceName);
+    const hasPendingChange = pendingServiceChanges.get(worktreeId)?.has(serviceName) || false;
     return hasPendingChange ? !isCurrentlyMapped : isCurrentlyMapped;
   };
 
@@ -225,9 +283,34 @@ export default function WorktreeMappings() {
         }
       }
 
+      // Process service changes
+      for (const [worktreeId, changes] of pendingServiceChanges) {
+        for (const serviceName of changes) {
+          const existing = serviceMappings.find(m => m.worktree_id === worktreeId && m.service_name === serviceName);
+          
+          if (existing) {
+            // Remove mapping
+            const { error } = await supabase
+              .from('worktree_service_mappings')
+              .delete()
+              .eq('id', existing.id);
+            
+            if (error) throw error;
+          } else {
+            // Add mapping
+            const { error } = await supabase
+              .from('worktree_service_mappings')
+              .insert({ worktree_id: worktreeId, service_name: serviceName });
+            
+            if (error) throw error;
+          }
+        }
+      }
+
       // Clear pending changes
       setPendingAppChanges(new Map());
       setPendingPipelineChanges(new Map());
+      setPendingServiceChanges(new Map());
       setUnsavedChanges(false);
       
       // Reload data to get fresh state
@@ -377,6 +460,40 @@ export default function WorktreeMappings() {
               </div>
             </div>
 
+            {/* Shared Services section */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Shared Services</h3>
+              {/* Group services by category */}
+              {Object.entries(
+                allServices.reduce((acc, service) => {
+                  if (!acc[service.category]) acc[service.category] = [];
+                  acc[service.category].push(service);
+                  return acc;
+                }, {} as Record<string, SharedService[]>)
+              ).map(([category, services]) => (
+                <div key={category} className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2 capitalize">{category}</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {services.map(service => (
+                      <label
+                        key={service.id}
+                        className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                        title={service.description || undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isServiceMapped(currentWorktree.id, service.service_name)}
+                          onChange={() => toggleServiceMapping(currentWorktree.id, service.service_name)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm">{service.service_name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Summary */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h4 className="font-medium mb-2">Summary for {currentWorktree.alias_name}</h4>
@@ -393,6 +510,13 @@ export default function WorktreeMappings() {
                   {pipelineMappings
                     .filter(m => m.worktree_id === currentWorktree.id)
                     .map(m => `cli-${m.pipeline_name}`)
+                    .join(', ') || 'None'}
+                </div>
+                <div>
+                  <span className="font-medium">Services:</span>{' '}
+                  {serviceMappings
+                    .filter(m => m.worktree_id === currentWorktree.id)
+                    .map(m => m.service_name)
                     .join(', ') || 'None'}
                 </div>
               </div>
