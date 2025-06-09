@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { TaskService, type DevTask } from '../services/task-service';
+import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 
 interface EditTaskModalProps {
   task: DevTask;
@@ -8,6 +9,17 @@ interface EditTaskModalProps {
   onClose: () => void;
   onSave: (updatedTask: DevTask) => void;
 }
+
+interface WorktreeDefinition {
+  id: string;
+  path: string;
+  alias_name: string;
+  alias_number: string;
+  emoji: string;
+  description: string | null;
+}
+
+const supabase = createSupabaseAdapter({ env: import.meta.env as any });
 
 export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalProps) {
   const [formData, setFormData] = useState({
@@ -17,10 +29,12 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
     status: task.status,
     priority: task.priority,
     app: task.app || '',
-    claude_request: task.claude_request || ''
+    claude_request: task.claude_request || '',
+    worktree_path: task.worktree_path || ''
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
 
   // Reset form when task changes or modal opens
   useEffect(() => {
@@ -32,11 +46,29 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
         status: task.status,
         priority: task.priority,
         app: task.app || '',
-        claude_request: task.claude_request || ''
+        claude_request: task.claude_request || '',
+        worktree_path: task.worktree_path || ''
       });
       setError(null);
+      loadWorktrees();
     }
   }, [task, isOpen]);
+
+  const loadWorktrees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('worktree_definitions')
+        .select('*')
+        .order('alias_number');
+      
+      if (error) throw error;
+      if (data) {
+        setWorktrees(data);
+      }
+    } catch (err) {
+      console.error('Failed to load worktrees:', err);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
@@ -60,7 +92,8 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
         status: formData.status,
         priority: formData.priority,
         app: formData.app.trim() || undefined,
-        claude_request: formData.claude_request.trim() || undefined
+        claude_request: formData.claude_request.trim() || undefined,
+        worktree_path: formData.worktree_path.trim() || undefined
       };
 
       const updatedTask = await TaskService.updateTask(task.id, updates);
@@ -194,20 +227,44 @@ export function EditTaskModal({ task, isOpen, onClose, onSave }: EditTaskModalPr
             </div>
           </div>
 
-          {/* App/Pipeline */}
-          <div>
-            <label htmlFor="app" className="block text-sm font-medium text-gray-700 mb-1">
-              App/Pipeline
-            </label>
-            <input
-              id="app"
-              type="text"
-              value={formData.app}
-              onChange={(e) => setFormData({ ...formData, app: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., dhg-admin-code, google-sync, etc."
-              disabled={saving}
-            />
+          {/* App/Pipeline and Worktree */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* App/Pipeline */}
+            <div>
+              <label htmlFor="app" className="block text-sm font-medium text-gray-700 mb-1">
+                App/Pipeline
+              </label>
+              <input
+                id="app"
+                type="text"
+                value={formData.app}
+                onChange={(e) => setFormData({ ...formData, app: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., dhg-admin-code, google-sync, etc."
+                disabled={saving}
+              />
+            </div>
+
+            {/* Worktree */}
+            <div>
+              <label htmlFor="worktree_path" className="block text-sm font-medium text-gray-700 mb-1">
+                Worktree Assignment
+              </label>
+              <select
+                id="worktree_path"
+                value={formData.worktree_path}
+                onChange={(e) => setFormData({ ...formData, worktree_path: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                disabled={saving}
+              >
+                <option value="">No worktree assignment</option>
+                {worktrees.map((worktree) => (
+                  <option key={worktree.id} value={worktree.path}>
+                    {worktree.emoji} {worktree.alias_name} - {worktree.description || worktree.path}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Claude Request */}
