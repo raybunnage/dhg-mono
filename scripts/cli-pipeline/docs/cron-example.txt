@@ -1,0 +1,14 @@
+# Example cron entries for daily documentation review
+# Add these to your crontab with: crontab -e
+
+# Run daily at 9:00 AM
+0 9 * * * /Users/raybunnage/Documents/github/dhg-mono-admin-code/scripts/cli-pipeline/docs/daily-review-automation.sh
+
+# Or run daily at 8:00 AM and 5:00 PM for twice-daily checks
+0 8,17 * * * /Users/raybunnage/Documents/github/dhg-mono-admin-code/scripts/cli-pipeline/docs/daily-review-automation.sh
+
+# To receive email notifications, add MAILTO at the top of your crontab:
+# MAILTO=your-email@example.com
+
+# For debugging, you can log all output:
+# 0 9 * * * /Users/raybunnage/Documents/github/dhg-mono-admin-code/scripts/cli-pipeline/docs/daily-review-automation.sh >> /tmp/docs-review.log 2>&1
