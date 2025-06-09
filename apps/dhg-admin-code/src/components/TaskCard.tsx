@@ -1,19 +1,35 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GitBranch, FolderOpen, ChevronRight, CheckCircle, Clock, AlertCircle, GitCommit, Send, Code, Edit3 } from 'lucide-react';
+import { GitBranch, FolderOpen, ChevronRight, CheckCircle, Clock, AlertCircle, GitCommit, Send, Code, Edit3, Target, Shield, TrendingUp, TestTube } from 'lucide-react';
 import type { DevTask } from '../services/task-service';
 import { getWorktreeByPath } from '../utils/worktree-mapping';
 import { EditTaskModal } from './EditTaskModal';
 
+interface EnhancedDevTask extends DevTask {
+  submitted_to_claude?: boolean;
+  submitted_at?: string;
+  submitted_on_worktree?: string;
+  has_commits?: boolean;
+  last_commit_at?: string;
+  progress_status?: string;
+  // Enhanced success criteria tracking
+  success_criteria_defined?: boolean;
+  validation_status?: string;
+  quality_gates_status?: string;
+  completion_confidence?: number;
+  risk_assessment?: string;
+  current_lifecycle_stage?: string;
+  success_criteria_count?: number;
+  success_criteria_met?: number;
+  criteria_completion_percentage?: number;
+  total_quality_gates?: number;
+  passed_quality_gates?: number;
+  failed_quality_gates?: number;
+  overall_completion_score?: number;
+}
+
 interface TaskCardProps {
-  task: DevTask & {
-    submitted_to_claude?: boolean;
-    submitted_at?: string;
-    submitted_on_worktree?: string;
-    has_commits?: boolean;
-    last_commit_at?: string;
-    progress_status?: string;
-  };
+  task: EnhancedDevTask;
   onTaskUpdate?: (updatedTask: DevTask) => void;
 }
 
@@ -155,6 +171,108 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
     }
   };
 
+  const getLifecycleStageDisplay = () => {
+    if (!task.current_lifecycle_stage) return null;
+    
+    const stageConfig = {
+      planning: { color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
+      development: { color: 'text-blue-600', bg: 'bg-blue-100', icon: Code },
+      testing: { color: 'text-yellow-600', bg: 'bg-yellow-100', icon: TestTube },
+      review: { color: 'text-purple-600', bg: 'bg-purple-100', icon: Shield },
+      integration: { color: 'text-indigo-600', bg: 'bg-indigo-100', icon: GitBranch },
+      completed: { color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle }
+    };
+    
+    const config = stageConfig[task.current_lifecycle_stage as keyof typeof stageConfig] || stageConfig.planning;
+    const IconComponent = config.icon;
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${config.color}`}>
+        <IconComponent className="w-3 h-3" />
+        <span className="capitalize">{task.current_lifecycle_stage.replace('_', ' ')}</span>
+      </div>
+    );
+  };
+
+  const getSuccessCriteriaDisplay = () => {
+    if (!task.success_criteria_count || task.success_criteria_count === 0) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-gray-400">
+          <Target className="w-3 h-3" />
+          <span>No criteria defined</span>
+        </div>
+      );
+    }
+
+    const percentage = task.criteria_completion_percentage || 0;
+    const color = percentage >= 80 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600';
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${color}`}>
+        <Target className="w-3 h-3" />
+        <span>{task.success_criteria_met || 0}/{task.success_criteria_count} criteria</span>
+        <span className="text-gray-500">({percentage.toFixed(0)}%)</span>
+      </div>
+    );
+  };
+
+  const getQualityGatesDisplay = () => {
+    if (!task.total_quality_gates || task.total_quality_gates === 0) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-gray-400">
+          <Shield className="w-3 h-3" />
+          <span>No gates defined</span>
+        </div>
+      );
+    }
+
+    const passedGates = task.passed_quality_gates || 0;
+    const failedGates = task.failed_quality_gates || 0;
+    const color = failedGates > 0 ? 'text-red-600' : passedGates === task.total_quality_gates ? 'text-green-600' : 'text-yellow-600';
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${color}`}>
+        <Shield className="w-3 h-3" />
+        <span>{passedGates}/{task.total_quality_gates} gates</span>
+        {failedGates > 0 && <span className="text-red-600">({failedGates} failed)</span>}
+      </div>
+    );
+  };
+
+  const getCompletionScoreDisplay = () => {
+    const score = task.overall_completion_score || 0;
+    const color = score >= 80 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-gray-600';
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${color}`}>
+        <TrendingUp className="w-3 h-3" />
+        <span>{score.toFixed(0)}% complete</span>
+        {task.completion_confidence && (
+          <span className="text-gray-500">(confidence: {task.completion_confidence}/10)</span>
+        )}
+      </div>
+    );
+  };
+
+  const getRiskAssessmentBadge = () => {
+    if (!task.risk_assessment || task.risk_assessment === 'low') return null;
+    
+    const riskConfig = {
+      medium: { color: 'bg-yellow-100 text-yellow-800', label: 'Medium Risk' },
+      high: { color: 'bg-orange-100 text-orange-800', label: 'High Risk' },
+      critical: { color: 'bg-red-100 text-red-800', label: 'Critical Risk' }
+    };
+    
+    const config = riskConfig[task.risk_assessment as keyof typeof riskConfig];
+    if (!config) return null;
+    
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+        ⚠️ {config.label}
+      </span>
+    );
+  };
+
   return (
     <Link
       to={`/tasks/${task.id}`}
@@ -173,12 +291,23 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
                   {task.description}
                 </p>
                 
-                {/* Progress Status Section */}
-                <div className="mt-2 mb-2">
-                  {getProgressStatusDisplay()}
+                {/* Enhanced Status Section */}
+                <div className="mt-2 mb-2 space-y-2">
+                  {/* Primary Status Row */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {getLifecycleStageDisplay()}
+                    {getProgressStatusDisplay()}
+                    {getCompletionScoreDisplay()}
+                  </div>
+                  
+                  {/* Success Criteria and Quality Gates Row */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {getSuccessCriteriaDisplay()}
+                    {getQualityGatesDisplay()}
+                  </div>
                   
                   {/* Additional status info */}
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
                     {task.submitted_to_claude && (
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Send className="w-3 h-3" />
@@ -207,6 +336,7 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(task.priority)}`}>
                     {task.priority}
                   </span>
+                  {getRiskAssessmentBadge()}
                   {task.app && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                       {task.app}
@@ -260,7 +390,7 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
         task={task}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onSave={handleTaskUpdate}
+        onSave={handleTaskUpdate as (task: DevTask) => void}
       />
     </Link>
   );
