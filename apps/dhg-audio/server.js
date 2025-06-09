@@ -93,6 +93,7 @@ app.get('/api/audio/:fileId', async (req, res) => {
     // Set response headers
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    res.setHeader('X-Served-From', 'google-drive-api'); // Indicate source for debugging
     
     // If range header is present, handle partial content request
     if (req.headers.range) {
