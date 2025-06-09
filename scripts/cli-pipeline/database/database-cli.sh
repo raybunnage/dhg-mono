@@ -70,6 +70,9 @@ show_help() {
   echo "  * function-audit       Analyze database functions and identify unused ones"
   echo "  * consistency-check    Check cross-table consistency for naming, types, and constraints"
   echo ""
+  echo "APP ELEMENT MANAGEMENT:"
+  echo "    populate-app-elements  Populate app UI pages and features for success criteria"
+  echo ""
   echo "SYSTEM HEALTH:"
   echo "  * connection-test      Test connection to Supabase database (4 uses)"
   echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
@@ -520,6 +523,10 @@ case "$1" in
   "analyze-views")
     echo "📊 Analyzing views in sys_table_definitions..."
     track_command "analyze-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts analyze ${@:2}"
+    ;;
+  "populate-app-elements")
+    echo "🎯 Populating app UI pages and features..."
+    track_command "populate-app-elements" "cd $PROJECT_ROOT && ts-node --project $PROJECT_ROOT/tsconfig.node.json $SCRIPT_DIR/populate-app-elements.ts ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help
