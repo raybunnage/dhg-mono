@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask } from '../services/task-service';
-import { Plus, ChevronRight, Clock, CheckCircle, AlertCircle, Eye, EyeOff, GitBranch, FolderOpen } from 'lucide-react';
+import { Plus, Eye, EyeOff } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { getWorktreeByPath } from '../utils/worktree-mapping';
+import { TaskCard } from '../components/TaskCard';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -69,75 +69,6 @@ export default function TasksPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="w-4 h-4 text-gray-500" />;
-      case 'in_progress':
-        return <AlertCircle className="w-4 h-4 text-blue-500" />;
-      case 'testing':
-        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-      case 'revision':
-        return <AlertCircle className="w-4 h-4 text-orange-500" />;
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'merged':
-        return <CheckCircle className="w-4 h-4 text-purple-500" />;
-      case 'cancelled':
-        return <Clock className="w-4 h-4 text-gray-400" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-gray-100 text-gray-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'testing':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'revision':
-        return 'bg-orange-100 text-orange-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'merged':
-        return 'bg-purple-100 text-purple-800';
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-400';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityBadgeClass = (priority: string) => {
-    switch (priority) {
-      case 'low':
-        return 'bg-gray-100 text-gray-600';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
-  };
-
-  const getTypeBadgeClass = (type: string) => {
-    switch (type) {
-      case 'bug':
-        return 'bg-red-50 text-red-700';
-      case 'feature':
-        return 'bg-purple-50 text-purple-700';
-      case 'refactor':
-        return 'bg-blue-50 text-blue-700';
-      case 'question':
-        return 'bg-orange-50 text-orange-700';
-      default:
-        return 'bg-gray-50 text-gray-700';
-    }
-  };
 
   if (loading) {
     return (
@@ -292,7 +223,7 @@ export default function TasksPage() {
                 setStatusFilter(e.target.value);
                 // If user selects "completed" status, automatically show completed tasks
                 if (e.target.value === 'completed') {
-                  setShowCompleted(true);
+                  setCompletionFilter('completed');
                 }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -431,72 +362,9 @@ export default function TasksPage() {
           return (
             <div className="divide-y divide-gray-200">
               {filteredTasks.map((task) => (
-              <Link
-                key={task.id}
-                to={`/tasks/${task.id}`}
-                className="block hover:bg-gray-50 transition-colors"
-              >
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {getStatusIcon(task.status)}
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {task.title}
-                        </h3>
-                      </div>
-                      <p className="text-gray-600 line-clamp-2 mb-2">
-                        {task.description}
-                      </p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(task.task_type)}`}>
-                          {task.task_type}
-                        </span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(task.status)}`}>
-                          {task.status.replace('_', ' ')}
-                        </span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(task.priority)}`}>
-                          {task.priority}
-                        </span>
-                        {task.app && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                            {task.app}
-                          </span>
-                        )}
-                        {task.git_branch && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                            <GitBranch className="w-3 h-3" />
-                            {task.git_branch}
-                          </span>
-                        )}
-                        {task.worktree_path && (() => {
-                          const worktree = getWorktreeByPath(task.worktree_path);
-                          return worktree ? (
-                            <span 
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700" 
-                              title={worktree.description}
-                            >
-                              <span>{worktree.alias.emoji}</span>
-                              <span>{worktree.alias.name}</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              <FolderOpen className="w-3 h-3" />
-                              {task.worktree_path.split('/').pop()}
-                            </span>
-                          );
-                        })()}
-                        <span className="text-xs text-gray-500">
-                          Created {new Date(task.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                <TaskCard key={task.id} task={task} />
+              ))}
+            </div>
           );
         })()}
       </div>

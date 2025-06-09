@@ -1251,13 +1251,19 @@ export type Database = {
           git_commit_current: string | null
           git_commit_start: string | null
           git_commits_count: number | null
+          has_commits: boolean | null
           id: string
           is_subtask: boolean | null
+          last_commit_at: string | null
           parent_task_id: string | null
           priority: string | null
+          progress_status: string | null
           requires_branch: boolean | null
           revision_count: number | null
           status: string | null
+          submitted_at: string | null
+          submitted_on_worktree: string | null
+          submitted_to_claude: boolean | null
           task_type: string | null
           testing_notes: string | null
           title: string
@@ -1278,13 +1284,19 @@ export type Database = {
           git_commit_current?: string | null
           git_commit_start?: string | null
           git_commits_count?: number | null
+          has_commits?: boolean | null
           id?: string
           is_subtask?: boolean | null
+          last_commit_at?: string | null
           parent_task_id?: string | null
           priority?: string | null
+          progress_status?: string | null
           requires_branch?: boolean | null
           revision_count?: number | null
           status?: string | null
+          submitted_at?: string | null
+          submitted_on_worktree?: string | null
+          submitted_to_claude?: boolean | null
           task_type?: string | null
           testing_notes?: string | null
           title: string
@@ -1305,13 +1317,19 @@ export type Database = {
           git_commit_current?: string | null
           git_commit_start?: string | null
           git_commits_count?: number | null
+          has_commits?: boolean | null
           id?: string
           is_subtask?: boolean | null
+          last_commit_at?: string | null
           parent_task_id?: string | null
           priority?: string | null
+          progress_status?: string | null
           requires_branch?: boolean | null
           revision_count?: number | null
           status?: string | null
+          submitted_at?: string | null
+          submitted_on_worktree?: string | null
+          submitted_to_claude?: boolean | null
           task_type?: string | null
           testing_notes?: string | null
           title?: string
