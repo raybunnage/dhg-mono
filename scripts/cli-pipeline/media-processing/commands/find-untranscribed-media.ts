@@ -1,4 +1,4 @@
-#\!/usr/bin/env node
+#!/usr/bin/env node
 
 /**
  * Find Untranscribed Media Command
@@ -17,6 +17,9 @@ const { Logger } = require('../../../../packages/shared/utils');
 const { SupabaseClientService } = require('../../../../packages/shared/services/supabase-client');
 const { LogLevel } = require('../../../../packages/shared/utils/logger');
 
+// Import active filter profile functionality
+import { getActiveFilterProfile } from '../../presentations/get-active-filter-profile';
+
 // Initialize logger
 Logger.setLevel(LogLevel.INFO);
 
@@ -31,15 +34,15 @@ const options = {
 // Process command line arguments
 const args = process.argv.slice(2);
 const limitIndex = args.indexOf('--limit');
-if (limitIndex \!== -1 && args[limitIndex + 1]) {
+if (limitIndex !== -1 && args[limitIndex + 1]) {
   const limitArg = parseInt(args[limitIndex + 1]);
-  if (\!isNaN(limitArg)) {
+  if (!isNaN(limitArg)) {
     options.limit = limitArg;
   }
 }
 
 const sourceIndex = args.indexOf('--source');
-if (sourceIndex \!== -1 && args[sourceIndex + 1]) {
+if (sourceIndex !== -1 && args[sourceIndex + 1]) {
   options.source = args[sourceIndex + 1];
 }
 
@@ -48,7 +51,7 @@ if (sourceIndex \!== -1 && args[sourceIndex + 1]) {
  */
 function findFileInDirectory(filename: string, directory: string, deep: boolean = false): string | null {
   try {
-    if (\!fs.existsSync(directory)) {
+    if (!fs.existsSync(directory)) {
       return null;
     }
 
@@ -56,7 +59,7 @@ function findFileInDirectory(filename: string, directory: string, deep: boolean 
     
     // First, look for exact matches in the current directory
     const exactMatch = entries.find(entry => 
-      \!entry.isDirectory() && 
+      !entry.isDirectory() && 
       (entry.name.toLowerCase() === filename.toLowerCase())
     );
     
@@ -66,7 +69,7 @@ function findFileInDirectory(filename: string, directory: string, deep: boolean 
     
     // Then, look for files where the name is contained within
     const partialMatch = entries.find(entry => 
-      \!entry.isDirectory() && 
+      !entry.isDirectory() && 
       entry.name.toLowerCase().endsWith('.mp4') &&
       (
         entry.name.toLowerCase().includes(filename.toLowerCase().replace(/\.mp4$/, '')) || 
@@ -120,12 +123,28 @@ async function findUntranscribedFiles(): Promise<any[]> {
     : [];
   Logger.info(`Found ${localFiles.length} MP4 files in ${localDir}`);
   
-  // 1. Get MP4 files from sources_google
-  const { data: sources, error: sourcesError } = await supabase
+  // 1. Get MP4 files from sources_google with active filter profile
+  const activeFilter = await getActiveFilterProfile();
+  const rootDriveIdFilter = activeFilter?.rootDriveId;
+  
+  if (rootDriveIdFilter) {
+    Logger.info(`Using active filter profile: filtering by root_drive_id = ${rootDriveIdFilter}`);
+  } else {
+    Logger.info('No active filter profile found - searching all drives');
+  }
+  
+  let sourcesQuery = supabase
     .from('google_sources')
-    .select('id, name, mime_type')
+    .select('id, name, mime_type, root_drive_id')
     .eq('mime_type', 'video/mp4')
-    .eq('deleted', false);
+    .eq('is_deleted', false);
+  
+  // Apply root_drive_id filter if active
+  if (rootDriveIdFilter) {
+    sourcesQuery = sourcesQuery.eq('root_drive_id', rootDriveIdFilter);
+  }
+  
+  const { data: sources, error: sourcesError } = await sourcesQuery;
     
   if (sourcesError) {
     Logger.error(`Error fetching sources: ${sourcesError.message}`);
@@ -149,8 +168,8 @@ async function findUntranscribedFiles(): Promise<any[]> {
   // Filter for untranscribed sources
   const untranscribedSources = sources.filter((source: any) => 
     source.name.endsWith('.mp4') && 
-    \!transcribedSourceIds.has(source.id) &&
-    \!localFiles.includes(source.name)
+    !transcribedSourceIds.has(source.id) &&
+    !localFiles.includes(source.name)
   );
   
   Logger.info(`Found ${untranscribedSources.length} untranscribed MP4 files`);

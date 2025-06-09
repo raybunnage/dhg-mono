@@ -1,0 +1,432 @@
+{
+  "generated_at": "2025-06-08T21:51:41.840Z",
+  "total_pipelines": 35,
+  "analysis_summary": {
+    "keep": 9,
+    "merge": 19,
+    "minimal": 7
+  },
+  "projected_reduction": {
+    "current": 35,
+    "after": 21,
+    "reduction_count": 14,
+    "reduction_percentage": 40
+  },
+  "pipelines": [
+    {
+      "name": "ai",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "ai-services",
+        "has-cli"
+      ]
+    },
+    {
+      "name": "all_pipelines",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "analysis",
+      "category": "merge",
+      "merge_target": "deprecation",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "has-cli"
+      ]
+    },
+    {
+      "name": "archive",
+      "category": "merge",
+      "merge_target": "system",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "has-cli"
+      ]
+    },
+    {
+      "name": "auth",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": true,
+      "command_count": 1,
+      "script_count": 1,
+      "functionality": [
+        "authentication",
+        "has-cli",
+        "has-commands",
+        "enhanced-functionality"
+      ]
+    },
+    {
+      "name": "classify",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": true,
+      "command_count": 8,
+      "script_count": 0,
+      "functionality": [
+        "has-cli",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "core",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "database",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": true,
+      "command_count": 13,
+      "script_count": 24,
+      "functionality": [
+        "database-operations",
+        "has-cli",
+        "has-commands",
+        "enhanced-functionality"
+      ]
+    },
+    {
+      "name": "deprecation",
+      "category": "keep",
+      "reason": "Substantial implementation with 30 commands",
+      "has_main_cli": true,
+      "command_count": 30,
+      "script_count": 0,
+      "functionality": [
+        "has-cli",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "dev_tasks",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "document",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": false,
+      "command_count": 1,
+      "script_count": 0,
+      "functionality": [
+        "document-management",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "document_types",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": false,
+      "command_count": 2,
+      "script_count": 0,
+      "functionality": [
+        "document-management",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "drive_filter",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": false,
+      "command_count": 13,
+      "script_count": 0,
+      "functionality": [
+        "google-integration",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "email",
+      "category": "merge",
+      "merge_target": "auth",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "ai-services",
+        "has-cli"
+      ]
+    },
+    {
+      "name": "experts",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": true,
+      "command_count": 9,
+      "script_count": 1,
+      "functionality": [
+        "has-cli",
+        "has-commands",
+        "enhanced-functionality"
+      ]
+    },
+    {
+      "name": "git",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": true,
+      "command_count": 6,
+      "script_count": 0,
+      "functionality": [
+        "git-operations",
+        "has-cli",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "git_workflow",
+      "category": "merge",
+      "merge_target": "git",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "git-operations"
+      ]
+    },
+    {
+      "name": "gmail",
+      "category": "merge",
+      "merge_target": "auth",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "ai-services",
+        "has-cli"
+      ]
+    },
+    {
+      "name": "google_sync",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "google-integration"
+      ]
+    },
+    {
+      "name": "media-analytics",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": true,
+      "command_count": 4,
+      "script_count": 0,
+      "functionality": [
+        "media-processing",
+        "has-cli",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "media-processing",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": true,
+      "command_count": 38,
+      "script_count": 13,
+      "functionality": [
+        "media-processing",
+        "has-cli",
+        "has-commands",
+        "enhanced-functionality"
+      ]
+    },
+    {
+      "name": "mime_types",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "monitoring",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "has-cli"
+      ]
+    },
+    {
+      "name": "presentations",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": true,
+      "command_count": 26,
+      "script_count": 0,
+      "functionality": [
+        "has-cli",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "prompt_service",
+      "category": "keep",
+      "reason": "Core pipeline with established functionality",
+      "has_main_cli": false,
+      "command_count": 15,
+      "script_count": 0,
+      "functionality": [
+        "ai-services",
+        "has-commands"
+      ]
+    },
+    {
+      "name": "refactor_tracking",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "registry",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "has-cli"
+      ]
+    },
+    {
+      "name": "scripts",
+      "category": "merge",
+      "merge_target": "deprecation",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "has-cli"
+      ]
+    },
+    {
+      "name": "service_dependencies",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": false,
+      "command_count": 3,
+      "script_count": 0,
+      "functionality": [
+        "has-commands"
+      ]
+    },
+    {
+      "name": "shared",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "system",
+      "category": "minimal",
+      "reason": "Requires detailed evaluation for consolidation",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 3,
+      "functionality": [
+        "system-utilities",
+        "has-cli",
+        "enhanced-functionality"
+      ]
+    },
+    {
+      "name": "tracking",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Limited functionality - only 0 commands",
+      "has_main_cli": true,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "has-cli"
+      ]
+    },
+    {
+      "name": "utilities",
+      "category": "merge",
+      "merge_target": "system",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": [
+        "system-utilities"
+      ]
+    },
+    {
+      "name": "viewers",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    },
+    {
+      "name": "work_summaries",
+      "category": "merge",
+      "merge_target": "all_pipelines",
+      "reason": "Minimal pipeline with no significant functionality",
+      "has_main_cli": false,
+      "command_count": 0,
+      "script_count": 0,
+      "functionality": []
+    }
+  ]
+}

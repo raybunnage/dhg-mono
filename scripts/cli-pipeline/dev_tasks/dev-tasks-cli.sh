@@ -46,6 +46,8 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  show         Show detailed task information"
   echo "  copy-request Format task for copying to Claude"
   echo "  commit       Commit changes with automatic task linking"
+  echo "  assign-worktrees  Analyze commits to assign worktrees to tasks"
+  echo "  git-history-server  Start the Git History Analysis Server"
   echo "  health-check Run health check for dev tasks pipeline"
   echo ""
   echo "Examples:"
@@ -150,6 +152,18 @@ case "$1" in
     track_command "dev-tasks" "commit"
     shift
     ts-node "$SCRIPT_DIR/commit-with-task.ts" "$@"
+    ;;
+    
+  "assign-worktrees")
+    track_command "dev-tasks" "assign-worktrees"
+    shift
+    ts-node "$SCRIPT_DIR/commands/assign-worktrees.ts" "$@"
+    ;;
+    
+  "git-history-server")
+    track_command "dev-tasks" "git-history-server"
+    echo "Starting Git History Analysis Server on port 3011..."
+    node "$SCRIPT_DIR/git-history-server.js"
     ;;
     
   *)

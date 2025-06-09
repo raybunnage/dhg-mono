@@ -20,10 +20,10 @@
 import path from 'path';
 import crypto from 'crypto';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { FileService } from '../../packages/cli/src/services/file-service';
-import { Logger, LogLevel } from '../../packages/cli/src/utils/logger';
-import { ErrorHandler } from '../../packages/cli/src/utils/error-handler';
-import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
+import { FileService } from '../../../packages/shared/services/file-service';
+import { Logger, LogLevel } from '../../../packages/shared/utils/logger';
+// ErrorHandler not needed - using Logger directly
+import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 
 // Environment variables
 const LOG_LEVEL = (process.env.CLI_LOG_LEVEL || 'info').toLowerCase() as string;
@@ -499,7 +499,7 @@ async function syncMarkdownFiles() {
     
     Logger.info('Markdown files synchronization completed successfully');
   } catch (error) {
-    ErrorHandler.handle(error as Error, true);
+    Logger.error("Error:", error);
     process.exit(1);
   }
 }
