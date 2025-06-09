@@ -8,7 +8,6 @@
 import { execSync } from 'child_process';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import * as path from 'path';
-import * as fs from 'fs';
 
 interface TaskCommit {
   taskId: string;
@@ -22,6 +21,15 @@ interface WorktreeInfo {
   path: string;
   branch: string;
   head: string;
+}
+
+interface CommitInfo {
+  hash: string;
+  date: string;
+  author: string;
+  message: string;
+  worktreePath: string;
+  filesChanged: string[];
 }
 
 async function getWorktreeList(): Promise<WorktreeInfo[]> {
@@ -94,6 +102,50 @@ async function getCommitsWithTaskIds(worktreePath: string): Promise<TaskCommit[]
   return commits;
 }
 
+async function getAllCommitsFromWorktree(worktreePath: string, since: string = '6 months ago'): Promise<CommitInfo[]> {
+  const commits: CommitInfo[] = [];
+  
+  try {
+    // Change to worktree directory
+    process.chdir(worktreePath);
+    
+    // Get all commits with file changes
+    const gitLog = execSync(
+      `git log --all --pretty=format:"%H|%ai|%an|%s" --name-only --since="${since}"`,
+      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
+    );
+    
+    if (!gitLog) return commits;
+    
+    // Parse the git log output
+    const entries = gitLog.split('\n\n');
+    
+    for (const entry of entries) {
+      const lines = entry.trim().split('\n');
+      if (lines.length === 0 || !lines[0]) continue;
+      
+      const [hash, date, author, ...messageParts] = lines[0].split('|');
+      const message = messageParts.join('|');
+      const filesChanged = lines.slice(1).filter(f => f.trim());
+      
+      if (hash && message) {
+        commits.push({
+          hash,
+          date,
+          author,
+          message,
+          worktreePath,
+          filesChanged
+        });
+      }
+    }
+  } catch (error) {
+    console.error(`Error getting commits from ${worktreePath}:`, error);
+  }
+  
+  return commits;
+}
+
 async function analyzeUnassignedTasks(worktrees: WorktreeInfo[]): Promise<Map<string, string>> {
   const taskWorktreeMap = new Map<string, string>();
   const supabase = SupabaseClientService.getInstance().getClient();
@@ -158,6 +210,121 @@ async function analyzeUnassignedTasks(worktrees: WorktreeInfo[]): Promise<Map<st
   }
   
   return taskWorktreeMap;
+}
+
+async function analyzeCompletedTasksWithoutIds(worktrees: WorktreeInfo[]): Promise<void> {
+  const supabase = SupabaseClientService.getInstance().getClient();
+  
+  console.log('\n🔍 Analyzing completed tasks without explicit task IDs...');
+  
+  // Get all completed tasks
+  const { data: completedTasks, error } = await supabase
+    .from('dev_tasks')
+    .select('id, title, description, created_at, completed_at, worktree_path')
+    .in('status', ['completed', 'merged'])
+    .is('worktree_path', null);
+  
+  if (error || !completedTasks) {
+    console.error('Error fetching completed tasks:', error);
+    return;
+  }
+  
+  console.log(`Found ${completedTasks.length} completed tasks without worktree assignments`);
+  
+  // Collect all commits from all worktrees
+  const allCommits: CommitInfo[] = [];
+  for (const worktree of worktrees) {
+    console.log(`  Analyzing commits in ${path.basename(worktree.path)}...`);
+    const commits = await getAllCommitsFromWorktree(worktree.path);
+    allCommits.push(...commits);
+  }
+  
+  console.log(`  Total commits to analyze: ${allCommits.length}`);
+  
+  // For each completed task, try to find matching commits
+  const assignments = new Map<string, { worktree: string; confidence: number; reason: string }>();
+  
+  for (const task of completedTasks) {
+    let bestMatch: { worktree: string; confidence: number; reason: string } | null = null;
+    
+    // Strategy 1: Look for commits mentioning the task title
+    const titleWords = task.title.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    
+    for (const commit of allCommits) {
+      let confidence = 0;
+      let reasons: string[] = [];
+      
+      const commitMessageLower = commit.message.toLowerCase();
+      
+      // Check title word matches
+      const matchingWords = titleWords.filter(word => commitMessageLower.includes(word));
+      if (matchingWords.length > 0) {
+        confidence += (matchingWords.length / titleWords.length) * 40;
+        reasons.push(`title match: ${matchingWords.join(', ')}`);
+      }
+      
+      // Check if commit is within task lifecycle
+      if (task.created_at && task.completed_at) {
+        const commitDate = new Date(commit.date);
+        const taskCreated = new Date(task.created_at);
+        const taskCompleted = new Date(task.completed_at);
+        
+        if (commitDate >= taskCreated && commitDate <= taskCompleted) {
+          confidence += 20;
+          reasons.push('within task lifecycle');
+        }
+      }
+      
+      // Check file patterns if task has description hints
+      if (task.description) {
+        const descWords = task.description.toLowerCase().split(/\s+/);
+        const fileKeywords = descWords.filter(w => 
+          w.includes('.tsx') || w.includes('.ts') || w.includes('component') || 
+          w.includes('page') || w.includes('service') || w.includes('hook')
+        );
+        
+        for (const keyword of fileKeywords) {
+          if (commit.filesChanged.some(f => f.toLowerCase().includes(keyword))) {
+            confidence += 15;
+            reasons.push(`file pattern: ${keyword}`);
+          }
+        }
+      }
+      
+      if (confidence > 0 && (!bestMatch || confidence > bestMatch.confidence)) {
+        bestMatch = {
+          worktree: commit.worktreePath,
+          confidence,
+          reason: reasons.join(', ')
+        };
+      }
+    }
+    
+    if (bestMatch && bestMatch.confidence >= 30) {
+      assignments.set(task.id, bestMatch);
+    }
+  }
+  
+  // Update tasks with inferred worktree assignments
+  console.log(`\n📊 Inferred assignments for ${assignments.size} completed tasks:`);
+  
+  for (const [taskId, assignment] of assignments) {
+    const task = completedTasks.find(t => t.id === taskId);
+    console.log(`  "${task?.title}" -> ${path.basename(assignment.worktree)}`);
+    console.log(`    Confidence: ${assignment.confidence}% (${assignment.reason})`);
+    
+    const { error: updateError } = await supabase
+      .from('dev_tasks')
+      .update({ 
+        worktree_path: assignment.worktree,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', taskId);
+    
+    if (updateError) {
+      console.error(`    ❌ Failed to update: ${updateError.message}`);
+    }
+  }
 }
 
 async function assignWorktreets() {
@@ -247,6 +414,9 @@ async function assignWorktreets() {
     
     console.log(`✅ Assigned ${inferredCount} additional tasks based on analysis\n`);
     
+    // Analyze completed tasks without IDs
+    await analyzeCompletedTasksWithoutIds(worktrees);
+    
     // Get final statistics
     const { data: stats } = await supabase
       .from('dev_tasks')
@@ -257,7 +427,7 @@ async function assignWorktreets() {
       .from('dev_tasks')
       .select('count');
     
-    console.log('📈 Final Statistics:');
+    console.log('\n📈 Final Statistics:');
     console.log(`  Total tasks: ${totalTasks?.[0]?.count || 0}`);
     console.log(`  Tasks with worktrees: ${stats?.length || 0}`);
     console.log(`  Coverage: ${Math.round((stats?.length || 0) / (totalTasks?.[0]?.count || 1) * 100)}%`);

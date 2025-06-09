@@ -26,7 +26,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [appFilter, setAppFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCompleted, setShowCompleted] = useState(false); // Default to hiding completed tasks
+  const [completionFilter, setCompletionFilter] = useState<'all' | 'completed' | 'unfinished'>('unfinished'); // 3-state filter
   const [worktreeFilter, setWorktreeFilter] = useState<string>('');
   const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
 
@@ -189,13 +189,22 @@ export default function TasksPage() {
               All Tasks
               {worktreeFilter === '' && (
                 <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-gray-800 bg-gray-200 rounded-full">
-                  {tasks.length}
+                  {tasks.filter(t => {
+                    if (completionFilter === 'completed') return t.status === 'completed' || t.status === 'merged';
+                    if (completionFilter === 'unfinished') return t.status !== 'completed' && t.status !== 'merged';
+                    return true;
+                  }).length}
                 </span>
               )}
             </button>
             
             {worktrees.map((worktree) => {
-              const taskCount = tasks.filter(t => t.worktree_path === worktree.path).length;
+              const worktreeTasks = tasks.filter(t => t.worktree_path === worktree.path);
+              const taskCount = worktreeTasks.filter(t => {
+                if (completionFilter === 'completed') return t.status === 'completed' || t.status === 'merged';
+                if (completionFilter === 'unfinished') return t.status !== 'completed' && t.status !== 'merged';
+                return true; // 'all'
+              }).length;
               const isActive = worktreeFilter === worktree.path;
               
               return (
@@ -224,7 +233,12 @@ export default function TasksPage() {
             
             {/* Show unassigned tasks pill */}
             {(() => {
-              const unassignedCount = tasks.filter(t => !t.worktree_path).length;
+              const unassignedTasks = tasks.filter(t => !t.worktree_path);
+              const unassignedCount = unassignedTasks.filter(t => {
+                if (completionFilter === 'completed') return t.status === 'completed' || t.status === 'merged';
+                if (completionFilter === 'unfinished') return t.status !== 'completed' && t.status !== 'merged';
+                return true;
+              }).length;
               if (unassignedCount > 0) {
                 return (
                   <button
@@ -328,35 +342,41 @@ export default function TasksPage() {
           </div>
 
           <div className="md:col-span-2 lg:col-span-1 flex items-end gap-2 flex-wrap">
-            <button
-              onClick={() => setShowCompleted(!showCompleted)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors ${
-                showCompleted 
-                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-              title={showCompleted ? 'Hide completed tasks' : 'Show completed tasks'}
-            >
-              {showCompleted ? (
-                <>
-                  <Eye className="w-4 h-4" />
-                  <span>Hide Completed</span>
-                </>
-              ) : (
-                <>
-                  <EyeOff className="w-4 h-4" />
-                  <span>Show Completed</span>
-                  {(() => {
-                    const completedCount = tasks.filter(t => t.status === 'completed').length;
-                    return completedCount > 0 ? (
-                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
-                        {completedCount}
-                      </span>
-                    ) : null;
-                  })()}
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setCompletionFilter('unfinished')}
+                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                  completionFilter === 'unfinished'
+                    ? 'bg-white text-blue-700 shadow'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                title="Show unfinished tasks only"
+              >
+                Unfinished
+              </button>
+              <button
+                onClick={() => setCompletionFilter('completed')}
+                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                  completionFilter === 'completed'
+                    ? 'bg-white text-green-700 shadow'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                title="Show completed tasks only"
+              >
+                Completed
+              </button>
+              <button
+                onClick={() => setCompletionFilter('all')}
+                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                  completionFilter === 'all'
+                    ? 'bg-white text-gray-700 shadow'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+                title="Show all tasks"
+              >
+                All
+              </button>
+            </div>
             <button
               onClick={() => {
                 setSearchQuery('');
@@ -386,21 +406,22 @@ export default function TasksPage() {
             filteredTasks = filteredTasks.filter(task => task.worktree_path === worktreeFilter);
           }
           
-          // If status filter is explicitly set to "completed", show only completed tasks
-          // Otherwise, respect the showCompleted toggle
-          if (statusFilter !== 'completed' && !showCompleted) {
-            filteredTasks = filteredTasks.filter(task => task.status !== 'completed');
+          // Apply completion filter
+          if (completionFilter === 'completed') {
+            filteredTasks = filteredTasks.filter(task => task.status === 'completed' || task.status === 'merged');
+          } else if (completionFilter === 'unfinished') {
+            filteredTasks = filteredTasks.filter(task => task.status !== 'completed' && task.status !== 'merged');
           }
-          
-          const completedCount = tasks.filter(task => task.status === 'completed').length;
-          const hiddenCompletedCount = !showCompleted && statusFilter !== 'completed' ? completedCount : 0;
+          // 'all' shows everything - no additional filtering needed
           
           if (filteredTasks.length === 0) {
             return (
               <div className="p-8 text-center text-gray-500">
                 <p>
-                  {hiddenCompletedCount > 0 
-                    ? `No active tasks found. ${hiddenCompletedCount} completed task${hiddenCompletedCount !== 1 ? 's' : ''} hidden.`
+                  {completionFilter === 'completed' 
+                    ? 'No completed tasks found.'
+                    : completionFilter === 'unfinished'
+                    ? 'No unfinished tasks found. Great job!'
                     : 'No tasks found. Create your first task to get started!'}
                 </p>
               </div>
