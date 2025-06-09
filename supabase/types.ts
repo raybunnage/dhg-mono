@@ -211,6 +211,8 @@ export type Database = {
           ui_components: string[] | null
           updated_at: string | null
           work_date: string
+          worktree: string | null
+          worktree_path: string | null
         }
         Insert: {
           category?: string | null
@@ -226,6 +228,8 @@ export type Database = {
           ui_components?: string[] | null
           updated_at?: string | null
           work_date?: string
+          worktree?: string | null
+          worktree_path?: string | null
         }
         Update: {
           category?: string | null
@@ -241,6 +245,8 @@ export type Database = {
           ui_components?: string[] | null
           updated_at?: string | null
           work_date?: string
+          worktree?: string | null
+          worktree_path?: string | null
         }
         Relationships: []
       }
@@ -1245,13 +1251,19 @@ export type Database = {
           git_commit_current: string | null
           git_commit_start: string | null
           git_commits_count: number | null
+          has_commits: boolean | null
           id: string
           is_subtask: boolean | null
+          last_commit_at: string | null
           parent_task_id: string | null
           priority: string | null
+          progress_status: string | null
           requires_branch: boolean | null
           revision_count: number | null
           status: string | null
+          submitted_at: string | null
+          submitted_on_worktree: string | null
+          submitted_to_claude: boolean | null
           task_type: string | null
           testing_notes: string | null
           title: string
@@ -1272,13 +1284,19 @@ export type Database = {
           git_commit_current?: string | null
           git_commit_start?: string | null
           git_commits_count?: number | null
+          has_commits?: boolean | null
           id?: string
           is_subtask?: boolean | null
+          last_commit_at?: string | null
           parent_task_id?: string | null
           priority?: string | null
+          progress_status?: string | null
           requires_branch?: boolean | null
           revision_count?: number | null
           status?: string | null
+          submitted_at?: string | null
+          submitted_on_worktree?: string | null
+          submitted_to_claude?: boolean | null
           task_type?: string | null
           testing_notes?: string | null
           title: string
@@ -1299,13 +1317,19 @@ export type Database = {
           git_commit_current?: string | null
           git_commit_start?: string | null
           git_commits_count?: number | null
+          has_commits?: boolean | null
           id?: string
           is_subtask?: boolean | null
+          last_commit_at?: string | null
           parent_task_id?: string | null
           priority?: string | null
+          progress_status?: string | null
           requires_branch?: boolean | null
           revision_count?: number | null
           status?: string | null
+          submitted_at?: string | null
+          submitted_on_worktree?: string | null
+          submitted_to_claude?: boolean | null
           task_type?: string | null
           testing_notes?: string | null
           title?: string
@@ -1330,6 +1354,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      doc_archives: {
+        Row: {
+          archive_path: string
+          archive_reason: string | null
+          archived_at: string | null
+          content_hash: string | null
+          created_at: string | null
+          description: string | null
+          file_size: number | null
+          id: string
+          metadata: Json | null
+          original_path: string
+          related_living_docs: string[] | null
+          searchable_content: string | null
+          tags: string[] | null
+          title: string | null
+        }
+        Insert: {
+          archive_path: string
+          archive_reason?: string | null
+          archived_at?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          original_path: string
+          related_living_docs?: string[] | null
+          searchable_content?: string | null
+          tags?: string[] | null
+          title?: string | null
+        }
+        Update: {
+          archive_path?: string
+          archive_reason?: string | null
+          archived_at?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          original_path?: string
+          related_living_docs?: string[] | null
+          searchable_content?: string | null
+          tags?: string[] | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      doc_continuous_monitoring: {
+        Row: {
+          area: string
+          created_at: string | null
+          description: string | null
+          file_path: string
+          id: string
+          last_updated: string | null
+          metadata: Json | null
+          next_review_date: string
+          owner: string | null
+          priority: string | null
+          review_frequency_days: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          area: string
+          created_at?: string | null
+          description?: string | null
+          file_path: string
+          id?: string
+          last_updated?: string | null
+          metadata?: Json | null
+          next_review_date: string
+          owner?: string | null
+          priority?: string | null
+          review_frequency_days?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          area?: string
+          created_at?: string | null
+          description?: string | null
+          file_path?: string
+          id?: string
+          last_updated?: string | null
+          metadata?: Json | null
+          next_review_date?: string
+          owner?: string | null
+          priority?: string | null
+          review_frequency_days?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       doc_continuous_tracking: {
         Row: {
@@ -1510,6 +1636,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      doc_monitoring_history: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string | null
+          doc_id: string | null
+          id: string
+          notes: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string | null
+          doc_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string | null
+          doc_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_monitoring_history_doc_id_fkey"
+            columns: ["doc_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_monitoring"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_types: {
         Row: {
@@ -4274,6 +4438,81 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_scripts_files: {
+        Row: {
+          archive_date: string
+          archive_id: string
+          archive_reason: string | null
+          archived_path: string
+          command_name: string | null
+          created_at: string | null
+          file_extension: string | null
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          last_command: string | null
+          last_modified: string | null
+          last_used: string | null
+          original_path: string
+          pipeline_name: string | null
+          replacement_command: string | null
+          restored: boolean | null
+          restored_by: string | null
+          restored_date: string | null
+          script_type: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          archive_date?: string
+          archive_id: string
+          archive_reason?: string | null
+          archived_path: string
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path: string
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          archive_date?: string
+          archive_id?: string
+          archive_reason?: string | null
+          archived_path?: string
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_cli_pipelines: {
         Row: {
           commands: Json | null
@@ -4972,6 +5211,87 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_scripts_active_view: {
+        Row: {
+          archive_date: string | null
+          archive_id: string | null
+          archive_reason: string | null
+          archived_path: string | null
+          command_name: string | null
+          created_at: string | null
+          file_extension: string | null
+          file_name: string | null
+          file_size_bytes: number | null
+          id: string | null
+          last_command: string | null
+          last_modified: string | null
+          last_used: string | null
+          original_path: string | null
+          pipeline_name: string | null
+          replacement_command: string | null
+          restored: boolean | null
+          restored_by: string | null
+          restored_date: string | null
+          script_type: string | null
+          time_archived: unknown | null
+          updated_at: string | null
+          usage_count: number | null
+          usage_status: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_id?: string | null
+          archive_reason?: string | null
+          archived_path?: string | null
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          id?: string | null
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string | null
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          time_archived?: never
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_status?: never
+        }
+        Update: {
+          archive_date?: string | null
+          archive_id?: string | null
+          archive_reason?: string | null
+          archived_path?: string | null
+          command_name?: string | null
+          created_at?: string | null
+          file_extension?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          id?: string | null
+          last_command?: string | null
+          last_modified?: string | null
+          last_used?: string | null
+          original_path?: string | null
+          pipeline_name?: string | null
+          replacement_command?: string | null
+          restored?: boolean | null
+          restored_by?: string | null
+          restored_date?: string | null
+          script_type?: string | null
+          time_archived?: never
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_status?: never
+        }
+        Relationships: []
+      }
       sys_database_objects_info_view: {
         Row: {
           column_count: number | null
@@ -5100,6 +5420,21 @@ export type Database = {
           potential_reference_table: string
           potential_reference_column: string
           match_percentage: number
+        }[]
+      }
+      analyze_function_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          function_name: string
+          function_schema: string
+          argument_types: string
+          return_type: string
+          is_used: boolean
+          used_in_views: number
+          used_in_functions: number
+          used_in_triggers: number
+          total_usage_count: number
+          can_be_safely_removed: boolean
         }[]
       }
       analyze_table_constraints: {
@@ -5378,6 +5713,18 @@ export type Database = {
           table_dependencies: string[]
         }[]
       }
+      get_docs_needing_review: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          file_path: string
+          title: string
+          area: string
+          last_updated: string
+          next_review_date: string
+          days_overdue: number
+        }[]
+      }
       get_document_type_counts: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -5550,12 +5897,18 @@ export type Database = {
         }[]
       }
       get_table_columns: {
-        Args: { p_table_name: string }
+        Args:
+          | { p_table_name: string }
+          | { schema_name: string; table_name: string }
         Returns: {
           column_name: string
           data_type: string
           is_nullable: string
           column_default: string
+          character_maximum_length: number
+          numeric_precision: number
+          numeric_scale: number
+          is_identity: string
           ordinal_position: number
         }[]
       }
@@ -5597,23 +5950,44 @@ export type Database = {
         }[]
       }
       get_table_constraints: {
-        Args: { p_table_name: string }
-        Returns: Json
+        Args:
+          | { p_table_name: string }
+          | { schema_name: string; table_name: string }
+        Returns: {
+          constraint_name: string
+          constraint_type: string
+          column_names: string[]
+          foreign_table_name: string
+          foreign_column_names: string[]
+        }[]
       }
       get_table_definition: {
         Args: { p_table_name: string }
         Returns: string[]
       }
       get_table_foreign_keys: {
-        Args: { p_table_name: string }
+        Args:
+          | { p_table_name: string }
+          | { schema_name: string; table_name: string }
         Returns: {
-          table_schema: string
           constraint_name: string
-          table_name: string
           column_name: string
           foreign_table_schema: string
           foreign_table_name: string
           foreign_column_name: string
+          delete_rule: string
+          update_rule: string
+        }[]
+      }
+      get_table_indexes: {
+        Args: { schema_name: string; table_name: string }
+        Returns: {
+          index_name: string
+          is_unique: boolean
+          is_primary: boolean
+          column_names: string[]
+          index_type: string
+          index_size: number
         }[]
       }
       get_table_info: {
@@ -5645,9 +6019,32 @@ export type Database = {
         Args: { p_target_table: string }
         Returns: Json
       }
+      get_table_policies: {
+        Args: { schema_name: string; table_name: string }
+        Returns: {
+          policy_name: string
+          command: string
+          permissive: string
+          roles: string[]
+          qual: string
+          with_check: string
+        }[]
+      }
       get_table_row_count: {
         Args: { p_table_name: string }
         Returns: number
+      }
+      get_table_triggers: {
+        Args: { schema_name: string; table_name: string }
+        Returns: {
+          trigger_name: string
+          event_manipulation: string
+          event_object_table: string
+          action_timing: string
+          action_orientation: string
+          action_statement: string
+          is_enabled: boolean
+        }[]
       }
       get_triggers: {
         Args: { schema_name: string }
@@ -5761,6 +6158,18 @@ export type Database = {
           commands: string[]
           tags: string[]
           category: string
+          rank: number
+        }[]
+      }
+      search_doc_archives: {
+        Args: { search_query: string }
+        Returns: {
+          id: string
+          original_path: string
+          title: string
+          description: string
+          tags: string[]
+          related_living_docs: string[]
           rank: number
         }[]
       }

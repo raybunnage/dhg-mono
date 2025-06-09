@@ -238,7 +238,10 @@ export class TaskService {
       .eq('task_id', taskId)
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching commits:', error);
+      throw new Error(`Failed to fetch commits: ${error.message}`);
+    }
     return data as DevTaskCommit[];
   }
 
@@ -249,7 +252,10 @@ export class TaskService {
       .eq('task_id', taskId)
       .order('started_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching work sessions:', error);
+      throw new Error(`Failed to fetch work sessions: ${error.message}`);
+    }
     return data as DevTaskWorkSession[];
   }
 
