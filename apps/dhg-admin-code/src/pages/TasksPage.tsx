@@ -98,6 +98,12 @@ export default function TasksPage() {
     );
   };
 
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(currentTasks => 
+      currentTasks.filter(task => task.id !== taskId)
+    );
+  };
+
   const loadWorktrees = async () => {
     try {
       const { data, error } = await supabase
@@ -423,7 +429,12 @@ export default function TasksPage() {
           return (
             <div className="divide-y divide-gray-200">
               {filteredTasks.map((task) => (
-                <TaskCard key={task.id} task={task} onTaskUpdate={handleTaskUpdate} />
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  onTaskUpdate={handleTaskUpdate}
+                  onTaskDelete={handleTaskDelete}
+                />
               ))}
             </div>
           );

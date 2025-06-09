@@ -1,22 +1,56 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GitBranch, FolderOpen, ChevronRight, CheckCircle, Clock, AlertCircle, GitCommit, Send, Code, Edit3, Target, Shield, TrendingUp, TestTube } from 'lucide-react';
-import type { DevTask } from '../services/task-service';
+import { GitBranch, FolderOpen, ChevronRight, CheckCircle, Clock, AlertCircle, GitCommit, Send, Code, Edit3, Target, Shield, TrendingUp, TestTube, Trash2 } from 'lucide-react';
+import { TaskService, type DevTask } from '../services/task-service';
 import { getWorktreeByPath } from '../utils/worktree-mapping';
 import { EditTaskModal } from './EditTaskModal';
 
 interface TaskCardProps {
   task: DevTask;
   onTaskUpdate?: (updatedTask: DevTask) => void;
+  onTaskDelete?: (taskId: string) => void;
 }
 
-export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
+export function TaskCard({ task, onTaskUpdate, onTaskDelete }: TaskCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent Link navigation
     e.stopPropagation();
     setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsDeleting(true);
+    try {
+      await TaskService.deleteTask(task.id);
+      if (onTaskDelete) {
+        onTaskDelete(task.id);
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Failed to delete task. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
   };
 
   const handleTaskUpdate = (updatedTask: DevTask) => {
@@ -349,14 +383,45 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <button
-                  onClick={handleEditClick}
-                  className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                  title="Edit task"
-                >
-                  <Edit3 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
-                </button>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+                {showDeleteConfirm ? (
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-xs text-red-600">Delete?</span>
+                    <button
+                      onClick={handleConfirmDelete}
+                      disabled={isDeleting}
+                      className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Confirm delete"
+                    >
+                      {isDeleting ? '...' : 'Yes'}
+                    </button>
+                    <button
+                      onClick={handleCancelDelete}
+                      disabled={isDeleting}
+                      className="px-2 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:opacity-50 transition-colors"
+                      title="Cancel delete"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleEditClick}
+                      className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                      title="Edit task"
+                    >
+                      <Edit3 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                    </button>
+                    <button
+                      onClick={handleDeleteClick}
+                      className="p-1.5 hover:bg-red-100 rounded transition-colors"
+                      title="Delete task"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-600" />
+                    </button>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </>
+                )}
               </div>
             </div>
           </div>
