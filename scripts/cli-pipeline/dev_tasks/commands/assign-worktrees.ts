@@ -248,7 +248,7 @@ async function analyzeCompletedTasksWithoutIds(worktrees: WorktreeInfo[]): Promi
     let bestMatch: { worktree: string; confidence: number; reason: string } | null = null;
     
     // Strategy 1: Look for commits mentioning the task title
-    const titleWords = task.title.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const titleWords = task.title.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
     
     for (const commit of allCommits) {
       let confidence = 0;
@@ -257,7 +257,7 @@ async function analyzeCompletedTasksWithoutIds(worktrees: WorktreeInfo[]): Promi
       const commitMessageLower = commit.message.toLowerCase();
       
       // Check title word matches
-      const matchingWords = titleWords.filter(word => commitMessageLower.includes(word));
+      const matchingWords = titleWords.filter((word: string) => commitMessageLower.includes(word));
       if (matchingWords.length > 0) {
         confidence += (matchingWords.length / titleWords.length) * 40;
         reasons.push(`title match: ${matchingWords.join(', ')}`);
@@ -278,7 +278,7 @@ async function analyzeCompletedTasksWithoutIds(worktrees: WorktreeInfo[]): Promi
       // Check file patterns if task has description hints
       if (task.description) {
         const descWords = task.description.toLowerCase().split(/\s+/);
-        const fileKeywords = descWords.filter(w => 
+        const fileKeywords = descWords.filter((w: string) => 
           w.includes('.tsx') || w.includes('.ts') || w.includes('component') || 
           w.includes('page') || w.includes('service') || w.includes('hook')
         );
