@@ -49,6 +49,8 @@ export function ScriptsManagement() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [pipelineGroups, setPipelineGroups] = useState<PipelineGroup[]>([]);
+  const [runningCommand, setRunningCommand] = useState<string | null>(null);
+  const [commandStatus, setCommandStatus] = useState<string>('');
 
   // Extract pipeline from file path
   const extractPipelineFromPath = (filePath: string): string => {
@@ -95,6 +97,49 @@ export function ScriptsManagement() {
     }
     return { icon: '❌', color: 'text-red-600', tooltip: 'Low confidence classification' };
   };
+
+  // Run CLI command via API
+  const runCliCommand = async (command: string, args: string[] = []) => {
+    setRunningCommand(command);
+    setCommandStatus(`Running ${command}...`);
+
+    try {
+      const response = await fetch('http://localhost:3009/api/execute-command', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command: './scripts/cli-pipeline/scripts/scripts-cli.sh',
+          args: [command, ...args]
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setCommandStatus(`${command} completed successfully`);
+        if (command === 'sync') {
+          // Refresh scripts after sync - trigger a reload
+          window.location.reload();
+        }
+      } else {
+        setCommandStatus(`${command} failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error running command:', error);
+      setCommandStatus('Failed to run command - is the API server running?');
+    } finally {
+      setRunningCommand(null);
+      // Clear status after 5 seconds
+      setTimeout(() => setCommandStatus(''), 5000);
+    }
+  };
+
+  // Handle specific command buttons
+  const handleSyncScripts = () => runCliCommand('sync');
+  const handleHealthCheck = () => runCliCommand('health-check');
+  const handleRunAnalysis = () => runCliCommand('stats');
 
   // Load scripts
   useEffect(() => {
@@ -344,14 +389,40 @@ export function ScriptsManagement() {
         <h1 className="text-3xl font-bold text-gray-900">Scripts Management</h1>
         
         <div className="flex space-x-4">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Sync Scripts
+          <button 
+            onClick={handleSyncScripts}
+            disabled={runningCommand === 'sync'}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
+          >
+            {runningCommand === 'sync' ? 'Syncing...' : 'Sync Scripts'}
           </button>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-            Run Health Check
+          <button 
+            onClick={handleHealthCheck}
+            disabled={runningCommand === 'health-check'}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 transition-colors"
+          >
+            {runningCommand === 'health-check' ? 'Checking...' : 'Run Health Check'}
+          </button>
+          <button 
+            onClick={handleRunAnalysis}
+            disabled={runningCommand === 'stats'}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-purple-400 transition-colors"
+          >
+            {runningCommand === 'stats' ? 'Analyzing...' : 'Run Analysis'}
           </button>
         </div>
       </div>
+
+      {/* Command Status */}
+      {commandStatus && (
+        <div className={`mb-6 px-4 py-2 rounded-md text-sm ${
+          commandStatus.includes('failed') || commandStatus.includes('Failed') 
+            ? 'bg-red-50 text-red-700 border border-red-200' 
+            : 'bg-blue-50 text-blue-700 border border-blue-200'
+        }`}>
+          {commandStatus}
+        </div>
+      )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
