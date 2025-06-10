@@ -6,7 +6,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { dhgAudioAuth, type LightAuthUser, type LightAuthResult, type ProfileFormData } from '../services/dhg-audio-auth-service';
+import { lightAuthBrowserService, type LightAuthResult } from '../services/light-auth-browser-service';
+import type { User as LightAuthUser } from '@supabase/supabase-js';
+import type { ProfileFormData } from '@shared/services/user-profile-service';
 
 /**
  * Authentication hook state
@@ -47,7 +49,7 @@ export function useAuth(): UseAuthReturn {
     const initializeAuth = async () => {
       try {
         console.log('[useAuth] Initializing auth...');
-        const currentUser = dhgAudioAuth.getCurrentUser();
+        const currentUser = lightAuthBrowserService.getCurrentUser();
         console.log('[useAuth] Current user from auth service:', currentUser);
         
         // Also check localStorage directly
@@ -67,7 +69,7 @@ export function useAuth(): UseAuthReturn {
           });
           
           // Then check profile completion in the background
-          dhgAudioAuth.hasCompletedOnboarding(currentUser.id)
+          lightAuthBrowserService.hasCompletedOnboarding(currentUser.id)
             .then(hasProfile => {
               console.log('[useAuth] Profile check result:', hasProfile);
               if (mounted) {
@@ -127,7 +129,7 @@ export function useAuth(): UseAuthReturn {
     
     try {
       console.log('Attempting login with email:', email);
-      const result = await dhgAudioAuth.login(email);
+      const result = await lightAuthBrowserService.login(email);
       console.log('Login result:', result);
       
       if (!result.success) {
@@ -170,7 +172,7 @@ export function useAuth(): UseAuthReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const result = await dhgAudioAuth.registerWithProfile(email, name, profile);
+      const result = await lightAuthBrowserService.registerWithProfile(email, name, profile);
       
       if (result.success && result.user) {
         setState({
@@ -207,7 +209,7 @@ export function useAuth(): UseAuthReturn {
   // Complete profile method
   const completeProfile = useCallback(async (profile: ProfileFormData): Promise<boolean> => {
     // Get current user from auth service in case state hasn't updated yet
-    const currentUser = state.user || dhgAudioAuth.getCurrentUser();
+    const currentUser = state.user || lightAuthBrowserService.getCurrentUser();
     
     if (!currentUser) {
       console.error('No user to complete profile for');
@@ -218,7 +220,7 @@ export function useAuth(): UseAuthReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const success = await dhgAudioAuth.completeProfile(currentUser.id, profile);
+      const success = await lightAuthBrowserService.completeProfile(currentUser.id, profile);
       
       if (success) {
         setState(prev => ({
@@ -255,7 +257,7 @@ export function useAuth(): UseAuthReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      await dhgAudioAuth.logout();
+      await lightAuthBrowserService.logout();
       setState({
         user: null,
         loading: false,
