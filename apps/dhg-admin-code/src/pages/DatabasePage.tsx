@@ -2,55 +2,20 @@ import { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { TableDetailsModal } from '../components/TableDetailsModal';
 import { supabase } from '../lib/supabase';
+import { 
+  DatabaseMetadataService, 
+  type TableInfo, 
+  type ViewInfo, 
+  type PrefixInfo 
+} from '@shared/services/database-metadata-service';
 
-interface TableInfo {
-  table_name: string;
-  table_schema: string;
-  table_type: string;
-  object_type?: string; // 'table' | 'view' | 'materialized_view'
-  row_count: number;
-  size_pretty?: string;
-  size_bytes?: number;
-  column_count?: number;
-  has_primary_key?: boolean;
-  has_rls?: boolean;
-  created_at?: string;
-  updated_at?: string;
-  description?: string;
-  purpose?: string;
-  created_date?: string;
-  created_by?: string;
-  notes?: string;
-  error?: string;
-  columns?: string[];
-  is_updatable?: boolean;
-  is_insertable?: boolean;
-  depends_on?: string[];
-  dependency_count?: number;
-}
-
-interface PrefixInfo {
-  prefix: string;
-  label: string;
-  count: number;
-  description: string;
-}
-
-interface ViewInfo {
-  view_name: string;
-  view_schema: string;
-  is_updatable: boolean;
-  is_insertable: boolean;
-  has_rls: boolean;
-  table_dependencies: string[];
-  suggested_prefix: string;
-  description?: string;
-  purpose?: string;
-}
+// Create database metadata service instance
+const dbMetadataService = DatabaseMetadataService.getInstance(supabase);
 
 export function DatabasePage() {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [views, setViews] = useState<ViewInfo[]>([]);
+  const [prefixes, setPrefixes] = useState<PrefixInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'with-data' | 'empty'>('all');
@@ -72,107 +37,17 @@ export function DatabasePage() {
     setError(null);
     
     try {
-      // First try the enhanced function, fall back to the basic one if it doesn't exist
-      let tablesData: any[] | null = null;
-      let tablesError: any = null;
-
-      // Try the new function with definitions
-      const result = await supabase.rpc('get_table_info_with_definitions');
-      
-      if (result.error?.code === '42883') { // Function does not exist
-        // Fall back to the existing function
-        const fallbackResult = await supabase.rpc('get_all_tables_with_metadata');
-        tablesData = fallbackResult.data;
-        tablesError = fallbackResult.error;
-      } else {
-        tablesData = result.data;
-        tablesError = result.error;
-      }
-
-      if (tablesError) {
-        throw tablesError;
-      }
-
-      const tableInfoList: TableInfo[] = [];
-
-      // Filter to only include public schema tables and auth.users
-      const filteredTables = (tablesData || []).filter((table: any) => {
-        // Include all public schema tables
-        if (table.table_schema === 'public') return true;
-        
-        // Only include auth.users from auth schema
-        if (table.table_schema === 'auth' && table.table_name === 'users') return true;
-        
-        // Exclude all other auth schema tables
-        return false;
-      });
-
-      // Process each table from the dynamic function
-      for (const table of filteredTables) {
-        try {
-          // Get column information for each table
-          const { data: columnsData, error: columnsError } = await supabase
-            .rpc('get_table_columns', { p_table_name: table.table_name });
-
-          const columns = columnsData?.map((col: any) => col.column_name) || [];
-
-          // For auth tables, we might need special handling
-          if (table.table_schema === 'auth' && table.row_count === 0) {
-            // Try to get actual count using a special function if available
-            const { data: actualCount } = await supabase
-              .rpc('get_table_row_count', { p_table_name: table.table_name });
-            
-            if (actualCount !== null && actualCount !== undefined) {
-              table.row_count = actualCount;
-            }
-          }
-
-          tableInfoList.push({
-            table_name: table.table_name,
-            table_schema: table.table_schema || 'public',
-            table_type: table.table_type || 'BASE TABLE',
-            row_count: table.row_count || 0,
-            size_pretty: table.size_pretty,
-            size_bytes: table.size_bytes,
-            column_count: table.column_count,
-            has_primary_key: table.has_primary_key,
-            has_rls: table.has_rls,
-            created_at: table.created_at,
-            updated_at: table.updated_at,
-            description: table.description,
-            purpose: table.purpose,
-            created_date: table.created_date,
-            created_by: table.created_by,
-            notes: table.notes,
-            columns: columns,
-            error: columnsError ? columnsError.message : undefined
-          });
-
-        } catch (err) {
-          console.error(`Error processing table ${table.table_name}:`, err);
-          tableInfoList.push({
-            table_name: table.table_name,
-            table_schema: table.table_schema || 'public',
-            table_type: 'BASE TABLE',
-            row_count: 0,
-            description: table.description,
-            purpose: table.purpose,
-            created_date: table.created_date,
-            created_by: table.created_by,
-            notes: table.notes,
-            error: err instanceof Error ? err.message : 'Unknown error'
-          });
-        }
-      }
-
-      // Sort tables by prefix order (already done in SQL, but we can re-sort if needed)
+      const tableInfoList = await dbMetadataService.getTables();
       setTables(tableInfoList);
       
       // Load views as well
       await loadViewInfo();
       
-      setLastRefresh(new Date());
+      // Load prefixes
+      const prefixList = await dbMetadataService.getTablePrefixes();
+      setPrefixes(prefixList);
       
+      setLastRefresh(new Date());
     } catch (err) {
       console.error('Error loading table info:', err);
       setError(err instanceof Error ? err.message : 'Failed to load table information');
@@ -183,75 +58,13 @@ export function DatabasePage() {
   
   const loadViewInfo = async () => {
     try {
-      const { data: viewsData, error: viewsError } = await supabase
-        .rpc('get_all_views_with_info');
-      
-      if (viewsError) {
-        console.error('Error loading views:', viewsError);
-        return;
-      }
-      
-      setViews(viewsData || []);
+      const viewsData = await dbMetadataService.getViews();
+      setViews(viewsData);
     } catch (err) {
       console.error('Error loading views:', err);
     }
   };
 
-  // Calculate prefix information
-  const getPrefixInfo = (): PrefixInfo[] => {
-    const prefixMap = new Map<string, number>();
-    
-    // Define known prefixes and their descriptions
-    const prefixDescriptions: Record<string, { label: string; description: string }> = {
-      'ai_': { label: 'AI', description: 'AI & prompt management' },
-      'app_': { label: 'App', description: 'Application-specific tables' },
-      'auth_': { label: 'Auth', description: 'Authentication & users' },
-      'batch_': { label: 'Batch', description: 'Batch operations' },
-      'clipboard_': { label: 'Clipboard', description: 'Clipboard snippets management' },
-      'command_': { label: 'Command', description: 'Command & analytics' },
-      'dev_': { label: 'Dev', description: 'Development tasks, merge queue & workflow' },
-      'doc_': { label: 'Docs', description: 'Document management & continuous monitoring' },
-      'document_': { label: 'Document Types', description: 'Document type definitions' },
-      'element_': { label: 'Element', description: 'Element catalog system' },
-      'email_': { label: 'Email', description: 'Email system' },
-      'expert_': { label: 'Expert', description: 'Expert system' },
-      'filter_': { label: 'Filter', description: 'User filters & preferences' },
-      'google_': { label: 'Google', description: 'Google Drive integration' },
-      'import_': { label: 'Import', description: 'Data import & migration' },
-      'learn_': { label: 'Learning', description: 'Learning platform' },
-      'media_': { label: 'Media', description: 'Media & presentations' },
-      'registry_': { label: 'Registry', description: 'System registries & catalogs' },
-      'scripts_': { label: 'Scripts', description: 'Script management' },
-      'service_': { label: 'Service', description: 'Service configurations & metadata' },
-      'sys_': { label: 'System', description: 'System & infrastructure, service registry' },
-      'worktree_': { label: 'Worktree', description: 'Git worktree management' },
-      '_other': { label: 'Other', description: 'Other tables' }
-    };
-    
-    // Count tables by prefix
-    tables.forEach(table => {
-      // Special handling for auth.users - count it with auth_ prefix
-      if (table.table_schema === 'auth' && table.table_name === 'users') {
-        prefixMap.set('auth_', (prefixMap.get('auth_') || 0) + 1);
-      } else {
-        const prefix = Object.keys(prefixDescriptions).find(p => 
-          p !== '_other' && table.table_name.startsWith(p)
-        ) || '_other';
-        
-        prefixMap.set(prefix, (prefixMap.get(prefix) || 0) + 1);
-      }
-    });
-    
-    // Convert to array and sort
-    return Array.from(prefixMap.entries())
-      .map(([prefix, count]) => ({
-        prefix,
-        label: prefixDescriptions[prefix]?.label || 'Other',
-        count,
-        description: prefixDescriptions[prefix]?.description || 'Other tables'
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  };
   
   // Filter tables based on current filters
   const getFilteredTables = () => {
@@ -450,7 +263,7 @@ export function DatabasePage() {
             >
               All ({tables.length} tables, {views.length} views)
             </button>
-            {getPrefixInfo().map(({ prefix, label, count }) => {
+            {prefixes.map(({ prefix, label, count }) => {
               const viewCount = views.filter(v => 
                 prefix === '_other' ? v.suggested_prefix === 'other' : v.suggested_prefix === prefix
               ).length;
