@@ -23,8 +23,9 @@ interface Mapping {
 
 interface ServiceMapping {
   id: string;
-  worktree_id: string;
-  service_name: string;
+  worktree_id: string | null;
+  service_id: string | null;
+  service_name?: string; // This will be populated from the joined service
 }
 
 interface SharedService {
@@ -110,13 +111,27 @@ export default function WorktreeMappings() {
       if (pipelinesError) throw pipelinesError;
       setAllPipelines(pipelinesData?.map(p => p.name) || []);
 
-      // Load service mappings
+      // Load service mappings with joined service names
       const { data: serviceData, error: serviceError } = await supabase
         .from('worktree_service_mappings')
-        .select('*');
+        .select(`
+          id,
+          worktree_id,
+          service_id,
+          shared_services(service_name)
+        `);
       
       if (serviceError) throw serviceError;
-      setServiceMappings(serviceData || []);
+      
+      // Transform the data to include service_name at the top level
+      const transformedServiceData = serviceData?.map(item => ({
+        id: item.id,
+        worktree_id: item.worktree_id,
+        service_id: item.service_id,
+        service_name: (item as any).shared_services?.service_name
+      })) || [];
+      
+      setServiceMappings(transformedServiceData);
 
       // Load all shared services
       const { data: servicesData, error: servicesError } = await supabase
@@ -297,10 +312,17 @@ export default function WorktreeMappings() {
             
             if (error) throw error;
           } else {
-            // Add mapping
+            // Find the service_id for this service_name
+            const service = allServices.find(s => s.service_name === serviceName);
+            if (!service) {
+              console.error(`Service not found: ${serviceName}`);
+              continue;
+            }
+            
+            // Add mapping using service_id
             const { error } = await supabase
               .from('worktree_service_mappings')
-              .insert({ worktree_id: worktreeId, service_name: serviceName });
+              .insert({ worktree_id: worktreeId, service_id: service.id });
             
             if (error) throw error;
           }
