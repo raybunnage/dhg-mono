@@ -1,0 +1,238 @@
+{
+  "analysis_date": "2025-06-08T18:12:49.334Z",
+  "total_pipelines": 25,
+  "health_summary": {
+    "remove": 7,
+    "consolidate": 11,
+    "cleanup": 7,
+    "maintain": 0,
+    "healthy": 0
+  },
+  "pipelines": [
+    {
+      "name": "all_pipelines",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 2,
+      "health_score": 0,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "dev_tasks",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 7,
+      "health_score": 0,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "google_sync",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 5,
+      "health_score": 0,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "mime_types",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 2,
+      "health_score": 0,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "refactor_tracking",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 7,
+      "health_score": 0,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "work_summaries",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 4,
+      "health_score": 0,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "document_types",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 2,
+      "unimplemented_commands": 1,
+      "health_score": 10,
+      "recommendation": "REMOVE - Pipeline is essentially dead"
+    },
+    {
+      "name": "drive_filter",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 13,
+      "unimplemented_commands": 4,
+      "health_score": 20,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "prompt_service",
+      "has_cli_script": false,
+      "total_commands": 0,
+      "implemented_commands": 15,
+      "unimplemented_commands": 12,
+      "health_score": 20,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "ai",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 0,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "analysis",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 0,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "documentation",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 9,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "gmail",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 8,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "merge",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 8,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "monitoring",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 7,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "scripts",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 7,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "tracking",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 0,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "worktree",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 0,
+      "unimplemented_commands": 5,
+      "health_score": 30,
+      "recommendation": "CONSOLIDATE - Merge with related pipeline"
+    },
+    {
+      "name": "auth",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 1,
+      "unimplemented_commands": 14,
+      "health_score": 40,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    },
+    {
+      "name": "classify",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 8,
+      "unimplemented_commands": 9,
+      "health_score": 50,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    },
+    {
+      "name": "database",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 13,
+      "unimplemented_commands": 17,
+      "health_score": 50,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    },
+    {
+      "name": "deprecation",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 15,
+      "unimplemented_commands": 1,
+      "health_score": 50,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    },
+    {
+      "name": "experts",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 9,
+      "unimplemented_commands": 5,
+      "health_score": 50,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    },
+    {
+      "name": "media-processing",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 38,
+      "unimplemented_commands": 8,
+      "health_score": 50,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    },
+    {
+      "name": "presentations",
+      "has_cli_script": true,
+      "total_commands": 0,
+      "implemented_commands": 26,
+      "unimplemented_commands": 0,
+      "health_score": 50,
+      "recommendation": "CLEANUP - Remove unimplemented commands"
+    }
+  ]
+}

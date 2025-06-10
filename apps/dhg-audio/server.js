@@ -12,28 +12,10 @@ const PORT = process.env.AUDIO_PROXY_PORT || process.env.PORT || 3006;
 // Apply CORS middleware
 app.use(cors);
 
-// Add JSON body parser for health check endpoint
-app.use(express.json());
-
 // Serve static files from the 'dist' directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  const serviceAccountExists = fs.existsSync(path.resolve(__dirname, '../../.service-account.json'));
-  
-  res.json({
-    status: 'running',
-    port: PORT,
-    timestamp: new Date().toISOString(),
-    serviceAccount: serviceAccountExists ? 'found' : 'missing',
-    possiblePaths: [
-      { path: '.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '.service-account.json')) },
-      { path: '../../.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '../../.service-account.json')) },
-      { path: '../../../.service-account.json', exists: fs.existsSync(path.resolve(__dirname, '../../../.service-account.json')) }
-    ]
-  });
-});
+// Note: Health endpoints removed from app servers - use CLI health-check commands instead
 
 // Function to get Google Drive service account credentials
 function getGoogleAuthClient() {
@@ -111,6 +93,7 @@ app.get('/api/audio/:fileId', async (req, res) => {
     // Set response headers
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    res.setHeader('X-Served-From', 'google-drive-api'); // Indicate source for debugging
     
     // If range header is present, handle partial content request
     if (req.headers.range) {

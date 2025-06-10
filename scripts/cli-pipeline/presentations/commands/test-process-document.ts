@@ -79,7 +79,8 @@ testProcessDocumentCommand
       Logger.info('Sending prompt to Claude...');
       let summaryResponse: string;
       try {
-        summaryResponse = await claudeService.sendPrompt(customizedPrompt);
+        const claudeResponse = await claudeService.sendPrompt(customizedPrompt);
+        summaryResponse = claudeResponse.content?.[0]?.text || '';
         Logger.info(`Received response from Claude (${summaryResponse.length} characters)`);
         
         // Save raw response to a file for debugging

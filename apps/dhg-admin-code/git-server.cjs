@@ -309,10 +309,91 @@ app.post('/api/git/execute', async (req, res) => {
   }
 });
 
+// Get commits for a specific worktree
+app.post('/api/git/worktree-commits', async (req, res) => {
+  try {
+    const { worktreePath } = req.body;
+    const { limit = 50 } = req.query;
+    
+    // Decode the path (it might be URL encoded)
+    const decodedPath = decodeURIComponent(worktreePath);
+    
+    // Get commit hashes first
+    const { stdout: hashesOutput } = await execAsync(
+      `cd "${decodedPath}" && git log --format="%H" -${limit}`
+    );
+    
+    const hashes = hashesOutput.trim().split('\n').filter(h => h);
+    
+    // Get detailed info for each commit
+    const commits = await Promise.all(hashes.map(async (hash) => {
+      try {
+        // Get basic commit info
+        const { stdout: commitInfo } = await execAsync(
+          `cd "${decodedPath}" && git log --format="%s|%an|%ae|%ar|%ai" -1 ${hash}`
+        );
+        
+        // Get full commit message to extract task ID
+        const { stdout: fullMessage } = await execAsync(
+          `cd "${decodedPath}" && git log --format="%B" -1 ${hash}`
+        );
+        
+        const [subject, authorName, authorEmail, relativeTime, date] = commitInfo.trim().split('|');
+        
+        // Extract task ID from full commit message if present
+        // Look for "Task: #task-id" pattern (the # is part of the format)
+        const taskIdMatch = fullMessage.match(/Task:\s*#([a-f0-9-]+)/i);
+        const taskId = taskIdMatch ? taskIdMatch[1] : null;
+        
+        return {
+          hash,
+          subject,
+          authorName,
+          authorEmail,
+          relativeTime,
+          date,
+          taskId
+        };
+      } catch (error) {
+        console.error(`Error processing commit ${hash}:`, error);
+        return {
+          hash,
+          subject: 'Error retrieving commit',
+          authorName: 'Unknown',
+          authorEmail: '',
+          relativeTime: 'Unknown',
+          date: '',
+          taskId: null
+        };
+      }
+    }));
+    
+    // Get current branch name
+    const { stdout: branchName } = await execAsync(
+      `cd "${decodedPath}" && git branch --show-current`
+    );
+    
+    res.json({ 
+      worktreePath: decodedPath,
+      branch: branchName.trim(),
+      commits,
+      totalCommits: commits.length
+    });
+    
+  } catch (error) {
+    console.error('Failed to get worktree commits:', error);
+    res.status(500).json({ 
+      error: 'Failed to get worktree commits',
+      details: error.message
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Git server running on http://localhost:${PORT}`);
   console.log('Available endpoints:');
   console.log('  GET    /api/git/worktrees      - Get list of git worktrees with status');
+  console.log('  POST   /api/git/worktree-commits - Get commits for a specific worktree');
   console.log('  GET    /api/git/branches       - Get all branches with detailed info');
   console.log('  DELETE /api/git/branches/:name - Delete a specific branch');
   console.log('  POST   /api/git/cleanup-branches - Cleanup multiple branches');

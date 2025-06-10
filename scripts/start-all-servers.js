@@ -49,13 +49,13 @@ const SERVERS = [
     description: 'Git worktree management'
   },
   {
-    name: 'Audio Proxy Server (dhg-audio)',
+    name: 'Enhanced Audio Server (dhg-audio)',
     port: 3006,
     command: 'node',
-    args: ['server.js'],
+    args: ['server-enhanced.js'],
     cwd: path.join(process.cwd(), 'apps/dhg-audio'),
     env: { PORT: '3006' },
-    description: 'Google Drive proxy for audio files'
+    description: 'Local Google Drive + API audio server with 10-100x performance boost'
   },
   {
     name: 'Experts Markdown Server',
@@ -90,6 +90,15 @@ const SERVERS = [
     cwd: process.cwd(),
     env: { WORKTREE_SWITCHER_PORT: '3010' },
     description: 'Visual worktree switcher for Cursor instances'
+  },
+  {
+    name: 'Git History Analysis Server',
+    port: 3011,
+    command: 'node',
+    args: ['scripts/cli-pipeline/dev_tasks/git-history-server.js'],
+    cwd: process.cwd(),
+    env: { GIT_HISTORY_PORT: '3011' },
+    description: 'Git history analysis and worktree assignment'
   }
 ];
 

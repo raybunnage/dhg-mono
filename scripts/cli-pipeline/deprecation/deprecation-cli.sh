@@ -58,7 +58,14 @@ show_help() {
   echo "  archive-scripts      Archive multiple scripts (batch)"
   echo "  archive-likely-obsolete  Archive likely obsolete scripts (Phase 2B)"
   echo "  restore-script       Restore an archived script"
+  echo "  restore-batch        Batch restore archived scripts by criteria"
   echo "  list-archived        List all archived scripts"
+  echo ""
+  echo "VALIDATION COMMANDS:"
+  echo "  validate-imports     Check for broken imports of archived scripts"
+  echo "  validate-cli-commands  Validate all CLI commands still work"
+  echo "  validate-archiving   Run comprehensive validation suite"
+  echo "  cleanup-commands     Remove unimplemented commands from registry"
   echo "  deprecate-command    Deprecate a CLI command"
   echo "  generate-migration   Generate migration plan for deprecated items"
   echo ""
@@ -124,6 +131,32 @@ archive_likely_obsolete() {
   track_command "archive-likely-obsolete" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/archive-likely-obsolete-scripts.ts $*"
 }
 
+# Validation Commands
+validate_imports() {
+  echo "🔍 Validating imports for archived scripts..."
+  track_command "validate-imports" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/validate-imports.ts $*"
+}
+
+validate_cli_commands() {
+  echo "🔍 Validating CLI commands..."
+  track_command "validate-cli-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/validate-cli-commands.ts $*"
+}
+
+validate_archiving() {
+  echo "🔍 Running comprehensive archiving validation..."
+  echo ""
+  echo "Step 1: Validating imports..."
+  validate_imports
+  echo ""
+  echo "Step 2: Validating CLI commands..."
+  validate_cli_commands
+}
+
+restore_batch() {
+  echo "♻️ Batch restoring archived scripts..."
+  track_command "restore-batch" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/restore-batch.ts $*"
+}
+
 generate_report() {
   echo "📝 Generating comprehensive deprecation report..."
   track_command "generate-report" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/generate-report.ts ${@}"
@@ -187,6 +220,11 @@ validate_plan() {
   track_command "validate-plan" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/validate-plan.ts ${@}"
 }
 
+cleanup_commands() {
+  echo "🧹 Cleaning up unimplemented commands..."
+  track_command "cleanup-commands" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/cleanup-unimplemented-commands.ts ${@}"
+}
+
 # Main command processor
 case "${1:-}" in
   # Evaluation
@@ -216,6 +254,18 @@ case "${1:-}" in
     ;;
   "archive-likely-obsolete")
     archive_likely_obsolete "${@:2}"
+    ;;
+  "validate-imports")
+    validate_imports "${@:2}"
+    ;;
+  "validate-cli-commands")
+    validate_cli_commands "${@:2}"
+    ;;
+  "validate-archiving")
+    validate_archiving "${@:2}"
+    ;;
+  "restore-batch")
+    restore_batch "${@:2}"
     ;;
   "generate-report")
     generate_report "${@:2}"
@@ -260,6 +310,10 @@ case "${1:-}" in
     validate_plan "${@:2}"
     ;;
     
+  "cleanup-commands")
+    cleanup_commands "${@:2}"
+    ;;
+    
   "help"|"--help"|"-h"|"")
     show_help
     ;;
@@ -269,13 +323,5 @@ case "${1:-}" in
     echo ""
     show_help
     exit 1
-    ;;
-  health-check)
-    echo "🏥 Running health check for deprecation pipeline..."
-    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-      echo "❌ Missing required environment variables"
-      exit 1
-    fi
-    echo "✅ deprecation pipeline is healthy"
     ;;
 esac

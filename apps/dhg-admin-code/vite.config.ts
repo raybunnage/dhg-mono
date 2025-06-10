@@ -12,11 +12,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5177, // Use a different port than other apps
+    port: 5177, // Dedicated port for dhg-admin-code
     host: true, // Listen on all addresses
     hmr: {
       overlay: false, // Disable error overlay if it's causing issues
-      port: 5178 // Use a different port for HMR WebSocket
+      port: 5177 // Use same port as server to avoid conflicts
     },
     proxy: {
       // Proxy markdown file requests to the markdown server
@@ -28,5 +28,8 @@ export default defineConfig({
         }
       }
     }
+  },
+  preview: {
+    port: 4177  // Preview port for dhg-admin-code
   }
 })

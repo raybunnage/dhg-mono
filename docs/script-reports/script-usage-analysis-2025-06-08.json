@@ -1,13 +1,13 @@
 {
-  "analysis_date": "2025-06-08T17:08:25.122Z",
+  "analysis_date": "2025-06-08T18:02:02.861Z",
   "summary": {
-    "total_scripts": 701,
+    "total_scripts": 685,
     "archivable": 0,
     "by_classification": {
       "definitely_obsolete": 0,
-      "likely_obsolete": 19,
-      "needs_review": 0,
-      "active": 682
+      "likely_obsolete": 0,
+      "needs_review": 1,
+      "active": 684
     }
   },
   "archivable_scripts": [],
@@ -41,90 +41,6 @@
       "reason": "1 commits in last 90 days"
     },
     {
-      "file_path": "scripts/app-management/backup-configs.sh",
-      "file_name": "backup-configs.sh",
-      "last_modified": "2025-06-03T01:15:45.840Z",
-      "size_bytes": 2721,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-08T02:52:44.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 3
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/app-management/copy-lovable-app.sh",
-      "file_name": "copy-lovable-app.sh",
-      "last_modified": "2025-06-03T01:15:45.840Z",
-      "size_bytes": 1705,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-08T15:44:15.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 3
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": true
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (3): experimental code, no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/app-management/list-backups.sh",
-      "file_name": "list-backups.sh",
-      "last_modified": "2025-06-03T01:15:45.840Z",
-      "size_bytes": 2197,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-11T02:30:52.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 2
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
       "file_path": "scripts/app-management/restore-archives.sh",
       "file_name": "restore-archives.sh",
       "last_modified": "2025-06-03T01:15:45.840Z",
@@ -151,62 +67,6 @@
       "classification": "active",
       "safe_to_archive": false,
       "reason": "1 commits in last 90 days"
-    },
-    {
-      "file_path": "scripts/app-management/restore-configs.sh",
-      "file_name": "restore-configs.sh",
-      "last_modified": "2025-06-03T01:15:45.840Z",
-      "size_bytes": 2234,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-08T02:52:44.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 3
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/batch_processing/batch_operations.py",
-      "file_name": "batch_operations.py",
-      "last_modified": "2025-06-03T01:15:45.840Z",
-      "size_bytes": 3847,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
     },
     {
       "file_path": "scripts/cli-pipeline/ai/ai-cli.sh",
@@ -4762,9 +4622,9 @@
         "has_imports": false
       },
       "git_history": {
-        "last_commit_date": "2025-06-08T14:20:34.000Z",
-        "commits_last_90_days": 1,
-        "commits_last_year": 1
+        "last_commit_date": "2025-06-08T17:25:23.000Z",
+        "commits_last_90_days": 2,
+        "commits_last_year": 2
       },
       "content_analysis": {
         "has_todo_fixme": true,
@@ -4775,7 +4635,7 @@
       },
       "classification": "active",
       "safe_to_archive": false,
-      "reason": "1 commits in last 90 days"
+      "reason": "2 commits in last 90 days"
     },
     {
       "file_path": "scripts/cli-pipeline/deprecation/commands/analyze-scripts.ts",
@@ -4855,9 +4715,9 @@
         "has_imports": false
       },
       "git_history": {
-        "last_commit_date": "2025-06-08T14:20:34.000Z",
-        "commits_last_90_days": 1,
-        "commits_last_year": 1
+        "last_commit_date": "2025-06-08T17:25:23.000Z",
+        "commits_last_90_days": 2,
+        "commits_last_year": 2
       },
       "content_analysis": {
         "has_todo_fixme": false,
@@ -4868,7 +4728,7 @@
       },
       "classification": "active",
       "safe_to_archive": false,
-      "reason": "1 commits in last 90 days"
+      "reason": "2 commits in last 90 days"
     },
     {
       "file_path": "scripts/cli-pipeline/deprecation/commands/generate-report.ts",
@@ -5001,6 +4861,37 @@
       "reason": "2 commits in last 90 days"
     },
     {
+      "file_path": "scripts/cli-pipeline/deprecation/commands/restore-batch.ts",
+      "file_name": "restore-batch.ts",
+      "last_modified": "2025-06-08T17:35:08.191Z",
+      "size_bytes": 10067,
+      "is_executable": false,
+      "in_cli_pipeline": true,
+      "pipeline_name": "deprecation",
+      "dependencies": {
+        "referenced_in_package_json": false,
+        "referenced_by_scripts": [
+          "scripts/cli-pipeline/deprecation/deprecation-cli.sh"
+        ],
+        "has_imports": false
+      },
+      "git_history": {
+        "last_commit_date": "2025-06-08T17:55:11.000Z",
+        "commits_last_90_days": 1,
+        "commits_last_year": 1
+      },
+      "content_analysis": {
+        "has_todo_fixme": false,
+        "has_hardcoded_paths": false,
+        "has_deprecated_apis": false,
+        "has_error_handling": true,
+        "appears_experimental": true
+      },
+      "classification": "active",
+      "safe_to_archive": false,
+      "reason": "1 commits in last 90 days"
+    },
+    {
       "file_path": "scripts/cli-pipeline/deprecation/commands/restore-script.ts",
       "file_name": "restore-script.ts",
       "last_modified": "2025-06-08T14:15:21.865Z",
@@ -5033,10 +4924,72 @@
       "reason": "1 commits in last 90 days"
     },
     {
+      "file_path": "scripts/cli-pipeline/deprecation/commands/validate-cli-commands.ts",
+      "file_name": "validate-cli-commands.ts",
+      "last_modified": "2025-06-08T17:49:36.592Z",
+      "size_bytes": 10996,
+      "is_executable": false,
+      "in_cli_pipeline": true,
+      "pipeline_name": "deprecation",
+      "dependencies": {
+        "referenced_in_package_json": false,
+        "referenced_by_scripts": [
+          "scripts/cli-pipeline/deprecation/deprecation-cli.sh"
+        ],
+        "has_imports": false
+      },
+      "git_history": {
+        "last_commit_date": "2025-06-08T17:55:11.000Z",
+        "commits_last_90_days": 1,
+        "commits_last_year": 1
+      },
+      "content_analysis": {
+        "has_todo_fixme": false,
+        "has_hardcoded_paths": false,
+        "has_deprecated_apis": false,
+        "has_error_handling": true,
+        "appears_experimental": true
+      },
+      "classification": "active",
+      "safe_to_archive": false,
+      "reason": "1 commits in last 90 days"
+    },
+    {
+      "file_path": "scripts/cli-pipeline/deprecation/commands/validate-imports.ts",
+      "file_name": "validate-imports.ts",
+      "last_modified": "2025-06-08T17:34:06.362Z",
+      "size_bytes": 10097,
+      "is_executable": false,
+      "in_cli_pipeline": true,
+      "pipeline_name": "deprecation",
+      "dependencies": {
+        "referenced_in_package_json": false,
+        "referenced_by_scripts": [
+          "scripts/cli-pipeline/deprecation/deprecation-cli.sh"
+        ],
+        "has_imports": false
+      },
+      "git_history": {
+        "last_commit_date": "2025-06-08T17:55:11.000Z",
+        "commits_last_90_days": 1,
+        "commits_last_year": 1
+      },
+      "content_analysis": {
+        "has_todo_fixme": false,
+        "has_hardcoded_paths": false,
+        "has_deprecated_apis": false,
+        "has_error_handling": true,
+        "appears_experimental": true
+      },
+      "classification": "active",
+      "safe_to_archive": false,
+      "reason": "1 commits in last 90 days"
+    },
+    {
       "file_path": "scripts/cli-pipeline/deprecation/deprecation-cli.sh",
       "file_name": "deprecation-cli.sh",
-      "last_modified": "2025-06-08T17:07:26.519Z",
-      "size_bytes": 8222,
+      "last_modified": "2025-06-08T17:49:52.010Z",
+      "size_bytes": 9686,
       "is_executable": true,
       "in_cli_pipeline": true,
       "pipeline_name": "deprecation",
@@ -5052,9 +5005,9 @@
         "has_imports": false
       },
       "git_history": {
-        "last_commit_date": "2025-06-08T14:20:34.000Z",
-        "commits_last_90_days": 3,
-        "commits_last_year": 3
+        "last_commit_date": "2025-06-08T17:55:11.000Z",
+        "commits_last_90_days": 5,
+        "commits_last_year": 5
       },
       "content_analysis": {
         "has_todo_fixme": false,
@@ -21355,90 +21308,6 @@
       "reason": "1 commits in last 90 days"
     },
     {
-      "file_path": "scripts/supabase/complete-migration.sh",
-      "file_name": "complete-migration.sh",
-      "last_modified": "2025-06-03T01:15:45.938Z",
-      "size_bytes": 554,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 2
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/supabase/run-migration.sh",
-      "file_name": "run-migration.sh",
-      "last_modified": "2025-06-03T01:15:45.938Z",
-      "size_bytes": 5356,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-13T05:02:54.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 13
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/supabase/start-psql.sh",
-      "file_name": "start-psql.sh",
-      "last_modified": "2025-06-03T01:15:45.938Z",
-      "size_bytes": 1255,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-13T03:29:04.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
       "file_path": "scripts/supabase/update-schema.sh",
       "file_name": "update-schema.sh",
       "last_modified": "2025-06-03T01:15:45.938Z",
@@ -21477,9 +21346,7 @@
       "in_cli_pipeline": false,
       "dependencies": {
         "referenced_in_package_json": false,
-        "referenced_by_scripts": [
-          "scripts/whisper/setup.sh"
-        ],
+        "referenced_by_scripts": [],
         "has_imports": false
       },
       "git_history": {
@@ -21494,317 +21361,9 @@
         "has_error_handling": true,
         "appears_experimental": false
       },
-      "classification": "active",
+      "classification": "needs_review",
       "safe_to_archive": false,
-      "reason": "Referenced by other scripts or package.json"
-    },
-    {
-      "file_path": "scripts/whisper/benchmark.py",
-      "file_name": "benchmark.py",
-      "last_modified": "2025-06-03T01:15:45.938Z",
-      "size_bytes": 2970,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/extract_existing_audio.py",
-      "file_name": "extract_existing_audio.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 2589,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/extract_google_audio.py",
-      "file_name": "extract_google_audio.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 2268,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/extract_mp4_audio.py",
-      "file_name": "extract_mp4_audio.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 2955,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": true
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (3): experimental code, no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/process_audio_apple.py",
-      "file_name": "process_audio_apple.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 1994,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/process_audio_with_whisper.py",
-      "file_name": "process_audio_with_whisper.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 3891,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/process_audio.py",
-      "file_name": "process_audio.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 2906,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/process_google_audio_apple.py",
-      "file_name": "process_google_audio_apple.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 8221,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": true
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (3): experimental code, no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/process_google_audio.py",
-      "file_name": "process_google_audio.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 6104,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": true
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (3): experimental code, no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/setup.sh",
-      "file_name": "setup.sh",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 2711,
-      "is_executable": true,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": false
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (2): no error handling, not in CLI pipeline"
-    },
-    {
-      "file_path": "scripts/whisper/transcribe_stored_audio.py",
-      "file_name": "transcribe_stored_audio.py",
-      "last_modified": "2025-06-03T01:15:45.939Z",
-      "size_bytes": 2663,
-      "is_executable": false,
-      "in_cli_pipeline": false,
-      "dependencies": {
-        "referenced_in_package_json": false,
-        "referenced_by_scripts": [],
-        "has_imports": false
-      },
-      "git_history": {
-        "last_commit_date": "2025-02-23T05:02:34.000Z",
-        "commits_last_90_days": 0,
-        "commits_last_year": 1
-      },
-      "content_analysis": {
-        "has_todo_fixme": false,
-        "has_hardcoded_paths": false,
-        "has_deprecated_apis": false,
-        "has_error_handling": false,
-        "appears_experimental": true
-      },
-      "classification": "likely_obsolete",
-      "safe_to_archive": false,
-      "reason": "Moderate obsolete score (3): experimental code, no error handling, not in CLI pipeline"
+      "reason": "Mixed signals - requires manual assessment"
     }
   ]
 }

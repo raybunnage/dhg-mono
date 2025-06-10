@@ -12,7 +12,10 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5175
+    port: 5175  // Dedicated port for dhg-admin-suite
+  },
+  preview: {
+    port: 4175  // Preview port for dhg-admin-suite
   },
   optimizeDeps: {
     exclude: ['@shared/services/auth-service/auth-service']

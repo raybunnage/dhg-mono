@@ -145,33 +145,6 @@ All database views now follow a consistent naming convention:
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
    - This is the single source of truth for all table structures and relationships
 
-   **Database Table Naming Convention**:
-   
-   ⚠️ **CRITICAL: Table Naming Rules**
-   1. **ALWAYS use one of the established prefixes** - no exceptions
-   2. **ALWAYS ask the user before creating ANY new table** - they may want to create a new prefix
-   3. **NEVER create a table without a prefix** - this breaks the naming convention
-   4. **NEVER overwrite existing table names** - always check if a table exists first
-   
-   **Established Prefixes**:
-   - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
-   - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
-   - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
-   - `learn_` - Learning platform features (e.g., learn_courses, learn_progress)
-   - `media_` - Media & presentations (e.g., media_thumbnails, media_transcripts)
-   - `doc_` - Document management (e.g., doc_versions, doc_comments, doc_continuous_monitoring)
-   - `expert_` - Expert system (e.g., expert_ratings, expert_specialties)
-   - `email_` - Email system (e.g., email_templates, email_logs)
-   - `command_` - Command & analytics (e.g., command_aliases, command_logs)
-   - `filter_` - User filtering & preferences (e.g., filter_rules, filter_history)
-   - `batch_` - Batch operations (e.g., batch_jobs, batch_results)
-   - `scripts_` - Script management (e.g., scripts_versions, scripts_logs)
-   - `sys_` - System & infrastructure (e.g., sys_logs, sys_settings)
-   - `dev_` - Development & task management (e.g., dev_tasks, dev_task_copies, dev_merge_queue, dev_merge_checklist)
-   - `registry_` - Registry tables for cataloging items (e.g., registry_scripts, registry_services, registry_apps)
-   - `service_` - Service dependency & relationship tables (e.g., service_exports, service_command_dependencies)
-   - `worktree_` - Git worktree management (e.g., worktree_definitions, worktree_app_mappings)
-   - `import_` - **CRITICAL: Data import tables - ALWAYS use this prefix for SQLite imports** (e.g., import_urls, import_web_concepts)
    
    ⚠️ **If your table doesn't fit any existing prefix**:
    - STOP and ask the user what to do
@@ -341,11 +314,10 @@ ORDER BY cpt.table_name;
 
 4. **Document Solutions After Struggles**:
    - ⚠️ **After overcoming significant challenges, update this CLAUDE.md file**
-   - Add concise troubleshooting guidance for future reference
+   - All new learnings now go to claude-md-candidates.md
+  -  Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions
-   - Follow the existing format with ❌ Problem and ✅ Solution examples
-   - Focus on patterns that could help with similar issues in the future
-
+   
 ## Task-Aware Git Commits
 
 ⚠️ **ALWAYS check for active tasks before committing changes**
@@ -387,6 +359,38 @@ When the user asks you to commit changes, follow this workflow:
    - ❌ Skip for minor fixes unrelated to any task
    
 **Note**: The task tracking is automatic - the CLI will find tasks based on the current worktree path
+
+## Dev Task Commit Tracking
+
+⚠️ **Manually track commits for dev tasks using the commit tracking utility**
+
+For commits related to dev tasks that need detailed tracking:
+
+1. **After committing**, track the commit in the database:
+   ```bash
+   ts-node scripts/cli-pipeline/utilities/track-commit-for-task.ts <task_id> <commit_hash> [commit_message]
+   ```
+
+2. **Example usage**:
+   ```bash
+   # Track a commit for a specific task
+   ts-node scripts/cli-pipeline/utilities/track-commit-for-task.ts bb1d3a41-39ef-4ac8-8786-c8bcc7d10dc9 ad534c18 "fix: health check"
+   ```
+
+3. **What this does**:
+   - Creates record in `dev_task_commits` table
+   - Updates `dev_tasks.git_commit_current` with latest commit
+   - Increments `dev_tasks.git_commits_count`
+   - Extracts git stats (files changed, insertions, deletions)
+   - Links commit history to task for better tracking
+
+4. **When to use**:
+   - ✅ Major feature implementations
+   - ✅ Bug fixes tied to specific tasks
+   - ✅ Refactoring work tracked in dev_tasks
+   - ❌ Minor commits or unrelated changes
+
+**Integration Points**: This can be automated in git hooks or integrated into the worktree merging workflow for better commit tracking.
 
 ## Final Checklist
 
@@ -654,19 +658,21 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
 | 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
 | 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
+| 3011 | Git History Analysis Server | `scripts/cli-pipeline/dev_tasks/git-history-server.js` |
 
 **Vite App Ports**:
-| Port | App | Status |
-|------|-----|--------|
-| 5173 | dhg-hub-lovable | Dedicated |
-| 5174 | dhg-hub | Dedicated |
-| 5175 | dhg-admin-suite | Dedicated |
-| 5176 | dhg-admin-google | Dedicated |
-| 5177 | dhg-admin-code | Dedicated |
-| 5178 | dhg-a | Dedicated |
-| 5179 | dhg-b | Dedicated |
-| 5194 | dhg-audio | Dedicated |
-| 8080 | dhg-improve-experts | Dedicated |
+| Port | App | Preview Port | Status |
+|------|-----|--------------|--------|
+| 5173 | dhg-hub-lovable | 4173 | Dedicated |
+| 5174 | dhg-hub | 4174 | Dedicated |
+| 5175 | dhg-admin-suite | 4175 | Dedicated |
+| 5176 | dhg-admin-google | 4176 | Dedicated |
+| 5177 | dhg-admin-code | 4177 | Dedicated |
+| 5178 | dhg-a | 4178 | Dedicated |
+| 5179 | dhg-b | 4179 | Dedicated |
+| 5194 | dhg-audio | - | Dedicated |
+| 5005 | dhg-research | - | Dedicated |
+| 8080 | dhg-improve-experts | - | Dedicated |
 
 ### Starting All Servers
 

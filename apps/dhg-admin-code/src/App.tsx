@@ -2,18 +2,16 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { WorkSummaries } from './pages/WorkSummaries';
+import { WorkSummariesEnhanced } from './pages/WorkSummariesEnhanced';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
 import { DocumentsPage } from './pages/DocumentsPage';
 // import { HiMomPage } from './pages/HiMomPage'; // Archived
-import { PromptService } from './pages/PromptService';
-import { DocumentTypes } from './pages/DocumentTypes';
 import { ScriptsManagement } from './pages/ScriptsManagement';
 import { GitManagement } from './pages/GitManagement';
 import { GitBranchManagement } from './pages/GitBranchManagement';
-import { ContinuousDocumentsPage } from './pages/ContinuousDocumentsPage';
+import { LivingDocsPage } from './pages/LivingDocsPage';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -21,6 +19,7 @@ import ClipboardManager from './pages/ClipboardManager';
 import WorktreeMappings from './pages/WorktreeMappings';
 import ServiceDependencies from './pages/ServiceDependencies';
 import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
+import { AIPage } from './pages/AIPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -41,7 +40,7 @@ function App() {
           path="/work-summaries" 
           element={
             <ProtectedRoute requireAdmin>
-              <WorkSummaries />
+              <WorkSummariesEnhanced />
             </ProtectedRoute>
           } 
         />
@@ -111,22 +110,6 @@ function App() {
           } 
         /> */}
         <Route 
-          path="/prompts" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <PromptService />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/document-types" 
-          element={
-            <ProtectedRoute requireAdmin>
-              <DocumentTypes />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
           path="/scripts" 
           element={
             <ProtectedRoute requireAdmin>
@@ -151,10 +134,10 @@ function App() {
           } 
         />
         <Route 
-          path="/continuous-docs" 
+          path="/living-docs" 
           element={
             <ProtectedRoute requireAdmin>
-              <ContinuousDocumentsPage />
+              <LivingDocsPage />
             </ProtectedRoute>
           } 
         />
@@ -187,6 +170,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <DeprecationAnalysis />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/ai" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <AIPage />
             </ProtectedRoute>
           } 
         />

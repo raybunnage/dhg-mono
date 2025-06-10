@@ -454,7 +454,6 @@ async function processSingleDocument(documentId: string, promptTemplate: string,
         console.log(`Sending transcript to Claude for JSON summary generation...`);
         
         const jsonResult = await claudeService.getJsonResponse(customizedPrompt, {
-          jsonMode: true,
           temperature: 0
         });
         

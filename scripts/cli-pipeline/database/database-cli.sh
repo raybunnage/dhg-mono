@@ -65,6 +65,14 @@ show_help() {
   echo "    update-view-definitions   Update sys_table_definitions with database views"
   echo "    analyze-views        Analyze all views registered in sys_table_definitions"
   echo ""
+  echo "DATABASE AUDITING (NEW):"
+  echo "  * table-audit          Comprehensive table evaluation against best practices"
+  echo "  * function-audit       Analyze database functions and identify unused ones"
+  echo "  * consistency-check    Check cross-table consistency for naming, types, and constraints"
+  echo ""
+  echo "APP ELEMENT MANAGEMENT:"
+  echo "    populate-app-elements  Populate app UI pages and features for success criteria"
+  echo ""
   echo "SYSTEM HEALTH:"
   echo "  * connection-test      Test connection to Supabase database (4 uses)"
   echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
@@ -221,6 +229,22 @@ test_light_auth_audit() {
 test_auth_audit_simple() {
   echo "🧪 Testing auth audit log functionality..."
   track_command "test-auth-audit-simple" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/test-light-auth-audit-simple.ts $@"
+}
+
+# Audit command handlers
+table_audit() {
+  echo "🔍 Running comprehensive table audit..."
+  track_command "table-audit" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/table-audit.ts $@"
+}
+
+function_audit() {
+  echo "📊 Analyzing database functions..."
+  track_command "function-audit" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/function-audit.ts $@"
+}
+
+consistency_check() {
+  echo "🔍 Checking database consistency..."
+  track_command "consistency-check" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/consistency-check.ts $@"
 }
 
 # Backup command handlers
@@ -403,6 +427,15 @@ case "$1" in
   "test-auth-audit-simple")
     test_auth_audit_simple "${@:2}"
     ;;
+  "table-audit")
+    table_audit "${@:2}"
+    ;;
+  "function-audit")
+    function_audit "${@:2}"
+    ;;
+  "consistency-check")
+    consistency_check "${@:2}"
+    ;;
   "create-backup")
     create_backup "${@:2}"
     ;;
@@ -490,6 +523,10 @@ case "$1" in
   "analyze-views")
     echo "📊 Analyzing views in sys_table_definitions..."
     track_command "analyze-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts analyze ${@:2}"
+    ;;
+  "populate-app-elements")
+    echo "🎯 Populating app UI pages and features..."
+    track_command "populate-app-elements" "cd $PROJECT_ROOT && ts-node --project $PROJECT_ROOT/tsconfig.node.json $SCRIPT_DIR/populate-app-elements.ts ${@:2}"
     ;;
   "help"|"--help"|"-h")
     show_help

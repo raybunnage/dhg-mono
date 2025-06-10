@@ -14,6 +14,8 @@ import { Filters } from './pages/Filters';
 import SyncHistory from './pages/SyncHistory';
 import { ClassifyDocument } from './pages/ClassifyDocument';
 import { ExpertProfiles } from './pages/ExpertProfiles';
+import { DocumentTypes } from './pages/DocumentTypes';
+import { PromptService } from './pages/PromptService';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -98,6 +100,16 @@ function App() {
           <Route path="/expert-profiles" element={
             <ProtectedRoute>
               <ExpertProfiles />
+            </ProtectedRoute>
+          } />
+          <Route path="/document-types" element={
+            <ProtectedRoute>
+              <DocumentTypes />
+            </ProtectedRoute>
+          } />
+          <Route path="/prompt-service" element={
+            <ProtectedRoute>
+              <PromptService />
             </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" />} />

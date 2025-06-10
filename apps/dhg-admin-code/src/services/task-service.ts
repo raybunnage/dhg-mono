@@ -4,7 +4,7 @@ export interface DevTask {
   id: string;
   title: string;
   description: string;
-  task_type: 'bug' | 'feature' | 'refactor' | 'question';
+  task_type: 'bug' | 'feature' | 'refactor' | 'question' | 'documentation';
   status: 'pending' | 'in_progress' | 'testing' | 'revision' | 'completed' | 'merged' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
   app?: string;
@@ -28,6 +28,37 @@ export interface DevTask {
   worktree_active?: boolean;
   work_mode?: 'single-file' | 'feature' | 'exploration' | 'cross-repo';
   requires_branch?: boolean;
+  worktree?: string;
+  // Progress tracking fields
+  submitted_to_claude?: boolean;
+  submitted_at?: string;
+  submitted_on_worktree?: string;
+  has_commits?: boolean;
+  last_commit_at?: string;
+  progress_status?: 'not_started' | 'claude_submitted' | 'in_development' | 'has_commits' | 'ready_for_review' | 'completed';
+  // Success criteria fields
+  success_criteria_defined?: boolean;
+  validation_status?: string;
+  quality_gates_status?: string;
+  completion_confidence?: number;
+  risk_assessment?: string;
+  current_lifecycle_stage?: string;
+  success_criteria_count?: number;
+  success_criteria_met?: number;
+  criteria_completion_percentage?: number;
+  total_quality_gates?: number;
+  passed_quality_gates?: number;
+  // Source document fields
+  source_doc_id?: string;
+  source_doc_path?: string;
+  source_doc_phase?: string;
+  failed_quality_gates?: number;
+  overall_completion_score?: number;
+  // View-specific fields
+  current_stage_name?: string;
+  current_stage_status?: string;
+  current_stage_confidence?: number;
+  current_stage_risk?: string;
 }
 
 export interface DevTaskTag {
@@ -76,7 +107,7 @@ export class TaskService {
     app?: string;
   }) {
     let query = supabase
-      .from('dev_tasks')
+      .from('dev_tasks_enhanced_view')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -100,7 +131,7 @@ export class TaskService {
 
   static async getTask(id: string) {
     const { data, error } = await supabase
-      .from('dev_tasks')
+      .from('dev_tasks_enhanced_view')
       .select('*')
       .eq('id', id)
       .single();
@@ -132,7 +163,8 @@ export class TaskService {
     const { data: { user } } = await supabase.auth.getUser();
     console.log('Auth status in updateTask:', user ? `Authenticated as ${user.email}` : 'Not authenticated');
     
-    const { data, error } = await supabase
+    // Update the task in dev_tasks table
+    const { data: updateData, error: updateError } = await supabase
       .from('dev_tasks')
       .update({
         ...updates,
@@ -142,19 +174,34 @@ export class TaskService {
       .select()
       .single();
     
-    if (error) {
-      console.error('Error updating task:', error);
+    if (updateError) {
+      console.error('Error updating task:', updateError);
       console.error('Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        code: updateError.code
       });
-      throw new Error(`Failed to update task: ${error.message}`);
+      throw new Error(`Failed to update task: ${updateError.message}`);
     }
     
-    console.log('Task updated successfully:', data);
-    return data as DevTask;
+    console.log('Task updated in dev_tasks table:', updateData);
+    
+    // Now fetch the updated task from the enhanced view to get computed fields
+    const { data: enhancedData, error: fetchError } = await supabase
+      .from('dev_tasks_enhanced_view')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching enhanced task data:', fetchError);
+      // Fall back to the basic update data if enhanced view fails
+      return updateData as DevTask;
+    }
+    
+    console.log('Task fetched from enhanced view:', enhancedData);
+    return enhancedData as DevTask;
   }
 
   static async deleteTask(id: string) {
@@ -238,7 +285,10 @@ export class TaskService {
       .eq('task_id', taskId)
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching commits:', error);
+      throw new Error(`Failed to fetch commits: ${error.message}`);
+    }
     return data as DevTaskCommit[];
   }
 
@@ -249,7 +299,10 @@ export class TaskService {
       .eq('task_id', taskId)
       .order('started_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching work sessions:', error);
+      throw new Error(`Failed to fetch work sessions: ${error.message}`);
+    }
     return data as DevTaskWorkSession[];
   }
 
