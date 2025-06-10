@@ -49,6 +49,7 @@ export function WorkSummariesEnhanced() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedCompletionStatus, setSelectedCompletionStatus] = useState<string>('all');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<EditingState | null>(null);
@@ -64,7 +65,7 @@ export function WorkSummariesEnhanced() {
 
   useEffect(() => {
     filterWorkItems();
-  }, [searchQuery, selectedCategory, selectedType, workItems]);
+  }, [searchQuery, selectedCategory, selectedType, selectedCompletionStatus, workItems]);
 
   const fetchData = async () => {
     try {
@@ -151,6 +152,34 @@ export function WorkSummariesEnhanced() {
         } else {
           const task = item.data as TaskWithTags;
           return task.task_type === selectedCategory || task.status === selectedCategory;
+        }
+      });
+    }
+
+    // Completion status filter
+    if (selectedCompletionStatus !== 'all') {
+      filtered = filtered.filter(item => {
+        if (item.type === 'summary') {
+          const summary = item.data as WorkSummary;
+          // Check if summary has an associated task
+          const taskId = summary.metadata?.task_id || summary.metadata?.dev_task_id;
+          if (taskId) {
+            // Find the associated task
+            const associatedTask = tasks.find(t => t.id === taskId);
+            if (associatedTask) {
+              return selectedCompletionStatus === 'completed' ? 
+                associatedTask.status === 'completed' : 
+                associatedTask.status !== 'completed';
+            }
+          }
+          // If no associated task, consider it as "not completed"
+          return selectedCompletionStatus === 'not-completed';
+        } else {
+          // For task items, use their status directly
+          const task = item.data as TaskWithTags;
+          return selectedCompletionStatus === 'completed' ? 
+            task.status === 'completed' : 
+            task.status !== 'completed';
         }
       });
     }
@@ -324,8 +353,8 @@ export function WorkSummariesEnhanced() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
+          {/* Search Bar */}
+          <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
@@ -336,26 +365,91 @@ export function WorkSummariesEnhanced() {
                 className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
               />
             </div>
+          </div>
 
-            {/* Type Filter */}
+          {/* Filter Pills */}
+          <div className="space-y-4">
+            {/* Type Filter Pills */}
             <div>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
-              >
-                <option value="all">All Types</option>
-                <option value="summary">Work Summaries</option>
-                <option value="task">Dev Tasks</option>
-              </select>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Type</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedType('all')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedType === 'all' 
+                      ? 'bg-gray-800 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All Types
+                </button>
+                <button
+                  onClick={() => setSelectedType('summary')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedType === 'summary' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Work Summaries
+                </button>
+                <button
+                  onClick={() => setSelectedType('task')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedType === 'task' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                  }`}
+                >
+                  Dev Tasks
+                </button>
+              </div>
             </div>
 
-            {/* Category Filter */}
+            {/* Completion Status Filter Pills */}
             <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Completion Status</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedCompletionStatus('all')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedCompletionStatus === 'all' 
+                      ? 'bg-gray-800 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All Items
+                </button>
+                <button
+                  onClick={() => setSelectedCompletionStatus('completed')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedCompletionStatus === 'completed' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-green-50 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  Completed
+                </button>
+                <button
+                  onClick={() => setSelectedCompletionStatus('not-completed')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedCompletionStatus === 'not-completed' 
+                      ? 'bg-orange-600 text-white' 
+                      : 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                  }`}
+                >
+                  Not Completed
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter (kept as dropdown for many options) */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Category</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
+                className="w-full md:w-auto px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>
@@ -368,7 +462,7 @@ export function WorkSummariesEnhanced() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
             <div className="text-2xl font-bold text-gray-900">{summaries.length}</div>
             <div className="text-sm text-gray-700">Work Summaries</div>
@@ -394,6 +488,19 @@ export function WorkSummariesEnhanced() {
               {tasks.filter(t => t.status === 'pending').length}
             </div>
             <div className="text-sm text-gray-700">Pending Tasks</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="text-2xl font-bold text-purple-900">
+              {summaries.filter(s => {
+                const taskId = s.metadata?.task_id || s.metadata?.dev_task_id;
+                if (taskId) {
+                  const task = tasks.find(t => t.id === taskId);
+                  return task?.status === 'completed';
+                }
+                return false;
+              }).length}
+            </div>
+            <div className="text-sm text-gray-700">Summaries for Completed Tasks</div>
           </div>
         </div>
 
