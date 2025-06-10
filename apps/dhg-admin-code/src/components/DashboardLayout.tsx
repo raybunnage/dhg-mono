@@ -31,6 +31,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/ai')) return 'ai';
     if (location.pathname.startsWith('/sqlite-import')) return 'sqlite-import';
     if (location.pathname.startsWith('/features')) return 'features';
+    if (location.pathname.startsWith('/testing')) return 'testing';
     return 'tasks'; // default
   };
   
@@ -307,6 +308,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               Features 🔍
+            </button>
+            <button
+              onClick={() => navigate('/testing')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'testing'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Testing 🧪
             </button>
           </nav>
         </div>

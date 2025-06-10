@@ -99,6 +99,15 @@ const SERVERS = [
     cwd: process.cwd(),
     env: { GIT_HISTORY_PORT: '3011' },
     description: 'Git history analysis and worktree assignment'
+  },
+  {
+    name: 'Test Runner Server',
+    port: 3012,
+    command: 'node',
+    args: ['test-runner-server.cjs'],
+    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+    env: { TEST_RUNNER_PORT: '3012' },
+    description: 'Test execution API for dhg-admin-code'
   }
 ];
 

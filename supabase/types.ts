@@ -5927,6 +5927,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_test_results: {
+        Row: {
+          command: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_output: string | null
+          id: string
+          metadata: Json | null
+          output: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status?: string
+          test_name?: string
+          test_suite_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       worktree_app_mappings: {
         Row: {
           app_name: string
