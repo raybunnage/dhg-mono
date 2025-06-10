@@ -94,10 +94,11 @@ export function WorkSummaries() {
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(item => {
         if (item.type === 'summary') {
-          return (item.data as WorkSummary).category === selectedCategory;
+          const summary = item.data as WorkSummary;
+          return normalizeCategory(summary.category) === selectedCategory;
         } else {
           const task = item.data as TaskWithTags;
-          return task.task_type === selectedCategory || task.status === selectedCategory;
+          return normalizeCategory(task.task_type) === selectedCategory || task.status === selectedCategory;
         }
       });
     }
@@ -134,11 +135,55 @@ export function WorkSummaries() {
     setExpandedItems(newExpanded);
   };
 
-  const categories = ['all', ...Array.from(new Set([
-    ...summaries.map(s => s.category).filter(Boolean),
-    ...tasks.map(t => t.task_type).filter(Boolean),
-    ...tasks.map(t => t.status).filter(Boolean)
-  ]))];
+  // Create standardized category mapping
+  const normalizeCategory = (category: string): string => {
+    if (!category) return '';
+    
+    // Normalize bug-related categories
+    if (['bug_fix', 'bugfix', 'bug-fix', 'bug'].includes(category.toLowerCase())) {
+      return 'bug-fix';
+    }
+    
+    // Normalize documentation categories
+    if (['documentation', 'docs'].includes(category.toLowerCase())) {
+      return 'documentation';
+    }
+    
+    // Normalize refactor categories
+    if (['refactoring', 'refactor'].includes(category.toLowerCase())) {
+      return 'refactor';
+    }
+    
+    // Normalize feature categories
+    if (['feature-development', 'feature'].includes(category.toLowerCase())) {
+      return 'feature';
+    }
+    
+    // Return as-is for other categories
+    return category.toLowerCase();
+  };
+
+  // Get normalized categories for dropdowns
+  const summaryCategories = summaries
+    .map(s => normalizeCategory(s.category))
+    .filter(Boolean);
+    
+  const taskTypes = tasks
+    .map(t => normalizeCategory(t.task_type))
+    .filter(Boolean);
+    
+  const taskStatuses = tasks
+    .map(t => t.status)
+    .filter(Boolean);
+
+  // Create organized category list
+  const categories = [
+    'all',
+    // Work summary categories (normalized)
+    ...Array.from(new Set(summaryCategories)).sort(),
+    // Task statuses (separate section)
+    ...Array.from(new Set(taskStatuses)).sort()
+  ].filter((cat, index, arr) => arr.indexOf(cat) === index); // Remove duplicates
 
   const getTaskStatusIcon = (status: string) => {
     switch (status) {
@@ -167,15 +212,21 @@ export function WorkSummaries() {
   };
 
   const getCategoryEmoji = (category: string) => {
+    const normalizedCat = normalizeCategory(category);
     const emojis: Record<string, string> = {
-      'bug_fix': '🐛',
+      'bug-fix': '🐛',
       'feature': '✨',
-      'refactoring': '🔧',
+      'refactor': '🔧',
       'documentation': '📚',
+      'infrastructure': '🏗️',
+      'maintenance': '🔧',
+      'merge': '🔀',
+      // Task statuses
       'completed': '✅',
-      'in_progress': '🔄'
+      'in_progress': '🔄',
+      'pending': '⏳'
     };
-    return emojis[category] || '📋';
+    return emojis[normalizedCat] || emojis[category] || '📋';
   };
 
   if (loading) {
@@ -232,11 +283,25 @@ export function WorkSummaries() {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors"
               >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat === 'all' ? 'All Categories' : cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </option>
-                ))}
+                <option value="all">All Categories</option>
+                
+                {/* Work Summary Categories */}
+                <optgroup label="Work Types">
+                  {Array.from(new Set(summaryCategories)).sort().map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </option>
+                  ))}
+                </optgroup>
+                
+                {/* Task Statuses */}
+                <optgroup label="Task Status">
+                  {Array.from(new Set(taskStatuses)).sort().map(status => (
+                    <option key={status} value={status}>
+                      {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>
@@ -297,7 +362,7 @@ export function WorkSummaries() {
                           </span>
                           {summary.category && (
                             <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                              {summary.category.replace('_', ' ')}
+                              {normalizeCategory(summary.category).replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </span>
                           )}
                         </div>
