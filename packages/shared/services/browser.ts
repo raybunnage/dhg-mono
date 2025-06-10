@@ -27,7 +27,6 @@ export * from "./database-metadata-service";
 
 // AI and document services (browser-safe parts)
 export * from "./ai-processing-service";
-export * from "./document-classification-service";
 
 // Command execution client (browser-safe)
 export { CommandExecutionClient } from "./command-execution-service/command-execution-client";
