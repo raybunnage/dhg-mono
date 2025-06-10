@@ -6,29 +6,13 @@ import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskService } from '../services/task-service';
 import type { DevTask, DevTaskTag } from '../services/task-service';
 import { supabase } from '../lib/supabase';
+import { WorkSummaryService, type WorkSummary, type WorkItem } from '@shared/services/work-summary-service';
 
-interface WorkSummary {
-  id: string;
-  title: string;
-  summary_content: string;
-  work_date: string;
-  commands: string[];
-  ui_components: string[];
-  tags: string[];
-  category: string;
-  status: string;
-  created_at: string;
-  metadata?: any;
-}
+// Create work summary service instance
+const workSummaryService = WorkSummaryService.getInstance(supabase);
 
 interface TaskWithTags extends DevTask {
   tags: string[];
-}
-
-interface WorkItem {
-  type: 'summary' | 'task';
-  date: string;
-  data: WorkSummary | TaskWithTags;
 }
 
 export function WorkSummaries() {
@@ -58,12 +42,8 @@ export function WorkSummaries() {
 
   const fetchData = async () => {
     try {
-      // Fetch summaries
-      const summariesPromise = supabase
-        .from('ai_work_summaries')
-        .select('*')
-        .order('work_date', { ascending: false })
-        .order('created_at', { ascending: false });
+      // Fetch summaries using the service
+      const summariesPromise = workSummaryService.getSummaries();
 
       // Fetch tasks with their tags
       const tasksPromise = TaskService.getTasks();
@@ -77,7 +57,6 @@ export function WorkSummaries() {
         tagsPromise
       ]);
 
-      if (summariesResult.error) throw summariesResult.error;
       if (tagsResult.error) throw tagsResult.error;
 
       // Map tags to tasks
@@ -89,7 +68,7 @@ export function WorkSummaries() {
         };
       });
 
-      setSummaries(summariesResult.data || []);
+      setSummaries(summariesResult);
       setTasks(tasksWithTags);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -99,29 +78,7 @@ export function WorkSummaries() {
   };
 
   const combineWorkItems = () => {
-    const items: WorkItem[] = [];
-    
-    // Add summaries
-    summaries.forEach(summary => {
-      items.push({
-        type: 'summary',
-        date: summary.work_date,
-        data: summary
-      });
-    });
-
-    // Add tasks (using created_at as the date)
-    tasks.forEach(task => {
-      items.push({
-        type: 'task',
-        date: task.created_at,
-        data: task
-      });
-    });
-
-    // Sort by date (newest first)
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
+    const items = workSummaryService.combineWorkItems(summaries, tasks);
     setWorkItems(items);
   };
 
