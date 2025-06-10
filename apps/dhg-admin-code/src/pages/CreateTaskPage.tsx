@@ -233,11 +233,18 @@ export default function CreateTaskPage() {
         task_type: formData.task_type,
         priority: formData.priority,
         app: formData.app || undefined,
-        git_branch: gitBranch,
-        work_mode: formData.work_mode,
-        requires_branch: needsBranch,
-        worktree_path: formData.worktree_path || undefined
+        worktree: selectedWorktree?.alias_name
       });
+      
+      // Update task with additional fields
+      if (task.id) {
+        await TaskService.updateTask(task.id, {
+          git_branch: gitBranch,
+          work_mode: formData.work_mode,
+          requires_branch: needsBranch,
+          worktree_path: formData.worktree_path || undefined
+        });
+      }
 
       // Link selected element to the task if one was chosen
       if (selectedElement && task.id) {
