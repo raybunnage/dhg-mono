@@ -145,26 +145,14 @@ export class ClipboardService {
   }
 
   /**
-   * Update last used timestamp and increment usage count
+   * Update last used timestamp
    */
   async recordUsage(id: string): Promise<void> {
-    // First get current usage count
-    const { data: currentItem, error: fetchError } = await this.supabase
-      .from('clipboard_snippets')
-      .select('usage_count')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const currentCount = currentItem?.usage_count || 0;
-
-    // Update last used and increment count
+    // Just update last used timestamp
     const { error } = await this.supabase
       .from('clipboard_snippets')
       .update({
-        last_used: new Date().toISOString(),
-        usage_count: currentCount + 1
+        last_used: new Date().toISOString()
       })
       .eq('id', id);
 
