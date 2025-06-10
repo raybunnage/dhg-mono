@@ -1,5 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Singleton storage for browser environments to prevent multiple instances
+const browserInstances = new Map<string, SupabaseClient>();
+
 /**
  * Options for creating a Supabase adapter
  */
@@ -99,6 +102,21 @@ export function createSupabaseAdapter(options: SupabaseAdapterOptions = {}): Sup
   
   const authConfig = { ...defaultAuthConfig, ...options.authConfig };
   
+  // In browser environments, use singleton pattern to prevent multiple instances
+  if (isBrowser) {
+    const instanceKey = `${supabaseUrl}-${supabaseKey.substring(0, 10)}-${options.useServiceRole ? 'service' : 'anon'}`;
+    
+    if (!browserInstances.has(instanceKey)) {
+      const client = createClient(supabaseUrl, supabaseKey, {
+        auth: authConfig
+      });
+      browserInstances.set(instanceKey, client);
+    }
+    
+    return browserInstances.get(instanceKey)!;
+  }
+  
+  // In Node.js/CLI environments, create new instances as needed
   return createClient(supabaseUrl, supabaseKey, {
     auth: authConfig
   });
