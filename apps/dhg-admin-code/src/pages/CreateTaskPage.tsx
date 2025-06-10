@@ -233,7 +233,6 @@ export default function CreateTaskPage() {
         task_type: formData.task_type,
         priority: formData.priority,
         app: formData.app || undefined,
-        status: 'pending',
         git_branch: gitBranch,
         work_mode: formData.work_mode,
         requires_branch: needsBranch,
