@@ -11,7 +11,7 @@ import { DocumentsPage } from './pages/DocumentsPage';
 import { ScriptsManagement } from './pages/ScriptsManagement';
 import { GitManagement } from './pages/GitManagement';
 import { GitBranchManagement } from './pages/GitBranchManagement';
-import { ContinuousDocumentsPage } from './pages/ContinuousDocumentsPage';
+import { LivingDocsPage } from './pages/LivingDocsPage';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -19,6 +19,7 @@ import ClipboardManager from './pages/ClipboardManager';
 import WorktreeMappings from './pages/WorktreeMappings';
 import ServiceDependencies from './pages/ServiceDependencies';
 import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
+import { AIPage } from './pages/AIPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -133,10 +134,10 @@ function App() {
           } 
         />
         <Route 
-          path="/continuous-docs" 
+          path="/living-docs" 
           element={
             <ProtectedRoute requireAdmin>
-              <ContinuousDocumentsPage />
+              <LivingDocsPage />
             </ProtectedRoute>
           } 
         />
@@ -169,6 +170,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <DeprecationAnalysis />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/ai" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <AIPage />
             </ProtectedRoute>
           } 
         />

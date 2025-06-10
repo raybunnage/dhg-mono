@@ -314,11 +314,10 @@ ORDER BY cpt.table_name;
 
 4. **Document Solutions After Struggles**:
    - ⚠️ **After overcoming significant challenges, update this CLAUDE.md file**
-   - Add concise troubleshooting guidance for future reference
+   - All new learnings now go to claude-md-candidates.md
+  -  Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions
-   - Follow the existing format with ❌ Problem and ✅ Solution examples
-   - Focus on patterns that could help with similar issues in the future
-
+   
 ## Task-Aware Git Commits
 
 ⚠️ **ALWAYS check for active tasks before committing changes**
