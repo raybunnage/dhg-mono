@@ -204,6 +204,7 @@ export function DatabasePage() {
     // Define known prefixes and their descriptions
     const prefixDescriptions: Record<string, { label: string; description: string }> = {
       'ai_': { label: 'AI', description: 'AI & prompt management' },
+      'app_': { label: 'App', description: 'Application-specific tables' },
       'auth_': { label: 'Auth', description: 'Authentication & users' },
       'batch_': { label: 'Batch', description: 'Batch operations' },
       'clipboard_': { label: 'Clipboard', description: 'Clipboard snippets management' },
@@ -211,6 +212,7 @@ export function DatabasePage() {
       'dev_': { label: 'Dev', description: 'Development tasks, merge queue & workflow' },
       'doc_': { label: 'Docs', description: 'Document management & continuous monitoring' },
       'document_': { label: 'Document Types', description: 'Document type definitions' },
+      'element_': { label: 'Element', description: 'Element catalog system' },
       'email_': { label: 'Email', description: 'Email system' },
       'expert_': { label: 'Expert', description: 'Expert system' },
       'filter_': { label: 'Filter', description: 'User filters & preferences' },
@@ -274,8 +276,8 @@ export function DatabasePage() {
     // Apply prefix filter
     if (selectedPrefix) {
       if (selectedPrefix === '_other') {
-        const knownPrefixes = ['ai_', 'auth_', 'batch_', 'clipboard_', 'command_', 'dev_', 'doc_', 
-                               'document_', 'email_', 'expert_', 'filter_', 'google_', 'import_', 
+        const knownPrefixes = ['ai_', 'app_', 'auth_', 'batch_', 'clipboard_', 'command_', 'dev_', 'doc_', 
+                               'document_', 'element_', 'email_', 'expert_', 'filter_', 'google_', 'import_', 
                                'learn_', 'media_', 'registry_', 'scripts_', 'service_', 'sys_', 
                                'worktree_'];
         filtered = filtered.filter(table => 

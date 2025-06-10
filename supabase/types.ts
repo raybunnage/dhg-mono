@@ -3545,6 +3545,102 @@ export type Database = {
         }
         Relationships: []
       }
+      import_dynamic_healing_sqlite: {
+        Row: {
+          column_count: number
+          created_at: string | null
+          has_autoincrement: boolean | null
+          id: number
+          import_notes: string | null
+          import_priority: string | null
+          import_status: string | null
+          last_checked: string | null
+          primary_key: string | null
+          record_count: number
+          sample_columns: string | null
+          supabase_table_name: string | null
+          table_name: string
+          table_size_category: string
+          updated_at: string | null
+        }
+        Insert: {
+          column_count: number
+          created_at?: string | null
+          has_autoincrement?: boolean | null
+          id?: number
+          import_notes?: string | null
+          import_priority?: string | null
+          import_status?: string | null
+          last_checked?: string | null
+          primary_key?: string | null
+          record_count: number
+          sample_columns?: string | null
+          supabase_table_name?: string | null
+          table_name: string
+          table_size_category: string
+          updated_at?: string | null
+        }
+        Update: {
+          column_count?: number
+          created_at?: string | null
+          has_autoincrement?: boolean | null
+          id?: number
+          import_notes?: string | null
+          import_priority?: string | null
+          import_status?: string | null
+          last_checked?: string | null
+          primary_key?: string | null
+          record_count?: number
+          sample_columns?: string | null
+          supabase_table_name?: string | null
+          table_name?: string
+          table_size_category?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      import_dynamic_healing_tables: {
+        Row: {
+          column_count: number
+          column_names: string[]
+          column_types: string[]
+          created_sql: string
+          has_autoincrement: boolean | null
+          id: number
+          imported_at: string | null
+          primary_key_columns: string[] | null
+          record_count: number
+          table_name: string
+          table_schema: string
+        }
+        Insert: {
+          column_count: number
+          column_names: string[]
+          column_types: string[]
+          created_sql: string
+          has_autoincrement?: boolean | null
+          id?: number
+          imported_at?: string | null
+          primary_key_columns?: string[] | null
+          record_count: number
+          table_name: string
+          table_schema: string
+        }
+        Update: {
+          column_count?: number
+          column_names?: string[]
+          column_types?: string[]
+          created_sql?: string
+          has_autoincrement?: boolean | null
+          id?: number
+          imported_at?: string | null
+          primary_key_columns?: string[] | null
+          record_count?: number
+          table_name?: string
+          table_schema?: string
+        }
+        Relationships: []
+      }
       import_email_concepts: {
         Row: {
           actual_quote: string | null
