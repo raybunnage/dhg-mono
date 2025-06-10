@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, ChevronRight } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { supabase } from '../lib/supabase';
+import { ElementCatalogService, TaskElement } from '@shared/services/element-catalog-service';
 
 interface WorktreeDefinition {
   id: string;
@@ -30,6 +31,13 @@ export default function CreateTaskPage() {
   const [appMappings, setAppMappings] = useState<any[]>([]);
   const [pipelineMappings, setPipelineMappings] = useState<any[]>([]);
   const [worktreesLoading, setWorktreesLoading] = useState(true);
+  
+  // Element selection state
+  const [showElementSelector, setShowElementSelector] = useState(false);
+  const [availableElements, setAvailableElements] = useState<TaskElement[]>([]);
+  const [selectedElement, setSelectedElement] = useState<TaskElement | null>(null);
+  const [elementsLoading, setElementsLoading] = useState(false);
+  const elementCatalog = ElementCatalogService.getInstance();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -134,6 +142,46 @@ export default function CreateTaskPage() {
     }
   }, [selectedWorktree?.id]); // Remove function dependencies
 
+  // Load elements when app/pipeline is selected
+  useEffect(() => {
+    if (formData.app) {
+      loadAvailableElements();
+    } else {
+      setAvailableElements([]);
+      setSelectedElement(null);
+      setShowElementSelector(false);
+    }
+  }, [formData.app]);
+
+  const loadAvailableElements = async () => {
+    if (!formData.app) return;
+    
+    setElementsLoading(true);
+    try {
+      let type: 'app' | 'cli_pipeline' | 'service';
+      
+      if (formData.app.startsWith('cli-')) {
+        type = 'cli_pipeline';
+      } else if (formData.app.includes('service')) {
+        type = 'service';
+      } else {
+        type = 'app';
+      }
+      
+      const elements = await elementCatalog.getAvailableElements(type, formData.app);
+      setAvailableElements(elements);
+      
+      // Show element selector if there are elements available
+      if (elements.length > 0) {
+        setShowElementSelector(true);
+      }
+    } catch (error) {
+      console.error('Error loading elements:', error);
+    } finally {
+      setElementsLoading(false);
+    }
+  };
+
   // Generate branch name from title and type
   const generateBranchName = (title: string, type: string): string => {
     const kebabCase = title
@@ -181,6 +229,16 @@ export default function CreateTaskPage() {
         requires_branch: needsBranch,
         worktree_path: formData.worktree_path || undefined
       });
+
+      // Link selected element to the task if one was chosen
+      if (selectedElement && task.id) {
+        await elementCatalog.linkElementToTask(
+          task.id,
+          selectedElement.element_type,
+          selectedElement.element_id,
+          selectedElement.name
+        );
+      }
 
       // Add tags if provided
       if (formData.tags.trim()) {
@@ -409,6 +467,91 @@ export default function CreateTaskPage() {
               }
             </p>
           </div>
+
+          {/* Element Selection - Show when app/pipeline is selected */}
+          {showElementSelector && formData.app && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Specific Element (Optional)
+              </label>
+              
+              {elementsLoading ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Loading available elements...
+                  </div>
+                </div>
+              ) : availableElements.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    value={selectedElement?.element_id || ''}
+                    onChange={(e) => {
+                      const element = availableElements.find(el => el.element_id === e.target.value);
+                      setSelectedElement(element || null);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  >
+                    <option value="">Select a specific {formData.app.startsWith('cli-') ? 'command' : 'feature'}...</option>
+                    
+                    {/* Group elements by subcategory */}
+                    {Object.entries(
+                      availableElements.reduce((groups, element) => {
+                        const key = element.subcategory;
+                        if (!groups[key]) groups[key] = [];
+                        groups[key].push(element);
+                        return groups;
+                      }, {} as Record<string, TaskElement[]>)
+                    ).map(([subcategory, elements]) => (
+                      <optgroup key={subcategory} label={subcategory.charAt(0).toUpperCase() + subcategory.slice(1) + 's'}>
+                        {elements.map(element => (
+                          <option key={element.element_id} value={element.element_id}>
+                            {element.name}
+                            {element.description && ` - ${element.description.substring(0, 50)}${element.description.length > 50 ? '...' : ''}`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  
+                  {selectedElement && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                      <div className="flex items-start">
+                        <ChevronRight className="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-blue-900">{selectedElement.name}</p>
+                          {selectedElement.path && (
+                            <p className="text-xs text-blue-700 font-mono mt-1">{selectedElement.path}</p>
+                          )}
+                          {selectedElement.description && (
+                            <p className="text-xs text-blue-600 mt-1">{selectedElement.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 italic">
+                  No elements cataloged for this {formData.app.startsWith('cli-') ? 'pipeline' : 'app'} yet.
+                  {formData.app.startsWith('cli-') ? (
+                    <span className="block mt-1">
+                      Run <code className="bg-gray-100 px-1 py-0.5 rounded">./scripts/cli-pipeline/registry/registry-cli.sh scan-pipelines</code> to catalog commands.
+                    </span>
+                  ) : (
+                    <span className="block mt-1">
+                      Run <code className="bg-gray-100 px-1 py-0.5 rounded">./scripts/cli-pipeline/registry/registry-cli.sh scan-app-features --app {formData.app}</code> to catalog features.
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              <p className="mt-1 text-sm text-gray-500">
+                Choose a specific {formData.app.startsWith('cli-') ? 'command' : 'component, page, or feature'} you plan to work on
+              </p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
