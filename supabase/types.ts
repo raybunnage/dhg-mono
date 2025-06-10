@@ -856,7 +856,7 @@ export type Database = {
             foreignKeyName: "command_dependencies_command_id_fkey"
             columns: ["command_id"]
             isOneToOne: false
-            referencedRelation: "cli_commands_ordered_view"
+            referencedRelation: "command_commands_ordered_view"
             referencedColumns: ["id"]
           },
           {
@@ -5076,84 +5076,6 @@ export type Database = {
         }
         Relationships: []
       }
-      scripts_registry: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string
-          id: string
-          language: string
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json
-          package_json_references: Json | null
-          script_type_id: string | null
-          summary: Json | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path: string
-          id?: string
-          language: string
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string
-          id?: string
-          language?: string
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       service_dependencies: {
         Row: {
           dependency_type: string
@@ -6081,7 +6003,7 @@ export type Database = {
         }
         Relationships: []
       }
-      cli_commands_ordered_view: {
+      command_commands_ordered_view: {
         Row: {
           command_name: string | null
           criteria_count: number | null
