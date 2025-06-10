@@ -30,6 +30,19 @@ export default defineConfig({
         configure: () => {
           console.log('Setting up markdown server proxy');
         }
+      },
+      // Proxy test runner API requests
+      '/api/run-test': {
+        target: 'http://localhost:3012',
+        changeOrigin: true,
+        configure: () => {
+          console.log('Setting up test runner proxy');
+        }
+      },
+      // Proxy test runner health check
+      '/api/health': {
+        target: 'http://localhost:3012',
+        changeOrigin: true
       }
     }
   },

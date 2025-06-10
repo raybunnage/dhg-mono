@@ -96,7 +96,7 @@ export const TestingPage: React.FC = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      const response = await fetch('http://localhost:3012/api/health', {
+      const response = await fetch('/api/health', {
         method: 'GET',
         signal: controller.signal
       });
@@ -187,7 +187,7 @@ export const TestingPage: React.FC = () => {
 
     try {
       // Call the test runner backend
-      const response = await fetch('http://localhost:3012/api/run-test', {
+      const response = await fetch('/api/run-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: suite.command, suiteId: suite.id })
