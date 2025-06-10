@@ -130,7 +130,7 @@ export class ElementCatalogService {
    */
   async getSharedServices(category?: string): Promise<SharedService[]> {
     let query = this.supabase
-      .from('shared_services')
+      .from('sys_shared_services')
       .select('*')
       .order('service_name');
 

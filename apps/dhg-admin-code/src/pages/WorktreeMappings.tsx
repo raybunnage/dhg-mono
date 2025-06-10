@@ -118,7 +118,7 @@ export default function WorktreeMappings() {
           id,
           worktree_id,
           service_id,
-          shared_services(service_name)
+          sys_shared_services(service_name)
         `);
       
       if (serviceError) throw serviceError;
@@ -128,14 +128,14 @@ export default function WorktreeMappings() {
         id: item.id,
         worktree_id: item.worktree_id,
         service_id: item.service_id,
-        service_name: (item as any).shared_services?.service_name
+        service_name: (item as any).sys_shared_services?.service_name
       })) || [];
       
       setServiceMappings(transformedServiceData);
 
       // Load all shared services
       const { data: servicesData, error: servicesError } = await supabase
-        .from('shared_services')
+        .from('sys_shared_services')
         .select('*')
         .order('category', { ascending: true })
         .order('name', { ascending: true });

@@ -1257,13 +1257,6 @@ export type Database = {
             foreignKeyName: "dev_task_commits_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "dev_task_commits_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
@@ -1283,6 +1276,82 @@ export type Database = {
           },
           {
             foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_task_criteria_inheritance: {
+        Row: {
+          created_at: string | null
+          element_criteria_id: string | null
+          element_gate_id: string | null
+          id: string
+          is_inherited: boolean | null
+          is_modified: boolean | null
+          modifications: Json | null
+          task_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          element_criteria_id?: string | null
+          element_gate_id?: string | null
+          id?: string
+          is_inherited?: boolean | null
+          is_modified?: boolean | null
+          modifications?: Json | null
+          task_id: string
+        }
+        Update: {
+          created_at?: string | null
+          element_criteria_id?: string | null
+          element_gate_id?: string | null
+          id?: string
+          is_inherited?: boolean | null
+          is_modified?: boolean | null
+          modifications?: Json | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_criteria_inheritance_element_criteria_id_fkey"
+            columns: ["element_criteria_id"]
+            isOneToOne: false
+            referencedRelation: "element_success_criteria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_element_gate_id_fkey"
+            columns: ["element_gate_id"]
+            isOneToOne: false
+            referencedRelation: "element_quality_gates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
@@ -1313,13 +1382,6 @@ export type Database = {
           task_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_task_element_links_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_task_element_links_task_id_fkey"
             columns: ["task_id"]
@@ -1380,13 +1442,6 @@ export type Database = {
             foreignKeyName: "dev_task_elements_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "dev_task_elements_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
@@ -1436,13 +1491,6 @@ export type Database = {
           task_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_task_files_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_task_files_task_id_fkey"
             columns: ["task_id"]
@@ -1515,13 +1563,6 @@ export type Database = {
             foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
@@ -1583,13 +1624,6 @@ export type Database = {
           task_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_task_quality_gates_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_task_quality_gates_task_id_fkey"
             columns: ["task_id"]
@@ -1668,13 +1702,6 @@ export type Database = {
             foreignKeyName: "dev_task_success_criteria_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "dev_task_success_criteria_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
@@ -1721,13 +1748,6 @@ export type Database = {
           task_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_task_tags_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_task_tags_task_id_fkey"
             columns: ["task_id"]
@@ -1807,13 +1827,6 @@ export type Database = {
             foreignKeyName: "dev_task_validations_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "dev_task_validations_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
@@ -1872,13 +1885,6 @@ export type Database = {
           task_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_task_work_sessions_task_id_fkey"
             columns: ["task_id"]
@@ -2046,13 +2052,6 @@ export type Database = {
           worktree_path?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
@@ -2612,6 +2611,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      element_success_criteria_templates: {
+        Row: {
+          created_at: string | null
+          criteria_set: Json
+          description: string | null
+          element_type: string
+          id: string
+          template_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_set: Json
+          description?: string | null
+          element_type: string
+          id?: string
+          template_name: string
+        }
+        Update: {
+          created_at?: string | null
+          criteria_set?: Json
+          description?: string | null
+          element_type?: string
+          id?: string
+          template_name?: string
+        }
+        Relationships: []
       }
       email_addresses: {
         Row: {
@@ -5249,75 +5275,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shared_services: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          dependencies: string[] | null
-          description: string | null
-          id: string
-          is_singleton: boolean | null
-          service_name: string
-          service_path: string | null
-          updated_at: string | null
-          used_by_apps: string[] | null
-          used_by_pipelines: string[] | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          dependencies?: string[] | null
-          description?: string | null
-          id?: string
-          is_singleton?: boolean | null
-          service_name: string
-          service_path?: string | null
-          updated_at?: string | null
-          used_by_apps?: string[] | null
-          used_by_pipelines?: string[] | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          dependencies?: string[] | null
-          description?: string | null
-          id?: string
-          is_singleton?: boolean | null
-          service_name?: string
-          service_path?: string | null
-          updated_at?: string | null
-          used_by_apps?: string[] | null
-          used_by_pipelines?: string[] | null
-        }
-        Relationships: []
-      }
-      success_criteria_templates: {
-        Row: {
-          created_at: string | null
-          criteria_set: Json
-          description: string | null
-          element_type: string
-          id: string
-          template_name: string
-        }
-        Insert: {
-          created_at?: string | null
-          criteria_set: Json
-          description?: string | null
-          element_type: string
-          id?: string
-          template_name: string
-        }
-        Update: {
-          created_at?: string | null
-          criteria_set?: Json
-          description?: string | null
-          element_type?: string
-          id?: string
-          template_name?: string
-        }
-        Relationships: []
-      }
       sys_app_service_dependencies: {
         Row: {
           app_id: string
@@ -5771,9 +5728,12 @@ export type Database = {
           id: string
           is_singleton: boolean | null
           service_name: string
+          service_name_normalized: string | null
           service_path: string
           status: string | null
           updated_at: string | null
+          used_by_apps: string[] | null
+          used_by_pipelines: string[] | null
         }
         Insert: {
           category?: string | null
@@ -5785,9 +5745,12 @@ export type Database = {
           id?: string
           is_singleton?: boolean | null
           service_name: string
+          service_name_normalized?: string | null
           service_path: string
           status?: string | null
           updated_at?: string | null
+          used_by_apps?: string[] | null
+          used_by_pipelines?: string[] | null
         }
         Update: {
           category?: string | null
@@ -5799,9 +5762,12 @@ export type Database = {
           id?: string
           is_singleton?: boolean | null
           service_name?: string
+          service_name_normalized?: string | null
           service_path?: string
           status?: string | null
           updated_at?: string | null
+          used_by_apps?: string[] | null
+          used_by_pipelines?: string[] | null
         }
         Relationships: []
       }
@@ -5898,89 +5864,6 @@ export type Database = {
         }
         Relationships: []
       }
-      task_criteria_inheritance: {
-        Row: {
-          created_at: string | null
-          element_criteria_id: string | null
-          element_gate_id: string | null
-          id: string
-          is_inherited: boolean | null
-          is_modified: boolean | null
-          modifications: Json | null
-          task_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          element_criteria_id?: string | null
-          element_gate_id?: string | null
-          id?: string
-          is_inherited?: boolean | null
-          is_modified?: boolean | null
-          modifications?: Json | null
-          task_id: string
-        }
-        Update: {
-          created_at?: string | null
-          element_criteria_id?: string | null
-          element_gate_id?: string | null
-          id?: string
-          is_inherited?: boolean | null
-          is_modified?: boolean | null
-          modifications?: Json | null
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_criteria_inheritance_element_criteria_id_fkey"
-            columns: ["element_criteria_id"]
-            isOneToOne: false
-            referencedRelation: "element_success_criteria"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_criteria_inheritance_element_gate_id_fkey"
-            columns: ["element_gate_id"]
-            isOneToOne: false
-            referencedRelation: "element_quality_gates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_tasks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_tasks_enhanced_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_tasks_with_continuous_docs_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_tasks_with_git_view"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       worktree_app_mappings: {
         Row: {
           app_name: string
@@ -6001,13 +5884,6 @@ export type Database = {
           worktree_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
-            columns: ["worktree_id"]
-            isOneToOne: false
-            referencedRelation: "worktree_assignments_complete_view"
-            referencedColumns: ["worktree_id"]
-          },
           {
             foreignKeyName: "worktree_app_mappings_worktree_id_fkey"
             columns: ["worktree_id"]
@@ -6074,13 +5950,6 @@ export type Database = {
             foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
             columns: ["worktree_id"]
             isOneToOne: false
-            referencedRelation: "worktree_assignments_complete_view"
-            referencedColumns: ["worktree_id"]
-          },
-          {
-            foreignKeyName: "worktree_pipeline_mappings_worktree_id_fkey"
-            columns: ["worktree_id"]
-            isOneToOne: false
             referencedRelation: "worktree_definitions"
             referencedColumns: ["id"]
           },
@@ -6116,15 +5985,15 @@ export type Database = {
             foreignKeyName: "worktree_service_mappings_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "shared_services"
+            referencedRelation: "sys_service_dependency_summary_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "worktree_service_mappings_worktree_id_fkey"
-            columns: ["worktree_id"]
+            foreignKeyName: "worktree_service_mappings_service_id_fkey"
+            columns: ["service_id"]
             isOneToOne: false
-            referencedRelation: "worktree_assignments_complete_view"
-            referencedColumns: ["worktree_id"]
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "worktree_service_mappings_worktree_id_fkey"
@@ -6164,19 +6033,6 @@ export type Database = {
           page_name: string | null
           page_path: string | null
           primary_service: string | null
-        }
-        Relationships: []
-      }
-      available_task_elements_view: {
-        Row: {
-          category: string | null
-          description: string | null
-          element_id: string | null
-          element_type: string | null
-          last_scanned_at: string | null
-          name: string | null
-          path: string | null
-          subcategory: string | null
         }
         Relationships: []
       }
@@ -6223,18 +6079,6 @@ export type Database = {
           count: number | null
           current_status: string | null
           pipeline: string | null
-        }
-        Relationships: []
-      }
-      dev_task_elements_view: {
-        Row: {
-          element_criteria_count: number | null
-          element_id: string | null
-          element_name: string | null
-          element_type: string | null
-          task_criteria_count: number | null
-          task_id: string | null
-          task_title: string | null
         }
         Relationships: []
       }
@@ -6292,13 +6136,6 @@ export type Database = {
           worktree_path: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
@@ -6382,13 +6219,6 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
-          {
-            foreignKeyName: "dev_tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
             referencedRelation: "dev_tasks"
             referencedColumns: ["id"]
           },
@@ -6450,13 +6280,6 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "dev_tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
-            referencedRelation: "dev_task_elements_view"
-            referencedColumns: ["task_id"]
-          },
           {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
@@ -6560,21 +6383,6 @@ export type Database = {
             referencedColumns: ["element_id"]
           },
         ]
-      }
-      elements_with_criteria_view: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          criteria_count: number | null
-          description: string | null
-          element_id: string | null
-          element_type: string | null
-          gates_count: number | null
-          name: string | null
-          path: string | null
-          subcategory: string | null
-        }
-        Relationships: []
       }
       learn_user_progress_view: {
         Row: {
@@ -6893,22 +6701,6 @@ export type Database = {
           status: string | null
           used_by_apps_count: number | null
           used_by_pipelines_count: number | null
-        }
-        Relationships: []
-      }
-      worktree_assignments_complete_view: {
-        Row: {
-          app_count: number | null
-          assigned_apps: string[] | null
-          assigned_pipelines: string[] | null
-          assigned_services: string[] | null
-          pipeline_count: number | null
-          service_count: number | null
-          worktree_alias: string | null
-          worktree_description: string | null
-          worktree_emoji: string | null
-          worktree_id: string | null
-          worktree_path: string | null
         }
         Relationships: []
       }
