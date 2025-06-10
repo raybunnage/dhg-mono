@@ -9,7 +9,7 @@ import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 
-interface ContinuousDocument {
+interface LivingDocument {
   fileName: string;
   path: string;
   description: string;
@@ -21,28 +21,28 @@ interface ContinuousDocument {
   nextPhase?: PhaseInfo;
 }
 
-export function ContinuousDocumentsPage() {
-  const [documents, setDocuments] = useState<ContinuousDocument[]>([]);
+export function LivingDocsPage() {
+  const [documents, setDocuments] = useState<LivingDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDocument, setSelectedDocument] = useState<ContinuousDocument | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<LivingDocument | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
-  const [creatingTaskFor, setCreatingTaskFor] = useState<{doc: ContinuousDocument, phase: PhaseInfo} | null>(null);
+  const [creatingTaskFor, setCreatingTaskFor] = useState<{doc: LivingDocument, phase: PhaseInfo} | null>(null);
   const navigate = useNavigate();
 
-  // Load documents from the continuously-updated folder
+  // Load documents from the living-docs folder
   const loadDocuments = async () => {
     try {
       setLoading(true);
       
       // Define the documents with their descriptions and metadata
-      const continuouslyUpdatedDocs: ContinuousDocument[] = [
+      const livingDocs: LivingDocument[] = [
         {
           fileName: 'CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
-          path: '/docs/continuously-updated/CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
-          description: 'Template and guidelines for maintaining continuously updated documentation with proper structure and review schedules.',
+          path: '/docs/living-docs/CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
+          description: 'Template and guidelines for maintaining living documentation with proper structure and review schedules.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
@@ -51,7 +51,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'apps-documentation.md',
-          path: '/docs/continuously-updated/apps-documentation.md',
+          path: '/docs/living-docs/apps-documentation.md',
           description: 'Comprehensive documentation for all DHG monorepo applications including configuration, deployment, and usage patterns.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -61,7 +61,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'cli-pipelines-documentation.md',
-          path: '/docs/continuously-updated/cli-pipelines-documentation.md',
+          path: '/docs/living-docs/cli-pipelines-documentation.md',
           description: 'Architecture and usage documentation for CLI pipeline system including command structure and integration patterns.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -71,7 +71,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'claude-tasks-editing-implementation.md',
-          path: '/docs/continuously-updated/claude-tasks-editing-implementation.md',
+          path: '/docs/living-docs/claude-tasks-editing-implementation.md',
           description: 'Implementation guide for Claude task editing system including modal components, form validation, and database integration.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -81,7 +81,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'code-continuous-monitoring.md',
-          path: '/docs/continuously-updated/code-continuous-monitoring.md',
+          path: '/docs/living-docs/code-continuous-monitoring.md',
           description: 'System for monitoring code changes and automatically updating documentation to maintain synchronization.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -91,7 +91,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'database-maintenance-guide.md',
-          path: '/docs/continuously-updated/database-maintenance-guide.md',
+          path: '/docs/living-docs/database-maintenance-guide.md',
           description: 'Guidelines for database maintenance including migrations, cleanup procedures, and performance optimization.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -101,7 +101,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'git-history-analysis-server.md',
-          path: '/docs/continuously-updated/git-history-analysis-server.md',
+          path: '/docs/living-docs/git-history-analysis-server.md',
           description: 'Server implementation for analyzing git history and extracting insights about code changes and development patterns.',
           updateFrequency: 'on-change',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -111,7 +111,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'mp4-pipeline-auto-update-system.md',
-          path: '/docs/continuously-updated/mp4-pipeline-auto-update-system.md',
+          path: '/docs/living-docs/mp4-pipeline-auto-update-system.md',
           description: 'Automated system for processing MP4 files including conversion, metadata extraction, and storage management.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -121,7 +121,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'mp4-to-m4a-pipeline-implementation.md',
-          path: '/docs/continuously-updated/mp4-to-m4a-pipeline-implementation.md',
+          path: '/docs/living-docs/mp4-to-m4a-pipeline-implementation.md',
           description: 'Implementation details for converting MP4 files to M4A audio format with quality preservation and batch processing.',
           updateFrequency: 'on-change',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -131,7 +131,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'prompt-service-implementation-progress.md',
-          path: '/docs/continuously-updated/prompt-service-implementation-progress.md',
+          path: '/docs/living-docs/prompt-service-implementation-progress.md',
           description: 'Progress tracking for AI prompt service implementation including features, testing, and deployment status.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -141,7 +141,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'script-and-prompt-management-guide.md',
-          path: '/docs/continuously-updated/script-and-prompt-management-guide.md',
+          path: '/docs/living-docs/script-and-prompt-management-guide.md',
           description: 'Comprehensive guide for managing scripts and AI prompts including organization, versioning, and best practices.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -151,7 +151,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'testing-quick-start-dhg-apps.md',
-          path: '/docs/continuously-updated/testing-quick-start-dhg-apps.md',
+          path: '/docs/living-docs/testing-quick-start-dhg-apps.md',
           description: 'Quick start guide for setting up and running tests across all DHG applications with common patterns and utilities.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -161,7 +161,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'testing-vision-and-implementation-guide.md',
-          path: '/docs/continuously-updated/testing-vision-and-implementation-guide.md',
+          path: '/docs/living-docs/testing-vision-and-implementation-guide.md',
           description: 'Strategic vision and implementation roadmap for testing infrastructure including tools, processes, and quality standards.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -171,7 +171,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'worktree-assignment-system.md',
-          path: '/docs/continuously-updated/worktree-assignment-system.md',
+          path: '/docs/living-docs/worktree-assignment-system.md',
           description: 'System for managing git worktree assignments and task allocation including automation and tracking capabilities.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -181,7 +181,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'dev-tasks-system.md',
-          path: '/docs/continuously-updated/dev-tasks-system.md',
+          path: '/docs/living-docs/dev-tasks-system.md',
           description: 'Comprehensive dev task management system that bridges structured planning with AI-assisted development.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -191,7 +191,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'database-architecture-guide.md',
-          path: '/docs/continuously-updated/database-architecture-guide.md',
+          path: '/docs/living-docs/database-architecture-guide.md',
           description: 'Database architecture, naming conventions, and migration procedures with comprehensive table organization.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -201,7 +201,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'service-dependency-system.md',
-          path: '/docs/continuously-updated/service-dependency-system.md',
+          path: '/docs/living-docs/service-dependency-system.md',
           description: 'Service dependency mapping system for understanding relationships between apps, pipelines, and shared services.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -211,7 +211,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'google-drive-integration.md',
-          path: '/docs/continuously-updated/google-drive-integration.md',
+          path: '/docs/living-docs/google-drive-integration.md',
           description: 'Google Drive integration with audio streaming, local optimization, and AI-powered content analysis.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -221,7 +221,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'documentation-management-system.md',
-          path: '/docs/continuously-updated/documentation-management-system.md',
+          path: '/docs/living-docs/documentation-management-system.md',
           description: 'Living documentation system for managing 700+ docs with continuous monitoring and intelligent archiving.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -231,7 +231,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'batch-processing-system.md',
-          path: '/docs/continuously-updated/batch-processing-system.md',
+          path: '/docs/living-docs/batch-processing-system.md',
           description: 'Scalable batch processing system for handling large document sets with monitoring and error recovery.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -241,7 +241,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'claude-md-management-guide.md',
-          path: '/docs/continuously-updated/claude-md-management-guide.md',
+          path: '/docs/living-docs/claude-md-management-guide.md',
           description: 'Comprehensive guide for managing CLAUDE.md size under 40k limit with tracking and optimization strategies.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -251,7 +251,7 @@ export function ContinuousDocumentsPage() {
         },
         {
           fileName: 'claude-md-candidates.md',
-          path: '/docs/continuously-updated/claude-md-candidates.md',
+          path: '/docs/living-docs/claude-md-candidates.md',
           description: 'Tracking document for potential CLAUDE.md additions with review process and size impact analysis.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
@@ -262,7 +262,7 @@ export function ContinuousDocumentsPage() {
       ];
       
       // Sort documents: template first, then by priority and name
-      const sortedDocs = continuouslyUpdatedDocs.sort((a, b) => {
+      const sortedDocs = livingDocs.sort((a, b) => {
         if (a.category === 'template') return -1;
         if (b.category === 'template') return 1;
         if (a.priority !== b.priority) {
@@ -275,7 +275,7 @@ export function ContinuousDocumentsPage() {
       setDocuments(sortedDocs);
       setError(null);
     } catch (err) {
-      setError('Failed to load continuous documents.');
+      setError('Failed to load living documents.');
       console.error('Error loading documents:', err);
     } finally {
       setLoading(false);
@@ -287,7 +287,7 @@ export function ContinuousDocumentsPage() {
   }, []);
 
   // Load markdown content for preview
-  const loadMarkdownContent = async (document: ContinuousDocument) => {
+  const loadMarkdownContent = async (document: LivingDocument) => {
     try {
       setLoadingMarkdown(true);
       setSelectedDocument(document);
@@ -328,7 +328,7 @@ export function ContinuousDocumentsPage() {
     : documents;
 
   // Check if document needs update
-  const needsUpdate = (doc: ContinuousDocument): boolean => {
+  const needsUpdate = (doc: LivingDocument): boolean => {
     const lastUpdate = new Date(doc.lastUpdated);
     const now = new Date();
     
@@ -346,7 +346,7 @@ export function ContinuousDocumentsPage() {
   };
 
   // Get time until next update
-  const getNextUpdateTime = (doc: ContinuousDocument): string => {
+  const getNextUpdateTime = (doc: LivingDocument): string => {
     const lastUpdate = new Date(doc.lastUpdated);
     const now = new Date();
     
@@ -449,7 +449,7 @@ export function ContinuousDocumentsPage() {
         <div className="p-8">
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Loading continuous documents...</span>
+            <span className="ml-3 text-gray-600">Loading living documents...</span>
           </div>
         </div>
       </DashboardLayout>
@@ -475,9 +475,9 @@ export function ContinuousDocumentsPage() {
         {/* Left Panel - Document Cards */}
         <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-200">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Continuously Updated Documents</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Living Docs</h1>
             <p className="mt-2 text-gray-600">
-              Live documentation that updates automatically to stay current.
+              Living documentation that evolves with your project and stays current.
             </p>
           </div>
 

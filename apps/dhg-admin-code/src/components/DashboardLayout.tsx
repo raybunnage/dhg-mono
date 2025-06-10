@@ -24,7 +24,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/git')) return 'git';
     // if (location.pathname.startsWith('/hi-mom')) return 'hi-mom'; // Archived
     if (location.pathname.startsWith('/clipboard')) return 'clipboard';
-    if (location.pathname.startsWith('/continuous-docs')) return 'continuous-docs';
+    if (location.pathname.startsWith('/living-docs')) return 'living-docs';
     if (location.pathname.startsWith('/worktree-mappings')) return 'worktree-mappings';
     if (location.pathname.startsWith('/service-dependencies')) return 'service-dependencies';
     if (location.pathname.startsWith('/deprecation-analysis')) return 'deprecation';
@@ -174,16 +174,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               Scripts
             </button>
             <button
-              onClick={() => navigate('/continuous-docs')}
+              onClick={() => navigate('/living-docs')}
               className={`
                 py-2 px-1 border-b-2 font-medium text-sm
-                ${activeTab === 'continuous-docs'
+                ${activeTab === 'living-docs'
                   ? 'border-green-500 text-green-700 font-medium'
                   : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
                 }
               `}
             >
-              Continuous Docs
+              Living Docs
             </button>
             <button
               onClick={() => navigate('/git')}
