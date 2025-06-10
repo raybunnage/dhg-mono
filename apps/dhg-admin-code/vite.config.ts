@@ -24,7 +24,7 @@ export default defineConfig({
     },
     proxy: {
       // Proxy markdown file requests to the markdown server
-      '/api/markdown': {
+      '/api/markdown-file': {
         target: 'http://localhost:3001',
         changeOrigin: true,
         configure: () => {
