@@ -298,6 +298,13 @@ export type Database = {
             referencedRelation: "app_features"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "app_features_parent_feature_id_fkey"
+            columns: ["parent_feature_id"]
+            isOneToOne: false
+            referencedRelation: "element_hierarchy_view"
+            referencedColumns: ["element_id"]
+          },
         ]
       }
       app_page_features: {
@@ -2445,44 +2452,166 @@ export type Database = {
         }
         Relationships: []
       }
+      element_criteria_templates: {
+        Row: {
+          created_at: string | null
+          criteria_set: Json
+          description: string | null
+          element_type: string
+          feature_type: string | null
+          gates_set: Json
+          id: string
+          is_active: boolean | null
+          template_name: string
+          updated_at: string | null
+          use_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_set?: Json
+          description?: string | null
+          element_type: string
+          feature_type?: string | null
+          gates_set?: Json
+          id?: string
+          is_active?: boolean | null
+          template_name: string
+          updated_at?: string | null
+          use_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria_set?: Json
+          description?: string | null
+          element_type?: string
+          feature_type?: string | null
+          gates_set?: Json
+          id?: string
+          is_active?: boolean | null
+          template_name?: string
+          updated_at?: string | null
+          use_count?: number | null
+        }
+        Relationships: []
+      }
+      element_quality_gates: {
+        Row: {
+          auto_check: boolean | null
+          check_script: string | null
+          created_at: string | null
+          description: string | null
+          element_id: string
+          element_type: string
+          gate_name: string
+          gate_type: string
+          id: string
+          is_blocking: boolean | null
+          metadata: Json | null
+          order_sequence: number | null
+          suggested_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_check?: boolean | null
+          check_script?: string | null
+          created_at?: string | null
+          description?: string | null
+          element_id: string
+          element_type: string
+          gate_name: string
+          gate_type: string
+          id?: string
+          is_blocking?: boolean | null
+          metadata?: Json | null
+          order_sequence?: number | null
+          suggested_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_check?: boolean | null
+          check_script?: string | null
+          created_at?: string | null
+          description?: string | null
+          element_id?: string
+          element_type?: string
+          gate_name?: string
+          gate_type?: string
+          id?: string
+          is_blocking?: boolean | null
+          metadata?: Json | null
+          order_sequence?: number | null
+          suggested_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       element_success_criteria: {
         Row: {
           created_at: string | null
-          criteria_description: string | null
-          criteria_title: string
+          criteria_type: string
+          description: string | null
           element_id: string
           element_type: string
           id: string
           is_required: boolean | null
+          is_template: boolean | null
+          metadata: Json | null
+          parent_criteria_id: string | null
+          priority: string | null
+          success_condition: string
           suggested_by: string | null
+          title: string
           updated_at: string | null
-          validation_type: string | null
+          validation_method: string | null
+          validation_script: string | null
         }
         Insert: {
           created_at?: string | null
-          criteria_description?: string | null
-          criteria_title: string
+          criteria_type: string
+          description?: string | null
           element_id: string
           element_type: string
           id?: string
           is_required?: boolean | null
+          is_template?: boolean | null
+          metadata?: Json | null
+          parent_criteria_id?: string | null
+          priority?: string | null
+          success_condition: string
           suggested_by?: string | null
+          title: string
           updated_at?: string | null
-          validation_type?: string | null
+          validation_method?: string | null
+          validation_script?: string | null
         }
         Update: {
           created_at?: string | null
-          criteria_description?: string | null
-          criteria_title?: string
+          criteria_type?: string
+          description?: string | null
           element_id?: string
           element_type?: string
           id?: string
           is_required?: boolean | null
+          is_template?: boolean | null
+          metadata?: Json | null
+          parent_criteria_id?: string | null
+          priority?: string | null
+          success_condition?: string
           suggested_by?: string | null
+          title?: string
           updated_at?: string | null
-          validation_type?: string | null
+          validation_method?: string | null
+          validation_script?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "element_success_criteria_parent_criteria_id_fkey"
+            columns: ["parent_criteria_id"]
+            isOneToOne: false
+            referencedRelation: "element_success_criteria"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_addresses: {
         Row: {
@@ -5673,6 +5802,89 @@ export type Database = {
         }
         Relationships: []
       }
+      task_criteria_inheritance: {
+        Row: {
+          created_at: string | null
+          element_criteria_id: string | null
+          element_gate_id: string | null
+          id: string
+          is_inherited: boolean | null
+          is_modified: boolean | null
+          modifications: Json | null
+          task_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          element_criteria_id?: string | null
+          element_gate_id?: string | null
+          id?: string
+          is_inherited?: boolean | null
+          is_modified?: boolean | null
+          modifications?: Json | null
+          task_id: string
+        }
+        Update: {
+          created_at?: string | null
+          element_criteria_id?: string | null
+          element_gate_id?: string | null
+          id?: string
+          is_inherited?: boolean | null
+          is_modified?: boolean | null
+          modifications?: Json | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_criteria_inheritance_element_criteria_id_fkey"
+            columns: ["element_criteria_id"]
+            isOneToOne: false
+            referencedRelation: "element_success_criteria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_element_gate_id_fkey"
+            columns: ["element_gate_id"]
+            isOneToOne: false
+            referencedRelation: "element_quality_gates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_task_elements_view"
+            referencedColumns: ["task_id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       worktree_app_mappings: {
         Row: {
           app_name: string
@@ -6218,6 +6430,53 @@ export type Database = {
           status?: never
           total_updates_with_changes?: never
           update_frequency?: string | null
+        }
+        Relationships: []
+      }
+      element_hierarchy_view: {
+        Row: {
+          app_name: string | null
+          child_count: number | null
+          criteria_count: number | null
+          element_id: string | null
+          element_name: string | null
+          element_type: string | null
+          feature_type: string | null
+          file_path: string | null
+          gates_count: number | null
+          level_type: string | null
+          parent_feature_id: string | null
+          parent_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_features_parent_feature_id_fkey"
+            columns: ["parent_feature_id"]
+            isOneToOne: false
+            referencedRelation: "app_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_features_parent_feature_id_fkey"
+            columns: ["parent_feature_id"]
+            isOneToOne: false
+            referencedRelation: "element_hierarchy_view"
+            referencedColumns: ["element_id"]
+          },
+        ]
+      }
+      elements_with_criteria_view: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          criteria_count: number | null
+          description: string | null
+          element_id: string | null
+          element_type: string | null
+          gates_count: number | null
+          name: string | null
+          path: string | null
+          subcategory: string | null
         }
         Relationships: []
       }
@@ -7259,6 +7518,14 @@ export type Database = {
         Args: { presentation_uuid: string }
         Returns: undefined
       }
+      inherit_element_criteria: {
+        Args: {
+          p_task_id: string
+          p_element_type: string
+          p_element_id: string
+        }
+        Returns: number
+      }
       is_email_allowed: {
         Args: { check_email: string }
         Returns: boolean
@@ -7276,6 +7543,10 @@ export type Database = {
       make_email_admin: {
         Args: { user_email: string }
         Returns: Json
+      }
+      populate_default_criteria_templates: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       populate_email_address_ids: {
         Args: Record<PropertyKey, never>
@@ -7388,6 +7659,21 @@ export type Database = {
           p_reason_for_access?: string
         }
         Returns: string
+      }
+      suggest_element_criteria: {
+        Args: {
+          p_element_type: string
+          p_element_id: string
+          p_feature_type?: string
+        }
+        Returns: {
+          title: string
+          description: string
+          success_condition: string
+          criteria_type: string
+          priority: string
+          validation_method: string
+        }[]
       }
       table_exists: {
         Args: { p_schema_name: string; p_table_name: string }

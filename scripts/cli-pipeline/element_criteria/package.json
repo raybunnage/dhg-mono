@@ -1,0 +1,20 @@
+{
+  "name": "element-criteria-cli-pipeline",
+  "version": "1.0.0",
+  "description": "Element success criteria and quality gates management CLI pipeline",
+  "scripts": {
+    "populate-sample": "ts-node populate-sample-criteria.ts",
+    "list-templates": "ts-node list-templates.ts",
+    "coverage-report": "ts-node coverage-report.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.26.0",
+    "commander": "^11.0.0",
+    "dotenv": "^16.0.3",
+    "typescript": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.0",
+    "ts-node": "^10.9.1"
+  }
+}
