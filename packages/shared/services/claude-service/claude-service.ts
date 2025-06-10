@@ -35,12 +35,20 @@ export class ClaudeService {
   private defaultModel: string;
 
   private constructor() {
-    // In Node.js/CommonJS contexts (like CLI pipelines), use process.env
-    // The browser apps should pass config through dependency injection instead
-    this.apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '';
-    this.baseUrl = process.env.CLAUDE_API_BASE_URL || 'https://api.anthropic.com';
-    this.apiVersion = process.env.CLAUDE_API_VERSION || '2023-12-15';
-    this.defaultModel = process.env.DEFAULT_MODEL || 'claude-sonnet-4-20250514';
+    // Check if we're in a Node.js environment
+    if (typeof process !== 'undefined' && process.env) {
+      // In Node.js/CommonJS contexts (like CLI pipelines), use process.env
+      this.apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '';
+      this.baseUrl = process.env.CLAUDE_API_BASE_URL || 'https://api.anthropic.com';
+      this.apiVersion = process.env.CLAUDE_API_VERSION || '2023-12-15';
+      this.defaultModel = process.env.DEFAULT_MODEL || 'claude-sonnet-4-20250514';
+    } else {
+      // In browser environment, these should be set via configure() method
+      this.apiKey = '';
+      this.baseUrl = 'https://api.anthropic.com';
+      this.apiVersion = '2023-12-15';
+      this.defaultModel = 'claude-sonnet-4-20250514';
+    }
 
     if (!this.apiKey) {
       console.error('Claude API key is not configured. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY in your environment variables.');
@@ -55,6 +63,16 @@ export class ClaudeService {
       ClaudeService.instance = new ClaudeService();
     }
     return ClaudeService.instance;
+  }
+
+  /**
+   * Configure the service (for browser environments)
+   */
+  public configure(config: { apiKey: string; baseUrl?: string; apiVersion?: string; defaultModel?: string }): void {
+    this.apiKey = config.apiKey;
+    if (config.baseUrl) this.baseUrl = config.baseUrl;
+    if (config.apiVersion) this.apiVersion = config.apiVersion;
+    if (config.defaultModel) this.defaultModel = config.defaultModel;
   }
 
   /**
@@ -130,6 +148,3 @@ export class ClaudeService {
     }
   }
 }
-
-// Export singleton instance
-export const claudeService = ClaudeService.getInstance();

@@ -3,7 +3,7 @@
  * Now uses the shared GoogleDriveService with audio utilities
  */
 
-import GoogleDriveService, { AudioUrlOptions, AudioProxyConfig } from '@root/packages/shared/services/google-drive/google-drive-service';
+import { GoogleDriveService, type AudioUrlOptions, type AudioProxyConfig } from '@shared/services/google-drive/google-drive-service';
 
 // Re-export all the static methods from GoogleDriveService for backward compatibility
 export const extractDriveId = GoogleDriveService.extractDriveId;
@@ -45,4 +45,4 @@ export const getAudioUrlOptionsObject = (webViewLink: string | null): AudioUrlOp
 };
 
 // Export types for convenience
-export type { AudioUrlOptions, AudioProxyConfig } from '@root/packages/shared/services/google-drive/google-drive-service';
+export type { AudioUrlOptions, AudioProxyConfig };

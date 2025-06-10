@@ -8,12 +8,9 @@ export {
   getAudioProxyUrl,
   getGoogleDrivePreviewUrl,
   getGoogleDriveDownloadUrl,
-  getAudioUrlOptions,
+  getAudioUrlOptionsForDhgAudio as getAudioUrlOptions,
   getAudioUrlOptionsObject
 } from './google-drive-utils-enhanced';
-
-// Legacy export aliases for backward compatibility
-export { getAudioUrlOptionsForDhgAudio as getAudioUrlOptions } from './google-drive-utils-enhanced';
 
 // Export types
 export type { AudioUrlOptions, AudioProxyConfig } from './google-drive-utils-enhanced';

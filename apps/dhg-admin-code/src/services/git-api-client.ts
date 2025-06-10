@@ -1,5 +1,5 @@
 import type { GitBranch } from '../types/git';
-import { CommandExecutionClient } from '@shared/services/command-execution-service';
+import { CommandExecutionClient } from '@shared/services/browser';
 import { supabase } from '../lib/supabase';
 
 // Create command execution client instance
