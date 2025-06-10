@@ -1,153 +1,111 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Find script directory
-SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# Testing CLI Pipeline
+# Orchestrates shared services testing with registry-driven intelligence
 
-# Setup environment
-cd "$PROJECT_ROOT" || exit 1
-source "$PROJECT_ROOT/.env.development" 2>/dev/null || true
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PIPELINE_NAME="testing"
 
-# Function to track commands
+# Source common functions if they exist
+if [ -f "$SCRIPT_DIR/../core/load-env.sh" ]; then
+    source "$SCRIPT_DIR/../core/load-env.sh"
+fi
+
+# Command tracking function
 track_command() {
-  local pipeline_name="testing"
-  local command_name="$1"
-  shift
-  local full_command="$@"
-  
-  local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
-  if [ -f "$TRACKER_TS" ]; then
-    echo "🔍 Tracking command: $command_name"
-    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
-  else
-    echo "ℹ️ Tracking not available. Running command directly."
-    eval "$full_command"
-  fi
+    local command="$1"
+    local description="$2"
+    local pipeline="$PIPELINE_NAME"
+    
+    # Basic tracking - log the command execution
+    echo "$(date): $pipeline/$command - $description" >> "$SCRIPT_DIR/../../../logs/command-tracking.log" 2>/dev/null || true
 }
 
-# Help message
+# Help function
 show_help() {
-  echo "Testing CLI Pipeline"
-  echo "===================="
-  echo ""
-  echo "COMMANDS:"
-  echo ""
-  echo "TEST EXECUTION:"
-  echo "  run                Run tests for specific app or all apps"
-  echo "  watch              Run tests in watch mode"
-  echo "  coverage           Generate coverage report"
-  echo "  ci                 Run tests in CI mode"
-  echo ""
-  echo "TEST MANAGEMENT:"
-  echo "  list               List all test files"
-  echo "  stats              Show test statistics"
-  echo "  failed             Show recently failed tests"
-  echo "  slow               Show slowest tests"
-  echo ""
-  echo "SETUP & CONFIG:"
-  echo "  init               Initialize testing for an app"
-  echo "  add-test           Create a new test file"
-  echo "  update-deps        Update testing dependencies"
-  echo ""
-  echo "REPORTING:"
-  echo "  report             Generate HTML test report"
-  echo "  trends             Show test trends over time"
-  echo "  flaky              Identify flaky tests"
-  echo ""
-  echo "OPTIONS:"
-  echo "  --app <name>       Target specific app"
-  echo "  --type <type>      Filter by test type (unit|integration|e2e)"
-  echo "  --pattern <glob>   Match test files by pattern"
-  echo "  --bail             Stop on first test failure"
-  echo "  --debug            Show detailed debug output"
-  echo ""
-  echo "EXAMPLES:"
-  echo "  # Run all tests for dhg-audio"
-  echo "  ./testing-cli.sh run --app dhg-audio"
-  echo ""
-  echo "  # Watch tests for dhg-hub"
-  echo "  ./testing-cli.sh watch --app dhg-hub"
-  echo ""
-  echo "  # Run only unit tests"
-  echo "  ./testing-cli.sh run --type unit"
-  echo ""
-  echo "  # Generate coverage for all apps"
-  echo "  ./testing-cli.sh coverage"
-  echo ""
-  echo "  # Initialize testing for new app"
-  echo "  ./testing-cli.sh init --app my-new-app"
-}
-
-# Command handlers
-run_tests() {
-  echo "🧪 Running tests..."
-  track_command "run" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/run-tests.ts $@"
-}
-
-watch_tests() {
-  echo "👁️  Starting test watcher..."
-  track_command "watch" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/watch-tests.ts $@"
-}
-
-coverage_report() {
-  echo "📊 Generating coverage report..."
-  track_command "coverage" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/coverage.ts $@"
-}
-
-ci_tests() {
-  echo "🤖 Running tests in CI mode..."
-  track_command "ci" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/ci-tests.ts $@"
-}
-
-list_tests() {
-  echo "📋 Listing test files..."
-  track_command "list" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-tests.ts $@"
-}
-
-test_stats() {
-  echo "📈 Calculating test statistics..."
-  track_command "stats" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/test-stats.ts $@"
-}
-
-init_testing() {
-  echo "🚀 Initializing testing..."
-  track_command "init" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/init-testing.ts $@"
-}
-
-# Main command processor
-case "$1" in
-  "run")
-    run_tests "${@:2}"
-    ;;
-  "watch")
-    watch_tests "${@:2}"
-    ;;
-  "coverage")
-    coverage_report "${@:2}"
-    ;;
-  "ci")
-    ci_tests "${@:2}"
-    ;;
-  "list")
-    list_tests "${@:2}"
-    ;;
-  "stats")
-    test_stats "${@:2}"
-    ;;
-  "init")
-    init_testing "${@:2}"
-    ;;
-  "health-check")
-    echo "🏥 Running health check for testing pipeline..."
-    echo "✅ testing pipeline is healthy"
-    ;;
-  "help"|"--help"|"-h"|"")
-    show_help
-    ;;
-  *)
-    echo "Unknown command: $1"
+    echo "Testing CLI Pipeline - Phase 1 & 2 Implementation"
     echo ""
-    show_help
-    exit 1
-    ;;
+    echo "PHASE 1 COMMANDS:"
+    echo "  setup-infrastructure    Set up testing database tables and views"
+    echo "  test-critical           Test the 5 critical services (unit tests only)"
+    echo "  health-report           Get health report for all services"
+    echo "  validate-service <name> Test a specific service"
+    echo ""
+    echo "PHASE 2 COMMANDS (Coming Soon):"
+    echo "  test-all                Test all 37 active services"
+    echo "  test-integration        Run integration tests"
+    echo "  run-suite [priority]    Run full test suite (critical/important/standard)"
+    echo ""
+    echo "UTILITY COMMANDS:"
+    echo "  health-check            Check testing pipeline health"
+    echo "  --help                  Show this help message"
+    echo ""
+    echo "EXAMPLES:"
+    echo "  $0 setup-infrastructure"
+    echo "  $0 test-critical"
+    echo "  $0 validate-service SupabaseClientService"
+    echo "  $0 health-report"
+}
+
+# Main command processing
+case "${1:-}" in
+    "setup-infrastructure")
+        track_command "setup-infrastructure" "Setting up testing database infrastructure"
+        echo "🚀 Setting up testing infrastructure..."
+        cd "$SCRIPT_DIR" && ts-node setup-infrastructure.ts
+        ;;
+    
+    "test-critical")
+        track_command "test-critical" "Testing 5 critical services with unit tests"
+        echo "🧪 Testing critical services..."
+        cd "$SCRIPT_DIR" && ts-node test-critical-services.ts
+        ;;
+    
+    "validate-service")
+        if [ -z "$2" ]; then
+            echo "❌ Error: Service name required"
+            echo "Usage: $0 validate-service <service-name>"
+            exit 1
+        fi
+        track_command "validate-service" "Testing specific service: $2"
+        echo "🔍 Testing service: $2"
+        cd "$SCRIPT_DIR" && ts-node validate-single-service.ts "$2"
+        ;;
+    
+    "health-report")
+        track_command "health-report" "Generating service health report"
+        echo "📊 Generating health report..."
+        cd "$SCRIPT_DIR" && ts-node generate-health-report.ts
+        ;;
+    
+    "test-all")
+        track_command "test-all" "Testing all 37 active services (Phase 2)"
+        echo "🧪 Testing all services (Phase 2)..."
+        cd "$SCRIPT_DIR" && ts-node test-all-services.ts
+        ;;
+    
+    "run-suite")
+        priority="${2:-all}"
+        track_command "run-suite" "Running test suite with priority: $priority"
+        echo "🏃 Running test suite (priority: $priority)..."
+        cd "$SCRIPT_DIR" && ts-node run-test-suite.ts "$priority"
+        ;;
+    
+    "health-check")
+        track_command "health-check" "Checking testing pipeline health"
+        echo "🏥 Testing pipeline health check..."
+        cd "$SCRIPT_DIR" && ts-node health-check.ts
+        ;;
+    
+    "--help"|"help"|"")
+        show_help
+        ;;
+    
+    *)
+        echo "❌ Unknown command: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
 esac
