@@ -80,7 +80,7 @@ app.post('/api/execute-command', async (req, res) => {
     // Execute with a timeout of 30 seconds
     const { stdout, stderr } = await execAsync(fullCommand, {
       timeout: 30000,
-      cwd: process.cwd()
+      cwd: '../../'  // Go to monorepo root from apps/dhg-admin-code
     });
     
     res.json({ 

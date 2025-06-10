@@ -152,22 +152,59 @@ export const AIPage: React.FC = () => {
     setCommandOutput(prev => ({ ...prev, [commandKey]: '⏳ Running command...' }));
 
     try {
-      // Make API call to backend to run CLI command
-      const response = await fetch(`http://localhost:3008/api/cli-command`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command, docId })
-      });
+      // First try the dedicated continuous docs server
+      let response;
+      let result;
+      
+      try {
+        response = await fetch(`http://localhost:3008/api/cli-command`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, docId })
+        });
 
-      if (!response.ok) {
-        throw new Error(`Command failed: ${response.statusText}`);
+        if (response.ok) {
+          result = await response.json();
+          setCommandOutput(prev => ({
+            ...prev,
+            [commandKey]: result.output || '✅ Command completed successfully'
+          }));
+        } else {
+          throw new Error(`Continuous docs server error: ${response.statusText}`);
+        }
+      } catch (primaryError) {
+        console.log('Primary server failed, trying fallback:', primaryError);
+        
+        // Fallback to git-api-server with execute-command endpoint
+        const args = [];
+        if (command === 'check-updates') args.push('check-updates');
+        else if (command === 'process-updates') args.push('process-updates');
+        else if (command === 'list-monitored') args.push('list-monitored');
+        else args.push(command);
+
+        if (docId) {
+          args.push('--path', docId);
+        }
+
+        response = await fetch('http://localhost:3009/api/execute-command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            command: './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh',
+            args: args
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Fallback server error: ${response.statusText}`);
+        }
+
+        result = await response.json();
+        setCommandOutput(prev => ({
+          ...prev,
+          [commandKey]: result.stdout || result.output || '✅ Command completed successfully'
+        }));
       }
-
-      const result = await response.json();
-      setCommandOutput(prev => ({
-        ...prev,
-        [commandKey]: result.output || '✅ Command completed successfully'
-      }));
 
       // Reload documents if command might have changed data
       if (command === 'check-updates' || command === 'process-updates') {
@@ -188,24 +225,6 @@ export const AIPage: React.FC = () => {
     }
   };
 
-  // Update frequency for a document
-  const handleUpdateFrequency = async (doc: ContinuousDoc) => {
-    const { error } = await supabase
-      .from('doc_continuous_monitoring')
-      .update({
-        review_frequency_days: frequencyValue,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', doc.id);
-
-    if (error) {
-      console.error('Error updating frequency:', error);
-      alert('Failed to update frequency');
-    } else {
-      setEditingFrequency(null);
-      await loadDocuments();
-    }
-  };
 
   // Run update check via API
   const handleRunUpdate = async (action: 'check' | 'process' = 'check') => {
@@ -473,7 +492,7 @@ export const AIPage: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleUpdateFrequency(doc);
+                                handleUpdateFrequency(doc, frequencyValue);
                               }}
                               className="text-green-600 hover:text-green-700"
                             >
