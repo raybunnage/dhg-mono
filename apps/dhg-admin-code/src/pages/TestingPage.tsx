@@ -82,11 +82,31 @@ export const TestingPage: React.FC = () => {
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [runningTests, setRunningTests] = useState<Set<string>>(new Set());
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   useEffect(() => {
     // Load previous test results from database
     loadTestHistory();
+    // Check server status
+    checkServerStatus();
   }, []);
+
+  const checkServerStatus = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch('http://localhost:3012/api/health', {
+        method: 'GET',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      setServerStatus(response.ok ? 'online' : 'offline');
+    } catch (error) {
+      setServerStatus('offline');
+    }
+  };
 
   // Auto-remove notifications after 5 seconds
   useEffect(() => {
@@ -140,6 +160,12 @@ export const TestingPage: React.FC = () => {
   };
 
   const runTest = async (suite: TestSuite) => {
+    // Check server status first
+    if (serverStatus === 'offline') {
+      addNotification('error', 'Cannot run tests: Test runner server is offline');
+      return;
+    }
+    
     // Add to running tests
     setRunningTests(prev => new Set(prev).add(suite.id));
     
@@ -165,7 +191,14 @@ export const TestingPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: suite.command, suiteId: suite.id })
+      }).catch(err => {
+        // If fetch fails (server not running), throw a more descriptive error
+        throw new Error('Test runner server is not running. Please start it with: pnpm servers');
       });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
 
       const result = await response.json();
       const duration = Date.now() - startTime;
@@ -393,6 +426,25 @@ export const TestingPage: React.FC = () => {
       )}
 
       <div className="max-w-7xl mx-auto">
+      {/* Server Status Alert */}
+      {serverStatus === 'offline' && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-yellow-800">Test Runner Server Offline</p>
+            <p className="text-sm text-yellow-700 mt-1">
+              The test runner server is not running. Start it with: <code className="bg-yellow-100 px-2 py-1 rounded">pnpm servers</code>
+            </p>
+          </div>
+          <button
+            onClick={checkServerStatus}
+            className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -402,14 +454,15 @@ export const TestingPage: React.FC = () => {
           <div className="flex gap-4">
             <button
               onClick={runHealthChecks}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              disabled={serverStatus === 'offline'}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Heart className="w-4 h-4" />
               Health Check
             </button>
             <button
               onClick={runAllTests}
-              disabled={isRunningAll}
+              disabled={isRunningAll || serverStatus === 'offline'}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
             >
               {isRunningAll ? (
@@ -511,7 +564,7 @@ export const TestingPage: React.FC = () => {
                       )}
                       <button
                         onClick={() => runTest(suite)}
-                        disabled={result?.status === 'running'}
+                        disabled={result?.status === 'running' || serverStatus === 'offline'}
                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                       >
                         {result?.status === 'running' ? (
