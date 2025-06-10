@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { claudeService } from '@shared/services/claude-service/claude-service';
+import { ClaudeService } from '@shared/services/claude-service/claude-service';
 import { processWithAI, processDocumentWithAI, validateExpertProfile } from '../utils/ai-processing';
 import { getDocxContent } from '../utils/google-drive';
 import { ClassificationResponseSchema } from '../schemas/classification.schema';
@@ -428,7 +428,7 @@ export function ClassifyDocument() {
         .replace('{{content}}', content.substring(0, 4000)); // Limit content length
 
       // Send to Claude for classification
-      const response = await claudeService.getJsonResponse(classificationPrompt);
+      const response = await ClaudeService.getInstance().getJsonResponse(classificationPrompt);
       
       // Validate response
       const validatedResponse = ClassificationResponseSchema.parse(response);
