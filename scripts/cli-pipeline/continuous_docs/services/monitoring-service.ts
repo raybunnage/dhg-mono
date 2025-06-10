@@ -2,20 +2,23 @@ import { SupabaseClientService } from '../../../../packages/shared/services/supa
 import * as fs from 'fs';
 import * as path from 'path';
 import { createHash } from 'crypto';
-import { glob } from 'glob';
 
 interface MonitoredDocument {
   id: string;
   file_path: string;
-  doc_type: string;
-  last_checked: string;
-  last_modified: string;
-  content_hash: string;
-  dependencies: string[];
-  check_frequency_hours: number;
-  auto_update_enabled: boolean;
-  status: 'active' | 'paused' | 'error';
+  title: string;
+  area: string;
+  description: string | null;
+  review_frequency_days: number | null;
+  next_review_date: string;
+  last_updated: string | null;
+  last_checked?: string | null;
+  priority: string | null;
+  status: string | null;
+  owner: string | null;
   metadata: any;
+  content_hash?: string;
+  dependencies?: string[];
 }
 
 interface UpdateCheck {
@@ -53,16 +56,16 @@ export class DocumentMonitoringService {
    */
   async checkForUpdates(doc: MonitoredDocument): Promise<UpdateCheck> {
     const currentHash = this.getFileHash(doc.file_path);
-    const dependencies = await this.checkDependencies(doc.file_path, doc.dependencies);
+    const dependencies = await this.checkDependencies(doc.file_path, doc.dependencies || []);
     
     let hasChanges = false;
     let changeType: 'content' | 'dependencies' | 'none' = 'none';
 
-    if (currentHash !== doc.content_hash) {
+    if (currentHash !== (doc.content_hash || '')) {
       hasChanges = true;
       changeType = 'content';
-    } else if (dependencies.some(dep => !doc.dependencies.includes(dep)) || 
-               doc.dependencies.some(dep => !dependencies.includes(dep))) {
+    } else if (dependencies.some(dep => !(doc.dependencies || []).includes(dep)) || 
+               (doc.dependencies || []).some(dep => !dependencies.includes(dep))) {
       hasChanges = true;
       changeType = 'dependencies';
     }
@@ -73,7 +76,7 @@ export class DocumentMonitoringService {
       hasChanges,
       changeType,
       currentHash,
-      storedHash: doc.content_hash,
+      storedHash: doc.content_hash || '',
       dependencies
     };
   }
@@ -81,29 +84,34 @@ export class DocumentMonitoringService {
   /**
    * Check dependencies for a document
    */
-  private async checkDependencies(filePath: string, currentDeps: string[]): Promise<string[]> {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const dependencies: string[] = [];
+  private async checkDependencies(filePath: string, _currentDeps: string[]): Promise<string[]> {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const dependencies: string[] = [];
 
-    // Check for imports/references to other docs
-    const importMatches = content.matchAll(/(?:import|include|reference).*?['"]([^'"]+\.md)['"]|!!include\(([^)]+\.md)\)|See:\s*\[.*?\]\(([^)]+\.md)\)/g);
-    for (const match of importMatches) {
-      const dep = match[1] || match[2] || match[3];
-      if (dep && fs.existsSync(path.resolve(path.dirname(filePath), dep))) {
-        dependencies.push(dep);
+      // Check for imports/references to other docs
+      const importMatches = content.matchAll(/(?:import|include|reference).*?['"]([^'"]+\.md)['"]|!!include\(([^)]+\.md)\)|See:\s*\[.*?\]\(([^)]+\.md)\)/g);
+      for (const match of importMatches) {
+        const dep = match[1] || match[2] || match[3];
+        if (dep && fs.existsSync(path.resolve(path.dirname(filePath), dep))) {
+          dependencies.push(dep);
+        }
       }
-    }
 
-    // Check for references to code files
-    const codeRefs = content.matchAll(/(?:```|`)([^`\n]+\.[tj]sx?)(?:```|`)|from\s+['"]([^'"]+\.[tj]sx?)['"]|require\(['"]([^'"]+\.[tj]sx?)['"]\)/g);
-    for (const match of codeRefs) {
-      const codeFile = match[1] || match[2] || match[3];
-      if (codeFile && fs.existsSync(path.resolve(path.dirname(filePath), codeFile))) {
-        dependencies.push(codeFile);
+      // Check for references to code files
+      const codeRefs = content.matchAll(/(?:```|`)([^`\n]+\.[tj]sx?)(?:```|`)|from\s+['"]([^'"]+\.[tj]sx?)['"]|require\(['"]([^'"]+\.[tj]sx?)['"]\)/g);
+      for (const match of codeRefs) {
+        const codeFile = match[1] || match[2] || match[3];
+        if (codeFile && fs.existsSync(path.resolve(path.dirname(filePath), codeFile))) {
+          dependencies.push(codeFile);
+        }
       }
-    }
 
-    return [...new Set(dependencies)];
+      return [...new Set(dependencies)];
+    } catch (error) {
+      console.error(`Error checking dependencies for ${filePath}:`, error);
+      return [];
+    }
   }
 
   /**
@@ -114,7 +122,7 @@ export class DocumentMonitoringService {
       .from('doc_continuous_monitoring')
       .select('*')
       .eq('status', 'active')
-      .or(`last_checked.is.null,last_checked.lt.${new Date(Date.now() - 3600000).toISOString()}`);
+      .order('next_review_date', { ascending: true });
 
     if (error) {
       console.error('Error fetching documents:', error);
@@ -125,14 +133,35 @@ export class DocumentMonitoringService {
   }
 
   /**
+   * Get documents that need updating
+   */
+  async getDocumentsToUpdate(): Promise<MonitoredDocument[]> {
+    const today = new Date();
+    
+    const { data, error } = await this.supabase
+      .from('doc_continuous_monitoring')
+      .select('*')
+      .eq('status', 'active')
+      .lte('next_review_date', today.toISOString())
+      .order('priority', { ascending: false })
+      .order('next_review_date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching documents to update:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  /**
    * Update document monitoring record
    */
-  async updateMonitoringRecord(documentId: string, updates: Partial<MonitoredDocument>) {
+  async updateMonitoringRecord(documentId: string, updates: any) {
     const { error } = await this.supabase
       .from('doc_continuous_monitoring')
       .update({
         ...updates,
-        last_checked: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', documentId);
@@ -144,12 +173,46 @@ export class DocumentMonitoringService {
   }
 
   /**
+   * Process document update
+   */
+  async processDocumentUpdate(doc: MonitoredDocument) {
+    try {
+      // Update the last_updated timestamp and calculate next review date
+      const nextReviewDate = new Date();
+      nextReviewDate.setDate(nextReviewDate.getDate() + (doc.review_frequency_days || 7));
+
+      await this.updateMonitoringRecord(doc.id, {
+        last_updated: new Date().toISOString(),
+        last_checked: new Date().toISOString(),
+        next_review_date: nextReviewDate.toISOString(),
+        content_hash: this.getFileHash(doc.file_path),
+        dependencies: await this.checkDependencies(doc.file_path, doc.dependencies || [])
+      });
+
+      // In a real implementation, this would:
+      // 1. Load document template or current content
+      // 2. Check for updates from various sources (code changes, database changes, etc.)
+      // 3. Regenerate the document with updated information
+      // 4. Save the updated document to disk
+      // 5. Possibly commit changes to git
+      
+      console.log(`Document ${doc.title} processed successfully`);
+    } catch (error) {
+      console.error(`Error processing document ${doc.title}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Add new document to monitoring
    */
   async addDocumentToMonitoring(filePath: string, options: {
-    docType: string;
-    checkFrequencyHours?: number;
-    autoUpdateEnabled?: boolean;
+    title: string;
+    area: string;
+    description?: string;
+    reviewFrequencyDays?: number;
+    priority?: string;
+    owner?: string;
     metadata?: any;
   }) {
     const absolutePath = path.resolve(filePath);
@@ -160,19 +223,28 @@ export class DocumentMonitoringService {
 
     const contentHash = this.getFileHash(absolutePath);
     const dependencies = await this.checkDependencies(absolutePath, []);
+    
+    const nextReviewDate = new Date();
+    nextReviewDate.setDate(nextReviewDate.getDate() + (options.reviewFrequencyDays || 7));
 
     const { data, error } = await this.supabase
       .from('doc_continuous_monitoring')
       .insert({
         file_path: absolutePath,
-        doc_type: options.docType,
-        content_hash: contentHash,
-        dependencies,
-        check_frequency_hours: options.checkFrequencyHours || 24,
-        auto_update_enabled: options.autoUpdateEnabled || false,
+        title: options.title,
+        area: options.area,
+        description: options.description,
+        review_frequency_days: options.reviewFrequencyDays || 7,
+        next_review_date: nextReviewDate.toISOString(),
+        priority: options.priority || 'medium',
         status: 'active',
-        metadata: options.metadata || {},
-        last_modified: new Date().toISOString(),
+        owner: options.owner,
+        metadata: {
+          ...options.metadata,
+          content_hash: contentHash,
+          dependencies
+        },
+        last_updated: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -194,7 +266,7 @@ export class DocumentMonitoringService {
     const { error } = await this.supabase
       .from('doc_continuous_monitoring')
       .update({
-        status: 'paused',
+        status: 'deprecated',
         updated_at: new Date().toISOString()
       })
       .eq('id', documentId);
@@ -211,7 +283,7 @@ export class DocumentMonitoringService {
   async getMonitoringStats() {
     const { data, error } = await this.supabase
       .from('doc_continuous_monitoring')
-      .select('status, doc_type');
+      .select('status, area, priority');
 
     if (error) {
       console.error('Error fetching stats:', error);
@@ -220,14 +292,27 @@ export class DocumentMonitoringService {
 
     const stats = {
       total: data?.length || 0,
-      active: data?.filter(d => d.status === 'active').length || 0,
-      paused: data?.filter(d => d.status === 'paused').length || 0,
-      error: data?.filter(d => d.status === 'error').length || 0,
-      byType: {} as Record<string, number>
+      active: data?.filter((d: any) => d.status === 'active').length || 0,
+      needsReview: 0,
+      byArea: {} as Record<string, number>,
+      byPriority: {} as Record<string, number>
     };
 
-    data?.forEach(doc => {
-      stats.byType[doc.doc_type] = (stats.byType[doc.doc_type] || 0) + 1;
+    // Count documents needing review
+    const today = new Date();
+    const { data: needsReviewData } = await this.supabase
+      .from('doc_continuous_monitoring')
+      .select('id')
+      .eq('status', 'active')
+      .lte('next_review_date', today.toISOString());
+    
+    stats.needsReview = needsReviewData?.length || 0;
+
+    data?.forEach((doc: any) => {
+      stats.byArea[doc.area] = (stats.byArea[doc.area] || 0) + 1;
+      if (doc.priority) {
+        stats.byPriority[doc.priority] = (stats.byPriority[doc.priority] || 0) + 1;
+      }
     });
 
     return stats;

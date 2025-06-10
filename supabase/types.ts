@@ -2150,6 +2150,7 @@ export type Database = {
           description: string | null
           file_path: string
           id: string
+          last_checked: string | null
           last_updated: string | null
           metadata: Json | null
           next_review_date: string
@@ -2166,6 +2167,7 @@ export type Database = {
           description?: string | null
           file_path: string
           id?: string
+          last_checked?: string | null
           last_updated?: string | null
           metadata?: Json | null
           next_review_date: string
@@ -2182,6 +2184,7 @@ export type Database = {
           description?: string | null
           file_path?: string
           id?: string
+          last_checked?: string | null
           last_updated?: string | null
           metadata?: Json | null
           next_review_date?: string

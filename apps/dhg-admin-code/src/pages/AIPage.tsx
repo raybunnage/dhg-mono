@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { MarkdownViewer } from '../components/documents/MarkdownViewer';
 import { useSupabase } from '../hooks/useSupabase';
-import { FileText, RefreshCw, Calendar, AlertCircle, Eye } from 'lucide-react';
+import { FileText, RefreshCw, AlertCircle, Eye, Play, Clock, CheckCircle, Settings } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 
 interface ContinuousDoc {
@@ -14,6 +14,7 @@ interface ContinuousDoc {
   review_frequency_days: number | null;
   next_review_date: string;
   last_updated: string | null;
+  last_checked?: string | null;
   priority: string | null;
   status: string | null;
   owner: string | null;
@@ -29,6 +30,9 @@ export const AIPage: React.FC = () => {
   const [selectedDocument, setSelectedDocument] = useState<ContinuousDoc | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const [runningCommands, setRunningCommands] = useState<Set<string>>(new Set());
+  const [commandOutput, setCommandOutput] = useState<Record<string, string>>({});
+  const [isEditingFrequency, setIsEditingFrequency] = useState<string | null>(null);
 
   // Load continuous documents
   const loadDocuments = async () => {
@@ -58,7 +62,7 @@ export const AIPage: React.FC = () => {
 
   // Get unique areas and priorities for filtering
   const areas = ['all', ...new Set(documents.map(doc => doc.area).filter(Boolean))];
-  const priorities = ['all', ...new Set(documents.map(doc => doc.priority).filter(Boolean))];
+  const priorities = ['all', ...new Set(documents.map(doc => doc.priority).filter(Boolean).map(p => p as string))];
 
   // Filter documents
   const filteredDocuments = documents.filter(doc => {
@@ -104,9 +108,79 @@ export const AIPage: React.FC = () => {
       alert('Failed to update document');
     } else {
       await loadDocuments();
-      if (selectedDocument?.id === doc.id) {
-        setSelectedDocument(null);
+      setCommandOutput(prev => ({
+        ...prev,
+        [`mark-reviewed-${doc.id}`]: `✅ Document marked as reviewed. Next review: ${format(nextReviewDate, 'MMM d, yyyy')}`
+      }));
+    }
+  };
+
+  // Update review frequency
+  const handleUpdateFrequency = async (doc: ContinuousDoc, newFrequency: number) => {
+    const nextReviewDate = new Date();
+    nextReviewDate.setDate(nextReviewDate.getDate() + newFrequency);
+
+    const { error } = await supabase
+      .from('doc_continuous_monitoring')
+      .update({
+        review_frequency_days: newFrequency,
+        next_review_date: nextReviewDate.toISOString()
+      })
+      .eq('id', doc.id);
+
+    if (error) {
+      console.error('Error updating frequency:', error);
+      alert('Failed to update frequency');
+    } else {
+      await loadDocuments();
+      setIsEditingFrequency(null);
+      setCommandOutput(prev => ({
+        ...prev,
+        [`frequency-${doc.id}`]: `✅ Review frequency updated to ${newFrequency} days`
+      }));
+    }
+  };
+
+  // Run CLI command via API
+  const runCLICommand = async (command: string, docId?: string) => {
+    const commandKey = docId ? `${command}-${docId}` : command;
+    setRunningCommands(prev => new Set(prev).add(commandKey));
+    setCommandOutput(prev => ({ ...prev, [commandKey]: '⏳ Running command...' }));
+
+    try {
+      // Make API call to backend to run CLI command
+      const response = await fetch(`http://localhost:3008/api/cli-command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, docId })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Command failed: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      setCommandOutput(prev => ({
+        ...prev,
+        [commandKey]: result.output || '✅ Command completed successfully'
+      }));
+
+      // Reload documents if command might have changed data
+      if (command === 'check-updates' || command === 'process-updates') {
+        await loadDocuments();
+      }
+    } catch (error) {
+      console.error('Error running command:', error);
+      setCommandOutput(prev => ({
+        ...prev,
+        [commandKey]: `❌ Error: ${error instanceof Error ? error.message : 'Command failed'}`
+      }));
+    } finally {
+      setRunningCommands(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(commandKey);
+        return newSet;
+      });
     }
   };
 
@@ -158,6 +232,58 @@ export const AIPage: React.FC = () => {
           <div className="p-6 border-b">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">AI Documentation Hub</h1>
             <p className="text-gray-600">Continuously monitored documentation for AI and development</p>
+          </div>
+
+          {/* Global Actions */}
+          <div className="p-4 border-b bg-blue-50">
+            <div className="flex gap-3">
+              <button
+                onClick={() => runCLICommand('check-updates')}
+                disabled={runningCommands.has('check-updates')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2 text-sm"
+              >
+                {runningCommands.has('check-updates') ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+                Check All Updates
+              </button>
+              <button
+                onClick={() => runCLICommand('process-updates')}
+                disabled={runningCommands.has('process-updates')}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 flex items-center gap-2 text-sm"
+              >
+                {runningCommands.has('process-updates') ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                Process All Updates
+              </button>
+              <button
+                onClick={() => runCLICommand('list-monitored')}
+                disabled={runningCommands.has('list-monitored')}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-300 flex items-center gap-2 text-sm"
+              >
+                {runningCommands.has('list-monitored') ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileText className="w-4 h-4" />
+                )}
+                List CLI Status
+              </button>
+            </div>
+            {commandOutput['check-updates'] && (
+              <div className="mt-2 p-2 bg-white rounded text-sm font-mono">
+                {commandOutput['check-updates']}
+              </div>
+            )}
+            {commandOutput['process-updates'] && (
+              <div className="mt-2 p-2 bg-white rounded text-sm font-mono">
+                {commandOutput['process-updates']}
+              </div>
+            )}
           </div>
 
           {/* Filters */}
@@ -234,13 +360,12 @@ export const AIPage: React.FC = () => {
               return (
                 <div
                   key={doc.id}
-                  onClick={() => handleDocumentSelect(doc)}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                  className={`p-4 border-b ${
                     selectedDocument?.id === doc.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                   } ${isOverdue ? 'bg-orange-50' : ''}`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 cursor-pointer" onClick={() => handleDocumentSelect(doc)}>
                       <h3 className="font-medium text-gray-900">{doc.title}</h3>
                       {doc.description && (
                         <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
@@ -254,25 +379,90 @@ export const AIPage: React.FC = () => {
                             {doc.priority}
                           </span>
                         )}
-                        <span className="text-xs text-gray-500">
-                          {doc.review_frequency_days} day cycle
-                        </span>
+                        {isEditingFrequency === doc.id ? (
+                          <select
+                            value={doc.review_frequency_days || 7}
+                            onChange={(e) => handleUpdateFrequency(doc, parseInt(e.target.value))}
+                            onBlur={() => setIsEditingFrequency(null)}
+                            className="text-xs px-2 py-1 border rounded"
+                            autoFocus
+                          >
+                            <option value="1">Daily</option>
+                            <option value="7">Weekly</option>
+                            <option value="14">Bi-weekly</option>
+                            <option value="30">Monthly</option>
+                            <option value="90">Quarterly</option>
+                          </select>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsEditingFrequency(doc.id);
+                            }}
+                            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            <Settings className="w-3 h-3" />
+                            {doc.review_frequency_days} day cycle
+                          </button>
+                        )}
                       </div>
-                    </div>
-                    <div className="text-right ml-4">
-                      {isOverdue ? (
-                        <div className="flex items-center gap-1 text-orange-600">
-                          <AlertCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">Overdue</span>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">
-                          Review in {daysUntil} days
+                      {doc.last_checked && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          Last checked: {format(new Date(doc.last_checked), 'MMM d, yyyy h:mm a')}
                         </div>
                       )}
-                      <div className="text-xs text-gray-400 mt-1">
-                        {format(new Date(doc.next_review_date), 'MMM d, yyyy')}
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-right mb-2">
+                        {isOverdue ? (
+                          <div className="flex items-center gap-1 text-orange-600">
+                            <AlertCircle className="w-4 h-4" />
+                            <span className="text-sm font-medium">Overdue</span>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            Review in {daysUntil} days
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-400 mt-1">
+                          {format(new Date(doc.next_review_date), 'MMM d, yyyy')}
+                        </div>
                       </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            runCLICommand('check-single', doc.id);
+                          }}
+                          disabled={runningCommands.has(`check-single-${doc.id}`)}
+                          className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:bg-blue-300"
+                        >
+                          {runningCommands.has(`check-single-${doc.id}`) ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Clock className="w-3 h-3" />
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            runCLICommand('update-single', doc.id);
+                          }}
+                          disabled={runningCommands.has(`update-single-${doc.id}`)}
+                          className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 disabled:bg-green-300"
+                        >
+                          {runningCommands.has(`update-single-${doc.id}`) ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Play className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                      {commandOutput[`check-single-${doc.id}`] && (
+                        <div className="mt-1 p-1 bg-white rounded text-xs font-mono max-w-xs">
+                          {commandOutput[`check-single-${doc.id}`]}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -288,19 +478,33 @@ export const AIPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelectedDocument(null)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
                   ×
                 </button>
                 <h2 className="font-medium text-gray-900">{selectedDocument.title}</h2>
               </div>
-              <button
-                onClick={() => handleMarkReviewed(selectedDocument)}
-                className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 text-sm"
-              >
-                <Eye className="w-4 h-4" />
-                Mark Reviewed
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleMarkReviewed(selectedDocument)}
+                  className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 text-sm"
+                >
+                  <Eye className="w-4 h-4" />
+                  Mark Reviewed
+                </button>
+                <button
+                  onClick={() => runCLICommand('update-single', selectedDocument.id)}
+                  disabled={runningCommands.has(`update-single-${selectedDocument.id}`)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2 text-sm"
+                >
+                  {runningCommands.has(`update-single-${selectedDocument.id}`) ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Update Now
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-hidden">
               <MarkdownViewer
