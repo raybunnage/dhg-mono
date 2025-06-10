@@ -5717,6 +5717,48 @@ export type Database = {
           },
         ]
       }
+      sys_service_test_runs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          executed_at: string | null
+          executed_by: string | null
+          execution_time_ms: number | null
+          id: string
+          service_name: string
+          status: string
+          test_details: Json | null
+          test_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          service_name: string
+          status: string
+          test_details?: Json | null
+          test_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          service_name?: string
+          status?: string
+          test_details?: Json | null
+          test_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_shared_services: {
         Row: {
           category: string | null
@@ -5727,6 +5769,7 @@ export type Database = {
           has_browser_variant: boolean | null
           id: string
           is_singleton: boolean | null
+          last_validated: string | null
           service_name: string
           service_name_normalized: string | null
           service_path: string
@@ -5744,6 +5787,7 @@ export type Database = {
           has_browser_variant?: boolean | null
           id?: string
           is_singleton?: boolean | null
+          last_validated?: string | null
           service_name: string
           service_name_normalized?: string | null
           service_path: string
@@ -5761,6 +5805,7 @@ export type Database = {
           has_browser_variant?: boolean | null
           id?: string
           is_singleton?: boolean | null
+          last_validated?: string | null
           service_name?: string
           service_name_normalized?: string | null
           service_path?: string
@@ -6701,6 +6746,22 @@ export type Database = {
           status: string | null
           used_by_apps_count: number | null
           used_by_pipelines_count: number | null
+        }
+        Relationships: []
+      }
+      sys_service_test_health_view: {
+        Row: {
+          avg_execution_time: number | null
+          category: string | null
+          failed_runs: number | null
+          health_status: string | null
+          last_test_run: string | null
+          passed_runs: number | null
+          service_name: string | null
+          test_priority: string | null
+          total_runs: number | null
+          used_by_apps: string[] | null
+          used_by_pipelines: string[] | null
         }
         Relationships: []
       }

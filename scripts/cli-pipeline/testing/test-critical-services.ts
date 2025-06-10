@@ -175,7 +175,7 @@ async function testServiceDirectly(serviceName: string): Promise<{ success: bool
     }
 
     // Test 3: Check for expected exports
-    const expectedExports = {
+    const expectedExports: Record<string, string[]> = {
       'SupabaseClientService': ['supabase', 'getSupabaseClient'],
       'FileService': ['FileService'],
       'FilterService': ['FilterService'], 
@@ -186,7 +186,7 @@ async function testServiceDirectly(serviceName: string): Promise<{ success: bool
     const expected = expectedExports[serviceName];
     if (expected) {
       validationCount++;
-      const hasExpectedExports = expected.some(exportName => 
+      const hasExpectedExports = expected.some((exportName: string) => 
         serviceModule[exportName] !== undefined
       );
       if (hasExpectedExports) {
