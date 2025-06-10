@@ -1958,6 +1958,7 @@ export type Database = {
           updated_at: string | null
           validation_status: string | null
           work_mode: string | null
+          worktree: string | null
           worktree_active: boolean | null
           worktree_path: string | null
         }
@@ -2003,6 +2004,7 @@ export type Database = {
           updated_at?: string | null
           validation_status?: string | null
           work_mode?: string | null
+          worktree?: string | null
           worktree_active?: boolean | null
           worktree_path?: string | null
         }
@@ -2048,6 +2050,7 @@ export type Database = {
           updated_at?: string | null
           validation_status?: string | null
           work_mode?: string | null
+          worktree?: string | null
           worktree_active?: boolean | null
           worktree_path?: string | null
         }
