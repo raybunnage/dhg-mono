@@ -18,7 +18,7 @@
  * - Proper TypeScript types
  */
 
-import { userProfileService, type ProfileFormData } from '../user-profile-service';
+import { UserProfileService, type ProfileFormData } from '../user-profile-service';
 import { SupabaseClientService } from '../supabase-client';
 import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 
@@ -247,15 +247,17 @@ class SimpleLightAuthService implements LightAuthService {
  * Enhanced Light Auth Service
  * Provides complete authentication flow with profile management
  */
-class LightAuthEnhancedService {
+export class LightAuthEnhancedService {
   private static instance: LightAuthEnhancedService;
   private lightAuthService: LightAuthService;
   private supabase: SupabaseClient;
+  private userProfileService: UserProfileService;
 
   private constructor() {
     // Private constructor for singleton
     this.lightAuthService = new SimpleLightAuthService();
     this.supabase = SupabaseClientService.getInstance().getClient();
+    this.userProfileService = UserProfileService.getInstance();
   }
 
   /**
@@ -294,7 +296,7 @@ class LightAuthEnhancedService {
 
       // Email is allowed - check if they have a complete profile
       if (loginResult.user) {
-        const profileResult = await userProfileService.getProfile(loginResult.user.id);
+        const profileResult = await this.userProfileService.getProfile(loginResult.user.id);
         
         // Check if profile exists and is complete
         const hasProfile = profileResult.success && profileResult.profile;
@@ -378,7 +380,7 @@ class LightAuthEnhancedService {
       }
 
       // Now save their comprehensive profile
-      const profileResult = await userProfileService.saveProfile(
+      const profileResult = await this.userProfileService.saveProfile(
         registerResult.user.id,
         data.profile
       );
@@ -430,7 +432,7 @@ class LightAuthEnhancedService {
   async completeProfile(userId: string, profile: ProfileFormData): Promise<boolean> {
     try {
       console.log('[LightAuthEnhanced] completeProfile called for userId:', userId);
-      const result = await userProfileService.saveProfile(userId, profile);
+      const result = await this.userProfileService.saveProfile(userId, profile);
       
       if (result.success) {
         // Update the user session to reflect profile completion
@@ -483,7 +485,7 @@ class LightAuthEnhancedService {
    */
   async updateProfile(userId: string, profile: ProfileFormData): Promise<boolean> {
     try {
-      const result = await userProfileService.saveProfile(userId, profile);
+      const result = await this.userProfileService.saveProfile(userId, profile);
       return result.success;
     } catch (error) {
       console.error('Profile update error:', error);
@@ -502,14 +504,14 @@ class LightAuthEnhancedService {
    * Get user profile
    */
   async getUserProfile(userId: string) {
-    return userProfileService.getProfile(userId);
+    return this.userProfileService.getProfile(userId);
   }
 
   /**
    * Check if user has completed onboarding
    */
   async hasCompletedOnboarding(userId: string): Promise<boolean> {
-    return userProfileService.hasCompletedOnboarding(userId);
+    return this.userProfileService.hasCompletedOnboarding(userId);
   }
 
   /**
@@ -539,14 +541,14 @@ class LightAuthEnhancedService {
    * Get profile completion stats
    */
   async getProfileStats(userId: string) {
-    return userProfileService.getProfileStats(userId);
+    return this.userProfileService.getProfileStats(userId);
   }
 
   /**
    * Get recommended content based on profile
    */
   async getRecommendedTopics(userId: string): Promise<string[]> {
-    return userProfileService.getRecommendedTopics(userId);
+    return this.userProfileService.getRecommendedTopics(userId);
   }
 
   /**
@@ -723,5 +725,5 @@ class LightAuthEnhancedService {
   }
 }
 
-// Export singleton instance
-export const lightAuthEnhanced = LightAuthEnhancedService.getInstance();
+// The class is already exported above
+// No need for additional export statement

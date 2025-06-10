@@ -92,14 +92,25 @@ export class DevTaskService {
   }
 
   async createTask(task: CreateTaskInput): Promise<DevTask> {
-    const { data: { user } } = await this.supabase.auth.getUser();
+    let userId: string | null = null;
+    
+    try {
+      const { data: { user }, error: authError } = await this.supabase.auth.getUser();
+      if (authError && authError.message !== 'Auth session missing!') {
+        console.warn('Auth error in createTask:', authError.message);
+      }
+      userId = user?.id || null;
+    } catch (authError) {
+      console.warn('Could not get authenticated user in createTask:', authError);
+      // Continue without user ID - let the database handle RLS
+    }
     
     // First create the task
     const { data: newTask, error: createError } = await this.supabase
       .from('dev_tasks')
       .insert({
         ...task,
-        created_by: user?.id,
+        created_by: userId,
         status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -107,7 +118,10 @@ export class DevTaskService {
       .select()
       .single();
     
-    if (createError) throw createError;
+    if (createError) {
+      console.error('Database error in createTask:', createError);
+      throw new Error(`Failed to create task: ${createError.message}`);
+    }
 
     // If tags were provided, add them
     if (task.tags && task.tags.length > 0) {

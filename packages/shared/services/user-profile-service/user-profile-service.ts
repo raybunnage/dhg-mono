@@ -62,7 +62,7 @@ export interface ProfileResult {
  * User Profile Service
  * Manages comprehensive user profiles linked to allowed_emails
  */
-class UserProfileService {
+export class UserProfileService {
   private static instance: UserProfileService;
   private supabase!: SupabaseClient;
 
@@ -329,5 +329,5 @@ class UserProfileService {
   }
 }
 
-// Export singleton instance
-export const userProfileService = UserProfileService.getInstance();
+// The class is already exported above
+// No need for additional export statement

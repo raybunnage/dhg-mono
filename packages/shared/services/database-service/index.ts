@@ -1,1 +1,1 @@
-export { DatabaseService, databaseService } from './database-service';
+export { DatabaseService } from './database-service';

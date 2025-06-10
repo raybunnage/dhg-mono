@@ -27,3 +27,7 @@ export {
   type PromptOutputTemplate as OutputTemplate,
   type PromptTemplateAssociation as TemplateAssociation
 } from './prompt-output-templates';
+
+// Export document classifier and its types
+export { documentClassifier } from './document-classifier';
+export type { ClassificationRequest, ClassificationResult } from './document-classifier';

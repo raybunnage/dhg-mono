@@ -5,7 +5,7 @@
  */
 
 export {
-  lightAuthEnhanced,
+  LightAuthEnhancedService,
   type LightAuthEnhancedResult,
   type UserRegistrationData,
   type LightAuthUser

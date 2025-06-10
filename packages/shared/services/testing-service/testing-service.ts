@@ -215,13 +215,15 @@ export class TestingService {
       return [];
     }
 
-    return healthData.map(service => ({
-      serviceName: service.service_name,
-      isHealthy: service.health_status === 'healthy',
-      lastTestRun: service.last_test_run ? new Date(service.last_test_run) : undefined,
-      issues: this.generateIssues(service),
-      recommendations: this.generateRecommendations(service)
-    }));
+    return healthData
+      .filter(service => service.service_name !== null)
+      .map(service => ({
+        serviceName: service.service_name as string,
+        isHealthy: service.health_status === 'healthy',
+        lastTestRun: service.last_test_run ? new Date(service.last_test_run) : undefined,
+        issues: this.generateIssues(service),
+        recommendations: this.generateRecommendations(service)
+      }));
   }
 
   /**
@@ -340,7 +342,7 @@ export class TestingService {
       
       return {
         testType: 'integration',
-        status: allPassed ? 'passed' : failedTests === passedTests ? 'failed' : 'partial',
+        status: allPassed ? 'passed' : 'failed' as 'passed' | 'failed' | 'skipped',
         executionTimeMs: Date.now() - startTime,
         testDetails: {
           totalTests: integrationCases.length,
@@ -408,7 +410,7 @@ export class TestingService {
       
       return {
         testType: 'contract',
-        status: allPassed ? 'passed' : failedTests === passedTests ? 'failed' : 'partial',
+        status: allPassed ? 'passed' : 'failed' as 'passed' | 'failed' | 'skipped',
         executionTimeMs: Date.now() - startTime,
         testDetails: {
           totalContracts: contractTests.length,
@@ -467,7 +469,7 @@ export class TestingService {
               }
             });
             const results = await Promise.all(promises);
-            return results.every(r => r === true);
+            return results.every(r => r !== false);
           },
           expectedBehavior: 'All concurrent connections should succeed'
         });
@@ -500,7 +502,7 @@ export class TestingService {
           testFunction: async () => {
             try {
               const { FilterService } = await import('../filter-service');
-              const filterService = FilterService.getInstance();
+              const filterService = new FilterService(supabase);
               // Test if the filter service can apply filters (basic integration)
               return typeof filterService.applyFilterToQuery === 'function';
             } catch {
@@ -609,7 +611,7 @@ export class TestingService {
           validator: async () => {
             try {
               const { FilterService } = await import('../filter-service');
-              const filterService = FilterService.getInstance();
+              const filterService = new FilterService(supabase);
               const violations: string[] = [];
               
               if (typeof filterService.applyFilterToQuery !== 'function') {

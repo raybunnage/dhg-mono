@@ -5,38 +5,18 @@
  * Creates database tables and views needed for testing
  */
 
-// Use process.env for Node.js CLI environment
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../../supabase/types';
 import { config } from 'dotenv';
 import { join } from 'path';
+import { readFileSync, existsSync } from 'fs';
 
-// Load environment variables - try multiple approaches
+// Load environment variables
 const envPath = join(process.cwd(), '.env.development');
 console.log('🔧 Loading environment from:', envPath);
 
-try {
-  config({ path: envPath });
-  console.log('✅ dotenv config loaded');
-} catch (err) {
-  console.log('⚠️  dotenv failed, trying manual load:', err);
-  
-  // Manual env loading as fallback
-  const fs = require('fs');
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf-8');
-    envContent.split('\n').forEach(line => {
-      if (line.includes('=') && !line.startsWith('#')) {
-        const [key, ...valueParts] = line.split('=');
-        const value = valueParts.join('=').trim();
-        if (key.trim() && value) {
-          process.env[key.trim()] = value;
-        }
-      }
-    });
-    console.log('✅ Manual env loading completed');
-  }
-}
+// Load .env.development file
+config({ path: envPath });
 
 // Create Supabase client for CLI use
 const supabaseUrl = process.env.SUPABASE_URL || '';
@@ -50,11 +30,23 @@ console.log('  SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'found' : 'm
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase environment variables');
   console.error('Check if .env.development has SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  
+  // Try to help diagnose the issue
+  if (existsSync(envPath)) {
+    console.log('✅ .env.development file exists');
+    const envContent = readFileSync(envPath, 'utf-8');
+    const hasUrl = envContent.includes('SUPABASE_URL=');
+    const hasKey = envContent.includes('SUPABASE_SERVICE_ROLE_KEY=') || envContent.includes('SUPABASE_ANON_KEY=');
+    console.log(`  Contains SUPABASE_URL: ${hasUrl}`);
+    console.log(`  Contains keys: ${hasKey}`);
+  } else {
+    console.error('❌ .env.development file not found at:', envPath);
+  }
+  
   process.exit(1);
 }
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
-import { readFileSync } from 'fs';
 
 async function setupInfrastructure() {
   console.log('🚀 Setting up testing infrastructure...');
@@ -62,6 +54,12 @@ async function setupInfrastructure() {
   try {
     // Read and execute the migration
     const migrationPath = join(process.cwd(), 'supabase/migrations/20250610_create_service_testing_tables.sql');
+    
+    if (!existsSync(migrationPath)) {
+      console.error('❌ Migration file not found:', migrationPath);
+      process.exit(1);
+    }
+    
     const migrationSQL = readFileSync(migrationPath, 'utf-8');
 
     console.log('📄 Applying testing database migration...');
@@ -81,7 +79,7 @@ async function setupInfrastructure() {
           const { error } = await supabase.rpc('execute_sql', { sql_query: statement });
           
           if (error) {
-            if (error.message.includes('already exists') || error.message.includes('relation') && error.message.includes('already exists')) {
+            if (error.message.includes('already exists') || (error.message.includes('relation') && error.message.includes('already exists'))) {
               console.log(`  ⏭️  Skipped (already exists): ${statement.substring(0, 50)}...`);
               skipCount++;
             } else {
