@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, CheckCircle, XCircle, Clock, RefreshCw, AlertCircle, Terminal, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { DashboardLayout } from '../components/DashboardLayout';
 
 interface TestResult {
   id: string;
@@ -267,7 +268,8 @@ export const TestingPage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -458,6 +460,7 @@ export const TestingPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
