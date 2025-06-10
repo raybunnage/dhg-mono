@@ -39,6 +39,19 @@ interface EditingState {
   data: any;
 }
 
+// Define standardized categories for work types
+const categoryMapping: Record<string, string> = {
+  // Summary categories
+  'feature': 'feature',
+  'bug_fix': 'bug',
+  'refactoring': 'refactor',
+  'documentation': 'documentation',
+  // Task types (already standardized)
+  'bug': 'bug',
+  'refactor': 'refactor',
+  // Any other mappings
+};
+
 export function WorkSummariesEnhanced() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -148,10 +161,13 @@ export function WorkSummariesEnhanced() {
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(item => {
         if (item.type === 'summary') {
-          return (item.data as WorkSummary).category === selectedCategory;
+          const summary = item.data as WorkSummary;
+          const normalizedCategory = categoryMapping[summary.category] || summary.category;
+          return normalizedCategory === selectedCategory;
         } else {
           const task = item.data as TaskWithTags;
-          return task.task_type === selectedCategory || task.status === selectedCategory;
+          const normalizedTaskType = categoryMapping[task.task_type] || task.task_type;
+          return normalizedTaskType === selectedCategory;
         }
       });
     }
@@ -218,11 +234,11 @@ export function WorkSummariesEnhanced() {
     setExpandedItems(newExpanded);
   };
 
+  // Get unique categories from both summaries and tasks, normalized
   const categories = ['all', ...Array.from(new Set([
-    ...summaries.map(s => s.category).filter(Boolean),
-    ...tasks.map(t => t.task_type).filter(Boolean),
-    ...tasks.map(t => t.status).filter(Boolean)
-  ]))];
+    ...summaries.map(s => categoryMapping[s.category] || s.category).filter(Boolean),
+    ...tasks.map(t => categoryMapping[t.task_type] || t.task_type).filter(Boolean)
+  ])).sort()];
 
   const getTaskStatusIcon = (status: string) => {
     switch (status) {
@@ -245,21 +261,30 @@ export function WorkSummariesEnhanced() {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'refactor':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'documentation':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'question':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
         return 'bg-orange-100 text-orange-800 border-orange-200';
     }
   };
 
   const getCategoryEmoji = (category: string) => {
+    // Normalize the category first
+    const normalized = categoryMapping[category] || category;
+    
     const emojis: Record<string, string> = {
-      'bug_fix': '🐛',
+      'bug': '🐛',
       'feature': '✨',
-      'refactoring': '🔧',
+      'refactor': '🔧',
       'documentation': '📚',
-      'completed': '✅',
-      'in_progress': '🔄'
+      'question': '❓',
+      // Legacy mappings for backward compatibility
+      'bug_fix': '🐛',
+      'refactoring': '🔧',
     };
-    return emojis[category] || '📋';
+    return emojis[normalized] || emojis[category] || '📋';
   };
 
   const startEditing = (item: WorkItem) => {
@@ -482,11 +507,22 @@ export function WorkSummariesEnhanced() {
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 bg-gray-50 focus:bg-white transition-colors text-sm"
                 >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>
-                      {cat === 'all' ? 'All Categories' : cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </option>
-                  ))}
+                  <option value="all">All Categories</option>
+                  {categories.filter(cat => cat !== 'all').map(cat => {
+                    const displayName = {
+                      'feature': '✨ Feature',
+                      'bug': '🐛 Bug Fix',
+                      'refactor': '🔧 Refactoring',
+                      'documentation': '📚 Documentation',
+                      'question': '❓ Question',
+                    }[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
+                    
+                    return (
+                      <option key={cat} value={cat}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>
@@ -613,10 +649,10 @@ export function WorkSummariesEnhanced() {
                               onChange={(e) => updateEditingData('category', e.target.value)}
                               className="px-2 py-1 border border-gray-300 rounded-md text-xs"
                             >
-                              <option value="feature">Feature</option>
-                              <option value="bug_fix">Bug Fix</option>
-                              <option value="refactoring">Refactoring</option>
-                              <option value="documentation">Documentation</option>
+                              <option value="feature">✨ Feature</option>
+                              <option value="bug_fix">🐛 Bug Fix</option>
+                              <option value="refactoring">🔧 Refactoring</option>
+                              <option value="documentation">📚 Documentation</option>
                             </select>
                           ) : (
                             summary.category && (
@@ -800,10 +836,11 @@ export function WorkSummariesEnhanced() {
                                 onChange={(e) => updateEditingData('task_type', e.target.value)}
                                 className={`px-2 py-1 rounded-full text-xs border ${getTaskTypeColor(editData.task_type)}`}
                               >
-                                <option value="feature">Feature</option>
-                                <option value="bug">Bug</option>
-                                <option value="refactor">Refactor</option>
-                                <option value="documentation">Documentation</option>
+                                <option value="feature">✨ Feature</option>
+                                <option value="bug">🐛 Bug</option>
+                                <option value="refactor">🔧 Refactor</option>
+                                <option value="documentation">📚 Documentation</option>
+                                <option value="question">❓ Question</option>
                               </select>
                               <select
                                 value={editData.priority}
