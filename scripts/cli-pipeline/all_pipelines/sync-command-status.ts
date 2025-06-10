@@ -152,7 +152,9 @@ class CommandStatusSyncer {
         scriptContent.match(/case\s+"\$1"\s+in([\s\S]*?)esac/),
         scriptContent.match(/case\s+"\$command"\s+in([\s\S]*?)esac/),
         scriptContent.match(/case\s+\$1\s+in([\s\S]*?)esac/),
-        scriptContent.match(/case\s+\$command\s+in([\s\S]*?)esac/)
+        scriptContent.match(/case\s+\$command\s+in([\s\S]*?)esac/),
+        scriptContent.match(/case\s+"\${1:-}"\s+in([\s\S]*?)esac/),
+        scriptContent.match(/case\s+\${1:-}\s+in([\s\S]*?)esac/)
       ];
       
       for (const caseBlockMatch of caseBlockMatches) {

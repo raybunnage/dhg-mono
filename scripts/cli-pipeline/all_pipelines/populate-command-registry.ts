@@ -39,6 +39,7 @@ const pipelines: PipelineInfo[] = [
   { name: 'prompt_service', description: 'AI prompt management', path: 'prompt_service' },
   { name: 'refactor_tracking', description: 'Code refactoring tracking', path: 'refactor_tracking' },
   { name: 'scripts', description: 'Script registry and management', path: 'scripts' },
+  { name: 'testing', description: 'Testing framework for shared services', path: 'testing' },
   { name: 'tracking', description: 'Command usage tracking', path: 'tracking' },
   { name: 'work_summaries', description: 'AI work summary management', path: 'work_summaries' }
 ];
