@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { MaintenancePanel } from '../components/MaintenancePanel';
+import type { MaintenanceStats, MaintenanceAction } from '../components/MaintenancePanel';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -237,6 +239,104 @@ export function ScriptsManagement() {
   const classifiedScripts = scripts.filter(s => s.document_type_id).length;
   const archivedScripts = scripts.filter(s => s.metadata?.is_archived).length;
 
+  // Calculate maintenance statistics
+  const maintenanceStats: MaintenanceStats = {
+    totalItems: scripts.length,
+    lastUsed30Days: scripts.filter(s => {
+      const lastModified = new Date(s.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince <= 30;
+    }).length,
+    lastUsed90Days: scripts.filter(s => {
+      const lastModified = new Date(s.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince <= 90;
+    }).length,
+    neverUsed: scripts.filter(s => !s.last_indexed_at).length,
+    duplicates: 0, // TODO: Implement duplicate detection
+    outdated: scripts.filter(s => {
+      const lastModified = new Date(s.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince > 180; // 6 months
+    }).length,
+    oversized: scripts.filter(s => (s.metadata?.file_size || 0) > 100000).length, // > 100KB
+    archived: archivedScripts
+  };
+
+  const runMaintenanceAnalysis = async (): Promise<MaintenanceAction[]> => {
+    // Simulate AI analysis - in real implementation, this would call a CLI command
+    const actions: MaintenanceAction[] = [];
+    
+    scripts.forEach(script => {
+      const lastModified = new Date(script.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Check for scripts not used in 90+ days
+      if (daysSince > 90 && !script.metadata?.is_archived) {
+        actions.push({
+          id: `archive-${script.id}`,
+          type: 'archive',
+          itemId: script.id,
+          itemPath: script.file_path,
+          reason: `Not modified in ${Math.round(daysSince)} days`,
+          confidence: daysSince > 180 ? 0.9 : 0.7
+        });
+      }
+      
+      // Check for oversized scripts
+      if ((script.metadata?.file_size || 0) > 100000) {
+        actions.push({
+          id: `review-${script.id}`,
+          type: 'review',
+          itemId: script.id,
+          itemPath: script.file_path,
+          reason: `Large file size (${Math.round((script.metadata?.file_size || 0) / 1024)}KB) - consider refactoring`,
+          confidence: 0.8
+        });
+      }
+    });
+    
+    return actions;
+  };
+
+  const executeMaintenanceAction = async (action: MaintenanceAction) => {
+    // In real implementation, this would call CLI commands
+    console.log('Executing action:', action);
+    
+    if (action.type === 'archive') {
+      // Call: ./scripts/cli-pipeline/scripts/scripts-cli.sh archive <file>
+      await supabase
+        .from('scripts_registry')
+        .update({ 
+          metadata: { 
+            ...scripts.find(s => s.id === action.itemId)?.metadata,
+            is_archived: true 
+          } 
+        })
+        .eq('id', action.itemId);
+    }
+  };
+
+  const bulkArchiveScripts = async (scriptIds: string[]) => {
+    // In real implementation, this would batch process through CLI
+    console.log('Bulk archiving scripts:', scriptIds);
+    
+    for (const id of scriptIds) {
+      await supabase
+        .from('scripts_registry')
+        .update({ 
+          metadata: { 
+            ...scripts.find(s => s.id === id)?.metadata,
+            is_archived: true 
+          } 
+        })
+        .eq('id', id);
+    }
+    
+    // Refresh the scripts list
+    loadScripts();
+  };
+
   return (
     <DashboardLayout>
       <div className="p-8">
@@ -277,6 +377,15 @@ export function ScriptsManagement() {
           <p className="text-3xl font-bold text-gray-600">{archivedScripts}</p>
         </div>
       </div>
+
+      {/* Maintenance Panel */}
+      <MaintenancePanel
+        type="scripts"
+        stats={maintenanceStats}
+        onRunAnalysis={runMaintenanceAnalysis}
+        onExecuteAction={executeMaintenanceAction}
+        onBulkArchive={bulkArchiveScripts}
+      />
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
