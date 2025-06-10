@@ -2,6 +2,7 @@
  * Element Catalog Service - Manages app features, CLI commands, and services catalog
  */
 
+import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from './supabase-client';
 
 export interface AppFeature {
@@ -44,18 +45,32 @@ export interface TaskElement {
 }
 
 export class ElementCatalogService {
-  private static instance: ElementCatalogService;
-  private supabase;
+  private static instances = new Map<SupabaseClient, ElementCatalogService>();
+  private supabase: SupabaseClient;
 
-  private constructor() {
-    this.supabase = SupabaseClientService.getInstance().getClient();
+  private constructor(supabaseClient: SupabaseClient) {
+    this.supabase = supabaseClient;
   }
 
-  static getInstance(): ElementCatalogService {
-    if (!ElementCatalogService.instance) {
-      ElementCatalogService.instance = new ElementCatalogService();
+  /**
+   * Get instance for browser environments (requires Supabase client)
+   */
+  static getInstance(supabaseClient?: SupabaseClient): ElementCatalogService {
+    // If no client provided, try to use the singleton (CLI/server only)
+    if (!supabaseClient) {
+      if (typeof window !== 'undefined') {
+        throw new Error('Browser environment requires a Supabase client to be passed to getInstance()');
+      }
+      // CLI/server environment - use singleton
+      supabaseClient = SupabaseClientService.getInstance().getClient();
     }
-    return ElementCatalogService.instance;
+
+    // Check if we already have an instance for this client
+    if (!ElementCatalogService.instances.has(supabaseClient)) {
+      ElementCatalogService.instances.set(supabaseClient, new ElementCatalogService(supabaseClient));
+    }
+    
+    return ElementCatalogService.instances.get(supabaseClient)!;
   }
 
   /**

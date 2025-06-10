@@ -40,8 +40,8 @@ export default function CreateTaskPage() {
   const [selectedElement, setSelectedElement] = useState<TaskElement | null>(null);
   const [elementsLoading, setElementsLoading] = useState(false);
   const [elementCriteria, setElementCriteria] = useState<{ criteriaCount: number; gatesCount: number }>({ criteriaCount: 0, gatesCount: 0 });
-  const elementCatalog = ElementCatalogService.getInstance();
-  const criteriaService = ElementCriteriaService.getInstance();
+  const elementCatalog = ElementCatalogService.getInstance(supabase);
+  const criteriaService = ElementCriteriaService.getInstance(supabase);
   
   const [formData, setFormData] = useState({
     title: '',
