@@ -12,7 +12,6 @@ export interface ClipboardItem {
   user_id?: string;
   created_at?: string;
   updated_at?: string;
-  usage_count?: number;
   is_favorite?: boolean;
   tags?: string[];
 }

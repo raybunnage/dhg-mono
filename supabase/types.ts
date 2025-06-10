@@ -2150,6 +2150,7 @@ export type Database = {
           description: string | null
           file_path: string
           id: string
+          last_checked: string | null
           last_updated: string | null
           metadata: Json | null
           next_review_date: string
@@ -2166,6 +2167,7 @@ export type Database = {
           description?: string | null
           file_path: string
           id?: string
+          last_checked?: string | null
           last_updated?: string | null
           metadata?: Json | null
           next_review_date: string
@@ -2182,6 +2184,7 @@ export type Database = {
           description?: string | null
           file_path?: string
           id?: string
+          last_checked?: string | null
           last_updated?: string | null
           metadata?: Json | null
           next_review_date?: string
@@ -5924,6 +5927,48 @@ export type Database = {
           rollback_at?: string | null
           rollback_by?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sys_test_results: {
+        Row: {
+          command: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_output: string | null
+          id: string
+          metadata: Json | null
+          output: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status?: string
+          test_name?: string
+          test_suite_id?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

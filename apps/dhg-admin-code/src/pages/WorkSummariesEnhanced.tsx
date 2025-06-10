@@ -23,15 +23,31 @@ interface EditingState {
 
 // Define standardized categories for work types
 const categoryMapping: Record<string, string> = {
-  // Summary categories
+  // Feature variations -> feature
   'feature': 'feature',
-  'bug_fix': 'bug',
-  'refactoring': 'refactor',
-  'documentation': 'documentation',
-  // Task types (already standardized)
+  'feature-development': 'feature',
+  
+  // Bug fix variations -> bug
   'bug': 'bug',
+  'bug_fix': 'bug',
+  'bug-fix': 'bug', 
+  'bugfix': 'bug',
+  
+  // Refactoring variations -> refactor
   'refactor': 'refactor',
-  // Any other mappings
+  'refactoring': 'refactor',
+  
+  // Documentation variations -> documentation
+  'documentation': 'documentation',
+  'docs': 'documentation',
+  
+  // Infrastructure and maintenance -> maintenance
+  'infrastructure': 'maintenance',
+  'maintenance': 'maintenance',
+  'merge': 'maintenance',
+  
+  // Keep question as is
+  'question': 'question',
 };
 
 export function WorkSummariesEnhanced() {
@@ -218,6 +234,8 @@ export function WorkSummariesEnhanced() {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'documentation':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'maintenance':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'question':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
@@ -234,10 +252,13 @@ export function WorkSummariesEnhanced() {
       'feature': '✨',
       'refactor': '🔧',
       'documentation': '📚',
+      'maintenance': '🛠️',
       'question': '❓',
-      // Legacy mappings for backward compatibility
+      // Legacy mappings for backward compatibility (now handled by categoryMapping)
       'bug_fix': '🐛',
       'refactoring': '🔧',
+      'docs': '📚',
+      'infrastructure': '🛠️',
     };
     return emojis[normalized] || emojis[category] || '📋';
   };
@@ -463,6 +484,7 @@ export function WorkSummariesEnhanced() {
                       'bug': '🐛 Bug Fix',
                       'refactor': '🔧 Refactoring',
                       'documentation': '📚 Documentation',
+                      'maintenance': '🛠️ Maintenance',
                       'question': '❓ Question',
                     }[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
                     
