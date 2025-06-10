@@ -1,8 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-// Components
 import { MainNavbar } from '@/components/MainNavbar';
 import { DebugMenu } from '@/pages/DebugMenu';
 

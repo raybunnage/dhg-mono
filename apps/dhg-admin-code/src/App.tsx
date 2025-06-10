@@ -11,7 +11,7 @@ import { DocumentsPage } from './pages/DocumentsPage';
 import { ScriptsManagement } from './pages/ScriptsManagement';
 import { GitManagement } from './pages/GitManagement';
 import { GitBranchManagement } from './pages/GitBranchManagement';
-import { ContinuousDocumentsPage } from './pages/ContinuousDocumentsPage';
+import { LivingDocsPage } from './pages/LivingDocsPage';
 import TasksPage from './pages/TasksPage';
 import CreateTaskPage from './pages/CreateTaskPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -134,10 +134,10 @@ function App() {
           } 
         />
         <Route 
-          path="/continuous-docs" 
+          path="/living-docs" 
           element={
             <ProtectedRoute requireAdmin>
-              <ContinuousDocumentsPage />
+              <LivingDocsPage />
             </ProtectedRoute>
           } 
         />

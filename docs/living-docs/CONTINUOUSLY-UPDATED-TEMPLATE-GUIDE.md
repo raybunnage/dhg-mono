@@ -1,4 +1,4 @@
-# Continuously Updated Documentation Template Guide
+# Living Docs Template Guide
 
 **Last Updated**: 2025-06-09  
 **Next Review**: Tomorrow (Daily Review)  
@@ -36,7 +36,7 @@
 
 ## Recent Updates
 
-This document has been restructured to follow the new continuously updated documentation format. The content has been reorganized for better readability and to highlight current status and priorities.
+This document has been restructured to follow the new Living Docs format. The content has been reorganized for better readability and to highlight current status and priorities.
 
 ---
 

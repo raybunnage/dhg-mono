@@ -495,6 +495,35 @@ cursor .`;
             </div>
           </div>
 
+          {/* Source Document Link */}
+          {(task.source_doc_path || task.source_doc_phase) && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Source Document</h2>
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-900">
+                      Generated from continuous documentation
+                    </p>
+                    {task.source_doc_phase && (
+                      <p className="text-sm font-medium text-blue-700 mt-1">
+                        Phase: {task.source_doc_phase}
+                      </p>
+                    )}
+                  </div>
+                  {task.source_doc_path && (
+                    <Link
+                      to="/continuous-docs"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+                    >
+                      View Document →
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Git Information */}
           {(task.git_branch || task.git_commits_count || task.is_subtask) && (
             <div>

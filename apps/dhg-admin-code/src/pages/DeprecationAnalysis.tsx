@@ -35,6 +35,46 @@ interface LowUsageCommand {
   error_rate: number;
 }
 
+interface ArchivedScript {
+  id: string;
+  file_name: string;
+  original_path: string;
+  archived_path: string;
+  archive_reason: string | null;
+  archive_date: string;
+  last_used: string | null;
+  replacement_command: string | null;
+  pipeline_name: string | null;
+  command_name: string | null;
+  file_size_bytes: number | null;
+  restored: boolean | null;
+}
+
+interface ArchivedCommand {
+  id: string;
+  command_name: string;
+  pipeline_name: string;
+  original_file_path: string;
+  archived_file_path: string;
+  archived_date: string | null;
+  last_used_date: string | null;
+  usage_count: number | null;
+  description: string | null;
+}
+
+interface ArchivedPackage {
+  id: string;
+  package_name: string;
+  original_path: string;
+  archived_path: string;
+  archive_reason: string | null;
+  dependencies_count: number | null;
+  file_size: number | null;
+  file_type: string | null;
+  last_modified: string | null;
+  created_by: string | null;
+}
+
 interface DeprecationCandidate {
   type: 'service' | 'script' | 'command' | 'pipeline';
   name: string;
@@ -48,11 +88,14 @@ interface DeprecationCandidate {
 
 export function DeprecationAnalysis() {
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'scripts' | 'commands' | 'pipelines'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'scripts' | 'commands' | 'pipelines' | 'archived-scripts' | 'archived-commands' | 'archived-apps'>('overview');
   const [unusedServices, setUnusedServices] = useState<UnusedService[]>([]);
   const [unusedScripts, setUnusedScripts] = useState<UnusedScript[]>([]);
   const [lowUsageCommands, setLowUsageCommands] = useState<LowUsageCommand[]>([]);
   const [candidates, setCandidates] = useState<DeprecationCandidate[]>([]);
+  const [archivedScripts, setArchivedScripts] = useState<ArchivedScript[]>([]);
+  const [archivedCommands, setArchivedCommands] = useState<ArchivedCommand[]>([]);
+  const [archivedPackages, setArchivedPackages] = useState<ArchivedPackage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -94,6 +137,45 @@ export function DeprecationAnalysis() {
       // Mock low usage commands data for now  
       setLowUsageCommands([]);
       
+      // Load archived scripts
+      const { data: archivedScriptsData, error: archivedScriptsError } = await supabase
+        .from('sys_archived_scripts_files')
+        .select('*')
+        .order('archive_date', { ascending: false });
+        
+      if (archivedScriptsError) {
+        console.warn('sys_archived_scripts_files not available:', archivedScriptsError);
+        setArchivedScripts([]);
+      } else {
+        setArchivedScripts(archivedScriptsData || []);
+      }
+      
+      // Load archived commands
+      const { data: archivedCommandsData, error: archivedCommandsError } = await supabase
+        .from('sys_archived_cli_pipeline_files')
+        .select('*')
+        .order('archived_date', { ascending: false });
+        
+      if (archivedCommandsError) {
+        console.warn('sys_archived_cli_pipeline_files not available:', archivedCommandsError);
+        setArchivedCommands([]);
+      } else {
+        setArchivedCommands(archivedCommandsData || []);
+      }
+      
+      // Load archived packages
+      const { data: archivedPackagesData, error: archivedPackagesError } = await supabase
+        .from('sys_archived_package_files')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (archivedPackagesError) {
+        console.warn('sys_archived_package_files not available:', archivedPackagesError);
+        setArchivedPackages([]);
+      } else {
+        setArchivedPackages(archivedPackagesData || []);
+      }
+
       // Build deprecation candidates from available data
       buildCandidates(services || [], [], []);
       
@@ -202,7 +284,7 @@ export function DeprecationAnalysis() {
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="text-3xl font-bold text-gray-900">{unusedServices.length}</div>
           <div className="text-sm text-gray-600 mt-1">Unused Services</div>
@@ -225,6 +307,27 @@ export function DeprecationAnalysis() {
           <div className="text-3xl font-bold text-gray-900">{candidates.length}</div>
           <div className="text-sm text-gray-600 mt-1">Total Candidates</div>
           <div className="text-xs text-gray-500 mt-2">For deprecation review</div>
+        </div>
+      </div>
+
+      {/* Archived Items Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200">
+          <div className="text-3xl font-bold text-blue-900">{archivedScripts.length}</div>
+          <div className="text-sm text-blue-700 mt-1">Archived Scripts</div>
+          <div className="text-xs text-blue-600 mt-2">Previously deprecated files</div>
+        </div>
+        
+        <div className="bg-purple-50 p-6 rounded-lg shadow-sm border border-purple-200">
+          <div className="text-3xl font-bold text-purple-900">{archivedCommands.length}</div>
+          <div className="text-sm text-purple-700 mt-1">Archived Commands</div>
+          <div className="text-xs text-purple-600 mt-2">CLI commands removed</div>
+        </div>
+        
+        <div className="bg-green-50 p-6 rounded-lg shadow-sm border border-green-200">
+          <div className="text-3xl font-bold text-green-900">{archivedPackages.length}</div>
+          <div className="text-sm text-green-700 mt-1">Archived Apps</div>
+          <div className="text-xs text-green-600 mt-2">Packages/apps archived</div>
         </div>
       </div>
       
@@ -512,6 +615,275 @@ export function DeprecationAnalysis() {
       )}
     </div>
   );
+
+  const renderArchivedScripts = () => (
+    <div className="bg-white rounded-lg shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Archived Scripts</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Scripts that have been archived and are no longer actively maintained
+        </p>
+      </div>
+      
+      {archivedScripts.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-gray-500 mb-2">No archived scripts found</div>
+          <div className="text-sm text-gray-400">
+            No scripts have been archived yet.
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  File Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Original Path
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Archive Reason
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Archive Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Replacement
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {archivedScripts.map((script) => (
+                <tr key={script.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900">{script.file_name}</div>
+                    {script.command_name && (
+                      <div className="text-xs text-gray-500">Command: {script.command_name}</div>
+                    )}
+                    {script.pipeline_name && (
+                      <div className="text-xs text-gray-500">Pipeline: {script.pipeline_name}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <div className="max-w-xs truncate" title={script.original_path}>
+                      {script.original_path}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {script.archive_reason || 'No reason provided'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {new Date(script.archive_date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {script.replacement_command ? (
+                      <div className="max-w-xs truncate" title={script.replacement_command}>
+                        <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                          {script.replacement_command}
+                        </code>
+                      </div>
+                    ) : (
+                      'None'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      script.restored ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {script.restored ? 'Restored' : 'Archived'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderArchivedCommands = () => (
+    <div className="bg-white rounded-lg shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Archived CLI Commands</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          CLI pipeline commands that have been archived
+        </p>
+      </div>
+      
+      {archivedCommands.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-gray-500 mb-2">No archived commands found</div>
+          <div className="text-sm text-gray-400">
+            No CLI commands have been archived yet.
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Command
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pipeline
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Original Path
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Usage Count
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Used
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Archived
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {archivedCommands.map((command) => (
+                <tr key={command.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900">{command.command_name}</div>
+                    {command.description && (
+                      <div className="text-xs text-gray-500 max-w-xs truncate" title={command.description}>
+                        {command.description}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                      {command.pipeline_name}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <div className="max-w-xs truncate" title={command.original_file_path}>
+                      {command.original_file_path}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {command.usage_count || 0}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {command.last_used_date 
+                      ? new Date(command.last_used_date).toLocaleDateString()
+                      : 'Never'
+                    }
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {command.archived_date 
+                      ? new Date(command.archived_date).toLocaleDateString()
+                      : 'Unknown'
+                    }
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderArchivedApps = () => (
+    <div className="bg-white rounded-lg shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Archived Apps/Packages</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Applications and packages that have been archived
+        </p>
+      </div>
+      
+      {archivedPackages.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-gray-500 mb-2">No archived packages found</div>
+          <div className="text-sm text-gray-400">
+            No packages or apps have been archived yet.
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Package Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Original Path
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Archive Reason
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Dependencies
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Size
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Modified
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {archivedPackages.map((pkg) => (
+                <tr key={pkg.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900">{pkg.package_name}</div>
+                    {pkg.file_type && (
+                      <div className="text-xs text-gray-500">Type: {pkg.file_type}</div>
+                    )}
+                    {pkg.created_by && (
+                      <div className="text-xs text-gray-500">By: {pkg.created_by}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <div className="max-w-xs truncate" title={pkg.original_path}>
+                      {pkg.original_path}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {pkg.archive_reason || 'No reason provided'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {pkg.dependencies_count !== null ? (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                        {pkg.dependencies_count} deps
+                      </span>
+                    ) : (
+                      'Unknown'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {pkg.file_size !== null ? (
+                      `${(pkg.file_size / 1024).toFixed(1)} KB`
+                    ) : (
+                      'Unknown'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {pkg.last_modified 
+                      ? new Date(pkg.last_modified).toLocaleDateString()
+                      : 'Unknown'
+                    }
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
   
   return (
     <DashboardLayout>
@@ -531,8 +903,8 @@ export function DeprecationAnalysis() {
         
         {/* Tab Navigation */}
         <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex gap-6">
-            {(['overview', 'services', 'scripts', 'commands', 'pipelines'] as const).map((tab) => (
+          <nav className="-mb-px flex gap-6 flex-wrap">
+            {(['overview', 'services', 'scripts', 'commands', 'pipelines', 'archived-scripts', 'archived-commands', 'archived-apps'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -542,7 +914,25 @@ export function DeprecationAnalysis() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === 'archived-scripts' ? 'Archived Scripts' :
+                 tab === 'archived-commands' ? 'Archived Commands' :
+                 tab === 'archived-apps' ? 'Archived Apps' :
+                 tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === 'archived-scripts' && archivedScripts.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs">
+                    {archivedScripts.length}
+                  </span>
+                )}
+                {tab === 'archived-commands' && archivedCommands.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs">
+                    {archivedCommands.length}
+                  </span>
+                )}
+                {tab === 'archived-apps' && archivedPackages.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs">
+                    {archivedPackages.length}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -567,6 +957,9 @@ export function DeprecationAnalysis() {
                 <p className="text-gray-600">Pipeline analysis coming soon...</p>
               </div>
             )}
+            {activeTab === 'archived-scripts' && renderArchivedScripts()}
+            {activeTab === 'archived-commands' && renderArchivedCommands()}
+            {activeTab === 'archived-apps' && renderArchivedApps()}
           </>
         )}
       </div>
