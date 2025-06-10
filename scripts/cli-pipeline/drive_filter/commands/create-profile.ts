@@ -1,6 +1,7 @@
 #!/usr/bin/env ts-node
 import { Command } from 'commander';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { FilterService } from '../../../../packages/shared/services/filter-service';
 
 const command = new Command('create-profile');
 
@@ -32,62 +33,43 @@ command
         process.exit(1);
       }
 
-      // Verify Supabase connection before proceeding
+      // Initialize services
       const supabase = SupabaseClientService.getInstance().getClient();
-      const { error } = await supabase
-        .from('filter_user_profiles')
-        .select('id')
-        .limit(1);
-        
-      if (error) {
-        console.error(`Supabase error checking filter table: ${error.message}`);
+      const filterService = new FilterService(supabase);
+      
+      // Create the profile using FilterService
+      const profile = await filterService.createProfile({
+        name: options.name,
+        description: options.description || null,
+        is_active: options.active || false
+      });
+      
+      if (!profile) {
+        console.error('❌ Failed to create filter profile');
         process.exit(1);
       }
       
-      // Build filter criteria
-      let filterCriteria = {};
+      console.log(`✅ Filter profile "${options.name}" created successfully with ID: ${profile.id}`);
       
-      if (options.mimeTypes) {
-        filterCriteria = { mime_types: options.mimeTypes };
+      // If set as active, confirm it
+      if (options.active) {
+        console.log('👉 Profile set as active');
       }
       
-      if (options.documentTypes) {
-        filterCriteria = { ...filterCriteria, document_types: options.documentTypes };
-      }
-      
-      if (options.experts) {
-        filterCriteria = { ...filterCriteria, experts: options.experts };
-      }
-      
-      if (options.folders) {
-        filterCriteria = { ...filterCriteria, folders: options.folders };
-      }
-
-      // Create the profile directly since filterService.createProfile is having issues
-      const { data, error: insertError } = await supabase
-        .from('filter_user_profiles')
-        .insert({
-          name: options.name,
-          description: options.description,
-          is_active: options.active || false
-        })
-        .select();
-        
-      if (insertError) {
-        console.error(`Error creating profile: ${insertError.message}`);
-        process.exit(1);
-      }
-      
-      if (data && data[0]) {
-        console.log(`✅ Filter profile "${options.name}" created successfully with ID: ${data[0].id}`);
-        
-        // If set as active, confirm it
-        if (options.active) {
-          console.log('👉 Profile set as active');
+      // Add folders/drives if specified
+      if (options.folders && options.folders.length > 0) {
+        const success = await filterService.addDrivesToProfile(profile.id, options.folders);
+        if (success) {
+          console.log(`✅ Added ${options.folders.length} folder(s) to profile`);
+        } else {
+          console.error('⚠️  Warning: Failed to add some folders to profile');
         }
-      } else {
-        console.error('❌ Failed to create filter profile (no data returned)');
-        process.exit(1);
+      }
+      
+      // Note: mime-types, document-types, and experts filtering are handled by filter criteria
+      // in the FilterService when applying filters, not stored in the profile itself
+      if (options.mimeTypes || options.documentTypes || options.experts) {
+        console.log('\n📝 Note: Additional filter criteria (mime-types, document-types, experts) will be applied when using this profile.');
       }
     } catch (error) {
       console.error('Error creating filter profile:', error);

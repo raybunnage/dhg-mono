@@ -18,3 +18,4 @@ export * from "./file-system-service"; // File system service with progress trac
 export * from "./batch-database-service"; // Batch database service with retry logic and progress tracking
 export * from "./element-catalog-service"; // Element catalog service for app features and CLI commands
 export * from "./element-criteria-service"; // Element criteria service for success criteria and quality gates
+export * from "./media-analytics-service"; // Media analytics service for media consumption statistics
