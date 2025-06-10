@@ -55,6 +55,49 @@ app.post('/api/git/worktrees/prune', async (req, res) => {
   }
 });
 
+// Execute CLI command endpoint
+app.post('/api/execute-command', async (req, res) => {
+  try {
+    const { command, args = [] } = req.body;
+    
+    // Security: Only allow specific whitelisted commands
+    const allowedCommands = [
+      './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh'
+    ];
+    
+    if (!allowedCommands.includes(command)) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Command not allowed' 
+      });
+    }
+    
+    // Join command and args
+    const fullCommand = `${command} ${args.join(' ')}`;
+    console.log('Executing command:', fullCommand);
+    
+    // Execute with a timeout of 30 seconds
+    const { stdout, stderr } = await execAsync(fullCommand, {
+      timeout: 30000,
+      cwd: process.cwd()
+    });
+    
+    res.json({ 
+      success: true, 
+      stdout: stdout.trim(), 
+      stderr: stderr.trim() 
+    });
+  } catch (error) {
+    console.error('Error executing command:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stdout: error.stdout?.trim(),
+      stderr: error.stderr?.trim()
+    });
+  }
+});
+
 async function getAllBranches() {
   try {
     // Get all branches (local and remote)

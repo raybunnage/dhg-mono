@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { MarkdownViewer } from '../components/documents/MarkdownViewer';
 import { useSupabase } from '../hooks/useSupabase';
-import { FileText, RefreshCw, Calendar, AlertCircle, Eye } from 'lucide-react';
+import { FileText, RefreshCw, Calendar, AlertCircle, Eye, Edit2, Play, Save } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 
 interface ContinuousDoc {
@@ -29,6 +29,10 @@ export const AIPage: React.FC = () => {
   const [selectedDocument, setSelectedDocument] = useState<ContinuousDoc | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const [editingFrequency, setEditingFrequency] = useState<string | null>(null);
+  const [frequencyValue, setFrequencyValue] = useState<number>(7);
+  const [runningUpdate, setRunningUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string>('');
 
   // Load continuous documents
   const loadDocuments = async () => {
@@ -107,6 +111,63 @@ export const AIPage: React.FC = () => {
       if (selectedDocument?.id === doc.id) {
         setSelectedDocument(null);
       }
+    }
+  };
+
+  // Update frequency for a document
+  const handleUpdateFrequency = async (doc: ContinuousDoc) => {
+    const { error } = await supabase
+      .from('doc_continuous_monitoring')
+      .update({
+        review_frequency_days: frequencyValue,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', doc.id);
+
+    if (error) {
+      console.error('Error updating frequency:', error);
+      alert('Failed to update frequency');
+    } else {
+      setEditingFrequency(null);
+      await loadDocuments();
+    }
+  };
+
+  // Run update check via API
+  const handleRunUpdate = async (action: 'check' | 'process' = 'check') => {
+    setRunningUpdate(true);
+    setUpdateStatus(action === 'check' ? 'Running update check...' : 'Processing updates...');
+
+    try {
+      // Call the git API server endpoint to execute CLI command
+      const response = await fetch('http://localhost:3009/api/execute-command', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command: './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh',
+          args: [action === 'check' ? 'check-updates' : 'process-updates', '--verbose']
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setUpdateStatus(action === 'check' 
+          ? 'Update check completed successfully' 
+          : 'Updates processed successfully');
+        await loadDocuments(); // Refresh the list
+      } else {
+        setUpdateStatus(`${action === 'check' ? 'Update check' : 'Processing'} failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error running update:', error);
+      setUpdateStatus('Failed to run command - is the API server running?');
+    } finally {
+      setRunningUpdate(false);
+      // Clear status after 5 seconds
+      setTimeout(() => setUpdateStatus(''), 5000);
     }
   };
 
@@ -191,7 +252,7 @@ export const AIPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end gap-2">
                 <button
                   onClick={loadDocuments}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 flex items-center gap-2"
@@ -199,9 +260,28 @@ export const AIPage: React.FC = () => {
                   <RefreshCw className="w-4 h-4" />
                   Refresh
                 </button>
+                <button
+                  onClick={() => handleRunUpdate('check')}
+                  disabled={runningUpdate}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  {runningUpdate ? 'Running...' : 'Check Updates'}
+                </button>
               </div>
             </div>
           </div>
+
+          {/* Status message */}
+          {updateStatus && (
+            <div className={`px-4 py-2 text-sm ${
+              updateStatus.includes('failed') || updateStatus.includes('Failed') 
+                ? 'bg-red-50 text-red-700' 
+                : 'bg-blue-50 text-blue-700'
+            }`}>
+              {updateStatus}
+            </div>
+          )}
 
           {/* Summary stats */}
           <div className="p-4 bg-white border-b">
@@ -254,9 +334,49 @@ export const AIPage: React.FC = () => {
                             {doc.priority}
                           </span>
                         )}
-                        <span className="text-xs text-gray-500">
-                          {doc.review_frequency_days} day cycle
-                        </span>
+                        {editingFrequency === doc.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={frequencyValue}
+                              onChange={(e) => setFrequencyValue(parseInt(e.target.value) || 7)}
+                              className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateFrequency(doc);
+                              }}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Save className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingFrequency(null);
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingFrequency(doc.id);
+                              setFrequencyValue(doc.review_frequency_days || 7);
+                            }}
+                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            {doc.review_frequency_days} day cycle
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="text-right ml-4">
