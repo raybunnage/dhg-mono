@@ -17,8 +17,6 @@ interface MonitoredDocument {
   status: string | null;
   owner: string | null;
   metadata: any;
-  content_hash?: string;
-  dependencies?: string[];
 }
 
 interface UpdateCheck {
@@ -56,16 +54,18 @@ export class DocumentMonitoringService {
    */
   async checkForUpdates(doc: MonitoredDocument): Promise<UpdateCheck> {
     const currentHash = this.getFileHash(doc.file_path);
-    const dependencies = await this.checkDependencies(doc.file_path, doc.dependencies || []);
+    const storedHash = (doc.metadata as any)?.content_hash || '';
+    const storedDeps = (doc.metadata as any)?.dependencies || [];
+    const dependencies = await this.checkDependencies(doc.file_path, storedDeps);
     
     let hasChanges = false;
     let changeType: 'content' | 'dependencies' | 'none' = 'none';
 
-    if (currentHash !== (doc.content_hash || '')) {
+    if (currentHash !== storedHash) {
       hasChanges = true;
       changeType = 'content';
-    } else if (dependencies.some(dep => !(doc.dependencies || []).includes(dep)) || 
-               (doc.dependencies || []).some(dep => !dependencies.includes(dep))) {
+    } else if (dependencies.some(dep => !storedDeps.includes(dep)) || 
+               storedDeps.some(dep => !dependencies.includes(dep))) {
       hasChanges = true;
       changeType = 'dependencies';
     }
@@ -76,7 +76,7 @@ export class DocumentMonitoringService {
       hasChanges,
       changeType,
       currentHash,
-      storedHash: doc.content_hash || '',
+      storedHash,
       dependencies
     };
   }
@@ -185,8 +185,11 @@ export class DocumentMonitoringService {
         last_updated: new Date().toISOString(),
         last_checked: new Date().toISOString(),
         next_review_date: nextReviewDate.toISOString(),
-        content_hash: this.getFileHash(doc.file_path),
-        dependencies: await this.checkDependencies(doc.file_path, doc.dependencies || [])
+        metadata: {
+          ...(doc.metadata || {}),
+          content_hash: this.getFileHash(doc.file_path),
+          dependencies: await this.checkDependencies(doc.file_path, (doc.metadata as any)?.dependencies || [])
+        }
       });
 
       // In a real implementation, this would:
