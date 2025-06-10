@@ -41,7 +41,7 @@ async function analyzeScripts() {
   try {
     // Get all scripts
     const { data: allScripts, error: allError } = await supabase
-      .from('scripts_registry')
+      .from('registry_scripts')
       .select('*')
       .order('file_path');
       

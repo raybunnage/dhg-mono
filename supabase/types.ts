@@ -5031,6 +5031,99 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_scripts: {
+        Row: {
+          ai_assessment: Json | null
+          ai_generated_tags: string[] | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          document_type_id: string | null
+          environment: string | null
+          file_hash: string | null
+          file_name: string
+          file_path: string
+          id: string
+          is_deprecated: boolean | null
+          language: string | null
+          last_indexed_at: string | null
+          last_modified_at: string | null
+          last_used_at: string | null
+          manual_tags: string[] | null
+          metadata: Json | null
+          package_location: string
+          script_command: string
+          script_name: string
+          script_type: string | null
+          shortcut_name: string | null
+          status: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          document_type_id?: string | null
+          environment?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path: string
+          id?: string
+          is_deprecated?: boolean | null
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          last_used_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          package_location: string
+          script_command: string
+          script_name: string
+          script_type?: string | null
+          shortcut_name?: string | null
+          status?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          document_type_id?: string | null
+          environment?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          is_deprecated?: boolean | null
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          last_used_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          package_location?: string
+          script_command?: string
+          script_name?: string
+          script_type?: string | null
+          shortcut_name?: string | null
+          status?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
+      }
       registry_services: {
         Row: {
           created_at: string | null
@@ -5834,6 +5927,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_test_results: {
+        Row: {
+          command: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_output: string | null
+          id: string
+          metadata: Json | null
+          output: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status?: string
+          test_name?: string
+          test_suite_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       worktree_app_mappings: {
         Row: {
           app_name: string
@@ -6451,6 +6586,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      registry_scripts_pnpm_view: {
+        Row: {
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          environment: string | null
+          id: string | null
+          is_deprecated: boolean | null
+          last_used_at: string | null
+          package_location: string | null
+          script_command: string | null
+          script_name: string | null
+          shortcut_name: string | null
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          environment?: string | null
+          id?: string | null
+          is_deprecated?: boolean | null
+          last_used_at?: string | null
+          package_location?: string | null
+          script_command?: string | null
+          script_name?: string | null
+          shortcut_name?: string | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          environment?: string | null
+          id?: string | null
+          is_deprecated?: boolean | null
+          last_used_at?: string | null
+          package_location?: string | null
+          script_command?: string | null
+          script_name?: string | null
+          shortcut_name?: string | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
       }
       registry_service_usage_summary_view: {
         Row: {

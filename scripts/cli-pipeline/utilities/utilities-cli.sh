@@ -70,6 +70,9 @@ show_help() {
   echo "    archive-packages       Archive unused packages"
   echo "    check-archived         Check status of archived packages"
   echo ""
+  echo "APP FEATURE SCANNING:"
+  echo "  * scan-app-features      Scan and populate dhg-admin-code app features"
+  echo ""
   echo "SYSTEM UTILITIES:"
   echo "    health-check           Check utilities pipeline health"
   echo ""
@@ -98,6 +101,10 @@ show_help() {
   echo ""
   echo "  # Test a migration"
   echo "  ./utilities-cli.sh test-migration migration.sql"
+  echo ""
+  echo "APP FEATURE SCANNING:"
+  echo "  # Scan and populate dhg-admin-code app features"
+  echo "  ./utilities-cli.sh scan-app-features"
 }
 
 # Main command dispatcher
@@ -148,6 +155,11 @@ case "$1" in
     track_command "check-archived" "ts-node scripts/cli-pipeline/utilities/check-archived-packages.ts"
     ;;
     
+  # App Feature Scanning
+  "scan-app-features")
+    track_command "scan-app-features" "ts-node scripts/cli-pipeline/utilities/scan-dhg-admin-code-features.ts"
+    ;;
+    
   # System
   "health-check")
     echo "🏥 Utilities Pipeline Health Check"
@@ -158,8 +170,9 @@ case "$1" in
     echo "✅ Migration utilities available"
     echo "✅ Work summary utilities available"
     echo "✅ Package management utilities available"
+    echo "✅ App feature scanning available"
     echo ""
-    echo "📊 Available Commands: 8"
+    echo "📊 Available Commands: 9"
     echo "📁 Utilities Directory: scripts/cli-pipeline/utilities/"
     echo "🔧 Primary Focus: SQLite imports, migrations, work summaries"
     ;;

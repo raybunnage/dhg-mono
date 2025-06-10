@@ -101,7 +101,7 @@ export function ScriptsManagement() {
         setLoading(true);
 
         let query = supabase
-          .from('scripts_registry')
+          .from('registry_scripts')
           .select('*')
           .order('last_modified_at', { ascending: false });
 

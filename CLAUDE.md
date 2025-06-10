@@ -282,7 +282,7 @@ ORDER BY cpt.table_name;
 - `command_pipelines` - CLI pipeline scripts (e.g., google-sync-cli.sh)
 - `command_definitions` - Individual commands within each pipeline
 - `command_pipeline_tables` - Database tables used by each pipeline
-- `scripts_registry` - Individual script files (separate from CLI commands)
+- `registry_scripts` - Individual script files (separate from CLI commands)
 
 **Note**: CLI commands (in pipelines) and individual scripts are tracked separately. Focus on the command_* tables for CLI pipeline work.
 
@@ -665,6 +665,7 @@ To avoid port collisions in the monorepo, follow these standardized port ranges:
 | 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
 | 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
 | 3011 | Git History Analysis Server | `scripts/cli-pipeline/dev_tasks/git-history-server.js` |
+| 3012 | Test Runner Server | `apps/dhg-admin-code/test-runner-server.cjs` |
 
 **Vite App Ports**:
 | Port | App | Preview Port | Status |

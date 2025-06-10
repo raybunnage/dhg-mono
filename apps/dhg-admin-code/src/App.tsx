@@ -20,6 +20,9 @@ import WorktreeMappings from './pages/WorktreeMappings';
 import ServiceDependencies from './pages/ServiceDependencies';
 import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
 import { AIPage } from './pages/AIPage';
+import { SQLiteImportManager } from './pages/SQLiteImportManager';
+import { FeaturesPage } from './pages/FeaturesPage';
+import { TestingPage } from './pages/TestingPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -178,6 +181,30 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <AIPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/sqlite-import" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <SQLiteImportManager />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/features" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <FeaturesPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/testing" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <TestingPage />
             </ProtectedRoute>
           } 
         />
