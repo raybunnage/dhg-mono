@@ -1,202 +1,190 @@
-# CLI Pipeline Shared Service Extraction Opportunities
-
-Generated: 2025-06-07
+# Shared Service Extraction Opportunities Analysis
 
 ## Executive Summary
 
-After analyzing all 38 CLI pipelines that now pass health checks, I've identified significant opportunities to extract common functionality into shared services. This will reduce code duplication, improve maintainability, and ensure consistent behavior across pipelines.
+After analyzing the apps directory, I've identified several significant opportunities for shared service extraction. The most common patterns involve authentication services, filter services, Google Drive utilities, and various adapter patterns that could be consolidated.
 
-## High-Priority Extraction Opportunities
+## 1. Authentication Services (HIGH PRIORITY)
 
-### 1. **FileSystemService** (Most Duplicated Code)
+### Current Duplication
+- **dhg-admin-code** and **dhg-admin-suite** have identical `admin-auth-service.ts` implementations
+- **dhg-audio** has multiple auth services: `auth-service.ts`, `light-auth-service.ts`, `dhg-audio-auth-service.ts`
+- Multiple apps have similar `useAuth` hooks with duplicated logic
 
-**Current Duplication**: Found in 15+ pipelines
-**Priority**: HIGH
+### Extraction Opportunity
+**Consolidate into `@shared/services/admin-auth-service`**
 
-**Functions to Extract**:
 ```typescript
-interface FileSystemService {
-  // File hashing (appears in google_sync, document, media-processing)
-  calculateFileHash(filePath: string): Promise<string | null>
-  
-  // Directory walking (appears in document, google_sync, scripts)
-  walkDir(dir: string, options?: WalkOptions): Promise<FileMetadata[]>
-  
-  // File metadata extraction
-  getFileMetadata(filePath: string): Promise<FileMetadata>
-  
-  // Path utilities
-  ensureDirectoryExists(path: string): Promise<void>
-  getRelativePath(from: string, to: string): string
+// Shared admin auth service functionality
+export class AdminAuthService {
+  async isUserAdmin(): Promise<boolean>
+  async getAdminMetadata(): Promise<any>
+  async checkAppMetadata(key: string, value: any): Promise<boolean>
 }
 ```
 
-**Affected Pipelines**:
-- google_sync (sync-files.ts, scan-drive.ts)
-- document (document-service.ts, find-new-files.ts)
-- media-processing (check-audio-exists.ts)
-- scripts (sync-scripts.ts)
+**Affected Apps**: dhg-admin-code, dhg-admin-suite, dhg-audio
+**Complexity**: Low - Services are already nearly identical
+**Impact**: High - Reduces duplication and standardizes admin authentication
 
-### 2. **BatchDatabaseService** (Performance Critical)
+## 2. Filter Service Implementations (HIGH PRIORITY)
 
-**Current Duplication**: Found in 12+ pipelines
-**Priority**: HIGH
+### Current Duplication
+- **dhg-hub** has a full `filter-service-adapter.ts` (328 lines)
+- **dhg-admin-suite** wraps the shared FilterService
+- **dhg-admin-google** has its own `filter-service-adapter.ts`
+- **dhg-audio** references filter services in multiple components
 
-**Functions to Extract**:
+### Extraction Opportunity
+**Enhance existing `@shared/services/filter-service` with browser-specific adapter**
+
 ```typescript
-interface BatchDatabaseService {
-  // Batch operations with progress tracking
-  batchInsert<T>(table: string, data: T[], options?: BatchOptions): Promise<BatchResult>
-  batchUpdate<T>(table: string, updates: T[], options?: BatchOptions): Promise<BatchResult>
-  batchDelete(table: string, ids: string[], options?: BatchOptions): Promise<BatchResult>
-  
-  // Transaction management
-  runInTransaction<T>(callback: () => Promise<T>): Promise<T>
-}
-
-interface BatchOptions {
-  batchSize?: number
-  onProgress?: (progress: Progress) => void
-  onError?: (error: Error, item: any) => void
+// Browser-specific filter service adapter
+export class BrowserFilterServiceAdapter {
+  constructor(private supabase: SupabaseClient)
+  async listProfiles(): Promise<FilterProfile[]>
+  async loadActiveProfile(): Promise<FilterProfile | null>
+  async setActiveProfile(profileId: string): Promise<boolean>
+  async applyFilterToQuery(query: any, activeProfileId?: string): Promise<any>
 }
 ```
 
-**Affected Pipelines**:
-- google_sync (sync-files.ts, sync-sources.ts)
-- scripts (import-scripts.ts, sync-scripts.ts)
-- email (sync-emails.ts)
-- media-processing (batch-transcribe.ts)
+**Affected Apps**: dhg-hub, dhg-admin-suite, dhg-admin-google, dhg-audio
+**Complexity**: Medium - Need to merge different implementations
+**Impact**: High - Central filter management across all apps
 
-### 3. **ProgressTrackingService** (User Experience)
+## 3. Google Drive Utilities (MEDIUM PRIORITY)
 
-**Current Duplication**: Found in 10+ pipelines
-**Priority**: MEDIUM
+### Current Duplication
+- **dhg-audio** has `google-drive-utils.ts` with proxy URL generation
+- **dhg-admin-google** wraps shared service but adds additional utilities
+- Multiple apps handle Drive ID extraction differently
 
-**Functions to Extract**:
+### Extraction Opportunity
+**Create `@shared/utils/google-drive-utils`**
+
 ```typescript
-interface ProgressTrackingService {
-  // Console progress displays
-  createProgressBar(total: number, label: string): ProgressBar
-  updateProgress(current: number, message?: string): void
-  
-  // Rate and ETA calculation
-  calculateRate(processed: number, startTime: Date): number
-  estimateTimeRemaining(current: number, total: number, startTime: Date): string
-  
-  // Multi-step progress
-  createMultiStepProgress(steps: string[]): MultiStepProgress
+// Shared Google Drive utilities
+export const googleDriveUtils = {
+  extractDriveId(url: string): string | null
+  getProxyUrl(driveId: string, type: 'audio' | 'document'): string
+  getPreviewUrl(driveId: string): string
+  getDownloadUrl(driveId: string): string
+  getAudioUrlOptions(webViewLink: string): string[]
 }
 ```
 
-**Affected Pipelines**:
-- google_sync (all sync commands)
-- media-processing (batch-transcribe.ts)
-- email (sync-emails.ts)
-- scripts (import-scripts.ts)
+**Affected Apps**: dhg-audio, dhg-admin-google
+**Complexity**: Low - Mostly utility functions
+**Impact**: Medium - Standardizes Drive URL handling
 
-### 4. **ShellExecutionService** (System Integration)
+## 4. Worktree Mapping Utilities (MEDIUM PRIORITY)
 
-**Current Duplication**: Found in 8+ pipelines
-**Priority**: MEDIUM
+### Current Duplication
+- **dhg-admin-code** has comprehensive worktree mapping utilities
+- Multiple apps could benefit from worktree awareness
 
-**Functions to Extract**:
+### Extraction Opportunity
+**Move to `@shared/utils/worktree-utils`**
+
 ```typescript
-interface ShellExecutionService {
-  // Safe command execution
-  execute(command: string, args: string[], options?: ExecOptions): Promise<ExecResult>
-  
-  // Python script execution
-  executePython(scriptPath: string, args: string[]): Promise<ExecResult>
-  
-  // Process management
-  killProcess(pid: number): Promise<void>
-  isProcessRunning(pid: number): boolean
-}
+// Shared worktree utilities
+export interface WorktreeMapping { ... }
+export const worktreeMappings: WorktreeMapping[]
+export function getWorktreeByPath(path: string): WorktreeMapping | undefined
+export function getAppsForWorktree(path: string): string[]
+export function getCliPipelinesForWorktree(path: string): string[]
+```
 
-interface ExecOptions {
-  timeout?: number
-  cwd?: string
-  env?: Record<string, string>
-  captureOutput?: boolean
+**Affected Apps**: dhg-admin-code, potentially all apps
+**Complexity**: Low - Just moving existing code
+**Impact**: Medium - Enables worktree-aware features across apps
+
+## 5. Supabase Client Initialization (LOW PRIORITY)
+
+### Current Duplication
+- Every app has its own `lib/supabase.ts` file
+- Most follow the same pattern with `createSupabaseAdapter`
+
+### Extraction Opportunity
+**Standardize initialization pattern (documentation/template)**
+
+Rather than extracting code, provide a standard template and ensure all apps follow it consistently.
+
+**Affected Apps**: All apps
+**Complexity**: Low - Documentation and consistency
+**Impact**: Low - Pattern is already mostly standardized
+
+## 6. Environment Check Utilities (LOW PRIORITY)
+
+### Current Duplication
+- **dhg-audio** has `env-check.ts` for environment validation
+- Other apps could benefit from similar checks
+
+### Extraction Opportunity
+**Create `@shared/utils/env-check`**
+
+```typescript
+// Shared environment validation
+export function validateBrowserEnv(requiredVars: string[]): void
+export function getEnvVar(key: string, fallback?: string): string
+export function isProduction(): boolean
+export function isDevelopment(): boolean
+```
+
+**Affected Apps**: dhg-audio, potentially all apps
+**Complexity**: Low - Simple utility functions
+**Impact**: Low - Nice to have for consistency
+
+## 7. Profile Service Patterns (LOW PRIORITY)
+
+### Current Duplication
+- **dhg-audio** has `profile-service.ts` and `user-profile-browser-service.ts`
+- Profile management logic could be shared
+
+### Extraction Opportunity
+**Create `@shared/services/user-profile-service`**
+
+```typescript
+// Shared user profile service
+export class UserProfileService {
+  async getProfile(userId: string): Promise<UserProfile>
+  async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<void>
+  async createProfile(userId: string, data: UserProfile): Promise<void>
 }
 ```
 
-**Affected Pipelines**:
-- media-processing (transcribe commands)
-- scripts (various script runners)
-- ai (python script execution)
-
-### 5. **ClaudePromptService** (AI Integration)
-
-**Current Duplication**: Found in 6+ pipelines
-**Priority**: MEDIUM
-
-**Functions to Extract**:
-```typescript
-interface ClaudePromptService {
-  // Prompt management
-  loadPromptTemplate(name: string): Promise<string>
-  formatPrompt(template: string, variables: Record<string, any>): string
-  
-  // Response parsing
-  parseJsonResponse<T>(response: string): T
-  extractCodeBlocks(response: string): CodeBlock[]
-  
-  // Error handling
-  handleClaudeError(error: any): ClaudeError
-}
-```
-
-**Affected Pipelines**:
-- scripts (analyze-scripts.ts)
-- presentations (generate-presentation.ts)
-- ai (various AI commands)
+**Affected Apps**: dhg-audio, potentially dhg-hub, dhg-admin-suite
+**Complexity**: Medium - Need to generalize profile structure
+**Impact**: Low - Limited current usage
 
 ## Implementation Recommendations
 
-### Phase 1: Core Services (Week 1)
-1. **FileSystemService** - Most reused functionality
-2. **BatchDatabaseService** - Critical for performance
-3. Update affected pipelines to use new services
+### Phase 1 (Immediate - High Impact)
+1. **Admin Auth Service** - Extract from dhg-admin-code/suite
+2. **Filter Service Adapter** - Consolidate dhg-hub implementation into shared
+3. **Google Drive Utils** - Extract from dhg-audio
 
-### Phase 2: Enhancement Services (Week 2)
-1. **ProgressTrackingService** - Improve user experience
-2. **ShellExecutionService** - Standardize system calls
-3. **ClaudePromptService** - Centralize AI integration
+### Phase 2 (Short Term - Medium Impact)
+4. **Worktree Utils** - Move from dhg-admin-code to shared
+5. **Environment Check Utils** - Extract from dhg-audio
 
-### Phase 3: Specialized Services (Week 3)
-1. **GoogleDriveEnhancedService** - Build on existing service
-2. **MediaProcessingUtilsService** - Extend current audio services
-3. **DocumentAnalysisService** - Advanced document utilities
+### Phase 3 (Long Term - Nice to Have)
+6. **Profile Service** - Generalize if more apps need it
+7. **Supabase Init Templates** - Create documentation
 
-## Expected Benefits
+## Estimated Effort
 
-1. **Code Reduction**: ~30-40% reduction in pipeline code
-2. **Consistency**: Standardized error handling and logging
-3. **Performance**: Optimized batch operations across all pipelines
-4. **Maintainability**: Single source of truth for common operations
-5. **Testing**: Centralized testing for critical functionality
+- **Total Extraction Points**: 7 major opportunities
+- **High Priority Items**: 3 (1-2 days each)
+- **Medium Priority Items**: 2 (0.5-1 day each)
+- **Low Priority Items**: 2 (0.5 day each)
+- **Total Estimated Effort**: 5-8 days for full implementation
 
-## Migration Strategy
+## Benefits
 
-1. **Create services incrementally** - Start with FileSystemService
-2. **Test thoroughly** - Each service should have comprehensive tests
-3. **Migrate pipelines gradually** - Update one pipeline at a time
-4. **Maintain backward compatibility** - During transition period
-5. **Document patterns** - Create usage examples for each service
-
-## Success Metrics
-
-- Number of duplicate code blocks eliminated
-- Reduction in pipeline-specific code
-- Improvement in test coverage
-- Decrease in bug reports for common operations
-- Developer satisfaction with shared services
-
-## Next Steps
-
-1. Review and prioritize this list with the team
-2. Create GitHub issues for each service
-3. Begin with FileSystemService implementation
-4. Set up service testing framework
-5. Create migration guide for pipeline authors
+1. **Code Reduction**: Eliminate ~1000+ lines of duplicated code
+2. **Consistency**: Standardize implementations across apps
+3. **Maintenance**: Single point of updates for shared functionality
+4. **Testing**: Test once, use everywhere
+5. **New App Development**: Faster bootstrapping with shared services

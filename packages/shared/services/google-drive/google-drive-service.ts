@@ -1,6 +1,7 @@
 /**
  * Shared service for Google Drive operations
  * Used by both UI components and CLI tools
+ * Includes audio utilities for dhg-audio compatibility
  */
 
 import GoogleAuthService, { GoogleAuthToken } from './google-auth-service';
@@ -29,6 +30,19 @@ export interface GoogleDriveFile {
   thumbnail_link: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+// Audio-specific interfaces for dhg-audio compatibility
+export interface AudioUrlOptions {
+  proxy: string | null;
+  download: string | null;
+  preview: string | null;
+  original: string;
+}
+
+export interface AudioProxyConfig {
+  baseUrl?: string;
+  isDevelopment?: boolean;
 }
 
 // Root folder definition
@@ -522,6 +536,119 @@ export class GoogleDriveService {
       console.error('Get sync stats error:', error);
       throw error;
     }
+  }
+
+  // ========================================
+  // AUDIO UTILITY METHODS (from dhg-audio)
+  // ========================================
+
+  /**
+   * Extract Drive ID from web_view_link URL
+   * Used by dhg-audio for audio file handling
+   */
+  public static extractDriveId(url: string | null): string | null {
+    if (!url) return null;
+    const match = url.match(/\/d\/([^/]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Get the audio proxy server URL based on environment
+   * Used by dhg-audio for audio file access
+   */
+  public static getAudioProxyBaseUrl(config?: AudioProxyConfig): string {
+    if (config?.baseUrl) {
+      return config.baseUrl;
+    }
+    
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      // Check if we're in development (has Vite dev server)
+      const isDev = config?.isDevelopment ?? false;
+      if (isDev) {
+        return 'http://localhost:3006'; // Audio proxy server port from CLAUDE.md
+      }
+      
+      // In production, use the same origin (server handles both static files and API)
+      return window.location.origin;
+    }
+    
+    // For CLI/server environments, default to localhost development server
+    return 'http://localhost:3006';
+  }
+
+  /**
+   * Convert web_view_link to proxy URL that bypasses browser restrictions
+   * This uses our dedicated audio proxy server with Google Drive service account
+   */
+  public static getAudioProxyUrl(webViewLink: string | null, config?: AudioProxyConfig): string | null {
+    const driveId = GoogleDriveService.extractDriveId(webViewLink);
+    if (!driveId) return null;
+    
+    const baseUrl = GoogleDriveService.getAudioProxyBaseUrl(config);
+    return `${baseUrl}/api/audio/${driveId}`;
+  }
+
+  /**
+   * Get preview URL for Google Drive files (for manual fallback)
+   */
+  public static getGoogleDrivePreviewUrl(webViewLink: string | null): string | null {
+    const driveId = GoogleDriveService.extractDriveId(webViewLink);
+    if (!driveId) return null;
+    
+    return `https://drive.google.com/file/d/${driveId}/preview`;
+  }
+
+  /**
+   * Get direct download URL for Google Drive files (for manual fallback)
+   */
+  public static getGoogleDriveDownloadUrl(webViewLink: string | null): string | null {
+    const driveId = GoogleDriveService.extractDriveId(webViewLink);
+    if (!driveId) return null;
+    
+    return `https://drive.google.com/uc?export=download&id=${driveId}`;
+  }
+
+  /**
+   * Get audio URL options prioritizing the proxy server
+   * Returns array of URLs to try in order of preference
+   * Used by dhg-audio for robust audio file access
+   */
+  public static getAudioUrlOptions(webViewLink: string | null, config?: AudioProxyConfig): string[] {
+    if (!webViewLink) return [];
+    
+    const driveId = GoogleDriveService.extractDriveId(webViewLink);
+    if (!driveId) return [webViewLink];
+    
+    const proxyUrl = GoogleDriveService.getAudioProxyUrl(webViewLink, config);
+    const downloadUrl = GoogleDriveService.getGoogleDriveDownloadUrl(webViewLink);
+    const previewUrl = GoogleDriveService.getGoogleDrivePreviewUrl(webViewLink);
+    
+    // Prioritize proxy server, then direct URLs, then original as fallback
+    const options = [];
+    if (proxyUrl) options.push(proxyUrl);
+    if (downloadUrl) options.push(downloadUrl);
+    if (previewUrl) options.push(previewUrl);
+    options.push(webViewLink); // Original as final fallback
+    
+    return options;
+  }
+
+  /**
+   * Get structured audio URL options object
+   * Returns all available URL options with labels
+   */
+  public static getAudioUrlOptionsObject(webViewLink: string | null, config?: AudioProxyConfig): AudioUrlOptions {
+    const proxy = GoogleDriveService.getAudioProxyUrl(webViewLink, config);
+    const download = GoogleDriveService.getGoogleDriveDownloadUrl(webViewLink);
+    const preview = GoogleDriveService.getGoogleDrivePreviewUrl(webViewLink);
+    
+    return {
+      proxy,
+      download,
+      preview,
+      original: webViewLink || ''
+    };
   }
 }
 
