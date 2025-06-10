@@ -19,3 +19,5 @@ export * from "./batch-database-service"; // Batch database service with retry l
 export * from "./element-catalog-service"; // Element catalog service for app features and CLI commands
 export * from "./element-criteria-service"; // Element criteria service for success criteria and quality gates
 export * from "./media-analytics-service"; // Media analytics service for media consumption statistics
+export * from "./dev-task-service"; // Dev task service for comprehensive task management
+export * from "./clipboard-service"; // Clipboard service for managing reusable code snippets

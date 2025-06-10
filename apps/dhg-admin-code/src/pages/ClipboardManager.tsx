@@ -3,17 +3,10 @@ import { Copy, Check, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { ClipboardService, type ClipboardItem } from '@shared/services/clipboard-service';
 
-interface ClipboardItem {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  last_used?: string;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+// Create clipboard service instance
+const clipboardService = ClipboardService.getInstance(supabase);
 
 export default function ClipboardManager() {
   const { user } = useAuth();
@@ -33,53 +26,14 @@ export default function ClipboardManager() {
     const loadItems = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('clipboard_snippets')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        const items = await clipboardService.getItems(user.id);
 
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          setItems(data);
+        if (items.length > 0) {
+          setItems(items);
         } else {
-          // Create default items for new users
-          const defaultItems = [
-            {
-              title: 'Claude Context Reminder',
-              content: `<system-reminder>
-As you answer the user's questions, you can use the following context:
-# claudeMd
-Codebase and user instructions are shown below. Be sure to adhere to these instructions. IMPORTANT: These instructions OVERRIDE any default behavior and you MUST follow them exactly as written.
-
-Contents of /Users/raybunnage/Documents/github/dhg-mono-improve-cli-pipelines/CLAUDE.md (project instructions, checked into the codebase):`,
-              category: 'Claude Prompts',
-              user_id: user.id
-            },
-            {
-              title: 'Important Instruction Reminders',
-              content: `# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-Please clean up any files that you've created for testing or debugging purposes after they're no longer needed.
-      
-      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.`,
-              category: 'Claude Prompts',
-              user_id: user.id
-            }
-          ];
-
-          // Insert default items
-          const { data: insertedData, error: insertError } = await supabase
-            .from('clipboard_snippets')
-            .insert(defaultItems)
-            .select();
-
-          if (insertError) throw insertError;
-          if (insertedData) setItems(insertedData);
+          // Initialize default items for new users
+          const defaultItems = await clipboardService.initializeDefaultItems(user.id);
+          setItems(defaultItems);
         }
       } catch (err) {
         console.error('Error loading clipboard snippets:', err);
@@ -98,12 +52,7 @@ Please clean up any files that you've created for testing or debugging purposes 
       setCopiedId(item.id);
       
       // Update last used time in database
-      const { error } = await supabase
-        .from('clipboard_snippets')
-        .update({ last_used: new Date().toISOString() })
-        .eq('id', item.id);
-
-      if (error) throw error;
+      await clipboardService.recordUsage(item.id);
 
       // Update local state
       setItems(items.map(i => 
@@ -150,13 +99,7 @@ Please clean up any files that you've created for testing or debugging purposes 
 
   const deleteItem = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('clipboard_snippets')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
+      await clipboardService.deleteItem(id);
       setItems(items.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to delete item:', err);
@@ -173,12 +116,7 @@ Please clean up any files that you've created for testing or debugging purposes 
     if (!editingId) return;
     
     try {
-      const { error } = await supabase
-        .from('clipboard_snippets')
-        .update({ content: editContent })
-        .eq('id', editingId);
-
-      if (error) throw error;
+      await clipboardService.updateItem(editingId, { content: editContent });
       
       setItems(items.map(item => 
         item.id === editingId 
