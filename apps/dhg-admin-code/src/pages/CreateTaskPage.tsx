@@ -5,6 +5,7 @@ import { ArrowLeft, Save, ChevronRight } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { supabase } from '../lib/supabase';
 import { ElementCatalogService, TaskElement } from '@shared/services/element-catalog-service';
+import { ElementCriteriaService } from '@shared/services/element-criteria-service';
 
 interface WorktreeDefinition {
   id: string;
@@ -37,7 +38,9 @@ export default function CreateTaskPage() {
   const [availableElements, setAvailableElements] = useState<TaskElement[]>([]);
   const [selectedElement, setSelectedElement] = useState<TaskElement | null>(null);
   const [elementsLoading, setElementsLoading] = useState(false);
+  const [elementCriteria, setElementCriteria] = useState<{ criteriaCount: number; gatesCount: number }>({ criteriaCount: 0, gatesCount: 0 });
   const elementCatalog = ElementCatalogService.getInstance();
+  const criteriaService = ElementCriteriaService.getInstance();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -150,8 +153,18 @@ export default function CreateTaskPage() {
       setAvailableElements([]);
       setSelectedElement(null);
       setShowElementSelector(false);
+      setElementCriteria({ criteriaCount: 0, gatesCount: 0 });
     }
   }, [formData.app]);
+
+  // Load criteria counts when element is selected
+  useEffect(() => {
+    if (selectedElement) {
+      loadElementCriteria();
+    } else {
+      setElementCriteria({ criteriaCount: 0, gatesCount: 0 });
+    }
+  }, [selectedElement]);
 
   const loadAvailableElements = async () => {
     if (!formData.app) return;
@@ -179,6 +192,24 @@ export default function CreateTaskPage() {
       console.error('Error loading elements:', error);
     } finally {
       setElementsLoading(false);
+    }
+  };
+
+  const loadElementCriteria = async () => {
+    if (!selectedElement) return;
+    
+    try {
+      const [criteria, gates] = await Promise.all([
+        criteriaService.getElementCriteria(selectedElement.element_type, selectedElement.element_id),
+        criteriaService.getElementGates(selectedElement.element_type, selectedElement.element_id)
+      ]);
+      
+      setElementCriteria({
+        criteriaCount: criteria.length,
+        gatesCount: gates.length
+      });
+    } catch (error) {
+      console.error('Error loading element criteria:', error);
     }
   };
 
@@ -238,6 +269,15 @@ export default function CreateTaskPage() {
           selectedElement.element_id,
           selectedElement.name
         );
+        
+        // Inherit criteria and gates from the element
+        const inheritedCount = await criteriaService.inheritToTask(
+          task.id,
+          selectedElement.element_type,
+          selectedElement.element_id
+        );
+        
+        console.log(`Inherited ${inheritedCount} criteria/gates from element`);
       }
 
       // Add tags if provided
@@ -519,13 +559,42 @@ export default function CreateTaskPage() {
                     <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
                       <div className="flex items-start">
                         <ChevronRight className="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
-                        <div className="text-sm">
+                        <div className="text-sm flex-1">
                           <p className="font-medium text-blue-900">{selectedElement.name}</p>
                           {selectedElement.path && (
                             <p className="text-xs text-blue-700 font-mono mt-1">{selectedElement.path}</p>
                           )}
                           {selectedElement.description && (
                             <p className="text-xs text-blue-600 mt-1">{selectedElement.description}</p>
+                          )}
+                          
+                          {/* Show criteria and gates counts */}
+                          <div className="mt-2 flex items-center gap-3 text-xs">
+                            {elementCriteria.criteriaCount > 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                                ✓ {elementCriteria.criteriaCount} success criteria defined
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                No criteria defined
+                              </span>
+                            )}
+                            
+                            {elementCriteria.gatesCount > 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                                🚪 {elementCriteria.gatesCount} quality gates defined
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                No gates defined
+                              </span>
+                            )}
+                          </div>
+                          
+                          {(elementCriteria.criteriaCount > 0 || elementCriteria.gatesCount > 0) && (
+                            <p className="text-xs text-blue-600 mt-2 italic">
+                              These criteria and gates will be inherited by your task
+                            </p>
                           )}
                         </div>
                       </div>

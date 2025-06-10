@@ -103,7 +103,7 @@ export class ElementCatalogService {
     return (data || []).map(cmd => ({
       id: cmd.id,
       pipeline_id: cmd.pipeline_id,
-      pipeline_name: cmd.command_pipelines.name,
+      pipeline_name: (cmd.command_pipelines as any).name,
       command_name: cmd.command_name,
       description: cmd.description,
       example_usage: cmd.example_usage
