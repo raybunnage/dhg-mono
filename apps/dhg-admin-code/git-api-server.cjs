@@ -62,7 +62,8 @@ app.post('/api/execute-command', async (req, res) => {
     
     // Security: Only allow specific whitelisted commands
     const allowedCommands = [
-      './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh'
+      './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh',
+      './scripts/cli-pipeline/scripts/scripts-cli.sh'
     ];
     
     if (!allowedCommands.includes(command)) {
