@@ -856,7 +856,7 @@ export type Database = {
             foreignKeyName: "command_dependencies_command_id_fkey"
             columns: ["command_id"]
             isOneToOne: false
-            referencedRelation: "cli_commands_ordered_view"
+            referencedRelation: "command_commands_ordered_view"
             referencedColumns: ["id"]
           },
           {
@@ -1958,6 +1958,7 @@ export type Database = {
           updated_at: string | null
           validation_status: string | null
           work_mode: string | null
+          worktree: string | null
           worktree_active: boolean | null
           worktree_path: string | null
         }
@@ -2003,6 +2004,7 @@ export type Database = {
           updated_at?: string | null
           validation_status?: string | null
           work_mode?: string | null
+          worktree?: string | null
           worktree_active?: boolean | null
           worktree_path?: string | null
         }
@@ -2048,6 +2050,7 @@ export type Database = {
           updated_at?: string | null
           validation_status?: string | null
           work_mode?: string | null
+          worktree?: string | null
           worktree_active?: boolean | null
           worktree_path?: string | null
         }
@@ -5028,6 +5031,99 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_scripts: {
+        Row: {
+          ai_assessment: Json | null
+          ai_generated_tags: string[] | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          document_type_id: string | null
+          environment: string | null
+          file_hash: string | null
+          file_name: string
+          file_path: string
+          id: string
+          is_deprecated: boolean | null
+          language: string | null
+          last_indexed_at: string | null
+          last_modified_at: string | null
+          last_used_at: string | null
+          manual_tags: string[] | null
+          metadata: Json | null
+          package_location: string
+          script_command: string
+          script_name: string
+          script_type: string | null
+          shortcut_name: string | null
+          status: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          document_type_id?: string | null
+          environment?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path: string
+          id?: string
+          is_deprecated?: boolean | null
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          last_used_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          package_location: string
+          script_command: string
+          script_name: string
+          script_type?: string | null
+          shortcut_name?: string | null
+          status?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          document_type_id?: string | null
+          environment?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          is_deprecated?: boolean | null
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          last_used_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          package_location?: string
+          script_command?: string
+          script_name?: string
+          script_type?: string | null
+          shortcut_name?: string | null
+          status?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
+      }
       registry_services: {
         Row: {
           created_at: string | null
@@ -5073,84 +5169,6 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           version?: string | null
-        }
-        Relationships: []
-      }
-      scripts_registry: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string
-          id: string
-          language: string
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json
-          package_json_references: Json | null
-          script_type_id: string | null
-          summary: Json | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path: string
-          id?: string
-          language: string
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string
-          id?: string
-          language?: string
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -5717,6 +5735,48 @@ export type Database = {
           },
         ]
       }
+      sys_service_test_runs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          executed_at: string | null
+          executed_by: string | null
+          execution_time_ms: number | null
+          id: string
+          service_name: string
+          status: string
+          test_details: Json | null
+          test_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          service_name: string
+          status: string
+          test_details?: Json | null
+          test_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          service_name?: string
+          status?: string
+          test_details?: Json | null
+          test_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_shared_services: {
         Row: {
           category: string | null
@@ -5727,6 +5787,7 @@ export type Database = {
           has_browser_variant: boolean | null
           id: string
           is_singleton: boolean | null
+          last_validated: string | null
           service_name: string
           service_name_normalized: string | null
           service_path: string
@@ -5744,6 +5805,7 @@ export type Database = {
           has_browser_variant?: boolean | null
           id?: string
           is_singleton?: boolean | null
+          last_validated?: string | null
           service_name: string
           service_name_normalized?: string | null
           service_path: string
@@ -5761,6 +5823,7 @@ export type Database = {
           has_browser_variant?: boolean | null
           id?: string
           is_singleton?: boolean | null
+          last_validated?: string | null
           service_name?: string
           service_name_normalized?: string | null
           service_path?: string
@@ -6036,7 +6099,7 @@ export type Database = {
         }
         Relationships: []
       }
-      cli_commands_ordered_view: {
+      command_commands_ordered_view: {
         Row: {
           command_name: string | null
           criteria_count: number | null
@@ -6482,6 +6545,54 @@ export type Database = {
           },
         ]
       }
+      registry_scripts_pnpm_view: {
+        Row: {
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          environment: string | null
+          id: string | null
+          is_deprecated: boolean | null
+          last_used_at: string | null
+          package_location: string | null
+          script_command: string | null
+          script_name: string | null
+          shortcut_name: string | null
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          environment?: string | null
+          id?: string | null
+          is_deprecated?: boolean | null
+          last_used_at?: string | null
+          package_location?: string | null
+          script_command?: string | null
+          script_name?: string | null
+          shortcut_name?: string | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          environment?: string | null
+          id?: string | null
+          is_deprecated?: boolean | null
+          last_used_at?: string | null
+          package_location?: string | null
+          script_command?: string | null
+          script_name?: string | null
+          shortcut_name?: string | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
+      }
       registry_service_usage_summary_view: {
         Row: {
           app_count: number | null
@@ -6701,6 +6812,22 @@ export type Database = {
           status: string | null
           used_by_apps_count: number | null
           used_by_pipelines_count: number | null
+        }
+        Relationships: []
+      }
+      sys_service_test_health_view: {
+        Row: {
+          avg_execution_time: number | null
+          category: string | null
+          failed_runs: number | null
+          health_status: string | null
+          last_test_run: string | null
+          passed_runs: number | null
+          service_name: string | null
+          test_priority: string | null
+          total_runs: number | null
+          used_by_apps: string[] | null
+          used_by_pipelines: string[] | null
         }
         Relationships: []
       }
