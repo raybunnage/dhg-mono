@@ -484,6 +484,5 @@ export class BatchDatabaseService {
   }
 }
 
-// Export the class, not an instance
-// This prevents instantiation before environment variables are loaded
-export { BatchDatabaseService };
+// The class is already exported above
+// No need for additional export statement

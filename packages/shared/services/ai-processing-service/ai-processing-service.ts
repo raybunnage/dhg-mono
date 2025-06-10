@@ -321,7 +321,5 @@ export class AIProcessingService {
   }
 }
 
-// Export singleton instance
-// Export the class, not an instance
-// This prevents instantiation before environment variables are loaded
-export { AIProcessingService };
+// The class is already exported above
+// No need for additional export statement

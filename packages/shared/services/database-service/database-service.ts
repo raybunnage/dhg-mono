@@ -383,6 +383,5 @@ export class DatabaseService {
   }
 }
 
-// Export the class, not an instance
-// This prevents instantiation before environment variables are loaded
-export { DatabaseService };
+// The class is already exported above
+// No need for additional export statement
