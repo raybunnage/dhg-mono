@@ -10,10 +10,10 @@ export function AudioServerDebug() {
     setError(null);
     
     try {
-      // Test server connectivity by making a basic API request
-      // Use a test audio file ID that we expect to either work or fail gracefully
+      // Test server connectivity by making a direct request to enhanced server
+      // This bypasses Vite proxy dependency issues
       const testId = 'connectivity-test';
-      const response = await fetch(`/api/audio/${testId}`, {
+      const response = await fetch(`http://localhost:3006/api/audio/${testId}`, {
         method: 'HEAD'
       });
       
@@ -25,15 +25,15 @@ export function AudioServerDebug() {
           status: 'reachable',
           port: 3006,
           timestamp: new Date().toISOString(),
-          note: `Server responded with status ${response.status}. Enhanced audio server is running and accessible via Vite proxy.`,
+          note: `Enhanced audio server responded with status ${response.status}. Server is running and accessible directly on port 3006.`,
           responseStatus: response.status
         });
       } else {
         throw new Error('Server not reachable');
       }
     } catch (error: any) {
-      if (error.message.includes('fetch')) {
-        setError('Audio server not reachable - make sure to run pnpm servers from the main dhg-mono directory');
+      if (error.message.includes('fetch') || error.name === 'TypeError') {
+        setError('Enhanced audio server not running - start it with: pnpm servers');
       } else {
         setError(error.message || 'Unable to connect to audio server');
       }
@@ -80,7 +80,7 @@ export function AudioServerDebug() {
           <p className="text-red-700 font-semibold">Connection Error:</p>
           <p className="text-red-600 text-sm">{error}</p>
           <p className="text-red-600 text-xs mt-2">
-            Make sure the audio server is running: <code className="bg-red-100 px-1">pnpm server</code>
+            Start all servers: <code className="bg-red-100 px-1">pnpm servers</code> (from main directory)
           </p>
         </div>
       )}
