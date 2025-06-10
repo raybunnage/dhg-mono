@@ -172,7 +172,7 @@ export function useAuth(): UseAuthReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const result = await lightAuthBrowserService.registerWithProfile(email, name, profile);
+      const result = await lightAuthBrowserService.registerWithProfile({ email, name, profile });
       
       if (result.success && result.user) {
         setState({
