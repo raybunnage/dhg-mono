@@ -250,6 +250,56 @@ export type Database = {
         }
         Relationships: []
       }
+      app_features: {
+        Row: {
+          app_name: string
+          created_at: string | null
+          description: string | null
+          feature_name: string
+          feature_type: string
+          file_path: string
+          id: string
+          last_scanned_at: string | null
+          metadata: Json | null
+          parent_feature_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_name: string
+          created_at?: string | null
+          description?: string | null
+          feature_name: string
+          feature_type: string
+          file_path: string
+          id?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          parent_feature_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_name?: string
+          created_at?: string | null
+          description?: string | null
+          feature_name?: string
+          feature_type?: string
+          file_path?: string
+          id?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          parent_feature_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_features_parent_feature_id_fkey"
+            columns: ["parent_feature_id"]
+            isOneToOne: false
+            referencedRelation: "app_features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_page_features: {
         Row: {
           created_at: string | null
@@ -1293,6 +1343,69 @@ export type Database = {
           },
         ]
       }
+      dev_task_elements: {
+        Row: {
+          created_at: string | null
+          element_id: string
+          element_name: string
+          element_type: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          element_id: string
+          element_name: string
+          element_type: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string | null
+          element_id?: string
+          element_name?: string
+          element_type?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_task_elements_view"
+            referencedColumns: ["task_id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dev_task_files: {
         Row: {
           action: string | null
@@ -1800,6 +1913,7 @@ export type Database = {
           created_by: string | null
           current_lifecycle_stage: string | null
           description: string
+          element_target: Json | null
           git_branch: string | null
           git_commit_current: string | null
           git_commit_start: string | null
@@ -1844,6 +1958,7 @@ export type Database = {
           created_by?: string | null
           current_lifecycle_stage?: string | null
           description: string
+          element_target?: Json | null
           git_branch?: string | null
           git_commit_current?: string | null
           git_commit_start?: string | null
@@ -1888,6 +2003,7 @@ export type Database = {
           created_by?: string | null
           current_lifecycle_stage?: string | null
           description?: string
+          element_target?: Json | null
           git_branch?: string | null
           git_commit_current?: string | null
           git_commit_start?: string | null
@@ -5743,6 +5859,19 @@ export type Database = {
         }
         Relationships: []
       }
+      available_task_elements_view: {
+        Row: {
+          category: string | null
+          description: string | null
+          element_id: string | null
+          element_type: string | null
+          last_scanned_at: string | null
+          name: string | null
+          path: string | null
+          subcategory: string | null
+        }
+        Relationships: []
+      }
       cli_commands_ordered_view: {
         Row: {
           command_name: string | null
@@ -6510,6 +6639,18 @@ export type Database = {
         Args: { last_update: string; frequency: string }
         Returns: string
       }
+      catalog_app_feature: {
+        Args: {
+          p_app_name: string
+          p_feature_type: string
+          p_feature_name: string
+          p_file_path: string
+          p_description?: string
+          p_parent_path?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
       check_auth_user_exists: {
         Args: { target_email: string }
         Returns: {
@@ -6662,6 +6803,18 @@ export type Database = {
           suggested_prefix: string
           description: string
           purpose: string
+        }[]
+      }
+      get_app_features: {
+        Args: { p_app_name: string }
+        Returns: {
+          id: string
+          feature_type: string
+          feature_name: string
+          file_path: string
+          description: string
+          parent_path: string
+          metadata: Json
         }[]
       }
       get_app_service_dependencies: {

@@ -32,6 +32,7 @@ COMMANDS:
     Core Registry Commands:
     scan-services       Scan packages/shared/services directory
     scan-apps          Scan apps directory for applications
+    scan-app-features  Scan app features (pages, components, hooks)
     scan-pipelines     Scan CLI pipelines in scripts/cli-pipeline
     populate-registry  Run all scanners and populate registry
     
@@ -78,6 +79,13 @@ case "${1:-help}" in
         track_command "scan-apps"
         shift
         cd "$SCRIPT_DIR" && npx ts-node scan-apps.ts "$@"
+        ;;
+        
+    scan-app-features)
+        echo "🔍 Scanning app features..."
+        track_command "scan-app-features"
+        shift
+        cd "$SCRIPT_DIR" && npx ts-node scan-app-features.ts "$@"
         ;;
         
     scan-pipelines)
