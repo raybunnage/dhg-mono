@@ -13,10 +13,14 @@ export default defineConfig({
   },
   server: {
     port: 5177, // Dedicated port for dhg-admin-code
-    host: true, // Listen on all addresses
+    host: 'localhost', // Use localhost instead of 0.0.0.0
+    strictPort: true, // Fail if port is already in use
     hmr: {
-      overlay: false, // Disable error overlay if it's causing issues
-      port: 5177 // Use same port as server to avoid conflicts
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5177,
+      clientPort: 5177, // Explicitly set client port
+      overlay: false // Disable error overlay if it's causing issues
     },
     proxy: {
       // Proxy markdown file requests to the markdown server
