@@ -21,6 +21,7 @@ import ServiceDependencies from './pages/ServiceDependencies';
 import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
 import { AIPage } from './pages/AIPage';
 import { SQLiteImportManager } from './pages/SQLiteImportManager';
+import { FeaturesPage } from './pages/FeaturesPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -187,6 +188,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <SQLiteImportManager />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/features" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <FeaturesPage />
             </ProtectedRoute>
           } 
         />
