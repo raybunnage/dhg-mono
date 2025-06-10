@@ -1,18 +1,16 @@
 import type { GitBranch } from '../types/git';
+import { CommandExecutionClient } from '@shared/services/command-execution-service';
+import { supabase } from '../lib/supabase';
 
-const API_BASE_URL = 'http://localhost:3009/api/git';
+// Create command execution client instance
+const commandClient = CommandExecutionClient.getInstance('http://localhost:3009', supabase);
 
 export class GitApiClient {
   async getAllBranches(): Promise<GitBranch[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/branches`);
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch branches');
-      }
-      
-      return result.data;
+      const branches = await commandClient.getGitBranches();
+      // Transform to match GitBranch interface if needed
+      return branches as any;
     } catch (error) {
       console.error('Error fetching branches:', error);
       throw error;
@@ -21,15 +19,7 @@ export class GitApiClient {
 
   async deleteBranch(branchName: string, force: boolean = false): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/branches/${encodeURIComponent(branchName)}?force=${force}`, {
-        method: 'DELETE'
-      });
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete branch');
-      }
+      await commandClient.deleteBranch(branchName, force);
     } catch (error) {
       console.error('Error deleting branch:', error);
       throw error;
@@ -38,15 +28,7 @@ export class GitApiClient {
 
   async pruneWorktrees(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/worktrees/prune`, {
-        method: 'POST'
-      });
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to prune worktrees');
-      }
+      await commandClient.pruneWorktrees();
     } catch (error) {
       console.error('Error pruning worktrees:', error);
       throw error;
