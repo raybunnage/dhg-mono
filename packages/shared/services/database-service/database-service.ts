@@ -383,4 +383,6 @@ export class DatabaseService {
   }
 }
 
-export const databaseService = DatabaseService.getInstance();
+// Export the class, not an instance
+// This prevents instantiation before environment variables are loaded
+export { DatabaseService };

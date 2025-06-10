@@ -1,6 +1,5 @@
 export { 
-  AIProcessingService, 
-  aiProcessing 
+  AIProcessingService
 } from './ai-processing-service';
 
 export type {

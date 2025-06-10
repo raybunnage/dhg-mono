@@ -329,5 +329,6 @@ class UserProfileService {
   }
 }
 
-// Export singleton instance
-export const userProfileService = UserProfileService.getInstance();
+// Export the class, not an instance
+// This prevents instantiation before environment variables are loaded
+export { UserProfileService };

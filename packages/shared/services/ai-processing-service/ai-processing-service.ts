@@ -322,4 +322,6 @@ export class AIProcessingService {
 }
 
 // Export singleton instance
-export const aiProcessing = AIProcessingService.getInstance();
+// Export the class, not an instance
+// This prevents instantiation before environment variables are loaded
+export { AIProcessingService };
