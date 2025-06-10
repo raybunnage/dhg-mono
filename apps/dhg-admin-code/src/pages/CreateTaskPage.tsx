@@ -4,8 +4,9 @@ import { TaskService } from '../services/task-service';
 import { ArrowLeft, Save, ChevronRight } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { supabase } from '../lib/supabase';
-import { ElementCatalogService, TaskElement } from '@shared/services/element-catalog-service';
+import { ElementCatalogService } from '@shared/services/element-catalog-service';
 import { ElementCriteriaService } from '@shared/services/element-criteria-service';
+import type { TaskElement } from '@shared/services/element-catalog-service';
 
 interface WorktreeDefinition {
   id: string;

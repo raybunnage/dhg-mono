@@ -484,6 +484,12 @@ This ensures migrations are properly tested before applying to the database.
      ```
    - ⚠️ **Important**: The environment shows today's date in `<env>` tags but should be verified with actual system date
 
+9. **Conflicting JavaScript/TypeScript Files**:
+   - ❌ **Problem**: Browser imports fail with "does not provide an export named" when both `.js` and `.ts` files exist
+   - ✅ **Solution**: Remove compiled `.js` files that conflict with `.ts` source files
+   - Example: Remove `packages/shared/services/supabase-client.js` if `supabase-client.ts` exists
+   - Browser may resolve to outdated `.js` file instead of current `.ts` file
+
 ## Debugging in a Monorepo Context
 
 1. **When an app has configuration issues**:

@@ -16,3 +16,5 @@ export * from "./env-config-service"; // Environment configuration service for c
 export * from "./ai-processing-service"; // AI processing service for document analysis and classification
 export * from "./file-system-service"; // File system service with progress tracking and parallel processing
 export * from "./batch-database-service"; // Batch database service with retry logic and progress tracking
+export * from "./element-catalog-service"; // Element catalog service for app features and CLI commands
+export * from "./element-criteria-service"; // Element criteria service for success criteria and quality gates
