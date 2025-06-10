@@ -67,17 +67,46 @@ const TEST_SUITES: TestSuite[] = [
   }
 ];
 
+interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'error';
+  message: string;
+  timestamp: Date;
+}
+
 export const TestingPage: React.FC = () => {
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
   const [healthChecks, setHealthChecks] = useState<HealthCheckResult[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [runningTests, setRunningTests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Load previous test results from database
     loadTestHistory();
   }, []);
+
+  // Auto-remove notifications after 5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNotifications(prev => 
+        prev.filter(n => Date.now() - n.timestamp.getTime() < 5000)
+      );
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const addNotification = (type: 'info' | 'success' | 'error', message: string) => {
+    const notification: Notification = {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      message,
+      timestamp: new Date()
+    };
+    setNotifications(prev => [...prev, notification]);
+  };
 
   const loadTestHistory = async () => {
     try {
@@ -111,6 +140,12 @@ export const TestingPage: React.FC = () => {
   };
 
   const runTest = async (suite: TestSuite) => {
+    // Add to running tests
+    setRunningTests(prev => new Set(prev).add(suite.id));
+    
+    // Show notification
+    addNotification('info', `Starting ${suite.name}...`);
+    
     // Update UI to show test is running
     setTestResults(prev => ({
       ...prev,
@@ -134,19 +169,33 @@ export const TestingPage: React.FC = () => {
 
       const result = await response.json();
       const duration = Date.now() - startTime;
+      const status = result.success ? 'passed' : 'failed';
 
       setTestResults(prev => ({
         ...prev,
         [suite.id]: {
           id: suite.id,
           name: suite.name,
-          status: result.success ? 'passed' : 'failed',
+          status,
           duration,
           output: result.output,
           error: result.error,
           timestamp: new Date()
         }
       }));
+
+      // Remove from running tests
+      setRunningTests(prev => {
+        const next = new Set(prev);
+        next.delete(suite.id);
+        return next;
+      });
+
+      // Show completion notification
+      addNotification(
+        status === 'passed' ? 'success' : 'error',
+        `${suite.name} ${status === 'passed' ? 'completed successfully' : 'failed'} in ${formatDuration(duration)}`
+      );
 
       // Save to database
       await supabase.from('sys_test_results').insert({
@@ -171,6 +220,16 @@ export const TestingPage: React.FC = () => {
           timestamp: new Date()
         }
       }));
+
+      // Remove from running tests
+      setRunningTests(prev => {
+        const next = new Set(prev);
+        next.delete(suite.id);
+        return next;
+      });
+
+      // Show error notification
+      addNotification('error', `${suite.name} encountered an error: ${error}`);
     }
   };
 
@@ -190,6 +249,8 @@ export const TestingPage: React.FC = () => {
   };
 
   const runHealthChecks = async () => {
+    addNotification('info', 'Starting health checks...');
+    
     try {
       // Run maintenance health check
       const healthSuite = TEST_SUITES.find(s => s.id === 'health-check-all');
@@ -214,8 +275,21 @@ export const TestingPage: React.FC = () => {
       }));
 
       setHealthChecks(checks);
+      
+      // Show health check completion
+      const unhealthyCount = checks.filter(c => c.status === 'unhealthy').length;
+      const warningCount = checks.filter(c => c.status === 'warning').length;
+      
+      if (unhealthyCount > 0) {
+        addNotification('error', `Health checks completed: ${unhealthyCount} services unhealthy`);
+      } else if (warningCount > 0) {
+        addNotification('success', `Health checks completed with ${warningCount} warnings`);
+      } else {
+        addNotification('success', 'All health checks passed!');
+      }
     } catch (error) {
       console.error('Error running health checks:', error);
+      addNotification('error', 'Health checks failed to complete');
     }
   };
 
@@ -269,6 +343,55 @@ export const TestingPage: React.FC = () => {
 
   return (
     <DashboardLayout>
+      <style>{`
+        @keyframes subtlePulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        .animate-subtle-pulse {
+          animation: subtlePulse 2s ease-in-out infinite;
+        }
+      `}</style>
+      {/* Notification Container */}
+      <div className="fixed top-20 right-4 z-50 space-y-2">
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={`
+              p-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px]
+              transform transition-all duration-300 ease-in-out
+              ${notification.type === 'info' ? 'bg-blue-50 border border-blue-200' : ''}
+              ${notification.type === 'success' ? 'bg-green-50 border border-green-200' : ''}
+              ${notification.type === 'error' ? 'bg-red-50 border border-red-200' : ''}
+            `}
+          >
+            {notification.type === 'info' && <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />}
+            {notification.type === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
+            {notification.type === 'error' && <XCircle className="w-5 h-5 text-red-600" />}
+            <span className={`
+              text-sm font-medium
+              ${notification.type === 'info' ? 'text-blue-800' : ''}
+              ${notification.type === 'success' ? 'text-green-800' : ''}
+              ${notification.type === 'error' ? 'text-red-800' : ''}
+            `}>
+              {notification.message}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Running Tests Indicator */}
+      {runningTests.size > 0 && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            <span className="text-sm font-medium">
+              {runningTests.size} test{runningTests.size !== 1 ? 's' : ''} running
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
@@ -355,7 +478,16 @@ export const TestingPage: React.FC = () => {
             const isExpanded = expandedResults.has(suite.id);
 
             return (
-              <div key={suite.id} className="border border-gray-200 rounded-lg">
+              <div 
+                key={suite.id} 
+                className={`
+                  border rounded-lg transition-all duration-300
+                  ${runningTests.has(suite.id) 
+                    ? 'border-blue-400 bg-blue-50 animate-pulse' 
+                    : 'border-gray-200'
+                  }
+                `}
+              >
                 <div className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
