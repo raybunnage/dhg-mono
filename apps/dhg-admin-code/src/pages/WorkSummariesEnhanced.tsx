@@ -563,7 +563,7 @@ export function WorkSummariesEnhanced() {
             
             if (item.type === 'summary') {
               const summary = item.data as WorkSummary;
-              const editData = isEditing ? editingItem.data : summary;
+              const editData = isEditing && editingItem ? editingItem.data : summary;
               
               return (
                 <div key={summary.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
@@ -745,7 +745,7 @@ export function WorkSummariesEnhanced() {
               );
             } else {
               const task = item.data as TaskWithTags;
-              const editData = isEditing ? editingItem.data : task;
+              const editData = isEditing && editingItem ? editingItem.data : task;
               
               return (
                 <div key={task.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
