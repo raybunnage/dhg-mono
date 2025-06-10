@@ -29,6 +29,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/service-dependencies')) return 'service-dependencies';
     if (location.pathname.startsWith('/deprecation-analysis')) return 'deprecation';
     if (location.pathname.startsWith('/ai')) return 'ai';
+    if (location.pathname.startsWith('/sqlite-import')) return 'sqlite-import';
     return 'tasks'; // default
   };
   
@@ -281,6 +282,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               AI 🤖
+            </button>
+            <button
+              onClick={() => navigate('/sqlite-import')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'sqlite-import'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              SQLite Import 💾
             </button>
           </nav>
         </div>
