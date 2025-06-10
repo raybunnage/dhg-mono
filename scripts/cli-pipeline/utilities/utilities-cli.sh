@@ -62,8 +62,9 @@ show_help() {
   echo "    test-migration         Test a single migration file"
   echo ""
   echo "WORK SUMMARIES:"
-  echo "    insert-work-summary    Insert a new work summary record"
-  echo "    track-commit           Track a commit for a specific task"
+  echo "    insert-work-summary           Insert a new work summary record"
+  echo "    track-commit                  Track a commit for a specific task"
+  echo "    standardize-categories        Clean up duplicate work summary categories"
   echo ""
   echo "PACKAGE MANAGEMENT:"
   echo "    archive-packages       Archive unused packages"
@@ -139,6 +140,10 @@ case "$1" in
       exit 1
     fi
     track_command "track-commit" "ts-node scripts/cli-pipeline/utilities/track-commit-for-task.ts \"$2\" \"$3\" \"$4\""
+    ;;
+    
+  "standardize-categories")
+    track_command "standardize-categories" "ts-node scripts/cli-pipeline/utilities/standardize-work-summary-categories.ts"
     ;;
     
   # Package Management
