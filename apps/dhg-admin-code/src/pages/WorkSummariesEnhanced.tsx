@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft, CheckCircle, Clock, AlertCircle, FileText, Hash, Edit2, Save, X, GitBranch } from 'lucide-react';
+import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft, CheckCircle, Clock, AlertCircle, FileText, Hash, Edit2, Save, X, GitBranch, CheckSquare } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskService } from '../services/task-service';
 import type { DevTask, DevTaskTag } from '../services/task-service';
 import { supabase } from '../lib/supabase';
 import { WorkSummaryService, type WorkSummary, type WorkItem } from '@shared/services/work-summary-service';
+import { WorkSummaryValidationModal } from '../components/WorkSummaryValidationModal';
 
 // Create work summary service instance
 const workSummaryService = WorkSummaryService.getInstance(supabase);
@@ -65,6 +66,8 @@ export function WorkSummariesEnhanced() {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<EditingState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
+  const [selectedSummaryForValidation, setSelectedSummaryForValidation] = useState<WorkSummary | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -752,13 +755,28 @@ export function WorkSummariesEnhanced() {
                             </button>
                           </>
                         ) : (
-                          <button
-                            onClick={() => startEditing(item)}
-                            className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors"
-                          >
-                            <Edit2 className="h-4 w-4 mr-1" />
-                            Edit
-                          </button>
+                          <>
+                            <button
+                              onClick={() => startEditing(item)}
+                              className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors"
+                            >
+                              <Edit2 className="h-4 w-4 mr-1" />
+                              Edit
+                            </button>
+                            {!summary.metadata?.validation_task_id && (
+                              <button
+                                onClick={() => {
+                                  setSelectedSummaryForValidation(summary);
+                                  setValidationModalOpen(true);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 text-sm font-medium transition-colors"
+                                title="Create validation task"
+                              >
+                                <CheckSquare className="h-4 w-4 mr-1" />
+                                Validate
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -986,6 +1004,18 @@ export function WorkSummariesEnhanced() {
           </div>
         )}
       </div>
+
+      {/* Validation Modal */}
+      {selectedSummaryForValidation && (
+        <WorkSummaryValidationModal
+          isOpen={validationModalOpen}
+          onClose={() => {
+            setValidationModalOpen(false);
+            setSelectedSummaryForValidation(null);
+          }}
+          workSummary={selectedSummaryForValidation}
+        />
+      )}
     </DashboardLayout>
   );
 }
