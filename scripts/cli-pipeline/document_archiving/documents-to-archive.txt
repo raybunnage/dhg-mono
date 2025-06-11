@@ -1,0 +1,9 @@
+docs/living-docs/dev-tasks-lifecycle-management-guide.md
+docs/living-docs/documentation-management-system.md
+docs/living-docs/continuous-documentation-monitoring-vision.md
+docs/living-docs/testing-vision-and-implementation-guide.md
+docs/living-docs/worktree-assignment-system.md
+docs/living-docs/cli-pipelines-documentation-updated-2025-06-08.md
+docs/living-docs/code-continuous-monitoring.md
+docs/living-docs/admin-dashboard-implementation-system.md
+docs/living-docs/batch-processing-system.md

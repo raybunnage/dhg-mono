@@ -1,0 +1,17 @@
+{
+  "name": "document-archiving-cli",
+  "version": "1.0.0",
+  "description": "Document archiving CLI pipeline",
+  "scripts": {
+    "archive": "ts-node document-archiving-cli.ts"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0",
+    "inquirer": "^9.2.12"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.8",
+    "@types/node": "^20.0.0"
+  }
+}
