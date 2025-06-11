@@ -1,0 +1,8 @@
+{
+  "taskId": "928a06cc-c9a4-4d17-8be1-58b7a28c949d",
+  "submissionId": "79165a2f-4026-41af-a448-ffd00443a15d",
+  "worktree": "dhg-mono-improve-cli-pipelines",
+  "timestamp": "2025-06-11T20:02:10.304694+00:00",
+  "rawTask": "# Task: add a search command and some pills for living docs\nID: 928a06cc-c9a4-4d17-8be1-58b7a28c949d\nType: feature\nPriority: medium\n\n## Description\n1) a command that does a refresh based on new files it finds in the folder - can call the living docs server if need be, but the service, cli pipeline and ui need to support this\n2) Have ui or a pill or pills for showing the most recent documents added - sorting the files in this order\n3) A search button that will filter cards to the topic I search in the titles or meaningful fields for relevant documents \n4) any other pills or filtering you think is useful to complement your catgegory dropdown \n5) make the pills on one line so as not to push the cards down too far\n\n## Context\n\nCreated: 6/11/2025",
+  "uncommittedFiles": []
+}

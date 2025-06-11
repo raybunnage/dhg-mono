@@ -35,6 +35,38 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// Refresh living docs - scan for new files and update database
+app.post('/api/living-docs/refresh', async (_req, res) => {
+  try {
+    console.log('Refreshing living docs...');
+    
+    // Execute the refresh command
+    const { stdout, stderr } = await execAsync(
+      `cd "${PROJECT_ROOT}" && ./scripts/cli-pipeline/living_docs/living-docs-cli.sh refresh`,
+      { maxBuffer: 1024 * 1024 * 10 } // 10MB buffer
+    );
+    
+    if (stderr && !stderr.includes('Tracking command:')) {
+      console.error('Refresh stderr:', stderr);
+    }
+    
+    console.log('Refresh stdout:', stdout);
+    
+    res.json({
+      success: true,
+      message: 'Living docs refreshed successfully',
+      output: stdout
+    });
+  } catch (error) {
+    console.error('Error refreshing living docs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.stderr || error.stdout
+    });
+  }
+});
+
 // Load tracking data
 async function loadTrackingData() {
   try {
