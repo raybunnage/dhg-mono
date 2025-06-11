@@ -112,13 +112,22 @@ export class PortsManagementService {
         process_name: 'git-api-server'
       },
       {
-        service_name: 'audio-proxy-server',
-        display_name: 'Audio Proxy Server',
-        description: 'Proxies audio streaming from Google Drive',
+        service_name: 'web-google-drive-audio',
+        display_name: 'Web Audio Server',
+        description: 'Web Google Drive audio API (works anywhere)',
         port: 3006,
-        start_command: 'cd apps/dhg-audio && node server.js',
+        start_command: 'cd apps/dhg-audio && PORT=3006 node server.js',
         health_check_endpoint: '/health',
-        process_name: 'audio-proxy'
+        process_name: 'web-audio-server'
+      },
+      {
+        service_name: 'local-google-drive-audio',
+        display_name: 'Local Audio Server',
+        description: 'Local Google Drive audio (10-100x faster)',
+        port: 3007,
+        start_command: 'cd apps/dhg-audio && PORT=3007 node server-enhanced.js',
+        health_check_endpoint: '/health',
+        process_name: 'local-audio-server'
       }
     ];
 

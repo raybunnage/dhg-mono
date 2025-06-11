@@ -91,15 +91,27 @@ const SERVERS = [
     description: 'Git branch management API'
   },
   {
-    service_name: 'audio-proxy-server',
-    name: 'Audio Proxy Server',
+    service_name: 'web-google-drive-audio',
+    name: 'Web Audio Server',
     defaultPort: 3006,
     command: 'node',
     args: ['server.js'],
     cwd: path.join(process.cwd(), 'apps/dhg-audio'),
     envVar: 'AUDIO_PROXY_PORT',
     healthEndpoint: '/health',
-    description: 'Local Google Drive audio streaming'
+    description: 'Web Google Drive audio API (works anywhere)'
+  },
+  {
+    service_name: 'local-google-drive-audio',
+    name: 'Local Audio Server',
+    defaultPort: 3007,
+    command: 'node',
+    args: ['server-enhanced.js'],
+    cwd: path.join(process.cwd(), 'apps/dhg-audio'),
+    envVar: 'LOCAL_AUDIO_PORT',
+    env: { PORT: '3007' },
+    healthEndpoint: '/health',
+    description: 'Local Google Drive audio (10-100x faster)'
   }
 ];
 

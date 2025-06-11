@@ -1,4 +1,5 @@
 import { audioBrowserService } from './audio-browser-service';
+import { audioServerSelector } from './audio-server-selector';
 
 export interface AudioFile {
   id: string;
@@ -93,7 +94,9 @@ export class AudioAdapter {
     
     // Use our proxy server URL which avoids tracking prevention issues
     // This will run through our server endpoint which fetches from Google Drive
-    const proxyUrl = driveId ? `/api/audio/${driveId}` : '';
+    // The URL will point to the currently selected audio server (local or web)
+    const serverUrl = audioServerSelector.getServerUrl();
+    const proxyUrl = driveId ? `${serverUrl}/api/audio/${driveId}` : '';
     
     // Extract title: prefer video title, then expert documents, then filename
     let displayName = file.name;

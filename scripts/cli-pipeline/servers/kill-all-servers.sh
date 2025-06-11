@@ -24,8 +24,8 @@ kill_port 3002 "Script Server"
 kill_port 3003 "Docs Archive Server"
 kill_port 3004 "File Browser Server"
 kill_port 3005 "Git Server"
-kill_port 3006 "Audio Proxy Server"
-kill_port 3007 "Experts Markdown Server"
+kill_port 3006 "Web Audio Server"
+kill_port 3007 "Local Audio Server"
 kill_port 3008 "Living Docs Server"
 kill_port 3009 "Git API Server"
 kill_port 3010 "Worktree Switcher"
@@ -45,6 +45,7 @@ pkill -f "living-docs-server.cjs" 2>/dev/null || true
 pkill -f "continuous-docs-server.cjs" 2>/dev/null || true  # Old name
 pkill -f "git-api-server.cjs" 2>/dev/null || true
 pkill -f "server-enhanced.js" 2>/dev/null || true
+pkill -f "server-selector.js" 2>/dev/null || true
 pkill -f "worktree-switcher-server.js" 2>/dev/null || true
 pkill -f "git-history-server.js" 2>/dev/null || true
 pkill -f "test-runner-server.cjs" 2>/dev/null || true

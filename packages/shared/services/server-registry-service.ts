@@ -131,6 +131,8 @@ export class ServerRegistryService {
       'script-server': 'http://localhost:3002',
       'docs-archive-server': 'http://localhost:3003',
       'git-server': 'http://localhost:3005',
+      'web-google-drive-audio': 'http://localhost:3006',
+      'local-google-drive-audio': 'http://localhost:3007',
       'living-docs-server': 'http://localhost:3008',
       'git-api-server': 'http://localhost:3009',
     };

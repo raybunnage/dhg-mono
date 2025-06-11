@@ -34,7 +34,7 @@ async function showServerStatus() {
       ]
     });
     
-    servers.forEach(server => {
+    servers.forEach((server: any) => {
       const statusColor = server.status === 'active' ? 'green' : 'red';
       const healthColor = server.last_health_status === 'healthy' ? 'green' : 
                          server.last_health_status === 'unhealthy' ? 'red' : 'yellow';
@@ -55,8 +55,8 @@ async function showServerStatus() {
     table.printTable();
     
     // Summary
-    const activeCount = servers.filter(s => s.status === 'active').length;
-    const healthyCount = servers.filter(s => s.last_health_status === 'healthy').length;
+    const activeCount = servers.filter((s: any) => s.status === 'active').length;
+    const healthyCount = servers.filter((s: any) => s.last_health_status === 'healthy').length;
     
     console.log(`\n📊 Summary: ${activeCount}/${servers.length} active, ${healthyCount}/${activeCount} healthy`);
     

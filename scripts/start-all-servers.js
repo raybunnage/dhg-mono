@@ -58,21 +58,22 @@ const SERVERS = [
     description: 'Git worktree management'
   },
   {
-    name: 'Enhanced Audio Server (dhg-audio)',
+    name: 'Web Audio Server (dhg-audio)',
     port: 3006,
+    command: 'node',
+    args: ['server.js'],
+    cwd: path.join(process.cwd(), 'apps/dhg-audio'),
+    env: { PORT: '3006' },
+    description: 'Web Google Drive audio API (works anywhere)'
+  },
+  {
+    name: 'Local Audio Server (dhg-audio)',
+    port: 3007,
     command: 'node',
     args: ['server-enhanced.js'],
     cwd: path.join(process.cwd(), 'apps/dhg-audio'),
-    env: { PORT: '3006' },
-    description: 'Local Google Drive + API audio server with 10-100x performance boost'
-  },
-  {
-    name: 'Experts Markdown Server',
-    port: 3007,
-    command: 'node',
-    args: ['md-server.mjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-improve-experts'),
-    description: 'Markdown server for dhg-improve-experts'
+    env: { PORT: '3007' },
+    description: 'Local Google Drive audio (10-100x faster when files are synced)'
   },
   {
     name: 'Living Docs Server',
