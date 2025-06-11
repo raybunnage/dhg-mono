@@ -379,7 +379,7 @@ program
       } else {
         // Show latest deployment status
         const { data: latest } = await supabase
-          .from('latest_deployments_view')
+          .from('deploy_latest_view')
           .select('*');
         
         if (!latest || latest.length === 0) {

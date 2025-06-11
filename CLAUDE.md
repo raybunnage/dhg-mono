@@ -31,6 +31,11 @@ All database views now follow a consistent naming convention:
 - Check `packages/shared/services/` for existing functionality before implementing new features
 - Health check tools: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
 
+⚠️ **CRITICAL: SYNC WITH DEVELOPMENT BEFORE STARTING NEW TASKS**
+- **ALWAYS fetch and merge latest development** before starting work on any new dev task
+- **Prevents merge conflicts** and ensures you build on the latest codebase
+- See "Claude Task Submission Tracking" section for the complete workflow
+
 ⚠️ **CRITICAL: CODE REVIEW CHECKLIST**
 
 ## BEFORE WRITING ANY CODE:
@@ -327,31 +332,57 @@ ORDER BY cpt.table_name;
    
 ## Claude Task Submission Tracking (Recovery System)
 
-⚠️ **ALWAYS submit tasks to the database before starting work**
+⚠️ **ALWAYS submit tasks to the database AND sync with development before starting work**
 
-To prevent work loss during Claude Code timeouts:
+To prevent work loss and ensure proper synchronization:
 
-1. **Submit task immediately when received**:
-   ```bash
-   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit <task-id> --text "task content"
-   ```
+### 1. **Submit task immediately when received** (Prevent Loss):
+```bash
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit <task-id> --text "task content"
+```
+This creates backups in case of timeouts or disconnections.
 
-2. **Check for interrupted tasks**:
-   ```bash
-   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit recover
-   ```
+### 2. **Sync with development BEFORE starting work** (Required):
+```bash
+# Check current state
+git status  # Ensure clean working tree
+git branch -vv  # Verify branch tracking
 
-3. **Recovery benefits**:
-   - Tracks when task was submitted to Claude
-   - Saves raw task text for re-submission
-   - Records uncommitted files at submission time
-   - Creates local `.claude-submission-*.json` backup files
-   - Enables easy task resumption after timeouts
+# Commit any existing work first (if needed)
+git add -A && git commit -m "chore: checkpoint before syncing"
 
-4. **If Claude times out**:
-   - Run recovery command to find interrupted tasks
-   - Re-submit the same task text to continue work
-   - All uncommitted changes remain for continuation
+# Fetch and merge latest development
+git fetch origin development
+git merge origin/development
+
+# Push updated branch back to origin
+git push origin $(git branch --show-current)
+```
+
+### 3. **Check for interrupted tasks** (Recovery):
+```bash
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit recover
+```
+
+### Benefits of this workflow:
+- **Submission first**: Prevents work loss during timeouts
+- **Sync before work**: Ensures you start from latest codebase
+- **Recovery system**: Easy task resumption after interruptions
+- **Clean merges**: Reduces conflicts by starting from current state
+
+### Recovery features:
+- Tracks when task was submitted to Claude
+- Saves raw task text for re-submission
+- Records uncommitted files at submission time
+- Creates local `.claude-submission-*.json` backup files
+- Enables easy task resumption after timeouts
+
+### If Claude times out:
+- Run recovery command to find interrupted tasks
+- Re-submit the same task text to continue work
+- All uncommitted changes remain for continuation
+
+⚠️ **NOTE**: There's a clipboard snippet "Dev Task Submission - Sync with Development First" that contains this complete workflow for easy reference.
 
 ## Task-Aware Git Commits
 
