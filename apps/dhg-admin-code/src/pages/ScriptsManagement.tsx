@@ -3,6 +3,8 @@ import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { MaintenancePanel } from '../components/MaintenancePanel';
 import type { MaintenanceStats, MaintenanceAction } from '../components/MaintenancePanel';
+import { serverRegistry } from '@shared/services/server-registry-service';
+import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -104,7 +106,8 @@ export function ScriptsManagement() {
     setCommandStatus(`Running ${command}...`);
 
     try {
-      const response = await fetch('http://localhost:3009/api/execute-command', {
+      const gitApiUrl = await serverRegistry.getServerUrl('git-api-server');
+      const response = await fetch(`${gitApiUrl}/api/execute-command`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -386,7 +389,10 @@ export function ScriptsManagement() {
     <DashboardLayout>
       <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Scripts Management</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900">Scripts Management</h1>
+          <ServerStatusIndicator serviceName="git-api-server" showLabel={false} />
+        </div>
         
         <div className="flex space-x-4">
           <button 

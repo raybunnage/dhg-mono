@@ -8,7 +8,7 @@
 #   dhg-research Create a research task for Claude Code
 #   start-session       Start work session on a task
 #   list         List tasks with filtering options
-
+#   submit       Submit task to Claude Code (tracks submission immediately)
 #   update       Update task status or details
 #   complete     Mark task as complete with Claude's response
 #   add-file     Add file references to a task
@@ -40,6 +40,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  dhg-research Create a research task for Claude Code"
   echo "  start-session       Start work session on a task"
   echo "  list         List tasks with filtering options"
+  echo "  submit       Submit task to Claude Code (tracks submission immediately)"
   echo "  update       Update task status or details"
   echo "  complete     Mark task as complete with Claude's response"
   echo "  add-file     Add file references to a task"
@@ -79,6 +80,15 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo ""
   echo "  # Commit with automatic task linking"
   echo "  ./dev-tasks-cli.sh commit \"Fix authentication bug in OAuth flow\""
+  echo ""
+  echo "  # Submit task to Claude Code (saves raw task for recovery)"
+  echo "  ./dev-tasks-cli.sh submit <task-id> --text \"# Task: Fix auth bug...\""
+  echo "  ./dev-tasks-cli.sh submit <task-id> --file task.md"
+  echo "  echo \"# Task: Fix auth...\" | ./dev-tasks-cli.sh submit <task-id> --stdin"
+  echo ""
+  echo "  # Find interrupted Claude tasks"
+  echo "  ./dev-tasks-cli.sh submit recover"
+  echo "  ./dev-tasks-cli.sh submit recover my-worktree --minutes 60"
   exit 0
 fi
 
@@ -171,6 +181,12 @@ case "$1" in
     track_command "dev-tasks" "success-criteria"
     shift
     ts-node "$SCRIPT_DIR/add-success-criteria.ts" "$@"
+    ;;
+    
+  "submit")
+    track_command "dev-tasks" "submit"
+    shift
+    ts-node "$SCRIPT_DIR/submit-task.ts" "$@"
     ;;
     
   *)

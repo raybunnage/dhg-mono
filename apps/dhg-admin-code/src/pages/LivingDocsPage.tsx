@@ -8,6 +8,8 @@ import type { PhaseInfo } from '@shared/utils/markdown-phase-extractor';
 import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
+import { serverRegistry } from '@shared/services/server-registry-service';
+import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
 interface LivingDocument {
   fileName: string;
@@ -30,6 +32,9 @@ export function LivingDocsPage() {
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
   const [creatingTaskFor, setCreatingTaskFor] = useState<{doc: LivingDocument, phase: PhaseInfo} | null>(null);
+  const [showPriorityDashboard, setShowPriorityDashboard] = useState(false);
+  const [priorityDashboard, setPriorityDashboard] = useState<string>('');
+  const [generatingDashboard, setGeneratingDashboard] = useState(false);
   const navigate = useNavigate();
 
   // Load documents from the living-docs folder
@@ -286,13 +291,38 @@ export function LivingDocsPage() {
     loadDocuments();
   }, []);
 
+  // Generate priority dashboard
+  const generatePriorityDashboard = async () => {
+    try {
+      setGeneratingDashboard(true);
+      
+      const livingDocsUrl = await serverRegistry.getServerUrl('living-docs-server');
+      const response = await fetch(`${livingDocsUrl}/api/living-docs/priority-dashboard`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate priority dashboard');
+      }
+      
+      const data = await response.json();
+      setPriorityDashboard(data.dashboard);
+      setShowPriorityDashboard(true);
+      setSelectedDocument(null);
+    } catch (error) {
+      console.error('Error generating priority dashboard:', error);
+      setError('Failed to generate priority dashboard');
+    } finally {
+      setGeneratingDashboard(false);
+    }
+  };
+
   // Load markdown content for preview
   const loadMarkdownContent = async (document: LivingDocument) => {
     try {
       setLoadingMarkdown(true);
       setSelectedDocument(document);
       
-      const response = await fetch(`http://localhost:3001/api/markdown-file?path=${encodeURIComponent(document.path)}`);
+      const mdServerUrl = await serverRegistry.getServerUrl('md-server');
+      const response = await fetch(`${mdServerUrl}/api/markdown-file?path=${encodeURIComponent(document.path)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch markdown content');
@@ -475,14 +505,19 @@ export function LivingDocsPage() {
         {/* Left Panel - Document Cards */}
         <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-200">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Living Docs</h1>
-            <p className="mt-2 text-gray-600">
-              Living documentation that evolves with your project and stays current.
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Living Docs</h1>
+                <p className="mt-2 text-gray-600">
+                  Living documentation that evolves with your project and stays current.
+                </p>
+              </div>
+              <ServerStatusIndicator serviceName="md-server" />
+            </div>
           </div>
 
-          {/* Category Filter */}
-          <div className="mb-4">
+          {/* Actions and Category Filter */}
+          <div className="mb-4 flex justify-between items-center">
             <select
               value={selectedCategory || ''}
               onChange={(e) => setSelectedCategory(e.target.value || null)}
@@ -493,6 +528,26 @@ export function LivingDocsPage() {
                 <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
               ))}
             </select>
+            
+            <button
+              onClick={generatePriorityDashboard}
+              disabled={generatingDashboard}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {generatingDashboard ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Priority Dashboard
+                </>
+              )}
+            </button>
           </div>
 
           {/* Document Cards */}
@@ -584,9 +639,45 @@ export function LivingDocsPage() {
           </div>
         </div>
 
-        {/* Right Panel - Document Preview */}
+        {/* Right Panel - Document Preview or Priority Dashboard */}
         <div className="w-1/2 p-6 bg-gray-50">
-          {selectedDocument ? (
+          {showPriorityDashboard ? (
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="mb-4 pb-4 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Living Documents Priority Dashboard
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Phase 1 priorities across all living documents
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPriorityDashboard(false);
+                    setPriorityDashboard('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Dashboard Content */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="bg-white rounded-lg p-6 h-full border border-gray-200 overflow-y-auto">
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {priorityDashboard}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : selectedDocument ? (
             <div className="h-full flex flex-col">
               {/* Header */}
               <div className="mb-4 pb-4 border-b border-gray-200">

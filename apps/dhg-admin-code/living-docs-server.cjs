@@ -14,6 +14,8 @@ const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
 const CONTINUOUSLY_UPDATED_DIR = path.join(DOCS_DIR, 'continuously-updated');
 const TRACKING_FILE = path.join(CONTINUOUSLY_UPDATED_DIR, '.tracking.json');
 const CLI_SCRIPT_PATH = path.join(PROJECT_ROOT, 'scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh');
+const LIVING_DOCS_DIR = path.join(DOCS_DIR, 'living-docs');
+const LIVING_DOCS_CLI_PATH = path.join(PROJECT_ROOT, 'scripts/cli-pipeline/living_docs/living-docs-cli.sh');
 
 // Enable CORS for the Vite dev server
 app.use(cors({
@@ -227,6 +229,96 @@ app.post('/api/cli-command', async (req, res) => {
   }
 });
 
+// Living docs prioritization endpoints
+app.get('/api/living-docs/priority-dashboard', async (_req, res) => {
+  try {
+    console.log('Generating priority dashboard...');
+    const { stdout, stderr } = await execAsync(`cd ${PROJECT_ROOT} && ${LIVING_DOCS_CLI_PATH} prioritize`);
+    
+    if (stderr && !stderr.includes('Tracking command:')) {
+      console.error('Command stderr:', stderr);
+    }
+    
+    // Read the generated dashboard
+    const dashboardPath = path.join(LIVING_DOCS_DIR, 'PRIORITY-DASHBOARD.md');
+    const dashboard = await fs.readFile(dashboardPath, 'utf-8');
+    
+    res.json({
+      success: true,
+      dashboard,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Failed to generate priority dashboard:', error);
+    res.status(500).json({
+      error: 'Failed to generate priority dashboard',
+      details: error.message
+    });
+  }
+});
+
+app.get('/api/living-docs/documents', async (_req, res) => {
+  try {
+    const files = await fs.readdir(LIVING_DOCS_DIR);
+    const mdFiles = files.filter(f => f.endsWith('.md') && !f.includes('TEMPLATE'));
+    
+    const documents = [];
+    for (const file of mdFiles) {
+      const content = await fs.readFile(path.join(LIVING_DOCS_DIR, file), 'utf-8');
+      const metadata = extractMetadata(content, file);
+      documents.push(metadata);
+    }
+    
+    res.json({ documents });
+  } catch (error) {
+    console.error('Failed to list living docs:', error);
+    res.status(500).json({
+      error: 'Failed to list living documents',
+      details: error.message
+    });
+  }
+});
+
+// Helper function to extract metadata from markdown
+function extractMetadata(content, filename) {
+  const metadata = {
+    filename,
+    title: filename.replace('.md', '').replace(/-/g, ' '),
+    lastUpdated: '',
+    nextReview: '',
+    status: 'Unknown',
+    priority: 'Medium',
+    category: 'Unknown'
+  };
+  
+  // Extract title
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  if (titleMatch) metadata.title = titleMatch[1];
+  
+  // Extract metadata section
+  const metadataMatch = content.match(/## Metadata([\s\S]*?)(?=##|$)/);
+  if (metadataMatch) {
+    const metadataText = metadataMatch[1];
+    
+    const lastUpdatedMatch = metadataText.match(/Last Updated\s*:\s*(.+)/i);
+    if (lastUpdatedMatch) metadata.lastUpdated = lastUpdatedMatch[1].trim();
+    
+    const nextReviewMatch = metadataText.match(/Next Review\s*:\s*(.+)/i);
+    if (nextReviewMatch) metadata.nextReview = nextReviewMatch[1].trim();
+    
+    const statusMatch = metadataText.match(/Status\s*:\s*(.+)/i);
+    if (statusMatch) metadata.status = statusMatch[1].trim();
+    
+    const priorityMatch = metadataText.match(/Priority\s*:\s*(.+)/i);
+    if (priorityMatch) metadata.priority = priorityMatch[1].trim();
+    
+    const categoryMatch = metadataText.match(/Category\s*:\s*(.+)/i);
+    if (categoryMatch) metadata.category = categoryMatch[1].trim();
+  }
+  
+  return metadata;
+}
+
 app.listen(PORT, () => {
   console.log(`Living docs server running on http://localhost:${PORT}`);
   console.log('Available endpoints:');
@@ -235,4 +327,6 @@ app.listen(PORT, () => {
   console.log('  POST /api/continuous-docs/:path/update - Manually trigger update');
   console.log('  POST /api/continuous-docs - Add new document to tracking');
   console.log('  POST /api/cli-command - Execute CLI commands');
+  console.log('  GET  /api/living-docs/priority-dashboard - Generate priority dashboard');
+  console.log('  GET  /api/living-docs/documents - List all living documents');
 });
