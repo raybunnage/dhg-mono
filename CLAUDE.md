@@ -427,6 +427,14 @@ For commits related to dev tasks that need detailed tracking:
 
 **Integration Points**: This can be automated in git hooks or integrated into the worktree merging workflow for better commit tracking.
 
+## Completion Messages
+
+⚠️ **ALWAYS end responses with clear status messages:**
+1. After completing requested work: **"✅ I have finished the work you asked me to do. Your next step is to use a check-in prompt if you have more work to do."**
+2. After git synchronization: **"✅ Your worktree branch is aligned with the current development and ready for the next dev task."**
+
+These messages prevent confusion when switching between multiple worktrees.
+
 ## Final Checklist
 
 ⚠️ **BEFORE SUBMITTING CODE:**
