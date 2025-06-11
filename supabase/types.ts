@@ -1127,6 +1127,13 @@ export type Database = {
             foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
             columns: ["deployment_run_id"]
             isOneToOne: false
+            referencedRelation: "deploy_latest_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
             referencedRelation: "deployment_runs"
             referencedColumns: ["id"]
           },
@@ -1135,13 +1142,6 @@ export type Database = {
             columns: ["deployment_run_id"]
             isOneToOne: false
             referencedRelation: "deployment_status_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
-            columns: ["deployment_run_id"]
-            isOneToOne: false
-            referencedRelation: "latest_deployments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1188,6 +1188,13 @@ export type Database = {
             foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
             columns: ["deployment_run_id"]
             isOneToOne: false
+            referencedRelation: "deploy_latest_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
             referencedRelation: "deployment_runs"
             referencedColumns: ["id"]
           },
@@ -1196,13 +1203,6 @@ export type Database = {
             columns: ["deployment_run_id"]
             isOneToOne: false
             referencedRelation: "deployment_status_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
-            columns: ["deployment_run_id"]
-            isOneToOne: false
-            referencedRelation: "latest_deployments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1297,6 +1297,13 @@ export type Database = {
             foreignKeyName: "deployment_validations_deployment_run_id_fkey"
             columns: ["deployment_run_id"]
             isOneToOne: false
+            referencedRelation: "deploy_latest_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
             referencedRelation: "deployment_runs"
             referencedColumns: ["id"]
           },
@@ -1305,13 +1312,6 @@ export type Database = {
             columns: ["deployment_run_id"]
             isOneToOne: false
             referencedRelation: "deployment_status_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
-            columns: ["deployment_run_id"]
-            isOneToOne: false
-            referencedRelation: "latest_deployments_view"
             referencedColumns: ["id"]
           },
         ]
@@ -6703,6 +6703,25 @@ export type Database = {
         }
         Relationships: []
       }
+      deploy_latest_view: {
+        Row: {
+          branch_from: string | null
+          branch_to: string | null
+          commit_hash: string | null
+          completed_at: string | null
+          created_at: string | null
+          deployment_id: string | null
+          deployment_type: string | null
+          deployment_url: string | null
+          error_message: string | null
+          id: string | null
+          metadata: Json | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       deployment_status_view: {
         Row: {
           branch_from: string | null
@@ -7101,25 +7120,6 @@ export type Database = {
             referencedColumns: ["element_id"]
           },
         ]
-      }
-      latest_deployments_view: {
-        Row: {
-          branch_from: string | null
-          branch_to: string | null
-          commit_hash: string | null
-          completed_at: string | null
-          created_at: string | null
-          deployment_id: string | null
-          deployment_type: string | null
-          deployment_url: string | null
-          error_message: string | null
-          id: string | null
-          metadata: Json | null
-          started_at: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Relationships: []
       }
       learn_user_progress_view: {
         Row: {
