@@ -2,15 +2,16 @@
   "name": "@dhg/living-docs-cli",
   "version": "1.0.0",
   "description": "CLI tools for managing living documentation",
-  "type": "module",
   "scripts": {
     "prioritize": "ts-node prioritize-docs.ts",
     "analyze": "ts-node analyze-docs.ts",
-    "check-reviews": "ts-node check-reviews.ts"
+    "check-reviews": "ts-node check-reviews.ts",
+    "refresh": "ts-node refresh-docs.ts"
   },
   "dependencies": {
     "commander": "^11.0.0",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "date-fns": "^2.30.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

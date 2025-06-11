@@ -2710,6 +2710,51 @@ export type Database = {
         }
         Relationships: []
       }
+      doc_living_docs_metadata: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          last_updated: string | null
+          priority: string | null
+          status: string | null
+          update_frequency: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          last_updated?: string | null
+          priority?: string | null
+          status?: string | null
+          update_frequency?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          last_updated?: string | null
+          priority?: string | null
+          status?: string | null
+          update_frequency?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       doc_monitoring_history: {
         Row: {
           action: string
@@ -5768,6 +5813,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_documents: {
+        Row: {
+          archive_date: string | null
+          archive_reason: string
+          archived_by: string | null
+          content: string | null
+          created_at: string | null
+          document_type: string
+          file_name: string
+          id: string
+          metadata: Json | null
+          original_path: string
+          superseded_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_reason: string
+          archived_by?: string | null
+          content?: string | null
+          created_at?: string | null
+          document_type: string
+          file_name: string
+          id?: string
+          metadata?: Json | null
+          original_path: string
+          superseded_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          archive_date?: string | null
+          archive_reason?: string
+          archived_by?: string | null
+          content?: string | null
+          created_at?: string | null
+          document_type?: string
+          file_name?: string
+          id?: string
+          metadata?: Json | null
+          original_path?: string
+          superseded_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_archived_package_files: {
         Row: {
           archive_reason: string | null
@@ -7253,6 +7343,45 @@ export type Database = {
           service_category: string | null
           service_name: string | null
           usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_archived_living_docs_view: {
+        Row: {
+          archive_date: string | null
+          archive_reason: string | null
+          archived_by: string | null
+          file_name: string | null
+          id: string | null
+          last_updated_when_archived: string | null
+          original_path: string | null
+          priority_when_archived: string | null
+          status_when_archived: string | null
+          superseded_by: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_reason?: string | null
+          archived_by?: string | null
+          file_name?: string | null
+          id?: string | null
+          last_updated_when_archived?: never
+          original_path?: string | null
+          priority_when_archived?: never
+          status_when_archived?: never
+          superseded_by?: string | null
+        }
+        Update: {
+          archive_date?: string | null
+          archive_reason?: string | null
+          archived_by?: string | null
+          file_name?: string | null
+          id?: string | null
+          last_updated_when_archived?: never
+          original_path?: string | null
+          priority_when_archived?: never
+          status_when_archived?: never
+          superseded_by?: string | null
         }
         Relationships: []
       }
