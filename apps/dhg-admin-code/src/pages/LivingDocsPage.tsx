@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { serverRegistry } from '@shared/services/server-registry-service';
 import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
+import { supabase } from '../lib/supabase';
 
 interface LivingDocument {
   fileName: string;
@@ -17,7 +18,7 @@ interface LivingDocument {
   description: string;
   updateFrequency: 'daily' | 'weekly' | 'on-change';
   lastUpdated: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: 'critical' | 'high' | 'medium' | 'low';
   status: 'active' | 'draft' | 'archived';
   category: string;
   nextPhase?: PhaseInfo;
@@ -35,245 +36,58 @@ export function LivingDocsPage() {
   const [showPriorityDashboard, setShowPriorityDashboard] = useState(false);
   const [priorityDashboard, setPriorityDashboard] = useState<string>('');
   const [generatingDashboard, setGeneratingDashboard] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'recent' | 'critical' | 'needs-update'>('all');
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
-  // Load documents from the living-docs folder
+  // Load documents from the database
   const loadDocuments = async () => {
     try {
       setLoading(true);
       
-      // Define the documents with their descriptions and metadata
-      const livingDocs: LivingDocument[] = [
-        {
-          fileName: 'CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
-          path: '/docs/living-docs/CONTINUOUSLY-UPDATED-TEMPLATE-GUIDE.md',
-          description: 'Template and guidelines for maintaining living documentation with proper structure and review schedules.',
-          updateFrequency: 'daily',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'template'
-        },
-        {
-          fileName: 'apps-documentation.md',
-          path: '/docs/living-docs/apps-documentation.md',
-          description: 'Comprehensive documentation for all DHG monorepo applications including configuration, deployment, and usage patterns.',
-          updateFrequency: 'daily',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'architecture'
-        },
-        {
-          fileName: 'cli-pipelines-documentation.md',
-          path: '/docs/living-docs/cli-pipelines-documentation.md',
-          description: 'Architecture and usage documentation for CLI pipeline system including command structure and integration patterns.',
-          updateFrequency: 'daily',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'architecture'
-        },
-        {
-          fileName: 'claude-tasks-editing-implementation.md',
-          path: '/docs/living-docs/claude-tasks-editing-implementation.md',
-          description: 'Implementation guide for Claude task editing system including modal components, form validation, and database integration.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'implementation'
-        },
-        {
-          fileName: 'code-continuous-monitoring.md',
-          path: '/docs/living-docs/code-continuous-monitoring.md',
-          description: 'System for monitoring code changes and automatically updating documentation to maintain synchronization.',
-          updateFrequency: 'daily',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'monitoring'
-        },
-        {
-          fileName: 'database-maintenance-guide.md',
-          path: '/docs/living-docs/database-maintenance-guide.md',
-          description: 'Guidelines for database maintenance including migrations, cleanup procedures, and performance optimization.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'database'
-        },
-        {
-          fileName: 'git-history-analysis-server.md',
-          path: '/docs/living-docs/git-history-analysis-server.md',
-          description: 'Server implementation for analyzing git history and extracting insights about code changes and development patterns.',
-          updateFrequency: 'on-change',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'tools'
-        },
-        {
-          fileName: 'mp4-pipeline-auto-update-system.md',
-          path: '/docs/living-docs/mp4-pipeline-auto-update-system.md',
-          description: 'Automated system for processing MP4 files including conversion, metadata extraction, and storage management.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'media'
-        },
-        {
-          fileName: 'mp4-to-m4a-pipeline-implementation.md',
-          path: '/docs/living-docs/mp4-to-m4a-pipeline-implementation.md',
-          description: 'Implementation details for converting MP4 files to M4A audio format with quality preservation and batch processing.',
-          updateFrequency: 'on-change',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'media'
-        },
-        {
-          fileName: 'prompt-service-implementation-progress.md',
-          path: '/docs/living-docs/prompt-service-implementation-progress.md',
-          description: 'Progress tracking for AI prompt service implementation including features, testing, and deployment status.',
-          updateFrequency: 'daily',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'ai'
-        },
-        {
-          fileName: 'script-and-prompt-management-guide.md',
-          path: '/docs/living-docs/script-and-prompt-management-guide.md',
-          description: 'Comprehensive guide for managing scripts and AI prompts including organization, versioning, and best practices.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'management'
-        },
-        {
-          fileName: 'testing-quick-start-dhg-apps.md',
-          path: '/docs/living-docs/testing-quick-start-dhg-apps.md',
-          description: 'Quick start guide for setting up and running tests across all DHG applications with common patterns and utilities.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'testing'
-        },
-        {
-          fileName: 'testing-vision-and-implementation-guide.md',
-          path: '/docs/living-docs/testing-vision-and-implementation-guide.md',
-          description: 'Strategic vision and implementation roadmap for testing infrastructure including tools, processes, and quality standards.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'testing'
-        },
-        {
-          fileName: 'worktree-assignment-system.md',
-          path: '/docs/living-docs/worktree-assignment-system.md',
-          description: 'System for managing git worktree assignments and task allocation including automation and tracking capabilities.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'git'
-        },
-        {
-          fileName: 'dev-tasks-system.md',
-          path: '/docs/living-docs/dev-tasks-system.md',
-          description: 'Comprehensive dev task management system that bridges structured planning with AI-assisted development.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'management'
-        },
-        {
-          fileName: 'database-architecture-guide.md',
-          path: '/docs/living-docs/database-architecture-guide.md',
-          description: 'Database architecture, naming conventions, and migration procedures with comprehensive table organization.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'database'
-        },
-        {
-          fileName: 'service-dependency-system.md',
-          path: '/docs/living-docs/service-dependency-system.md',
-          description: 'Service dependency mapping system for understanding relationships between apps, pipelines, and shared services.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'architecture'
-        },
-        {
-          fileName: 'google-drive-integration.md',
-          path: '/docs/living-docs/google-drive-integration.md',
-          description: 'Google Drive integration with audio streaming, local optimization, and AI-powered content analysis.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'integration'
-        },
-        {
-          fileName: 'documentation-management-system.md',
-          path: '/docs/living-docs/documentation-management-system.md',
-          description: 'Living documentation system for managing 700+ docs with continuous monitoring and intelligent archiving.',
-          updateFrequency: 'daily',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'documentation'
-        },
-        {
-          fileName: 'batch-processing-system.md',
-          path: '/docs/living-docs/batch-processing-system.md',
-          description: 'Scalable batch processing system for handling large document sets with monitoring and error recovery.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'processing'
-        },
-        {
-          fileName: 'claude-md-management-guide.md',
-          path: '/docs/living-docs/claude-md-management-guide.md',
-          description: 'Comprehensive guide for managing CLAUDE.md size under 40k limit with tracking and optimization strategies.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'critical',
-          status: 'active',
-          category: 'management'
-        },
-        {
-          fileName: 'claude-md-candidates.md',
-          path: '/docs/living-docs/claude-md-candidates.md',
-          description: 'Tracking document for potential CLAUDE.md additions with review process and size impact analysis.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'management'
-        }
-      ];
+      // Fetch documents from the database
+      const { data, error: dbError } = await supabase
+        .from('doc_living_docs_metadata')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw new Error('Failed to fetch documents from database');
+      }
+      
+      // Transform the database records to match our interface
+      const livingDocs: LivingDocument[] = (data || []).map(doc => ({
+        fileName: doc.file_name,
+        path: doc.file_path,
+        description: doc.description || `Documentation for ${doc.file_name.replace('.md', '')}`,
+        updateFrequency: doc.update_frequency || 'weekly',
+        lastUpdated: doc.last_updated || doc.created_at,
+        priority: doc.priority || 'medium',
+        status: doc.status || 'active',
+        category: doc.category || 'general'
+      }));
       
       // Sort documents: template first, then by priority and name
       const sortedDocs = livingDocs.sort((a, b) => {
         if (a.category === 'template') return -1;
         if (b.category === 'template') return 1;
+        
+        // Define priority order including 'critical' 
+        const priorityOrder: Record<string, number> = { 
+          critical: 0, 
+          high: 1, 
+          medium: 2, 
+          low: 3 
+        };
+        
         if (a.priority !== b.priority) {
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
-          return priorityOrder[a.priority] - priorityOrder[b.priority];
+          const aPriority = priorityOrder[a.priority] ?? 4;
+          const bPriority = priorityOrder[b.priority] ?? 4;
+          return aPriority - bPriority;
         }
+        
         return a.fileName.localeCompare(b.fileName);
       });
       
@@ -290,6 +104,34 @@ export function LivingDocsPage() {
   useEffect(() => {
     loadDocuments();
   }, []);
+
+  // Refresh documents from filesystem
+  const refreshDocuments = async () => {
+    try {
+      setRefreshing(true);
+      
+      // Get the living docs server URL
+      const livingDocsUrl = await serverRegistry.getServerUrl('living-docs-server');
+      
+      // Call the server to refresh documents
+      const response = await fetch(`${livingDocsUrl}/api/living-docs/refresh`, {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to refresh documents');
+      }
+      
+      // Reload documents after refresh
+      await loadDocuments();
+      
+    } catch (err) {
+      console.error('Error refreshing documents:', err);
+      setError('Failed to refresh documents');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Generate priority dashboard
   const generatePriorityDashboard = async () => {
@@ -352,10 +194,42 @@ export function LivingDocsPage() {
   // Get unique categories
   const categories = Array.from(new Set(documents.map(doc => doc.category))).sort();
 
-  // Filter documents by category
-  const filteredDocuments = selectedCategory 
-    ? documents.filter(doc => doc.category === selectedCategory)
-    : documents;
+  // Apply filters
+  let filteredDocuments = documents;
+
+  // Category filter
+  if (selectedCategory) {
+    filteredDocuments = filteredDocuments.filter(doc => doc.category === selectedCategory);
+  }
+
+  // Search filter
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    filteredDocuments = filteredDocuments.filter(doc => 
+      doc.fileName.toLowerCase().includes(query) ||
+      doc.description.toLowerCase().includes(query) ||
+      doc.category.toLowerCase().includes(query)
+    );
+  }
+
+  // Active filter pills
+  switch (activeFilter) {
+    case 'recent':
+      // Sort by last updated, show top 10
+      filteredDocuments = [...filteredDocuments]
+        .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
+        .slice(0, 10);
+      break;
+    case 'critical':
+      filteredDocuments = filteredDocuments.filter(doc => 
+        doc.priority === 'critical' || doc.priority === 'high'
+      );
+      break;
+    case 'needs-update':
+      filteredDocuments = filteredDocuments.filter(doc => needsUpdate(doc));
+      break;
+    // 'all' shows everything (default)
+  }
 
   // Check if document needs update
   const needsUpdate = (doc: LivingDocument): boolean => {
@@ -516,43 +390,143 @@ export function LivingDocsPage() {
             </div>
           </div>
 
-          {/* Actions and Category Filter */}
-          <div className="mb-4 flex justify-between items-center">
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search documents..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Filter Pills and Actions - All on one line */}
+          <div className="mb-4 flex items-center gap-2 flex-wrap">
+            {/* Filter Pills */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  activeFilter === 'all' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                All ({documents.length})
+              </button>
+              <button
+                onClick={() => setActiveFilter('recent')}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  activeFilter === 'recent' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Recent
+              </button>
+              <button
+                onClick={() => setActiveFilter('critical')}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  activeFilter === 'critical' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                High Priority
+              </button>
+              <button
+                onClick={() => setActiveFilter('needs-update')}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  activeFilter === 'needs-update' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Needs Update
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-gray-300"></div>
+
+            {/* Category Dropdown */}
             <select
               value={selectedCategory || ''}
               onChange={(e) => setSelectedCategory(e.target.value || null)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Categories</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
               ))}
             </select>
-            
-            <button
-              onClick={generatePriorityDashboard}
-              disabled={generatingDashboard}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {generatingDashboard ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  Priority Dashboard
-                </>
-              )}
-            </button>
+
+            {/* Action Buttons */}
+            <div className="ml-auto flex gap-2">
+              <button
+                onClick={refreshDocuments}
+                disabled={refreshing}
+                className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                {refreshing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={generatePriorityDashboard}
+                disabled={generatingDashboard}
+                className="px-3 py-1 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                {generatingDashboard ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Dashboard
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Results Count */}
+          {(searchQuery || activeFilter !== 'all' || selectedCategory) && (
+            <div className="mb-4 text-sm text-gray-600">
+              Showing {filteredDocuments.length} of {documents.length} documents
+              {searchQuery && ` matching "${searchQuery}"`}
+            </div>
+          )}
 
           {/* Document Cards */}
           <div className="space-y-4">
-            {filteredDocuments.map((doc) => (
+            {filteredDocuments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No documents found matching your criteria.
+              </div>
+            ) : (
+              filteredDocuments.map((doc) => (
               <div
                 key={doc.path}
                 onClick={() => loadMarkdownContent(doc)}

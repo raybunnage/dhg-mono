@@ -3,8 +3,8 @@
 # Living Docs CLI - Management tool for living documentation
 # This script provides commands for managing and prioritizing living documents
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+LIVING_DOCS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$LIVING_DOCS_DIR/../../.." && pwd)"
 
 # Source common functions
 source "$PROJECT_ROOT/scripts/cli-pipeline/core/load-env.sh"
@@ -12,16 +12,17 @@ source "$PROJECT_ROOT/scripts/cli-pipeline/core/load-env.sh"
 # Track command execution
 track_command() {
     local pipeline="living_docs"
-    local command="$1"
-    shift
+    local command_name="$1"
+    local full_command="$2"
     
-    echo "Tracking command: $command for pipeline: $pipeline"
-    
-    # Use the utilities CLI to track the command
-    "$PROJECT_ROOT/scripts/cli-pipeline/utilities/utilities-cli.sh" track-command \
-        --pipeline "$pipeline" \
-        --command "$command" \
-        --args "$*" 2>/dev/null || true
+    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
+    if [ -f "$TRACKER_TS" ]; then
+        echo "🔍 Tracking command: $command_name"
+        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline" "$command_name" "$full_command"
+    else
+        echo "ℹ️ Tracking not available. Running command directly."
+        eval "$full_command"
+    fi
 }
 
 # Display help
@@ -38,6 +39,7 @@ Commands:
     check-reviews       List documents needing review
     consolidate         Merge duplicate documents
     health-check        Check health of living docs system
+    refresh             Scan for new living docs and update database
     
 Options:
     -h, --help         Show this help message
@@ -46,6 +48,7 @@ Examples:
     ./living-docs-cli.sh prioritize
     ./living-docs-cli.sh check-reviews
     ./living-docs-cli.sh update-template my-doc.md
+    ./living-docs-cli.sh refresh
 
 EOF
 }
@@ -53,32 +56,32 @@ EOF
 # Command handlers
 cmd_prioritize() {
     echo "🚀 Generating living docs priority dashboard..."
-    track_command "prioritize" "$@"
-    ts-node "$SCRIPT_DIR/prioritize-docs.ts" "$@"
+    local cmd="npx ts-node --project \"$PROJECT_ROOT/tsconfig.node.json\" \"$LIVING_DOCS_DIR/prioritize-docs.ts\" $@"
+    track_command "prioritize" "$cmd"
 }
 
 cmd_analyze() {
     echo "🔍 Analyzing living documents..."
-    track_command "analyze" "$@"
-    ts-node "$SCRIPT_DIR/analyze-docs.ts" "$@"
+    local cmd="npx ts-node --project \"$PROJECT_ROOT/tsconfig.node.json\" \"$LIVING_DOCS_DIR/analyze-docs.ts\" $@"
+    track_command "analyze" "$cmd"
 }
 
 cmd_update_template() {
     echo "📝 Updating document to latest template..."
-    track_command "update-template" "$@"
-    ts-node "$SCRIPT_DIR/update-to-template.ts" "$@"
+    local cmd="npx ts-node --project \"$PROJECT_ROOT/tsconfig.node.json\" \"$LIVING_DOCS_DIR/update-to-template.ts\" $@"
+    track_command "update-template" "$cmd"
 }
 
 cmd_check_reviews() {
     echo "📅 Checking documents needing review..."
-    track_command "check-reviews" "$@"
-    ts-node "$SCRIPT_DIR/check-reviews.ts" "$@"
+    local cmd="npx ts-node --project \"$PROJECT_ROOT/tsconfig.node.json\" \"$LIVING_DOCS_DIR/check-reviews.ts\" $@"
+    track_command "check-reviews" "$cmd"
 }
 
 cmd_consolidate() {
     echo "🔄 Consolidating duplicate documents..."
-    track_command "consolidate" "$@"
-    ts-node "$SCRIPT_DIR/consolidate-duplicates.ts" "$@"
+    local cmd="npx ts-node --project \"$PROJECT_ROOT/tsconfig.node.json\" \"$LIVING_DOCS_DIR/consolidate-duplicates.ts\" $@"
+    track_command "consolidate" "$cmd"
 }
 
 cmd_health_check() {
@@ -106,6 +109,12 @@ cmd_health_check() {
     echo "✅ Health check passed"
 }
 
+cmd_refresh() {
+    echo "🔄 Refreshing living docs database..."
+    local cmd="npx ts-node --project \"$PROJECT_ROOT/tsconfig.node.json\" \"$LIVING_DOCS_DIR/refresh-docs.ts\" $@"
+    track_command "refresh" "$cmd"
+}
+
 # Main command dispatcher
 case "$1" in
     prioritize)
@@ -131,6 +140,10 @@ case "$1" in
     health-check)
         shift
         cmd_health_check "$@"
+        ;;
+    refresh)
+        shift
+        cmd_refresh "$@"
         ;;
     -h|--help|help)
         show_help

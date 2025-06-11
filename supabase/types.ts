@@ -1088,6 +1088,234 @@ export type Database = {
         }
         Relationships: []
       }
+      deployment_health_checks: {
+        Row: {
+          check_type: string
+          checked_at: string | null
+          created_at: string | null
+          deployment_run_id: string | null
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          response_time_ms: number | null
+          status: string
+        }
+        Insert: {
+          check_type: string
+          checked_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          status: string
+        }
+        Update: {
+          check_type?: string
+          checked_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_status_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "latest_deployments_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deployment_rollbacks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          deployment_run_id: string | null
+          error_message: string | null
+          id: string
+          initiated_at: string | null
+          reason: string | null
+          rollback_from_commit: string
+          rollback_to_commit: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          error_message?: string | null
+          id?: string
+          initiated_at?: string | null
+          reason?: string | null
+          rollback_from_commit: string
+          rollback_to_commit: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          error_message?: string | null
+          id?: string
+          initiated_at?: string | null
+          reason?: string | null
+          rollback_from_commit?: string
+          rollback_to_commit?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_status_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "latest_deployments_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deployment_runs: {
+        Row: {
+          branch_from: string
+          branch_to: string
+          commit_hash: string | null
+          completed_at: string | null
+          created_at: string | null
+          deployment_id: string
+          deployment_type: string
+          deployment_url: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          started_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          branch_from: string
+          branch_to: string
+          commit_hash?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_id: string
+          deployment_type: string
+          deployment_url?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          branch_from?: string
+          branch_to?: string
+          commit_hash?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_id?: string
+          deployment_type?: string
+          deployment_url?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      deployment_validations: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          deployment_run_id: string | null
+          details: Json | null
+          error_message: string | null
+          id: string
+          started_at: string | null
+          status: string
+          validation_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status: string
+          validation_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          validation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_status_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "latest_deployments_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dev_merge_checklist: {
         Row: {
           check_type: string
@@ -2478,6 +2706,51 @@ export type Database = {
           status_recommendation?: string | null
           summary?: string | null
           title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      doc_living_docs_metadata: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          last_updated: string | null
+          priority: string | null
+          status: string | null
+          update_frequency: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          last_updated?: string | null
+          priority?: string | null
+          status?: string | null
+          update_frequency?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          last_updated?: string | null
+          priority?: string | null
+          status?: string | null
+          update_frequency?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -6385,6 +6658,28 @@ export type Database = {
         }
         Relationships: []
       }
+      deployment_status_view: {
+        Row: {
+          branch_from: string | null
+          branch_to: string | null
+          commit_hash: string | null
+          completed_at: string | null
+          deployment_id: string | null
+          deployment_type: string | null
+          deployment_url: string | null
+          duration_seconds: number | null
+          error_message: string | null
+          health_check_count: number | null
+          health_checks_passed: number | null
+          id: string | null
+          started_at: string | null
+          status: string | null
+          validation_count: number | null
+          validations_failed: number | null
+          validations_passed: number | null
+        }
+        Relationships: []
+      }
       dev_tasks_claude_active_view: {
         Row: {
           claude_last_activity: string | null
@@ -6761,6 +7056,25 @@ export type Database = {
             referencedColumns: ["element_id"]
           },
         ]
+      }
+      latest_deployments_view: {
+        Row: {
+          branch_from: string | null
+          branch_to: string | null
+          commit_hash: string | null
+          completed_at: string | null
+          created_at: string | null
+          deployment_id: string | null
+          deployment_type: string | null
+          deployment_url: string | null
+          error_message: string | null
+          id: string | null
+          metadata: Json | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: []
       }
       learn_user_progress_view: {
         Row: {
