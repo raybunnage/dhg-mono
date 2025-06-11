@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AudioList, DriveFilterSelect, TrackingStatusIndicator } from '@/components';
+import { AudioList, DriveFilterSelect, TrackingStatusIndicator, AudioServerSwitch } from '@/components';
 import { AudioAdapter, AudioFile } from '@/services/audio-adapter';
 
 export const HomePage = () => {
@@ -59,6 +59,17 @@ export const HomePage = () => {
         </p>
       </div>
 
+      {/* Audio Server Status - Collapsible for regular use */}
+      <details className="mb-6 group">
+        <summary className="cursor-pointer p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+          <span className="font-medium text-sm text-gray-700">🎵 Audio Server Status</span>
+          <span className="ml-2 text-xs text-gray-500">Click to expand</span>
+        </summary>
+        <div className="mt-3">
+          <AudioServerSwitch />
+        </div>
+      </details>
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Audio Learning</h1>
         <div className="flex items-center justify-between">
@@ -74,7 +85,6 @@ export const HomePage = () => {
           {error}
         </div>
       )}
-
 
       <AudioList audioFiles={audioFiles} isLoading={isLoading} />
     </div>

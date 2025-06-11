@@ -172,7 +172,17 @@ async function checkLocalFile(fileId) {
   return null;
 }
 
-// Note: Health endpoints removed from app servers - use CLI health-check commands instead
+// Health check endpoint for server registry
+app.get('/api/health', (req, res) => {
+  const basePath = findGoogleDriveBasePath();
+  res.json({ 
+    status: 'healthy',
+    service: 'local-google-drive-audio',
+    timestamp: new Date().toISOString(),
+    localGoogleDriveEnabled: basePath !== null,
+    supabaseConnected: supabase !== null
+  });
+});
 
 // Function to get Google Drive service account credentials
 function getGoogleAuthClient() {

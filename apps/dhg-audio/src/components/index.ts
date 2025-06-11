@@ -4,6 +4,7 @@ export * from './TrackedAudioPlayer';
 export * from './Layout';
 export * from './Transcript';
 export * from './DriveFilterSelect';
+export * from './AudioServerSwitch';
 
 // Auth components
 export * from './LightEmailAuth';

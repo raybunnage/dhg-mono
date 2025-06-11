@@ -31,7 +31,7 @@ export class AudioAdapter {
   static async getAudioFiles(rootDriveId?: string | null): Promise<AudioFile[]> {
     try {
       const files = await audioBrowserService.getAudioFiles(100, rootDriveId);
-      return files.map(file => this.formatAudioFile(file));
+      return await Promise.all(files.map(file => this.formatAudioFile(file)));
     } catch (error) {
       console.error('Error in AudioAdapter.getAudioFiles:', error);
       throw error;
@@ -47,7 +47,7 @@ export class AudioAdapter {
       const file = await audioBrowserService.getAudioFile(id);
       if (!file) return null;
       
-      return this.formatAudioFile(file);
+      return await this.formatAudioFile(file);
     } catch (error) {
       console.error(`Error in AudioAdapter.getAudioFile(${id}):`, error);
       throw error;
@@ -69,7 +69,7 @@ export class AudioAdapter {
   /**
    * Format an audio file from the database into the app's format
    */
-  private static formatAudioFile(file: any): AudioFile {
+  private static async formatAudioFile(file: any): Promise<AudioFile> {
     // Extract expert info if available
     let expert = null;
     if (file.google_sources_experts && file.google_sources_experts.length > 0) {
@@ -92,7 +92,7 @@ export class AudioAdapter {
     // Create URLs for both direct Google Drive and our proxy server
     const googleDriveUrl = driveId ? `https://docs.google.com/uc?export=open&id=${driveId}` : '';
     
-    // Use our proxy server URL which avoids tracking prevention issues
+    // Use our dynamic proxy server URL which avoids tracking prevention issues
     // This will run through our server endpoint which fetches from Google Drive
     // The URL will point to the currently selected audio server (local or web)
     const serverUrl = audioServerSelector.getServerUrl();

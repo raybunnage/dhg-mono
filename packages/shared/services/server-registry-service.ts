@@ -11,7 +11,9 @@ import type { Database } from '../../../supabase/types';
 type ServerInfo = {
   service_name: string;
   display_name: string;
-  base_url: string;
+  host: string | null;
+  protocol: string | null;
+  base_path: string | null;
   port: number;
   status: string;
   last_health_check: string | null;
@@ -51,7 +53,7 @@ export class ServerRegistryService {
     // Check cache first
     const cached = this.servers.get(serviceName);
     if (cached && Date.now() - this.lastFetch < this.cacheTimeout) {
-      return cached.base_url;
+      return this.constructUrl(cached);
     }
 
     // Refresh cache
@@ -60,7 +62,7 @@ export class ServerRegistryService {
     // Try again after refresh
     const server = this.servers.get(serviceName);
     if (server) {
-      return server.base_url;
+      return this.constructUrl(server);
     }
 
     // Fallback to hardcoded defaults for backward compatibility
@@ -120,6 +122,16 @@ export class ServerRegistryService {
   async getAllServers(): Promise<ServerInfo[]> {
     await this.refreshRegistry();
     return Array.from(this.servers.values());
+  }
+
+  /**
+   * Construct full URL from server info
+   */
+  private constructUrl(server: ServerInfo): string {
+    const protocol = server.protocol || 'http';
+    const host = server.host || 'localhost';
+    const basePath = server.base_path || '';
+    return `${protocol}://${host}:${server.port}${basePath}`;
   }
 
   /**
