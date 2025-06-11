@@ -8,6 +8,8 @@ import type { PhaseInfo } from '@shared/utils/markdown-phase-extractor';
 import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
+import { serverRegistry } from '@shared/services/server-registry-service';
+import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
 interface LivingDocument {
   fileName: string;
@@ -292,7 +294,8 @@ export function LivingDocsPage() {
       setLoadingMarkdown(true);
       setSelectedDocument(document);
       
-      const response = await fetch(`http://localhost:3001/api/markdown-file?path=${encodeURIComponent(document.path)}`);
+      const mdServerUrl = await serverRegistry.getServerUrl('md-server');
+      const response = await fetch(`${mdServerUrl}/api/markdown-file?path=${encodeURIComponent(document.path)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch markdown content');
@@ -475,10 +478,15 @@ export function LivingDocsPage() {
         {/* Left Panel - Document Cards */}
         <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-200">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Living Docs</h1>
-            <p className="mt-2 text-gray-600">
-              Living documentation that evolves with your project and stays current.
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Living Docs</h1>
+                <p className="mt-2 text-gray-600">
+                  Living documentation that evolves with your project and stays current.
+                </p>
+              </div>
+              <ServerStatusIndicator serviceName="md-server" />
+            </div>
           </div>
 
           {/* Category Filter */}
