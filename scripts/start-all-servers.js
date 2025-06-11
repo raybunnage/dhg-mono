@@ -5,6 +5,15 @@ const path = require('path');
 const fs = require('fs');
 const net = require('net');
 
+// Validate environment before starting servers
+try {
+  const { validateServerEnvironment } = require('./cli-pipeline/servers/helpers/validate-environment.js');
+  validateServerEnvironment();
+} catch (error) {
+  console.error('❌ Environment validation failed:', error.message);
+  process.exit(1);
+}
+
 // Server configuration with dedicated ports
 const SERVERS = [
   {
@@ -66,12 +75,12 @@ const SERVERS = [
     description: 'Markdown server for dhg-improve-experts'
   },
   {
-    name: 'Continuous Docs Server',
+    name: 'Living Docs Server',
     port: 3008,
     command: 'node',
-    args: ['continuous-docs-server.cjs'],
+    args: ['living-docs-server.cjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    description: 'Continuous documentation tracking'
+    description: 'Living documentation tracking'
   },
   {
     name: 'Git API Server (dhg-admin-code)',

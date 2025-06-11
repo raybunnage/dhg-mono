@@ -69,15 +69,15 @@ const SERVERS = [
     description: 'Git worktree management'
   },
   {
-    service_name: 'continuous-docs-server',
-    name: 'Continuous Docs Server',
+    service_name: 'living-docs-server',
+    name: 'Living Docs Server',
     defaultPort: 3008,
     command: 'node',
-    args: ['continuous-docs-server.cjs'],
+    args: ['living-docs-server.cjs'],
     cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    envVar: 'CONTINUOUS_DOCS_PORT',
+    envVar: 'LIVING_DOCS_PORT',
     healthEndpoint: '/health',
-    description: 'Continuous documentation tracking'
+    description: 'Living documentation tracking'
   },
   {
     service_name: 'git-api-server',

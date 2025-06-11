@@ -31,8 +31,11 @@ app.use(cors);
 // Add JSON body parser for health check endpoint
 app.use(express.json());
 
-// Serve static files from the 'dist' directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from the 'dist' directory (if it exists)
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
 
 // Initialize Supabase client
 let supabase = null;
@@ -215,6 +218,18 @@ function getGoogleAuthClient() {
   }
 }
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'audio-proxy-server',
+    port: PORT,
+    timestamp: new Date().toISOString(),
+    localGoogleDriveEnabled: findGoogleDriveBasePath() !== null,
+    supabaseConnected: supabase !== null
+  });
+});
+
 // Enhanced audio proxy endpoint with local file support
 app.get('/api/audio/:fileId', async (req, res) => {
   const fileId = req.params.fileId;
@@ -395,9 +410,22 @@ app.get('/api/stats', (_, res) => {
   });
 });
 
-// SPA fallback - Serve index.html for any other requests
+// SPA fallback - Serve index.html for any other requests (if dist exists)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // If no dist folder, just return a simple message
+    res.json({ 
+      message: 'Audio proxy server',
+      endpoints: {
+        audio: '/api/audio/:fileId',
+        stats: '/api/stats',
+        health: '/health'
+      }
+    });
+  }
 });
 
 // Start the server

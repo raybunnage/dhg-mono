@@ -7,7 +7,7 @@ const util = require('util');
 
 const execAsync = util.promisify(exec);
 const app = express();
-const PORT = process.env.CONTINUOUS_DOCS_PORT || 3008; // New port for this server
+const PORT = process.env.LIVING_DOCS_PORT || 3008; // Port for living docs server
 
 const PROJECT_ROOT = path.join(__dirname, '../..');
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
@@ -22,6 +22,16 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'living-docs-server',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Load tracking data
 async function loadTrackingData() {
@@ -218,7 +228,7 @@ app.post('/api/cli-command', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Continuous docs server running on http://localhost:${PORT}`);
+  console.log(`Living docs server running on http://localhost:${PORT}`);
   console.log('Available endpoints:');
   console.log('  GET  /api/continuous-docs - Get all tracked documents');
   console.log('  PATCH /api/continuous-docs/:path/frequency - Update document frequency');

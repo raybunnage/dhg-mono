@@ -10,6 +10,16 @@ const PORT = process.env.GIT_API_PORT || 3009;
 app.use(cors());
 app.use(express.json());
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'git-api-server',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Get all branches with detailed information
 app.get('/api/git/branches', async (req, res) => {
   try {

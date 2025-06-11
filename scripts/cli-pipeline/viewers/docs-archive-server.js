@@ -36,6 +36,17 @@ const server = http.createServer(async (req, res) => {
   
   console.log(`Parsed pathname: "${pathname}"`); // Debug log
   
+  // Health check endpoint
+  if (pathname === '/health') {
+    sendJson(res, 200, { 
+      status: 'healthy',
+      service: 'docs-archive-server',
+      port: PORT,
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+  
   if (pathname === '/api/doc-file') {
     const filePath = url.searchParams.get('path');
     

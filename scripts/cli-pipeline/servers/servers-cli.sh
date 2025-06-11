@@ -35,6 +35,7 @@ show_help() {
   echo "COMMANDS:"
   echo "  start         Start all servers with dynamic ports"
   echo "  stop          Stop all running servers"
+  echo "  kill          Force kill all server processes"
   echo "  restart       Restart all servers"
   echo "  status        Show server status and ports"
   echo "  health        Check health of all servers"
@@ -64,6 +65,11 @@ case "$1" in
   "stop")
     echo "🛑 Stopping all servers..."
     track_command "stop" "ts-node $SCRIPT_DIR/commands/stop-all-servers.ts"
+    ;;
+    
+  "kill")
+    echo "💀 Force killing all servers..."
+    track_command "kill" "$SCRIPT_DIR/kill-all-servers.sh"
     ;;
     
   "restart")

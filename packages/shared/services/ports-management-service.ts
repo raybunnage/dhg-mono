@@ -94,13 +94,13 @@ export class PortsManagementService {
         process_name: 'git-server'
       },
       {
-        service_name: 'continuous-docs-server',
-        display_name: 'Continuous Docs Server',
-        description: 'Manages continuous documentation updates',
+        service_name: 'living-docs-server',
+        display_name: 'Living Docs Server',
+        description: 'Manages living documentation updates',
         port: 3008,
-        start_command: 'node apps/dhg-admin-code/continuous-docs-server.cjs',
+        start_command: 'node apps/dhg-admin-code/living-docs-server.cjs',
         health_check_endpoint: '/health',
-        process_name: 'continuous-docs-server'
+        process_name: 'living-docs-server'
       },
       {
         service_name: 'git-api-server',

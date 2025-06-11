@@ -131,7 +131,7 @@ export class ServerRegistryService {
       'script-server': 'http://localhost:3002',
       'docs-archive-server': 'http://localhost:3003',
       'git-server': 'http://localhost:3005',
-      'continuous-docs-server': 'http://localhost:3008',
+      'living-docs-server': 'http://localhost:3008',
       'git-api-server': 'http://localhost:3009',
     };
     
@@ -144,7 +144,7 @@ export class ServerRegistryService {
       'script-server': 3002,
       'docs-archive-server': 3003,
       'git-server': 3005,
-      'continuous-docs-server': 3008,
+      'living-docs-server': 3008,
       'git-api-server': 3009,
     };
     
