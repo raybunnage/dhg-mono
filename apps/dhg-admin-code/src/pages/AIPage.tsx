@@ -4,6 +4,8 @@ import { MarkdownViewer } from '../components/documents/MarkdownViewer';
 import { useSupabase } from '../hooks/useSupabase';
 import { FileText, RefreshCw, Calendar, AlertCircle, Eye, Edit2, Play, Save, Clock, CheckCircle, Settings } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
+import { serverRegistry } from '@shared/services/server-registry-service';
+import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
 interface ContinuousDoc {
   id: string;
@@ -153,7 +155,8 @@ export const AIPage: React.FC = () => {
       let result;
       
       try {
-        response = await fetch(`http://localhost:3008/api/cli-command`, {
+        const livingDocsUrl = await serverRegistry.getServerUrl('living-docs-server');
+        response = await fetch(`${livingDocsUrl}/api/cli-command`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ command, docId })
@@ -182,7 +185,8 @@ export const AIPage: React.FC = () => {
           args.push('--path', docId);
         }
 
-        response = await fetch('http://localhost:3009/api/execute-command', {
+        const gitApiUrl = await serverRegistry.getServerUrl('git-api-server');
+        response = await fetch(`${gitApiUrl}/api/execute-command`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -267,8 +271,16 @@ export const AIPage: React.FC = () => {
         {/* Left side - Document list */}
         <div className={`${selectedDocument ? 'w-1/2' : 'w-full'} flex flex-col h-full overflow-hidden`}>
           <div className="p-6 border-b">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">AI Documentation Hub</h1>
-            <p className="text-gray-600">Continuously monitored documentation for AI and development</p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">AI Documentation Hub</h1>
+                <p className="text-gray-600">Continuously monitored documentation for AI and development</p>
+              </div>
+              <div className="flex gap-4">
+                <ServerStatusIndicator serviceName="living-docs-server" />
+                <ServerStatusIndicator serviceName="git-api-server" showLabel={false} />
+              </div>
+            </div>
           </div>
 
           {/* Global Actions */}

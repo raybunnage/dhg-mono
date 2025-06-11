@@ -325,6 +325,34 @@ ORDER BY cpt.table_name;
   -  Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions
    
+## Claude Task Submission Tracking (Recovery System)
+
+⚠️ **ALWAYS submit tasks to the database before starting work**
+
+To prevent work loss during Claude Code timeouts:
+
+1. **Submit task immediately when received**:
+   ```bash
+   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit <task-id> --text "task content"
+   ```
+
+2. **Check for interrupted tasks**:
+   ```bash
+   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit recover
+   ```
+
+3. **Recovery benefits**:
+   - Tracks when task was submitted to Claude
+   - Saves raw task text for re-submission
+   - Records uncommitted files at submission time
+   - Creates local `.claude-submission-*.json` backup files
+   - Enables easy task resumption after timeouts
+
+4. **If Claude times out**:
+   - Run recovery command to find interrupted tasks
+   - Re-submit the same task text to continue work
+   - All uncommitted changes remain for continuation
+
 ## Task-Aware Git Commits
 
 ⚠️ **ALWAYS check for active tasks before committing changes**
