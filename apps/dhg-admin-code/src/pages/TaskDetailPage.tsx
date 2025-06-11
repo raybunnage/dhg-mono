@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask, DevTaskTag, DevTaskFile, DevTaskCommit, DevTaskWorkSession } from '../services/task-service';
 import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCircle, GitBranch, GitCommit, Terminal, Calendar, FolderOpen, Trash2 } from 'lucide-react';
@@ -10,7 +10,6 @@ import { FollowUpInfoDisplay } from '@shared/components/follow-up/FollowUpInfoDi
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [task, setTask] = useState<DevTask | null>(null);
   const [tags, setTags] = useState<DevTaskTag[]>([]);
   const [files, setFiles] = useState<DevTaskFile[]>([]);
