@@ -7,7 +7,7 @@ import { extractNextPhase, formatNextPhaseSummary } from '@shared/utils/markdown
 import type { PhaseInfo } from '@shared/utils/markdown-phase-extractor';
 import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
+import { PlusCircleIcon, Search } from '@heroicons/react/24/outline';
 import { serverRegistry } from '@shared/services/server-registry-service';
 import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 import { supabase } from '../lib/supabase';
@@ -30,13 +30,15 @@ export function LivingDocsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<LivingDocument | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
   const [creatingTaskFor, setCreatingTaskFor] = useState<{doc: LivingDocument, phase: PhaseInfo} | null>(null);
   const [showPriorityDashboard, setShowPriorityDashboard] = useState(false);
   const [priorityDashboard, setPriorityDashboard] = useState<string>('');
   const [generatingDashboard, setGeneratingDashboard] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'recent' | 'critical' | 'needs-update'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
@@ -92,10 +94,10 @@ export function LivingDocsPage() {
       });
       
       setDocuments(sortedDocs);
-      setError(null);
+      
     } catch (err) {
-      setError('Failed to load living documents.');
       console.error('Error loading documents:', err);
+      setError('Failed to load living documents');
     } finally {
       setLoading(false);
     }
@@ -178,14 +180,11 @@ export function LivingDocsPage() {
       const phaseInfo = extractNextPhase(content);
       if (phaseInfo && document) {
         document.nextPhase = phaseInfo;
-        // Update the document in the state
-        setDocuments(docs => docs.map(doc => 
-          doc.path === document.path ? { ...doc, nextPhase: phaseInfo } : doc
-        ));
       }
-    } catch (err) {
-      console.error('Error loading markdown:', err);
-      setMarkdownContent('Error loading document content. Make sure the markdown server is running on port 3001.');
+      
+    } catch (error) {
+      console.error('Error loading markdown:', error);
+      setMarkdownContent('Failed to load document content');
     } finally {
       setLoadingMarkdown(false);
     }
@@ -193,6 +192,8 @@ export function LivingDocsPage() {
 
   // Get unique categories
   const categories = Array.from(new Set(documents.map(doc => doc.category))).sort();
+  const priorities = ['critical', 'high', 'medium', 'low'];
+  const statuses = ['active', 'draft', 'archived'];
 
   // Apply filters
   let filteredDocuments = documents;
@@ -200,6 +201,16 @@ export function LivingDocsPage() {
   // Category filter
   if (selectedCategory) {
     filteredDocuments = filteredDocuments.filter(doc => doc.category === selectedCategory);
+  }
+
+  // Priority filter
+  if (selectedPriority) {
+    filteredDocuments = filteredDocuments.filter(doc => doc.priority === selectedPriority);
+  }
+
+  // Status filter
+  if (selectedStatus) {
+    filteredDocuments = filteredDocuments.filter(doc => doc.status === selectedStatus);
   }
 
   // Search filter
@@ -275,75 +286,61 @@ export function LivingDocsPage() {
       return 'Update due';
     }
     
-    const hoursUntil = differenceInHours(nextUpdate, now);
-    if (hoursUntil < 24) {
-      return `${hoursUntil} hours`;
+    const hours = differenceInHours(nextUpdate, now);
+    if (hours < 24) {
+      return `${hours}h`;
     }
     
-    const daysUntil = Math.floor(hoursUntil / 24);
-    return `${daysUntil} days`;
+    const days = differenceInDays(nextUpdate, now);
+    return `${days}d`;
   };
 
-  // Get priority badge color
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'bg-purple-100 text-purple-800';
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get status badge color
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getCategoryBadgeColor = (category: string) => {
+  // Get badge colors based on category
+  const getCategoryBadgeColor = (category: string): string => {
     const colors: Record<string, string> = {
-      'template': 'bg-purple-100 text-purple-800',
-      'architecture': 'bg-blue-100 text-blue-800',
-      'implementation': 'bg-green-100 text-green-800',
-      'monitoring': 'bg-orange-100 text-orange-800',
-      'database': 'bg-indigo-100 text-indigo-800',
-      'tools': 'bg-cyan-100 text-cyan-800',
-      'media': 'bg-pink-100 text-pink-800',
-      'ai': 'bg-red-100 text-red-800',
-      'management': 'bg-yellow-100 text-yellow-800',
-      'testing': 'bg-teal-100 text-teal-800',
-      'git': 'bg-gray-100 text-gray-800',
-      'integration': 'bg-emerald-100 text-emerald-800',
-      'documentation': 'bg-amber-100 text-amber-800',
-      'processing': 'bg-lime-100 text-lime-800'
+      'documentation': 'bg-blue-100 text-blue-800',
+      'development': 'bg-purple-100 text-purple-800',
+      'infrastructure': 'bg-green-100 text-green-800',
+      'testing': 'bg-yellow-100 text-yellow-800',
+      'integration': 'bg-indigo-100 text-indigo-800'
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
-  const getFrequencyBadgeColor = (frequency: string) => {
-    switch (frequency) {
-      case 'daily':
-        return 'bg-red-100 text-red-800';
-      case 'weekly':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'on-change':
-        return 'bg-green-100 text-green-800';
+  // Get badge colors based on priority
+  const getPriorityBadgeColor = (priority: string): string => {
+    const colors: Record<string, string> = {
+      'critical': 'bg-red-200 text-red-900',
+      'high': 'bg-red-100 text-red-800',
+      'medium': 'bg-yellow-100 text-yellow-800',
+      'low': 'bg-green-100 text-green-800'
+    };
+    return colors[priority] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Get badge colors based on update frequency
+  const getFrequencyBadgeColor = (frequency: string): string => {
+    const colors: Record<string, string> = {
+      'daily': 'bg-purple-100 text-purple-800',
+      'weekly': 'bg-blue-100 text-blue-800',
+      'on-change': 'bg-gray-100 text-gray-800'
+    };
+    return colors[frequency] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Get priority icon
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return '🚨';
+      case 'high':
+        return '🔥';
+      case 'medium':
+        return '🟡';
+      case 'low':
+        return '🔵';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return '⚪';
     }
   };
 
@@ -398,15 +395,13 @@ export function LivingDocsPage() {
                 placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
           </div>
 
-          {/* Filter Pills and Actions - All on one line */}
+          {/* Filter Pills and Actions */}
           <div className="mb-4 flex items-center gap-2 flex-wrap">
             {/* Filter Pills */}
             <div className="flex gap-2">
@@ -463,7 +458,36 @@ export function LivingDocsPage() {
             >
               <option value="">All Categories</option>
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+
+            {/* Priority and Status Dropdowns */}
+            <select
+              value={selectedPriority || ''}
+              onChange={(e) => setSelectedPriority(e.target.value || null)}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Priorities</option>
+              {priorities.map(priority => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedStatus || ''}
+              onChange={(e) => setSelectedStatus(e.target.value || null)}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Statuses</option>
+              {statuses.map(status => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
               ))}
             </select>
 
@@ -512,7 +536,7 @@ export function LivingDocsPage() {
           </div>
 
           {/* Results Count */}
-          {(searchQuery || activeFilter !== 'all' || selectedCategory) && (
+          {(searchQuery || activeFilter !== 'all' || selectedCategory || selectedPriority || selectedStatus) && (
             <div className="mb-4 text-sm text-gray-600">
               Showing {filteredDocuments.length} of {documents.length} documents
               {searchQuery && ` matching "${searchQuery}"`}
@@ -528,88 +552,71 @@ export function LivingDocsPage() {
             ) : (
               filteredDocuments.map((doc) => (
               <div
-                key={doc.path}
+                key={doc.fileName}
+                className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
+                  selectedDocument?.fileName === doc.fileName ? 'ring-2 ring-blue-500' : ''
+                } ${needsUpdate(doc) ? 'border-l-4 border-orange-500' : ''}`}
                 onClick={() => loadMarkdownContent(doc)}
-                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                  selectedDocument?.path === doc.path ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                } ${
-                  needsUpdate(doc) ? 'border-l-4 border-l-orange-500' : ''
-                }`}
               >
-                {/* Header */}
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    {getPriorityIcon(doc.priority)}
                     {doc.fileName.replace('.md', '')}
                   </h3>
-                  {doc.category === 'template' && (
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                      TEMPLATE
-                    </span>
+                  {doc.nextPhase && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCreatingTaskFor({ doc, phase: doc.nextPhase });
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded"
+                      title="Create task from next phase"
+                    >
+                      <PlusCircleIcon className="w-5 h-5 text-gray-600" />
+                    </button>
                   )}
                 </div>
-
-                {/* Description */}
-                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                  {doc.description}
-                </p>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryBadgeColor(doc.category)}`}>
+                
+                <p className="text-sm text-gray-600 mb-3">{doc.description}</p>
+                
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className={`px-2 py-1 rounded ${getCategoryBadgeColor(doc.category)}`}>
                     {doc.category}
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityBadgeColor(doc.priority)}`}>
+                  <span className={`px-2 py-1 rounded ${getPriorityBadgeColor(doc.priority)}`}>
                     {doc.priority} priority
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
-                    {doc.updateFrequency}
+                  <span className={`px-2 py-1 rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
+                    {doc.updateFrequency} updates
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusBadgeColor(doc.status)}`}>
-                    {doc.status}
+                  {doc.status !== 'active' && (
+                    <span className="px-2 py-1 rounded bg-gray-100 text-gray-800">
+                      {doc.status}
+                    </span>
+                  )}
+                  <span className={`px-2 py-1 rounded ${needsUpdate(doc) ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {needsUpdate(doc) ? '⚠️ Update due' : `Next: ${getNextUpdateTime(doc)}`}
                   </span>
                 </div>
 
-                {/* Next Phase Section */}
                 {doc.nextPhase && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="text-xs font-medium text-blue-900 mb-1">
-                          Next Phase: {doc.nextPhase.phaseName}
-                        </div>
-                        <div className="text-xs text-blue-700">
-                          {formatNextPhaseSummary(doc.nextPhase)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCreatingTaskFor({ doc, phase: doc.nextPhase });
-                        }}
-                        className="ml-2 p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded transition-colors"
-                        title="Create implementation task"
-                      >
-                        <PlusCircleIcon className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
+                    <strong className="text-blue-900">Next Phase:</strong>
+                    <span className="text-blue-700 ml-1">{formatNextPhaseSummary(doc.nextPhase)}</span>
                   </div>
                 )}
 
-                {/* Update Info */}
-                <div className="flex justify-between items-center text-xs text-gray-500 mt-3">
-                  <span>Updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}</span>
-                  <span className={needsUpdate(doc) ? 'text-orange-600 font-medium' : ''}>
-                    Next: {getNextUpdateTime(doc)}
-                  </span>
+                <div className="mt-2 text-xs text-gray-500">
+                  Last updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}
                 </div>
-
-                {needsUpdate(doc) && (
-                  <div className="mt-2 text-xs text-orange-600 font-medium">
-                    ⚠️ Update overdue
-                  </div>
-                )}
               </div>
             ))}
+            
+            {filteredDocuments.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No documents match your filters
+              </div>
+            )}
           </div>
         </div>
 
@@ -704,15 +711,14 @@ export function LivingDocsPage() {
       {/* Create Task Modal */}
       {creatingTaskFor && (
         <CreateTaskFromPhase
-          phaseInfo={creatingTaskFor.phase}
-          docTitle={creatingTaskFor.doc.fileName.replace('.md', '')}
-          docPath={creatingTaskFor.doc.path}
+          phase={creatingTaskFor.phase}
+          documentTitle={creatingTaskFor.doc.fileName}
+          documentPath={creatingTaskFor.doc.path}
+          onClose={() => setCreatingTaskFor(null)}
           onTaskCreated={(taskId) => {
             setCreatingTaskFor(null);
-            // Navigate to the task detail page
-            navigate(`/tasks/${taskId}`);
+            navigate(`/tasks?id=${taskId}`);
           }}
-          onCancel={() => setCreatingTaskFor(null)}
         />
       )}
     </DashboardLayout>
