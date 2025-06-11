@@ -90,7 +90,7 @@ export class PortsManagementService {
         description: 'Provides git repository information',
         port: 3005,
         start_command: 'node apps/dhg-admin-code/git-server.cjs',
-        health_check_endpoint: '/api/git/health',
+        health_check_endpoint: '/health',
         process_name: 'git-server'
       },
       {
@@ -241,8 +241,7 @@ export class PortsManagementService {
         const { stdout, stderr } = await execAsync(
           `${config.start_command} &`,
           { 
-            env: { ...process.env, [envVar]: port.toString() },
-            shell: true
+            env: { ...process.env, [envVar]: port.toString() }
           }
         );
 
