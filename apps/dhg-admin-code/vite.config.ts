@@ -43,6 +43,14 @@ export default defineConfig({
       '/api/health': {
         target: 'http://localhost:3012',
         changeOrigin: true
+      },
+      // Proxy deployment API requests
+      '/api/deployment': {
+        target: 'http://localhost:3015',
+        changeOrigin: true,
+        configure: () => {
+          console.log('Setting up deployment server proxy');
+        }
       }
     }
   },

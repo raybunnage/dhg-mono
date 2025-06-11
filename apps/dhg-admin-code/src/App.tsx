@@ -23,6 +23,7 @@ import { AIPage } from './pages/AIPage';
 import { SQLiteImportManager } from './pages/SQLiteImportManager';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { TestingPage } from './pages/TestingPage';
+import DeploymentPage from './pages/DeploymentPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -205,6 +206,14 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <TestingPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/deployment" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <DeploymentPage />
             </ProtectedRoute>
           } 
         />
