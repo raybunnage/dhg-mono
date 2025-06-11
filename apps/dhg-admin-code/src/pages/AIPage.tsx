@@ -30,10 +30,6 @@ export const AIPage: React.FC = () => {
   const [selectedDocument, setSelectedDocument] = useState<ContinuousDoc | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
-  const [editingFrequency, setEditingFrequency] = useState<string | null>(null);
-  const [frequencyValue, setFrequencyValue] = useState<number>(7);
-  const [runningUpdate, setRunningUpdate] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState<string>('');
   const [runningCommands, setRunningCommands] = useState<Set<string>>(new Set());
   const [commandOutput, setCommandOutput] = useState<Record<string, string>>({});
   const [isEditingFrequency, setIsEditingFrequency] = useState<string | null>(null);
@@ -152,22 +148,59 @@ export const AIPage: React.FC = () => {
     setCommandOutput(prev => ({ ...prev, [commandKey]: '⏳ Running command...' }));
 
     try {
-      // Make API call to backend to run CLI command
-      const response = await fetch(`http://localhost:3008/api/cli-command`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command, docId })
-      });
+      // First try the dedicated continuous docs server
+      let response;
+      let result;
+      
+      try {
+        response = await fetch(`http://localhost:3008/api/cli-command`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, docId })
+        });
 
-      if (!response.ok) {
-        throw new Error(`Command failed: ${response.statusText}`);
+        if (response.ok) {
+          result = await response.json();
+          setCommandOutput(prev => ({
+            ...prev,
+            [commandKey]: result.output || '✅ Command completed successfully'
+          }));
+        } else {
+          throw new Error(`Continuous docs server error: ${response.statusText}`);
+        }
+      } catch (primaryError) {
+        console.log('Primary server failed, trying fallback:', primaryError);
+        
+        // Fallback to git-api-server with execute-command endpoint
+        const args = [];
+        if (command === 'check-updates') args.push('check-updates');
+        else if (command === 'process-updates') args.push('process-updates');
+        else if (command === 'list-monitored') args.push('list-monitored');
+        else args.push(command);
+
+        if (docId) {
+          args.push('--path', docId);
+        }
+
+        response = await fetch('http://localhost:3009/api/execute-command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            command: './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh',
+            args: args
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Fallback server error: ${response.statusText}`);
+        }
+
+        result = await response.json();
+        setCommandOutput(prev => ({
+          ...prev,
+          [commandKey]: result.stdout || result.output || '✅ Command completed successfully'
+        }));
       }
-
-      const result = await response.json();
-      setCommandOutput(prev => ({
-        ...prev,
-        [commandKey]: result.output || '✅ Command completed successfully'
-      }));
 
       // Reload documents if command might have changed data
       if (command === 'check-updates' || command === 'process-updates') {
@@ -185,63 +218,6 @@ export const AIPage: React.FC = () => {
         newSet.delete(commandKey);
         return newSet;
       });
-    }
-  };
-
-  // Update frequency for a document
-  const handleUpdateFrequency = async (doc: ContinuousDoc) => {
-    const { error } = await supabase
-      .from('doc_continuous_monitoring')
-      .update({
-        review_frequency_days: frequencyValue,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', doc.id);
-
-    if (error) {
-      console.error('Error updating frequency:', error);
-      alert('Failed to update frequency');
-    } else {
-      setEditingFrequency(null);
-      await loadDocuments();
-    }
-  };
-
-  // Run update check via API
-  const handleRunUpdate = async (action: 'check' | 'process' = 'check') => {
-    setRunningUpdate(true);
-    setUpdateStatus(action === 'check' ? 'Running update check...' : 'Processing updates...');
-
-    try {
-      // Call the git API server endpoint to execute CLI command
-      const response = await fetch('http://localhost:3009/api/execute-command', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          command: './scripts/cli-pipeline/continuous_docs/continuous-docs-cli.sh',
-          args: [action === 'check' ? 'check-updates' : 'process-updates', '--verbose']
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setUpdateStatus(action === 'check' 
-          ? 'Update check completed successfully' 
-          : 'Updates processed successfully');
-        await loadDocuments(); // Refresh the list
-      } else {
-        setUpdateStatus(`${action === 'check' ? 'Update check' : 'Processing'} failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error running update:', error);
-      setUpdateStatus('Failed to run command - is the API server running?');
-    } finally {
-      setRunningUpdate(false);
-      // Clear status after 5 seconds
-      setTimeout(() => setUpdateStatus(''), 5000);
     }
   };
 
@@ -387,25 +363,27 @@ export const AIPage: React.FC = () => {
                   Refresh
                 </button>
                 <button
-                  onClick={() => handleRunUpdate('check')}
-                  disabled={runningUpdate}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
+                  onClick={() => runCLICommand('check-updates')}
+                  disabled={runningCommands.has('check-updates')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2 text-sm"
                 >
-                  <Play className="w-4 h-4" />
-                  {runningUpdate ? 'Running...' : 'Check Updates'}
+                  {runningCommands.has('check-updates') ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  Check All Updates
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Status message */}
-          {updateStatus && (
-            <div className={`px-4 py-2 text-sm ${
-              updateStatus.includes('failed') || updateStatus.includes('Failed') 
-                ? 'bg-red-50 text-red-700' 
-                : 'bg-blue-50 text-blue-700'
-            }`}>
-              {updateStatus}
+          {/* Command output */}
+          {commandOutput['check-updates'] && (
+            <div className="px-4 py-2 bg-white border-b">
+              <div className="text-sm font-mono">
+                {commandOutput['check-updates']}
+              </div>
             </div>
           )}
 
@@ -459,47 +437,30 @@ export const AIPage: React.FC = () => {
                             {doc.priority}
                           </span>
                         )}
-                        {editingFrequency === doc.id ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              min="1"
-                              max="365"
-                              value={frequencyValue}
-                              onChange={(e) => setFrequencyValue(parseInt(e.target.value) || 7)}
-                              className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUpdateFrequency(doc);
-                              }}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <Save className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingFrequency(null);
-                              }}
-                              className="text-gray-500 hover:text-gray-700"
-                            >
-                              ×
-                            </button>
-                          </div>
+                        {isEditingFrequency === doc.id ? (
+                          <select
+                            value={doc.review_frequency_days || 7}
+                            onChange={(e) => handleUpdateFrequency(doc, parseInt(e.target.value))}
+                            onBlur={() => setIsEditingFrequency(null)}
+                            className="text-xs px-2 py-1 border rounded"
+                            autoFocus
+                          >
+                            <option value="1">Daily</option>
+                            <option value="7">Weekly</option>
+                            <option value="14">Bi-weekly</option>
+                            <option value="30">Monthly</option>
+                            <option value="90">Quarterly</option>
+                          </select>
                         ) : (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setEditingFrequency(doc.id);
-                              setFrequencyValue(doc.review_frequency_days || 7);
+                              setIsEditingFrequency(doc.id);
                             }}
-                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                           >
+                            <Settings className="w-3 h-3" />
                             {doc.review_frequency_days} day cycle
-                            <Edit2 className="w-3 h-3" />
                           </button>
                         )}
                       </div>
