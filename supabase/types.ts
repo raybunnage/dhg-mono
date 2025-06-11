@@ -1264,6 +1264,13 @@ export type Database = {
             foreignKeyName: "dev_task_commits_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1340,6 +1347,13 @@ export type Database = {
             foreignKeyName: "task_criteria_inheritance_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1387,6 +1401,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_element_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -1449,6 +1470,13 @@ export type Database = {
             foreignKeyName: "dev_task_elements_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1496,6 +1524,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -1570,6 +1605,13 @@ export type Database = {
             foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1629,6 +1671,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_quality_gates_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -1709,6 +1758,13 @@ export type Database = {
             foreignKeyName: "dev_task_success_criteria_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_success_criteria_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1753,6 +1809,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -1834,6 +1897,13 @@ export type Database = {
             foreignKeyName: "dev_task_validations_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_validations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1896,6 +1966,13 @@ export type Database = {
             foreignKeyName: "dev_task_work_sessions_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1918,8 +1995,15 @@ export type Database = {
       dev_tasks: {
         Row: {
           app: string | null
+          claude_last_activity: string | null
+          claude_raw_task: string | null
+          claude_recovery_notes: string | null
           claude_request: string | null
           claude_response: string | null
+          claude_submission_id: string | null
+          claude_submission_status: string | null
+          claude_submission_timestamp: string | null
+          claude_submission_worktree: string | null
           completed_at: string | null
           completion_confidence: number | null
           created_at: string | null
@@ -1964,8 +2048,15 @@ export type Database = {
         }
         Insert: {
           app?: string | null
+          claude_last_activity?: string | null
+          claude_raw_task?: string | null
+          claude_recovery_notes?: string | null
           claude_request?: string | null
           claude_response?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
           completed_at?: string | null
           completion_confidence?: number | null
           created_at?: string | null
@@ -2010,8 +2101,15 @@ export type Database = {
         }
         Update: {
           app?: string | null
+          claude_last_activity?: string | null
+          claude_raw_task?: string | null
+          claude_recovery_notes?: string | null
           claude_request?: string | null
           claude_response?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
           completed_at?: string | null
           completion_confidence?: number | null
           created_at?: string | null
@@ -2060,6 +2158,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -6280,6 +6385,60 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_tasks_claude_active_view: {
+        Row: {
+          claude_last_activity: string | null
+          claude_recovery_notes: string | null
+          claude_submission_id: string | null
+          claude_submission_status: string | null
+          claude_submission_timestamp: string | null
+          claude_submission_worktree: string | null
+          git_branch: string | null
+          git_commits_count: number | null
+          id: string | null
+          minutes_since_activity: number | null
+          priority: string | null
+          status: string | null
+          task_preview: string | null
+          task_type: string | null
+          title: string | null
+        }
+        Insert: {
+          claude_last_activity?: string | null
+          claude_recovery_notes?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
+          git_branch?: string | null
+          git_commits_count?: number | null
+          id?: string | null
+          minutes_since_activity?: never
+          priority?: string | null
+          status?: string | null
+          task_preview?: never
+          task_type?: string | null
+          title?: string | null
+        }
+        Update: {
+          claude_last_activity?: string | null
+          claude_recovery_notes?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
+          git_branch?: string | null
+          git_commits_count?: number | null
+          id?: string | null
+          minutes_since_activity?: never
+          priority?: string | null
+          status?: string | null
+          task_preview?: never
+          task_type?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       dev_tasks_enhanced_view: {
         Row: {
           app: string | null
@@ -6339,6 +6498,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -6424,6 +6590,13 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -6483,6 +6656,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -7430,6 +7610,18 @@ export type Database = {
         Args: { schema_name: string }
         Returns: Json
       }
+      get_interrupted_claude_tasks: {
+        Args: { p_worktree?: string; p_timeout_minutes?: number }
+        Returns: {
+          task_id: string
+          title: string
+          submission_id: string
+          worktree: string
+          minutes_inactive: number
+          recovery_notes: string
+          raw_task: string
+        }[]
+      }
       get_media_processing_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -7854,6 +8046,10 @@ export type Database = {
         }
         Returns: string
       }
+      submit_task_to_claude: {
+        Args: { p_task_id: string; p_raw_task: string; p_worktree?: string }
+        Returns: Json
+      }
       suggest_element_criteria: {
         Args: {
           p_element_type: string
@@ -7872,6 +8068,14 @@ export type Database = {
       table_exists: {
         Args: { p_schema_name: string; p_table_name: string }
         Returns: boolean
+      }
+      update_claude_activity: {
+        Args: {
+          p_task_id: string
+          p_status?: string
+          p_recovery_notes?: string
+        }
+        Returns: undefined
       }
       update_document_ai_metadata: {
         Args: {
