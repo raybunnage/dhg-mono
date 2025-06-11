@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { SupabaseClientService } from '../../services/supabase-client';
 
-interface FollowUpInfo {
-  originalTaskId?: string;
-  originalWorkSummaryId?: string;
-  followUpType: string;
-  followUpSummary?: string;
-  isFollowUpTask: boolean;
+interface FollowUpRelationship {
+  id: string;
+  original_task_id?: string;
+  original_work_summary_id?: string;
+  follow_up_type: string;
+  follow_up_summary?: string;
+  created_at: string;
 }
 
 interface FollowUpInfoDisplayProps {
@@ -15,7 +16,7 @@ interface FollowUpInfoDisplayProps {
 }
 
 export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisplayProps) {
-  const [followUpInfo, setFollowUpInfo] = useState<FollowUpInfo | null>(null);
+  const [followUpInfo, setFollowUpInfo] = useState<FollowUpRelationship | null>(null);
   const [originalItem, setOriginalItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,36 +29,36 @@ export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisp
 
         const supabase = SupabaseClientService.getInstance().getClient();
 
-        // Get the task with element_target information
-        const { data: task, error: taskError } = await supabase
-          .from('dev_tasks')
-          .select('element_target')
-          .eq('id', taskId)
+        // Check if this task is a follow-up by querying the follow-up table
+        const { data: followUps, error: followUpError } = await supabase
+          .from('dev_follow_up_tasks')
+          .select('*')
+          .eq('follow_up_task_id', taskId)
           .single();
 
-        if (taskError) throw taskError;
+        if (followUpError && followUpError.code !== 'PGRST116') { // PGRST116 = no rows found
+          throw followUpError;
+        }
 
-        // Check if this task has follow-up information
-        const elementTarget = task.element_target as any;
-        if (elementTarget && elementTarget.isFollowUpTask) {
-          setFollowUpInfo(elementTarget);
+        if (followUps) {
+          setFollowUpInfo(followUps);
 
           // Load the original item
-          if (elementTarget.originalTaskId) {
+          if (followUps.original_task_id) {
             const { data: originalTask, error: origError } = await supabase
               .from('dev_tasks')
               .select('id, title, status, created_at')
-              .eq('id', elementTarget.originalTaskId)
+              .eq('id', followUps.original_task_id)
               .single();
 
             if (!origError && originalTask) {
               setOriginalItem({ ...originalTask, type: 'task' });
             }
-          } else if (elementTarget.originalWorkSummaryId) {
+          } else if (followUps.original_work_summary_id) {
             const { data: originalSummary, error: origError } = await supabase
               .from('ai_work_summaries')
               .select('id, title, status, created_at')
-              .eq('id', elementTarget.originalWorkSummaryId)
+              .eq('id', followUps.original_work_summary_id)
               .single();
 
             if (!origError && originalSummary) {
@@ -93,7 +94,7 @@ export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisp
     );
   }
 
-  if (!followUpInfo || !followUpInfo.isFollowUpTask) {
+  if (!followUpInfo) {
     return null;
   }
 
@@ -141,8 +142,8 @@ export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisp
         <h3 className="text-sm font-semibold text-amber-900">
           Follow-up Task
         </h3>
-        <span className={`px-2 py-1 text-xs font-medium rounded ${getTypeBadgeColor(followUpInfo.followUpType)}`}>
-          {followUpInfo.followUpType}
+        <span className={`px-2 py-1 text-xs font-medium rounded ${getTypeBadgeColor(followUpInfo.follow_up_type)}`}>
+          {followUpInfo.follow_up_type}
         </span>
       </div>
 
@@ -168,11 +169,11 @@ export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisp
         </div>
       )}
 
-      {followUpInfo.followUpSummary && (
+      {followUpInfo.follow_up_summary && (
         <div className="mb-3">
           <div className="text-xs text-amber-700 font-medium mb-1">Summary:</div>
           <p className="text-sm text-amber-800">
-            {followUpInfo.followUpSummary}
+            {followUpInfo.follow_up_summary}
           </p>
         </div>
       )}

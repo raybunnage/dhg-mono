@@ -134,30 +134,21 @@ Phase: ${phaseInfo.phaseName}`;
       // Create follow-up relationship if this is a follow-up task
       if (data && isFollowUp && (originalTaskId || originalWorkSummaryId)) {
         try {
-          // For now, store follow-up information in task metadata
-          // This will be replaced with proper follow-up tracking once the database schema is deployed
-          const followUpInfo = {
-            originalTaskId,
-            originalWorkSummaryId,
-            followUpType,
-            followUpSummary: followUpSummary.trim() || null,
-            isFollowUpTask: true
-          };
+          const { data: followUpData, error: followUpError } = await supabase.rpc('create_follow_up_task_relationship', {
+            p_follow_up_task_id: data.id,
+            p_original_task_id: originalTaskId || null,
+            p_original_work_summary_id: originalWorkSummaryId || null,
+            p_follow_up_type: followUpType,
+            p_follow_up_summary: followUpSummary.trim() || null
+          });
 
-          const { error: updateError } = await supabase
-            .from('dev_tasks')
-            .update({
-              element_target: followUpInfo
-            })
-            .eq('id', data.id);
-
-          if (updateError) {
-            console.error('Error storing follow-up info:', updateError);
+          if (followUpError) {
+            console.error('Error creating follow-up relationship:', followUpError);
           } else {
-            console.log('Follow-up relationship recorded for task:', data.id);
+            console.log('Follow-up relationship created:', followUpData);
           }
-        } catch (followUpError) {
-          console.error('Error creating follow-up relationship:', followUpError);
+        } catch (error) {
+          console.error('Error creating follow-up relationship:', error);
           // Don't fail the task creation for follow-up errors
         }
       }

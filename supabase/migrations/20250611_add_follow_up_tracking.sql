@@ -1,6 +1,13 @@
 -- Add follow-up tracking system for dev_tasks and work_summaries
 -- This enables tracking when follow-up implementation tasks are created
 
+-- Drop existing objects if they exist (for re-running)
+DROP VIEW IF EXISTS ai_work_summaries_with_follow_ups_view;
+DROP VIEW IF EXISTS dev_tasks_with_follow_ups_view;
+DROP FUNCTION IF EXISTS get_follow_ups;
+DROP FUNCTION IF EXISTS create_follow_up_task_relationship;
+DROP TABLE IF EXISTS dev_follow_up_tasks;
+
 -- Add follow-up tracking table to track relationships
 CREATE TABLE IF NOT EXISTS dev_follow_up_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -99,9 +106,9 @@ FROM ai_work_summaries ws;
 
 -- Function to create a follow-up task relationship
 CREATE OR REPLACE FUNCTION create_follow_up_task_relationship(
+  p_follow_up_task_id UUID,
   p_original_task_id UUID DEFAULT NULL,
   p_original_work_summary_id UUID DEFAULT NULL,
-  p_follow_up_task_id UUID,
   p_follow_up_type VARCHAR DEFAULT 'implementation',
   p_follow_up_summary TEXT DEFAULT NULL
 ) RETURNS UUID AS $$
