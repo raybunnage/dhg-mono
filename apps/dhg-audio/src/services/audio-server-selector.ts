@@ -31,6 +31,10 @@ const AUDIO_SERVERS: Record<AudioServerMode, AudioServerConfig> = {
 
 class AudioServerSelector {
   private currentMode: AudioServerMode;
+  private serverUrls: Record<AudioServerMode, string> = {
+    local: 'http://localhost:3007',
+    web: 'http://localhost:3006'
+  };
   
   constructor() {
     // Load saved preference or default to local
@@ -49,7 +53,23 @@ class AudioServerSelector {
    * Get current server URL
    */
   getServerUrl(): string {
-    return AUDIO_SERVERS[this.currentMode].url;
+    return this.serverUrls[this.currentMode];
+  }
+  
+  /**
+   * Update server URLs from registry
+   */
+  updateServerUrls(urls: Record<AudioServerMode, string>): void {
+    this.serverUrls = urls;
+    // Update the static configuration as well
+    if (urls.local) {
+      AUDIO_SERVERS.local.url = urls.local;
+      AUDIO_SERVERS.local.port = parseInt(new URL(urls.local).port);
+    }
+    if (urls.web) {
+      AUDIO_SERVERS.web.url = urls.web;
+      AUDIO_SERVERS.web.port = parseInt(new URL(urls.web).port);
+    }
   }
   
   /**
@@ -85,7 +105,7 @@ class AudioServerSelector {
    */
   async checkServerHealth(mode: AudioServerMode): Promise<boolean> {
     try {
-      const response = await fetch(`${AUDIO_SERVERS[mode].url}/health`, {
+      const response = await fetch(`${this.serverUrls[mode]}/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(3000)
       });

@@ -41,6 +41,7 @@ show_help() {
   echo "  health        Check health of all servers"
   echo "  list          List registered servers"
   echo "  register      Register a new server"
+  echo "  populate      Populate registry with all known servers"
   echo "  register-table Register sys_server_ports_registry in sys_table_definitions"
   echo "  update-port   Update server port"
   echo "  logs          Show server logs"
@@ -99,6 +100,11 @@ case "$1" in
       exit 1
     fi
     track_command "register" "ts-node $SCRIPT_DIR/commands/register-server.ts $2 ${@:3}"
+    ;;
+    
+  "populate")
+    echo "📝 Populating registry with all servers"
+    track_command "populate" "ts-node $SCRIPT_DIR/commands/populate-registry.ts"
     ;;
     
   "update-port")

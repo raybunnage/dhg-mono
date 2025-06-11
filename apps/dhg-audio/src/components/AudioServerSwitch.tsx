@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { audioServerSelector, AudioServerMode } from '../services/audio-server-selector';
+import { ServerRegistryService } from '@shared/services/server-registry-service';
 
 export function AudioServerSwitch() {
   const [mode, setMode] = useState<AudioServerMode>(audioServerSelector.getMode());
@@ -8,9 +9,34 @@ export function AudioServerSwitch() {
     local: false,
     web: false
   });
+  const [serverUrls, setServerUrls] = useState<Record<AudioServerMode, string>>({
+    local: 'http://localhost:3007',
+    web: 'http://localhost:3006'
+  });
 
-  // Check server health on mount
+  // Check server health on mount and fetch server URLs
   useEffect(() => {
+    // Get dynamic server URLs from registry
+    const fetchServerUrls = async () => {
+      const registry = ServerRegistryService.getInstance();
+      
+      // Get URLs for both servers
+      const localUrl = await registry.getServerUrl('local-google-drive-audio');
+      const webUrl = await registry.getServerUrl('web-google-drive-audio');
+      
+      setServerUrls({
+        local: localUrl,
+        web: webUrl
+      });
+      
+      // Update the audio server selector with new URLs
+      audioServerSelector.updateServerUrls({
+        local: localUrl,
+        web: webUrl
+      });
+    };
+    
+    fetchServerUrls();
     checkServers();
     
     // Listen for server changes
@@ -19,8 +45,18 @@ export function AudioServerSwitch() {
       setMode(event.detail.mode);
     };
     
+    // Listen for connection changes from registry
+    const handleConnectionChange = () => {
+      checkServers();
+    };
+    
     window.addEventListener('audioServerChanged', handleChange);
-    return () => window.removeEventListener('audioServerChanged', handleChange);
+    window.addEventListener('serverConnectionChange', handleConnectionChange);
+    
+    return () => {
+      window.removeEventListener('audioServerChanged', handleChange);
+      window.removeEventListener('serverConnectionChange', handleConnectionChange);
+    };
   }, []);
 
   const checkServers = async () => {
@@ -118,7 +154,7 @@ export function AudioServerSwitch() {
       </div>
 
       <div className="mt-3 text-xs text-gray-500 text-center">
-        Currently using: {currentServer.url}
+        Currently using: {serverUrls[mode]}
       </div>
     </div>
   );
