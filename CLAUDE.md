@@ -252,6 +252,11 @@ All database views now follow a consistent naming convention:
    - Include proper error handling and logging
    - Test commands with real data before submitting
 
+4. **Work Summary CLI Usage**:
+   - ⚠️ **ALWAYS use single-line commands** - no backslashes or line breaks
+   - Format: `./work-summaries-cli.sh add --title "Title" --content "Content" --category "feature" --tags "tag1,tag2"`
+   - Valid categories: feature, bug_fix, refactoring, documentation
+
 ## CLI Command Registry
 
 **Before creating new CLI commands**, check the existing command registry:
