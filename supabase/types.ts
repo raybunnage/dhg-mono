@@ -5682,6 +5682,63 @@ export type Database = {
           },
         ]
       }
+      sys_server_ports_registry: {
+        Row: {
+          base_path: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          environment: string | null
+          health_check_endpoint: string | null
+          host: string | null
+          id: string
+          last_health_check: string | null
+          last_health_status: string | null
+          metadata: Json | null
+          port: number
+          protocol: string | null
+          service_name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_path?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          environment?: string | null
+          health_check_endpoint?: string | null
+          host?: string | null
+          id?: string
+          last_health_check?: string | null
+          last_health_status?: string | null
+          metadata?: Json | null
+          port: number
+          protocol?: string | null
+          service_name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_path?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          environment?: string | null
+          health_check_endpoint?: string | null
+          host?: string | null
+          id?: string
+          last_health_check?: string | null
+          last_health_status?: string | null
+          metadata?: Json | null
+          port?: number
+          protocol?: string | null
+          service_name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_service_dependencies: {
         Row: {
           created_at: string | null
@@ -5927,6 +5984,39 @@ export type Database = {
           rollback_at?: string | null
           rollback_by?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sys_table_prefixes: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string
+          domain: string
+          example_tables: string[] | null
+          id: string
+          prefix: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description: string
+          domain: string
+          example_tables?: string[] | null
+          id?: string
+          prefix: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string
+          domain?: string
+          example_tables?: string[] | null
+          id?: string
+          prefix?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -6674,6 +6764,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_active_servers_view: {
+        Row: {
+          base_url: string | null
+          display_name: string | null
+          last_health_check: string | null
+          last_health_status: string | null
+          port: number | null
+          service_name: string | null
+          status: string | null
+        }
+        Insert: {
+          base_url?: never
+          display_name?: string | null
+          last_health_check?: string | null
+          last_health_status?: string | null
+          port?: number | null
+          service_name?: string | null
+          status?: string | null
+        }
+        Update: {
+          base_url?: never
+          display_name?: string | null
+          last_health_check?: string | null
+          last_health_status?: string | null
+          port?: number | null
+          service_name?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       sys_app_dependencies_view: {
         Row: {
           app_description: string | null
@@ -6876,6 +6996,16 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_table_prefix_usage_view: {
+        Row: {
+          description: string | null
+          domain: string | null
+          example_tables: string[] | null
+          prefix: string | null
+          table_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_allowed_email: {
@@ -6978,6 +7108,10 @@ export type Database = {
           created_at: string
           user_exists: boolean
         }[]
+      }
+      check_table_prefix_exists: {
+        Args: { table_name: string }
+        Returns: boolean
       }
       check_user_id_foreign_keys: {
         Args: Record<PropertyKey, never>
