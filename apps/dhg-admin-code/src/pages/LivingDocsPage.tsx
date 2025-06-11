@@ -7,7 +7,7 @@ import { extractNextPhase, formatNextPhaseSummary } from '@shared/utils/markdown
 import type { PhaseInfo } from '@shared/utils/markdown-phase-extractor';
 import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
+import { PlusCircleIcon, Search } from '@heroicons/react/24/outline';
 import { serverRegistry } from '@shared/services/server-registry-service';
 import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
@@ -29,6 +29,9 @@ export function LivingDocsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<LivingDocument | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
   const [creatingTaskFor, setCreatingTaskFor] = useState<{doc: LivingDocument, phase: PhaseInfo} | null>(null);
@@ -52,112 +55,352 @@ export function LivingDocsPage() {
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'template'
+          category: 'documentation'
+        },
+        {
+          fileName: 'admin-dashboard-implementation-system.md',
+          path: '/docs/living-docs/admin-dashboard-implementation-system.md',
+          description: 'Implementation guide for the administrative dashboard system with component architecture and best practices.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
         },
         {
           fileName: 'apps-documentation.md',
           path: '/docs/living-docs/apps-documentation.md',
-          description: 'Comprehensive documentation for all DHG monorepo applications including configuration, deployment, and usage patterns.',
-          updateFrequency: 'daily',
+          description: 'Comprehensive documentation of all applications in the monorepo including features, setup, and maintenance.',
+          updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
+          priority: 'medium',
           status: 'active',
-          category: 'architecture'
+          category: 'documentation'
         },
         {
-          fileName: 'cli-pipelines-documentation.md',
-          path: '/docs/living-docs/cli-pipelines-documentation.md',
-          description: 'Architecture and usage documentation for CLI pipeline system including command structure and integration patterns.',
+          fileName: 'batch-processing-system.md',
+          path: '/docs/living-docs/batch-processing-system.md',
+          description: 'Design and implementation of the batch processing system for handling large-scale operations efficiently.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'architecture'
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'claude-md-candidates.md',
+          path: '/docs/living-docs/claude-md-candidates.md',
+          description: 'Candidate updates and improvements for CLAUDE.md based on discovered patterns and solutions.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'documentation'
+        },
+        {
+          fileName: 'claude-md-management-guide.md',
+          path: '/docs/living-docs/claude-md-management-guide.md',
+          description: 'Guide for managing and updating CLAUDE.md with versioning, review processes, and integration strategies.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'documentation'
         },
         {
           fileName: 'claude-tasks-editing-implementation.md',
           path: '/docs/living-docs/claude-tasks-editing-implementation.md',
-          description: 'Implementation guide for Claude task editing system including modal components, form validation, and database integration.',
+          description: 'Implementation details for Claude task editing functionality including UI components and data flow.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'medium',
           status: 'active',
-          category: 'implementation'
+          category: 'development'
+        },
+        {
+          fileName: 'cli-pipelines-documentation.md',
+          path: '/docs/living-docs/cli-pipelines-documentation.md',
+          description: 'Documentation of CLI pipeline architecture, commands, and best practices for extending functionality.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'cli-pipelines-documentation-updated-2025-06-08.md',
+          path: '/docs/living-docs/cli-pipelines-documentation-updated-2025-06-08.md',
+          description: 'Updated CLI pipelines documentation with latest patterns and consolidated commands.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-08T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
         },
         {
           fileName: 'code-continuous-monitoring.md',
           path: '/docs/living-docs/code-continuous-monitoring.md',
-          description: 'System for monitoring code changes and automatically updating documentation to maintain synchronization.',
+          description: 'System for continuous code monitoring including health checks, metrics, and automated alerts.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'monitoring'
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'continuous-documentation-monitoring-vision.md',
+          path: '/docs/living-docs/continuous-documentation-monitoring-vision.md',
+          description: 'Vision and architecture for automated documentation monitoring and update systems.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'documentation'
+        },
+        {
+          fileName: 'continuous-monitoring-implementation-guide.md',
+          path: '/docs/living-docs/continuous-monitoring-implementation-guide.md',
+          description: 'Step-by-step guide for implementing continuous monitoring across different system components.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'database-architecture-guide.md',
+          path: '/docs/living-docs/database-architecture-guide.md',
+          description: 'Comprehensive guide to database architecture including schema design, optimization, and best practices.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'infrastructure'
         },
         {
           fileName: 'database-maintenance-guide.md',
           path: '/docs/living-docs/database-maintenance-guide.md',
-          description: 'Guidelines for database maintenance including migrations, cleanup procedures, and performance optimization.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'database'
-        },
-        {
-          fileName: 'git-history-analysis-server.md',
-          path: '/docs/living-docs/git-history-analysis-server.md',
-          description: 'Server implementation for analyzing git history and extracting insights about code changes and development patterns.',
-          updateFrequency: 'on-change',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'tools'
-        },
-        {
-          fileName: 'mp4-pipeline-auto-update-system.md',
-          path: '/docs/living-docs/mp4-pipeline-auto-update-system.md',
-          description: 'Automated system for processing MP4 files including conversion, metadata extraction, and storage management.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'media'
-        },
-        {
-          fileName: 'mp4-to-m4a-pipeline-implementation.md',
-          path: '/docs/living-docs/mp4-to-m4a-pipeline-implementation.md',
-          description: 'Implementation details for converting MP4 files to M4A audio format with quality preservation and batch processing.',
-          updateFrequency: 'on-change',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'media'
-        },
-        {
-          fileName: 'prompt-service-implementation-progress.md',
-          path: '/docs/living-docs/prompt-service-implementation-progress.md',
-          description: 'Progress tracking for AI prompt service implementation including features, testing, and deployment status.',
+          description: 'Guide for routine database maintenance tasks including backups, optimizations, and health checks.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'ai'
+          category: 'infrastructure'
         },
         {
-          fileName: 'script-and-prompt-management-guide.md',
-          path: '/docs/living-docs/script-and-prompt-management-guide.md',
-          description: 'Comprehensive guide for managing scripts and AI prompts including organization, versioning, and best practices.',
+          fileName: 'deployment-management-system.md',
+          path: '/docs/living-docs/deployment-management-system.md',
+          description: 'System for managing deployments with safety checks, rollback capabilities, and audit trails.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-11T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'dev-tasks-lifecycle-management-guide.md',
+          path: '/docs/living-docs/dev-tasks-lifecycle-management-guide.md',
+          description: 'Guide for managing development task lifecycles from creation through completion and archival.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'dev-tasks-success-criteria-enhancement.md',
+          path: '/docs/living-docs/dev-tasks-success-criteria-enhancement.md',
+          description: 'Enhancement guide for defining and tracking success criteria in development tasks.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'dev-tasks-system.md',
+          path: '/docs/living-docs/dev-tasks-system.md',
+          description: 'Core system documentation for development task tracking and management infrastructure.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'document-archiving-strategy.md',
+          path: '/docs/living-docs/document-archiving-strategy.md',
+          description: 'Strategy for archiving documents including retention policies, storage optimization, and retrieval.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'documentation'
+        },
+        {
+          fileName: 'documentation-management-system.md',
+          path: '/docs/living-docs/documentation-management-system.md',
+          description: 'System for managing all project documentation including versioning, review cycles, and publishing.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'documentation'
+        },
+        {
+          fileName: 'element-catalog-system-guide.md',
+          path: '/docs/living-docs/element-catalog-system-guide.md',
+          description: 'Guide for cataloging and managing UI elements and components across applications.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'element-success-criteria-gates-system.md',
+          path: '/docs/living-docs/element-success-criteria-gates-system.md',
+          description: 'System for defining and enforcing success criteria gates for UI elements and features.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'git-history-analysis-server.md',
+          path: '/docs/living-docs/git-history-analysis-server.md',
+          description: 'Server implementation for analyzing git history and providing insights on code evolution.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'google-drive-integration.md',
+          path: '/docs/living-docs/google-drive-integration.md',
+          description: 'Integration guide for Google Drive including authentication, file operations, and sync strategies.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'management'
+          category: 'integration'
+        },
+        {
+          fileName: 'granular-success-criteria-system.md',
+          path: '/docs/living-docs/granular-success-criteria-system.md',
+          description: 'System for defining granular success criteria with measurable outcomes and validation.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'hardcoded-values-parameterization-guide.md',
+          path: '/docs/living-docs/hardcoded-values-parameterization-guide.md',
+          description: 'Guide for identifying and parameterizing hardcoded values to improve configurability.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'living-docs-prioritization-system.md',
+          path: '/docs/living-docs/living-docs-prioritization-system.md',
+          description: 'System for prioritizing living documents based on value, effort, and impact analysis.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-11T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'documentation'
+        },
+        {
+          fileName: 'mp4-pipeline-auto-update-system.md',
+          path: '/docs/living-docs/mp4-pipeline-auto-update-system.md',
+          description: 'Automated update system for MP4 processing pipeline with monitoring and error handling.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'mp4-to-m4a-pipeline-implementation.md',
+          path: '/docs/living-docs/mp4-to-m4a-pipeline-implementation.md',
+          description: 'Implementation guide for audio extraction pipeline converting MP4 to M4A format.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'prompt-service-implementation-progress.md',
+          path: '/docs/living-docs/prompt-service-implementation-progress.md',
+          description: 'Progress tracking for prompt service implementation including milestones and blockers.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'script-and-prompt-management-guide.md',
+          path: '/docs/living-docs/script-and-prompt-management-guide.md',
+          description: 'Guide for managing scripts and prompts including versioning, testing, and deployment.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'server-registry-implementation-guide.md',
+          path: '/docs/living-docs/server-registry-implementation-guide.md',
+          description: 'Implementation guide for server registry system with dynamic port management.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'service-dependency-system.md',
+          path: '/docs/living-docs/service-dependency-system.md',
+          description: 'System for tracking and managing service dependencies with impact analysis.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'infrastructure'
+        },
+        {
+          fileName: 'success-criteria-implementation-guide.md',
+          path: '/docs/living-docs/success-criteria-implementation-guide.md',
+          description: 'Guide for implementing success criteria across different system components.',
+          updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'medium',
+          status: 'active',
+          category: 'development'
+        },
+        {
+          fileName: 'supabase-free-plan-optimization-guide.md',
+          path: '/docs/living-docs/supabase-free-plan-optimization-guide.md',
+          description: 'Guide for optimizing Supabase usage within free plan limits including caching strategies.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-11T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'infrastructure'
         },
         {
           fileName: 'testing-quick-start-dhg-apps.md',
           path: '/docs/living-docs/testing-quick-start-dhg-apps.md',
-          description: 'Quick start guide for setting up and running tests across all DHG applications with common patterns and utilities.',
+          description: 'Quick start guide for testing DHG applications with examples and best practices.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'medium',
@@ -167,121 +410,60 @@ export function LivingDocsPage() {
         {
           fileName: 'testing-vision-and-implementation-guide.md',
           path: '/docs/living-docs/testing-vision-and-implementation-guide.md',
-          description: 'Strategic vision and implementation roadmap for testing infrastructure including tools, processes, and quality standards.',
+          description: 'Vision and implementation guide for comprehensive testing strategy across all applications.',
           updateFrequency: 'weekly',
           lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
+          priority: 'high',
           status: 'active',
           category: 'testing'
         },
         {
-          fileName: 'worktree-assignment-system.md',
-          path: '/docs/living-docs/worktree-assignment-system.md',
-          description: 'System for managing git worktree assignments and task allocation including automation and tracking capabilities.',
+          fileName: 'testing-vision-and-implementation.md',
+          path: '/docs/living-docs/testing-vision-and-implementation.md',
+          description: 'Core testing vision document outlining principles, strategies, and implementation roadmap.',
           updateFrequency: 'weekly',
+          lastUpdated: '2025-06-09T08:00:00Z',
+          priority: 'high',
+          status: 'active',
+          category: 'testing'
+        },
+        {
+          fileName: 'unassigned-tasks-analysis-and-recommendations.md',
+          path: '/docs/living-docs/unassigned-tasks-analysis-and-recommendations.md',
+          description: 'Analysis of unassigned tasks with recommendations for prioritization and assignment.',
+          updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'medium',
           status: 'active',
-          category: 'git'
+          category: 'development'
         },
         {
-          fileName: 'dev-tasks-system.md',
-          path: '/docs/living-docs/dev-tasks-system.md',
-          description: 'Comprehensive dev task management system that bridges structured planning with AI-assisted development.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
+          fileName: 'work-summary-validation-system.md',
+          path: '/docs/living-docs/work-summary-validation-system.md',
+          description: 'System for validating work summaries with follow-up tasks and quality assurance.',
+          updateFrequency: 'daily',
+          lastUpdated: '2025-06-11T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'management'
+          category: 'development'
         },
         {
-          fileName: 'database-architecture-guide.md',
-          path: '/docs/living-docs/database-architecture-guide.md',
-          description: 'Database architecture, naming conventions, and migration procedures with comprehensive table organization.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'database'
-        },
-        {
-          fileName: 'service-dependency-system.md',
-          path: '/docs/living-docs/service-dependency-system.md',
-          description: 'Service dependency mapping system for understanding relationships between apps, pipelines, and shared services.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'architecture'
-        },
-        {
-          fileName: 'google-drive-integration.md',
-          path: '/docs/living-docs/google-drive-integration.md',
-          description: 'Google Drive integration with audio streaming, local optimization, and AI-powered content analysis.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'integration'
-        },
-        {
-          fileName: 'documentation-management-system.md',
-          path: '/docs/living-docs/documentation-management-system.md',
-          description: 'Living documentation system for managing 700+ docs with continuous monitoring and intelligent archiving.',
+          fileName: 'worktree-assignment-system.md',
+          path: '/docs/living-docs/worktree-assignment-system.md',
+          description: 'System for managing worktree assignments and tracking work across multiple branches.',
           updateFrequency: 'daily',
           lastUpdated: '2025-06-09T08:00:00Z',
           priority: 'high',
           status: 'active',
-          category: 'documentation'
-        },
-        {
-          fileName: 'batch-processing-system.md',
-          path: '/docs/living-docs/batch-processing-system.md',
-          description: 'Scalable batch processing system for handling large document sets with monitoring and error recovery.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'medium',
-          status: 'active',
-          category: 'processing'
-        },
-        {
-          fileName: 'claude-md-management-guide.md',
-          path: '/docs/living-docs/claude-md-management-guide.md',
-          description: 'Comprehensive guide for managing CLAUDE.md size under 40k limit with tracking and optimization strategies.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'critical',
-          status: 'active',
-          category: 'management'
-        },
-        {
-          fileName: 'claude-md-candidates.md',
-          path: '/docs/living-docs/claude-md-candidates.md',
-          description: 'Tracking document for potential CLAUDE.md additions with review process and size impact analysis.',
-          updateFrequency: 'weekly',
-          lastUpdated: '2025-06-09T08:00:00Z',
-          priority: 'high',
-          status: 'active',
-          category: 'management'
+          category: 'development'
         }
       ];
       
-      // Sort documents: template first, then by priority and name
-      const sortedDocs = livingDocs.sort((a, b) => {
-        if (a.category === 'template') return -1;
-        if (b.category === 'template') return 1;
-        if (a.priority !== b.priority) {
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
-          return priorityOrder[a.priority] - priorityOrder[b.priority];
-        }
-        return a.fileName.localeCompare(b.fileName);
-      });
+      setDocuments(livingDocs);
       
-      setDocuments(sortedDocs);
-      setError(null);
     } catch (err) {
-      setError('Failed to load living documents.');
       console.error('Error loading documents:', err);
+      setError('Failed to load living documents');
     } finally {
       setLoading(false);
     }
@@ -336,14 +518,11 @@ export function LivingDocsPage() {
       const phaseInfo = extractNextPhase(content);
       if (phaseInfo && document) {
         document.nextPhase = phaseInfo;
-        // Update the document in the state
-        setDocuments(docs => docs.map(doc => 
-          doc.path === document.path ? { ...doc, nextPhase: phaseInfo } : doc
-        ));
       }
-    } catch (err) {
-      console.error('Error loading markdown:', err);
-      setMarkdownContent('Error loading document content. Make sure the markdown server is running on port 3001.');
+      
+    } catch (error) {
+      console.error('Error loading markdown:', error);
+      setMarkdownContent('Failed to load document content');
     } finally {
       setLoadingMarkdown(false);
     }
@@ -351,11 +530,21 @@ export function LivingDocsPage() {
 
   // Get unique categories
   const categories = Array.from(new Set(documents.map(doc => doc.category))).sort();
+  const priorities = ['high', 'medium', 'low'];
+  const statuses = ['active', 'draft', 'archived'];
 
-  // Filter documents by category
-  const filteredDocuments = selectedCategory 
-    ? documents.filter(doc => doc.category === selectedCategory)
-    : documents;
+  // Filter documents by category, priority, status, and search
+  const filteredDocuments = documents.filter(doc => {
+    const matchesCategory = !selectedCategory || doc.category === selectedCategory;
+    const matchesPriority = !selectedPriority || doc.priority === selectedPriority;
+    const matchesStatus = !selectedStatus || doc.status === selectedStatus;
+    const matchesSearch = !searchQuery || 
+      doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesCategory && matchesPriority && matchesStatus && matchesSearch;
+  });
 
   // Check if document needs update
   const needsUpdate = (doc: LivingDocument): boolean => {
@@ -401,75 +590,73 @@ export function LivingDocsPage() {
       return 'Update due';
     }
     
-    const hoursUntil = differenceInHours(nextUpdate, now);
-    if (hoursUntil < 24) {
-      return `${hoursUntil} hours`;
+    const hours = differenceInHours(nextUpdate, now);
+    if (hours < 24) {
+      return `${hours}h`;
     }
     
-    const daysUntil = Math.floor(hoursUntil / 24);
-    return `${daysUntil} days`;
+    const days = differenceInDays(nextUpdate, now);
+    return `${days}d`;
   };
 
-  // Get priority badge color
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'bg-purple-100 text-purple-800';
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get status badge color
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getCategoryBadgeColor = (category: string) => {
+  // Get badge colors based on category
+  const getCategoryBadgeColor = (category: string): string => {
     const colors: Record<string, string> = {
-      'template': 'bg-purple-100 text-purple-800',
-      'architecture': 'bg-blue-100 text-blue-800',
-      'implementation': 'bg-green-100 text-green-800',
-      'monitoring': 'bg-orange-100 text-orange-800',
-      'database': 'bg-indigo-100 text-indigo-800',
-      'tools': 'bg-cyan-100 text-cyan-800',
-      'media': 'bg-pink-100 text-pink-800',
-      'ai': 'bg-red-100 text-red-800',
-      'management': 'bg-yellow-100 text-yellow-800',
-      'testing': 'bg-teal-100 text-teal-800',
-      'git': 'bg-gray-100 text-gray-800',
-      'integration': 'bg-emerald-100 text-emerald-800',
-      'documentation': 'bg-amber-100 text-amber-800',
-      'processing': 'bg-lime-100 text-lime-800'
+      'documentation': 'bg-blue-100 text-blue-800',
+      'development': 'bg-purple-100 text-purple-800',
+      'infrastructure': 'bg-green-100 text-green-800',
+      'testing': 'bg-yellow-100 text-yellow-800',
+      'integration': 'bg-indigo-100 text-indigo-800'
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
-  const getFrequencyBadgeColor = (frequency: string) => {
-    switch (frequency) {
-      case 'daily':
-        return 'bg-red-100 text-red-800';
-      case 'weekly':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'on-change':
-        return 'bg-green-100 text-green-800';
+  // Get badge colors based on priority
+  const getPriorityBadgeColor = (priority: string): string => {
+    const colors: Record<string, string> = {
+      'high': 'bg-red-100 text-red-800',
+      'medium': 'bg-yellow-100 text-yellow-800',
+      'low': 'bg-green-100 text-green-800'
+    };
+    return colors[priority] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Get badge colors based on update frequency
+  const getFrequencyBadgeColor = (frequency: string): string => {
+    const colors: Record<string, string> = {
+      'daily': 'bg-purple-100 text-purple-800',
+      'weekly': 'bg-blue-100 text-blue-800',
+      'on-change': 'bg-gray-100 text-gray-800'
+    };
+    return colors[frequency] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Get priority icon
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return '🔥';
+      case 'medium':
+        return '🟡';
+      case 'low':
+        return '🔵';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return '⚪';
+    }
+  };
+
+  // Remove applied filters
+  const removeFilter = (type: 'category' | 'priority' | 'status') => {
+    switch (type) {
+      case 'category':
+        setSelectedCategory(null);
+        break;
+      case 'priority':
+        setSelectedPriority(null);
+        break;
+      case 'status':
+        setSelectedStatus(null);
+        break;
     }
   };
 
@@ -516,18 +703,146 @@ export function LivingDocsPage() {
             </div>
           </div>
 
-          {/* Actions and Category Filter */}
-          <div className="mb-4 flex justify-between items-center">
-            <select
-              value={selectedCategory || ''}
-              onChange={(e) => setSelectedCategory(e.target.value || null)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Categories</option>
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search documents..."
+                className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="mb-4 space-y-2">
+            {/* Category Pills */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-gray-600 font-medium mr-2">Category:</span>
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  !selectedCategory
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    selectedCategory === cat
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat}
+                </button>
               ))}
-            </select>
+            </div>
+
+            {/* Priority Pills */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-gray-600 font-medium mr-2">Priority:</span>
+              <button
+                onClick={() => setSelectedPriority(null)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  !selectedPriority
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
+              {priorities.map(priority => (
+                <button
+                  key={priority}
+                  onClick={() => setSelectedPriority(priority)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
+                    selectedPriority === priority
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {getPriorityIcon(priority)} {priority}
+                </button>
+              ))}
+            </div>
+
+            {/* Status Pills */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-gray-600 font-medium mr-2">Status:</span>
+              <button
+                onClick={() => setSelectedStatus(null)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  !selectedStatus
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
+              {statuses.map(status => (
+                <button
+                  key={status}
+                  onClick={() => setSelectedStatus(status)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    selectedStatus === status
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            {/* Active Filters */}
+            {(selectedCategory || selectedPriority || selectedStatus) && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                <span className="text-sm text-gray-600">Active filters:</span>
+                {selectedCategory && (
+                  <button
+                    onClick={() => removeFilter('category')}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center gap-1 hover:bg-blue-200"
+                  >
+                    {selectedCategory}
+                    <span className="text-blue-600">×</span>
+                  </button>
+                )}
+                {selectedPriority && (
+                  <button
+                    onClick={() => removeFilter('priority')}
+                    className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium flex items-center gap-1 hover:bg-purple-200"
+                  >
+                    {selectedPriority}
+                    <span className="text-purple-600">×</span>
+                  </button>
+                )}
+                {selectedStatus && (
+                  <button
+                    onClick={() => removeFilter('status')}
+                    className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium flex items-center gap-1 hover:bg-green-200"
+                  >
+                    {selectedStatus}
+                    <span className="text-green-600">×</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="mb-4 flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Showing {filteredDocuments.length} of {documents.length} documents
+            </div>
             
             <button
               onClick={generatePriorityDashboard}
@@ -554,88 +869,71 @@ export function LivingDocsPage() {
           <div className="space-y-4">
             {filteredDocuments.map((doc) => (
               <div
-                key={doc.path}
+                key={doc.fileName}
+                className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
+                  selectedDocument?.fileName === doc.fileName ? 'ring-2 ring-blue-500' : ''
+                } ${needsUpdate(doc) ? 'border-l-4 border-orange-500' : ''}`}
                 onClick={() => loadMarkdownContent(doc)}
-                className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                  selectedDocument?.path === doc.path ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                } ${
-                  needsUpdate(doc) ? 'border-l-4 border-l-orange-500' : ''
-                }`}
               >
-                {/* Header */}
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    {getPriorityIcon(doc.priority)}
                     {doc.fileName.replace('.md', '')}
                   </h3>
-                  {doc.category === 'template' && (
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                      TEMPLATE
-                    </span>
+                  {doc.nextPhase && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCreatingTaskFor({ doc, phase: doc.nextPhase });
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded"
+                      title="Create task from next phase"
+                    >
+                      <PlusCircleIcon className="w-5 h-5 text-gray-600" />
+                    </button>
                   )}
                 </div>
-
-                {/* Description */}
-                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                  {doc.description}
-                </p>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryBadgeColor(doc.category)}`}>
+                
+                <p className="text-sm text-gray-600 mb-3">{doc.description}</p>
+                
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className={`px-2 py-1 rounded ${getCategoryBadgeColor(doc.category)}`}>
                     {doc.category}
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityBadgeColor(doc.priority)}`}>
+                  <span className={`px-2 py-1 rounded ${getPriorityBadgeColor(doc.priority)}`}>
                     {doc.priority} priority
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
-                    {doc.updateFrequency}
+                  <span className={`px-2 py-1 rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
+                    {doc.updateFrequency} updates
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusBadgeColor(doc.status)}`}>
-                    {doc.status}
+                  {doc.status !== 'active' && (
+                    <span className="px-2 py-1 rounded bg-gray-100 text-gray-800">
+                      {doc.status}
+                    </span>
+                  )}
+                  <span className={`px-2 py-1 rounded ${needsUpdate(doc) ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {needsUpdate(doc) ? '⚠️ Update due' : `Next: ${getNextUpdateTime(doc)}`}
                   </span>
                 </div>
 
-                {/* Next Phase Section */}
                 {doc.nextPhase && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="text-xs font-medium text-blue-900 mb-1">
-                          Next Phase: {doc.nextPhase.phaseName}
-                        </div>
-                        <div className="text-xs text-blue-700">
-                          {formatNextPhaseSummary(doc.nextPhase)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCreatingTaskFor({ doc, phase: doc.nextPhase });
-                        }}
-                        className="ml-2 p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded transition-colors"
-                        title="Create implementation task"
-                      >
-                        <PlusCircleIcon className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
+                    <strong className="text-blue-900">Next Phase:</strong>
+                    <span className="text-blue-700 ml-1">{formatNextPhaseSummary(doc.nextPhase)}</span>
                   </div>
                 )}
 
-                {/* Update Info */}
-                <div className="flex justify-between items-center text-xs text-gray-500 mt-3">
-                  <span>Updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}</span>
-                  <span className={needsUpdate(doc) ? 'text-orange-600 font-medium' : ''}>
-                    Next: {getNextUpdateTime(doc)}
-                  </span>
+                <div className="mt-2 text-xs text-gray-500">
+                  Last updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}
                 </div>
-
-                {needsUpdate(doc) && (
-                  <div className="mt-2 text-xs text-orange-600 font-medium">
-                    ⚠️ Update overdue
-                  </div>
-                )}
               </div>
             ))}
+            
+            {filteredDocuments.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No documents match your filters
+              </div>
+            )}
           </div>
         </div>
 
@@ -730,15 +1028,14 @@ export function LivingDocsPage() {
       {/* Create Task Modal */}
       {creatingTaskFor && (
         <CreateTaskFromPhase
-          phaseInfo={creatingTaskFor.phase}
-          docTitle={creatingTaskFor.doc.fileName.replace('.md', '')}
-          docPath={creatingTaskFor.doc.path}
+          phase={creatingTaskFor.phase}
+          documentTitle={creatingTaskFor.doc.fileName}
+          documentPath={creatingTaskFor.doc.path}
+          onClose={() => setCreatingTaskFor(null)}
           onTaskCreated={(taskId) => {
             setCreatingTaskFor(null);
-            // Navigate to the task detail page
-            navigate(`/tasks/${taskId}`);
+            navigate(`/tasks?id=${taskId}`);
           }}
-          onCancel={() => setCreatingTaskFor(null)}
         />
       )}
     </DashboardLayout>
