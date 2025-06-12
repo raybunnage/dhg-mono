@@ -48,8 +48,16 @@ const DeploymentPage: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
-      setDeployments(data || []);
+      if (error) {
+        if (error.code === '406') {
+          console.warn('Deployment runs table may not be accessible. Please check database migrations and RLS policies.');
+          setError('Deployment history is not available. Please ensure the deployment tables are properly set up.');
+        } else {
+          throw error;
+        }
+      } else {
+        setDeployments(data || []);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -63,7 +71,12 @@ const DeploymentPage: React.FC = () => {
         .from('deployment_runs')
         .select('*')
         .in('status', ['pending', 'validating', 'deploying'])
-        .single();
+        .maybeSingle();
+
+      if (error && error.code === '406') {
+        console.warn('Deployment runs table may not be accessible. Skipping active deployment check.');
+        return;
+      }
 
       if (data && !error) {
         setActiveDeployment(data);
@@ -86,7 +99,7 @@ const DeploymentPage: React.FC = () => {
         }, 2000);
       }
     } catch (err) {
-      // No active deployment
+      console.error('Error checking active deployment:', err);
     }
   };
 
@@ -179,23 +192,6 @@ const DeploymentPage: React.FC = () => {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-      case 'passed':
-        return 'success';
-      case 'failed':
-        return 'destructive';
-      case 'validating':
-      case 'deploying':
-      case 'running':
-        return 'default';
-      case 'rolled_back':
-        return 'warning';
-      default:
-        return 'secondary';
-    }
-  };
 
   if (loading) {
     return (
@@ -211,58 +207,64 @@ const DeploymentPage: React.FC = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Deployment Management</h1>
         <div className="flex gap-2">
-          <Button
+          <button
             onClick={() => loadDeployments()}
-            variant="outline"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={() => {
               setDeploymentType('staging');
               setShowConfirmDialog(true);
             }}
             disabled={isDeploying}
-            variant="outline"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Deploy to Staging
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={() => {
               setDeploymentType('production');
               setShowConfirmDialog(true);
             }}
             disabled={isDeploying}
-            variant="default"
-            className="bg-red-600 hover:bg-red-700"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Deploy to Production
-          </Button>
+          </button>
         </div>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" />
           <span>{error}</span>
-        </Alert>
+        </div>
       )}
 
       {/* Active Deployment */}
       {activeDeployment && (
-        <Card className="p-6">
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
           <h2 className="text-xl font-semibold mb-4">Active Deployment</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {getStatusIcon(activeDeployment.status)}
                 <span className="font-medium">{activeDeployment.deployment_id}</span>
-                <Badge variant={getStatusBadgeColor(activeDeployment.status)}>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  activeDeployment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  activeDeployment.status === 'failed' ? 'bg-red-100 text-red-800' :
+                  activeDeployment.status === 'rolled_back' ? 'bg-orange-100 text-orange-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
                   {activeDeployment.status}
-                </Badge>
+                </span>
               </div>
-              <Badge variant="outline">{activeDeployment.deployment_type}</Badge>
+              <span className="px-2 py-1 text-xs font-medium rounded-full border border-gray-300 text-gray-700">
+                {activeDeployment.deployment_type}
+              </span>
             </div>
 
             {/* Validation Progress */}
@@ -281,11 +283,11 @@ const DeploymentPage: React.FC = () => {
               </div>
             )}
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Pre-flight Checklist */}
-      <Card className="p-6">
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
         <h2 className="text-xl font-semibold mb-4">Pre-flight Checklist</h2>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -305,10 +307,10 @@ const DeploymentPage: React.FC = () => {
             <span>Database migrations applied</span>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Deployment History */}
-      <Card className="p-6">
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
         <h2 className="text-xl font-semibold mb-4">Deployment History</h2>
         <div className="space-y-4">
           {deployments.length === 0 ? (
@@ -320,23 +322,29 @@ const DeploymentPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {getStatusIcon(deployment.status)}
                     <span className="font-medium">{deployment.deployment_id}</span>
-                    <Badge variant={getStatusBadgeColor(deployment.status)}>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      deployment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      deployment.status === 'failed' ? 'bg-red-100 text-red-800' :
+                      deployment.status === 'rolled_back' ? 'bg-orange-100 text-orange-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
                       {deployment.status}
-                    </Badge>
-                    <Badge variant="outline">{deployment.deployment_type}</Badge>
+                    </span>
+                    <span className="px-2 py-1 text-xs font-medium rounded-full border border-gray-300 text-gray-700">
+                      {deployment.deployment_type}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">
                       {new Date(deployment.started_at).toLocaleString()}
                     </span>
                     {deployment.status === 'completed' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <button
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
                         onClick={() => rollbackDeployment(deployment.deployment_id)}
                       >
                         Rollback
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -352,12 +360,12 @@ const DeploymentPage: React.FC = () => {
             ))
           )}
         </div>
-      </Card>
+      </div>
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 max-w-md">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md">
             <h3 className="text-lg font-semibold mb-4">
               Confirm {deploymentType === 'production' ? 'Production' : 'Staging'} Deployment
             </h3>
@@ -367,20 +375,24 @@ const DeploymentPage: React.FC = () => {
                 : 'Deploy the current development branch to staging environment?'}
             </p>
             <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
+              <button
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 onClick={() => setShowConfirmDialog(false)}
               >
                 Cancel
-              </Button>
-              <Button
-                variant={deploymentType === 'production' ? 'destructive' : 'default'}
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg text-white ${
+                  deploymentType === 'production' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
                 onClick={startDeployment}
               >
                 Deploy to {deploymentType === 'production' ? 'Production' : 'Staging'}
-              </Button>
+              </button>
             </div>
-          </Card>
+          </div>
         </div>
       )}
       </div>

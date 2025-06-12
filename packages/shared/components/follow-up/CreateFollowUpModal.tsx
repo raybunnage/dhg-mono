@@ -41,7 +41,7 @@ export function CreateFollowUpModal({
         originalWorkSummaryId,
         followUpTaskId,
         followUpType,
-        followUpSummary: followUpSummary.trim() || null
+        followUpSummary: followUpSummary.trim() || undefined
       });
 
       onCreated?.();
