@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { WorkSummaryService, type WorkSummary } from '@shared/services/work-summary-service';
 import { WorkSummaryCard } from '../components/WorkSummaryCard';
 import { useWorkSummaryTracking } from '../hooks/useWorkSummaryTracking';
+import { StatusPill } from '@shared/components/ui/StatusPill';
 
 // Create work summary service instance
 const workSummaryService = WorkSummaryService.getInstance(supabase);
@@ -42,6 +43,7 @@ function WorkSummaryWithTracking({
       submissionInfo={tracking.submissionInfo}
       validationInfo={tracking.validationInfo}
       testResults={tracking.testResults}
+      documentationInfo={tracking.documentationInfo}
       todoItems={tracking.todoItems}
       onToggleTodo={tracking.toggleTodo}
       onCreateFollowUpTask={handleCreateFollowUpTask}
@@ -122,6 +124,20 @@ export function WorkSummariesEnhancedV2() {
   };
 
   const categories = [...new Set(summaries.map(s => s.category))].filter(Boolean);
+  
+  // Calculate counts for filters
+  const categoryCounts = categories.reduce((acc, cat) => {
+    acc[cat] = summaries.filter(s => s.category === cat).length;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // TODO: Calculate validation status counts once we have the data
+  const validationCounts = {
+    validated: 0,
+    not_validated: summaries.length,
+    failed: 0,
+    issues: 0
+  };
 
   if (loading) {
     return (
@@ -153,7 +169,7 @@ export function WorkSummariesEnhancedV2() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-4">
             {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -167,31 +183,108 @@ export function WorkSummariesEnhancedV2() {
             </div>
 
             {/* Category Filter */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Categories</option>
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Category</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                  selectedCategory === 'all' 
+                    ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                All Categories
+                <StatusPill variant="default" size="sm" className="ml-2 inline-flex">
+                  {summaries.length}
+                </StatusPill>
+              </button>
               {categories.map(cat => (
-                <option key={cat} value={cat}>
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                    selectedCategory === cat 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
                   {cat.replace('_', ' ').charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
-                </option>
+                  <StatusPill variant="default" size="sm" className="ml-2 inline-flex">
+                    {categoryCounts[cat]}
+                  </StatusPill>
+                </button>
               ))}
-            </select>
+              </div>
+            </div>
 
             {/* Validation Status Filter */}
-            <select
-              value={selectedValidationStatus}
-              onChange={(e) => setSelectedValidationStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Validation Status</option>
-              <option value="validated">Validated</option>
-              <option value="not_validated">Not Validated</option>
-              <option value="failed">Validation Failed</option>
-              <option value="issues">Has Issues</option>
-            </select>
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Validation Status</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedValidationStatus('all')}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                    selectedValidationStatus === 'all' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  All Status
+                  <StatusPill variant="default" size="sm" className="ml-2 inline-flex">
+                    {summaries.length}
+                  </StatusPill>
+                </button>
+                <button
+                  onClick={() => setSelectedValidationStatus('validated')}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                    selectedValidationStatus === 'validated' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <StatusPill variant="validated" size="sm" dot dotStatus="completed" className="inline-flex">
+                    Validated ({validationCounts.validated})
+                  </StatusPill>
+                </button>
+                <button
+                  onClick={() => setSelectedValidationStatus('not_validated')}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                    selectedValidationStatus === 'not_validated' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <StatusPill variant="not_validated" size="sm" dot dotStatus="not_started" className="inline-flex">
+                    Not Validated ({validationCounts.not_validated})
+                  </StatusPill>
+                </button>
+                <button
+                  onClick={() => setSelectedValidationStatus('failed')}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                    selectedValidationStatus === 'failed' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <StatusPill variant="validation_failed" size="sm" dot dotStatus="failed" className="inline-flex">
+                    Failed ({validationCounts.failed})
+                  </StatusPill>
+                </button>
+                <button
+                  onClick={() => setSelectedValidationStatus('issues')}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                    selectedValidationStatus === 'issues' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <StatusPill variant="issues_found" size="sm" dot dotStatus="warning" className="inline-flex">
+                    Has Issues ({validationCounts.issues})
+                  </StatusPill>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
