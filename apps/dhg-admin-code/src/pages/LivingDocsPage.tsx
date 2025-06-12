@@ -198,6 +198,24 @@ export function LivingDocsPage() {
   // Apply filters
   let filteredDocuments = documents;
 
+  // Check if document needs update
+  const needsUpdate = (doc: LivingDocument): boolean => {
+    const lastUpdate = new Date(doc.lastUpdated);
+    const now = new Date();
+    
+    switch (doc.updateFrequency) {
+      case 'daily':
+        return differenceInDays(now, lastUpdate) >= 1;
+      case 'weekly':
+        return differenceInDays(now, lastUpdate) >= 7;
+      case 'on-change':
+        // Would need to check if source file changed
+        return false;
+      default:
+        return differenceInDays(now, lastUpdate) >= 7;
+    }
+  };
+
   // Category filter
   if (selectedCategory) {
     filteredDocuments = filteredDocuments.filter(doc => doc.category === selectedCategory);
@@ -241,24 +259,6 @@ export function LivingDocsPage() {
       break;
     // 'all' shows everything (default)
   }
-
-  // Check if document needs update
-  const needsUpdate = (doc: LivingDocument): boolean => {
-    const lastUpdate = new Date(doc.lastUpdated);
-    const now = new Date();
-    
-    switch (doc.updateFrequency) {
-      case 'daily':
-        return differenceInDays(now, lastUpdate) >= 1;
-      case 'weekly':
-        return differenceInDays(now, lastUpdate) >= 7;
-      case 'on-change':
-        // Would need to check if source file changed
-        return false;
-      default:
-        return differenceInDays(now, lastUpdate) >= 7;
-    }
-  };
 
   // Get time until next update
   const getNextUpdateTime = (doc: LivingDocument): string => {
