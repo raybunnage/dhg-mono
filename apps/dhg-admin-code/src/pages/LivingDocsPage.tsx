@@ -7,7 +7,7 @@ import { extractNextPhase, formatNextPhaseSummary } from '@shared/utils/markdown
 import type { PhaseInfo } from '@shared/utils/markdown-phase-extractor';
 import { CreateTaskFromPhase } from '../components/CreateTaskFromPhase';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircleIcon, Search } from '@heroicons/react/24/outline';
+import { PlusCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { serverRegistry } from '@shared/services/server-registry-service';
 import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 import { supabase } from '../lib/supabase';
@@ -397,7 +397,7 @@ export function LivingDocsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
           </div>
 
@@ -551,71 +551,68 @@ export function LivingDocsPage() {
               </div>
             ) : (
               filteredDocuments.map((doc) => (
-              <div
-                key={doc.fileName}
-                className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
-                  selectedDocument?.fileName === doc.fileName ? 'ring-2 ring-blue-500' : ''
-                } ${needsUpdate(doc) ? 'border-l-4 border-orange-500' : ''}`}
-                onClick={() => loadMarkdownContent(doc)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    {getPriorityIcon(doc.priority)}
-                    {doc.fileName.replace('.md', '')}
-                  </h3>
-                  {doc.nextPhase && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCreatingTaskFor({ doc, phase: doc.nextPhase });
-                      }}
-                      className="p-1 hover:bg-gray-100 rounded"
-                      title="Create task from next phase"
-                    >
-                      <PlusCircleIcon className="w-5 h-5 text-gray-600" />
-                    </button>
-                  )}
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-3">{doc.description}</p>
-                
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className={`px-2 py-1 rounded ${getCategoryBadgeColor(doc.category)}`}>
-                    {doc.category}
-                  </span>
-                  <span className={`px-2 py-1 rounded ${getPriorityBadgeColor(doc.priority)}`}>
-                    {doc.priority} priority
-                  </span>
-                  <span className={`px-2 py-1 rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
-                    {doc.updateFrequency} updates
-                  </span>
-                  {doc.status !== 'active' && (
-                    <span className="px-2 py-1 rounded bg-gray-100 text-gray-800">
-                      {doc.status}
-                    </span>
-                  )}
-                  <span className={`px-2 py-1 rounded ${needsUpdate(doc) ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {needsUpdate(doc) ? '⚠️ Update due' : `Next: ${getNextUpdateTime(doc)}`}
-                  </span>
-                </div>
-
-                {doc.nextPhase && (
-                  <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
-                    <strong className="text-blue-900">Next Phase:</strong>
-                    <span className="text-blue-700 ml-1">{formatNextPhaseSummary(doc.nextPhase)}</span>
+                <div
+                  key={doc.fileName}
+                  className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow ${
+                    selectedDocument?.fileName === doc.fileName ? 'ring-2 ring-blue-500' : ''
+                  } ${needsUpdate(doc) ? 'border-l-4 border-orange-500' : ''}`}
+                  onClick={() => loadMarkdownContent(doc)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      {getPriorityIcon(doc.priority)}
+                      {doc.fileName.replace('.md', '')}
+                    </h3>
+                    {doc.nextPhase && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (doc.nextPhase) {
+                            setCreatingTaskFor({ doc, phase: doc.nextPhase });
+                          }
+                        }}
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="Create task from next phase"
+                      >
+                        <PlusCircleIcon className="w-5 h-5 text-gray-600" />
+                      </button>
+                    )}
                   </div>
-                )}
+                  
+                  <p className="text-sm text-gray-600 mb-3">{doc.description}</p>
+                  
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className={`px-2 py-1 rounded ${getCategoryBadgeColor(doc.category)}`}>
+                      {doc.category}
+                    </span>
+                    <span className={`px-2 py-1 rounded ${getPriorityBadgeColor(doc.priority)}`}>
+                      {doc.priority} priority
+                    </span>
+                    <span className={`px-2 py-1 rounded ${getFrequencyBadgeColor(doc.updateFrequency)}`}>
+                      {doc.updateFrequency} updates
+                    </span>
+                    {doc.status !== 'active' && (
+                      <span className="px-2 py-1 rounded bg-gray-100 text-gray-800">
+                        {doc.status}
+                      </span>
+                    )}
+                    <span className={`px-2 py-1 rounded ${needsUpdate(doc) ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {needsUpdate(doc) ? '⚠️ Update due' : `Next: ${getNextUpdateTime(doc)}`}
+                    </span>
+                  </div>
 
-                <div className="mt-2 text-xs text-gray-500">
-                  Last updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}
+                  {doc.nextPhase && (
+                    <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
+                      <strong className="text-blue-900">Next Phase:</strong>
+                      <span className="text-blue-700 ml-1">{formatNextPhaseSummary(doc.nextPhase)}</span>
+                    </div>
+                  )}
+
+                  <div className="mt-2 text-xs text-gray-500">
+                    Last updated: {format(new Date(doc.lastUpdated), 'MMM d, yyyy')}
+                  </div>
                 </div>
-              </div>
-            ))}
-            
-            {filteredDocuments.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No documents match your filters
-              </div>
+              ))
             )}
           </div>
         </div>
@@ -711,10 +708,10 @@ export function LivingDocsPage() {
       {/* Create Task Modal */}
       {creatingTaskFor && (
         <CreateTaskFromPhase
-          phase={creatingTaskFor.phase}
-          documentTitle={creatingTaskFor.doc.fileName}
-          documentPath={creatingTaskFor.doc.path}
-          onClose={() => setCreatingTaskFor(null)}
+          phaseInfo={creatingTaskFor.phase}
+          docTitle={creatingTaskFor.doc.fileName}
+          docPath={creatingTaskFor.doc.path}
+          onCancel={() => setCreatingTaskFor(null)}
           onTaskCreated={(taskId) => {
             setCreatingTaskFor(null);
             navigate(`/tasks?id=${taskId}`);
