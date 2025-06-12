@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SupabaseClientService } from '../../services/supabase-client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface FollowUpRelationship {
   id: string;
@@ -13,9 +13,10 @@ interface FollowUpRelationship {
 interface FollowUpInfoDisplayProps {
   taskId: string;
   className?: string;
+  supabaseClient: SupabaseClient;
 }
 
-export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisplayProps) {
+export function FollowUpInfoDisplay({ taskId, className = '', supabaseClient }: FollowUpInfoDisplayProps) {
   const [followUpInfo, setFollowUpInfo] = useState<FollowUpRelationship | null>(null);
   const [originalItem, setOriginalItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ export function FollowUpInfoDisplay({ taskId, className = '' }: FollowUpInfoDisp
         setLoading(true);
         setError(null);
 
-        const supabase = SupabaseClientService.getInstance().getClient();
+        const supabase = supabaseClient;
 
         // Check if this task is a follow-up by querying the follow-up table
         const { data: followUps, error: followUpError } = await supabase

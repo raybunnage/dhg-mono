@@ -7,6 +7,7 @@ import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskWorkflowPanel } from '../components/TaskWorkflowPanel';
 import { TaskIterationTracker } from '../components/TaskIterationTracker';
 import { FollowUpInfoDisplay } from '@shared/components/follow-up/FollowUpInfoDisplay';
+import { supabase } from '../lib/supabase';
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -396,7 +397,7 @@ cursor .`;
 
         <div className="p-6 space-y-6">
           {/* Follow-up Information */}
-          <FollowUpInfoDisplay taskId={task.id} />
+          <FollowUpInfoDisplay taskId={task.id} supabaseClient={supabase} />
           
           {/* Description */}
           <div>
