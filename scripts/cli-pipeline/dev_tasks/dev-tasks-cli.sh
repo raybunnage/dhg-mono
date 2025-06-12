@@ -54,6 +54,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  show-tracking       Show work summary tracking info"
   echo "  git-history-server  Start the Git History Analysis Server"
   echo "  success-criteria    Manage task success criteria"
+  echo "  backfill-submissions Backfill Claude submission data from commits/summaries"
   echo "  health-check Run health check for dev tasks pipeline"
   echo ""
   echo "Examples:"
@@ -103,6 +104,9 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo ""
   echo "  # Show comprehensive tracking info"
   echo "  ./dev-tasks-cli.sh show-tracking <task-id>"
+  echo ""
+  echo "  # Backfill Claude submission data for tasks"
+  echo "  ./dev-tasks-cli.sh backfill-submissions"
   exit 0
 fi
 
@@ -226,6 +230,10 @@ case "$1" in
   show-tracking)
     track_command "dev-tasks" "show-tracking"
     ts-node "$SCRIPT_DIR/commands/show-tracking.ts" "${@:2}"
+    ;;
+  backfill-submissions)
+    track_command "dev-tasks" "backfill-submissions"
+    ts-node "$SCRIPT_DIR/commands/backfill-claude-submissions.ts" "${@:2}"
     ;;
   *)
     echo "Unknown command: $1"
