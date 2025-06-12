@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { WorkSummariesEnhanced } from './pages/WorkSummariesEnhanced';
+import { WorkSummariesEnhancedV2 } from './pages/WorkSummariesEnhancedV2';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
@@ -44,7 +44,7 @@ function App() {
           path="/work-summaries" 
           element={
             <ProtectedRoute requireAdmin>
-              <WorkSummariesEnhanced />
+              <WorkSummariesEnhancedV2 />
             </ProtectedRoute>
           } 
         />
