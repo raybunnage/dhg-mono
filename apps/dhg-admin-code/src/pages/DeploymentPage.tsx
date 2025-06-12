@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, Loader } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
@@ -34,10 +34,18 @@ const DeploymentPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [deploymentType, setDeploymentType] = useState<'staging' | 'production'>('staging');
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadDeployments();
     checkActiveDeployment();
+    
+    // Cleanup on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   const loadDeployments = async () => {
@@ -83,18 +91,35 @@ const DeploymentPage: React.FC = () => {
         setIsDeploying(true);
         loadValidations(data.id);
         // Poll for updates
-        const interval = setInterval(async () => {
-          const { data: updated } = await supabase
-            .from('deployment_runs')
-            .select('*')
-            .eq('id', data.id)
-            .single();
-          
-          if (updated && (updated.status === 'completed' || updated.status === 'failed')) {
-            clearInterval(interval);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+        
+        intervalRef.current = setInterval(async () => {
+          try {
+            const { data: updated } = await supabase
+              .from('deployment_runs')
+              .select('*')
+              .eq('id', data.id)
+              .single();
+            
+            if (updated && (updated.status === 'completed' || updated.status === 'failed')) {
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+              }
+              setIsDeploying(false);
+              setActiveDeployment(null);
+              loadDeployments();
+            }
+          } catch (pollError) {
+            console.error('Error polling deployment status:', pollError);
+            // Stop polling on error to prevent infinite loops
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
             setIsDeploying(false);
-            setActiveDeployment(null);
-            loadDeployments();
           }
         }, 2000);
       }
