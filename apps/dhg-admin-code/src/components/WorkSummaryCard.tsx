@@ -4,9 +4,10 @@ import {
   Calendar, Tag, Command, ChevronDown, ChevronUp, GitBranch, 
   CheckSquare, Clock, AlertCircle, FileText, ExternalLink,
   GitCommit, CheckCircle, XCircle, Loader, TestTube,
-  ListChecks, Activity, Code
+  ListChecks, Activity, Code, Plus
 } from 'lucide-react';
 import { type WorkSummary } from '../../../../packages/shared/services/work-summary-service/types';
+import { StatusPill, StatusIndicatorGroup, getStatusVariant } from '@shared/components/ui/StatusPill';
 
 interface DevTaskInfo {
   id: string;
@@ -46,12 +47,20 @@ interface TodoItem {
   completed: boolean;
 }
 
+interface DocumentationInfo {
+  hasDocumentation: boolean;
+  documentationType?: string;
+  lastUpdated?: string;
+  documentCount?: number;
+}
+
 interface WorkSummaryCardProps {
   summary: WorkSummary;
   devTask?: DevTaskInfo;
   submissionInfo?: SubmissionInfo;
   validationInfo?: ValidationInfo;
   testResults?: TestResults;
+  documentationInfo?: DocumentationInfo;
   todoItems?: TodoItem[];
   onToggleTodo?: (todoId: string) => void;
   onCreateFollowUpTask?: () => void;
@@ -65,6 +74,7 @@ export function WorkSummaryCard({
   submissionInfo,
   validationInfo,
   testResults,
+  documentationInfo,
   todoItems = [],
   onToggleTodo,
   onCreateFollowUpTask,
@@ -89,15 +99,6 @@ export function WorkSummaryCard({
     return emojiMap[category] || '📋';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-green-700 bg-green-50 border-green-200';
-      case 'in_progress': return 'text-blue-700 bg-blue-50 border-blue-200';
-      case 'pending': return 'text-gray-700 bg-gray-50 border-gray-200';
-      case 'failed': return 'text-red-700 bg-red-50 border-red-200';
-      default: return 'text-gray-700 bg-gray-50 border-gray-200';
-    }
-  };
 
   const completedTodos = todoItems.filter(item => item.completed).length;
   const todoProgress = todoItems.length > 0 ? (completedTodos / todoItems.length) * 100 : 0;
@@ -111,9 +112,9 @@ export function WorkSummaryCard({
             <div className="flex items-center gap-3 mb-2">
               <span className="text-lg">{getCategoryEmoji(summary.category)}</span>
               <h3 className="text-lg font-semibold text-gray-900 flex-1">{summary.title}</h3>
-              <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs border border-blue-200">
+              <StatusPill variant="primary" size="sm">
                 Summary
-              </span>
+              </StatusPill>
             </div>
 
             {/* Dev Task Link */}
@@ -127,9 +128,9 @@ export function WorkSummaryCard({
                   {devTask.title}
                   <ExternalLink className="h-3 w-3" />
                 </Link>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs border ${getStatusColor(devTask.status)}`}>
-                  {devTask.status}
-                </span>
+                <StatusPill variant={getStatusVariant(devTask.status)} size="sm">
+                  {devTask.status.replace('_', ' ')}
+                </StatusPill>
               </div>
             )}
 
@@ -176,67 +177,47 @@ export function WorkSummaryCard({
           </div>
         </div>
 
-        {/* Status Indicators Bar */}
-        <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-          {/* Submission Status */}
-          <div className="flex items-center gap-2">
-            {submissionInfo ? (
-              <CheckCircle className="h-5 w-5 text-green-600" />
-            ) : (
-              <XCircle className="h-5 w-5 text-gray-400" />
-            )}
-            <span className="text-sm font-medium text-gray-700">Submitted</span>
-          </div>
-
-          <div className="w-px h-5 bg-gray-300" />
-
-          {/* Validation Status */}
-          <div className="flex items-center gap-2">
-            {validationInfo?.submitted ? (
-              validationInfo.status === 'passed' ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : validationInfo.status === 'failed' ? (
-                <XCircle className="h-5 w-5 text-red-600" />
-              ) : validationInfo.status === 'pending' ? (
-                <Loader className="h-5 w-5 text-yellow-600 animate-spin" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-              )
-            ) : (
-              <XCircle className="h-5 w-5 text-gray-400" />
-            )}
-            <span className="text-sm font-medium text-gray-700">Validated</span>
-          </div>
-
-          <div className="w-px h-5 bg-gray-300" />
-
-          {/* Test Status */}
-          <div className="flex items-center gap-2">
-            {testResults?.hasTests ? (
-              testResults.failed === 0 ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
-              )
-            ) : (
-              <XCircle className="h-5 w-5 text-gray-400" />
-            )}
-            <span className="text-sm font-medium text-gray-700">Tested</span>
-          </div>
-
-          <div className="w-px h-5 bg-gray-300" />
-
-          {/* Progress */}
-          <div className="flex items-center gap-2 flex-1">
-            <ListChecks className="h-5 w-5 text-gray-600" />
+        {/* Status Indicators Bar - Visual Dot System */}
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <StatusIndicatorGroup 
+            statuses={[
+              {
+                label: 'Submitted',
+                status: submissionInfo ? 'completed' : 'not_started'
+              },
+              {
+                label: 'Validated',
+                status: validationInfo?.submitted 
+                  ? (validationInfo.status === 'passed' ? 'completed' 
+                    : validationInfo.status === 'failed' ? 'failed'
+                    : validationInfo.status === 'pending' ? 'in_progress'
+                    : 'warning')
+                  : 'not_started'
+              },
+              {
+                label: 'Tested',
+                status: testResults?.hasTests
+                  ? (testResults.failed === 0 ? 'completed' : 'failed')
+                  : 'not_started'
+              },
+              {
+                label: 'Documented',
+                status: documentationInfo?.hasDocumentation ? 'completed' : 'not_started'
+              }
+            ]}
+          />
+          
+          {/* Progress Bar */}
+          <div className="mt-3 flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-gray-600" />
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Progress</span>
+                <span className="text-sm font-medium text-gray-700">Follow-up Tasks</span>
                 <span className="text-xs text-gray-500">{completedTodos}/{todoItems.length}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${todoProgress}%` }}
                 />
               </div>
@@ -273,16 +254,14 @@ export function WorkSummaryCard({
         {/* Commands and Tags */}
         <div className="flex flex-wrap gap-2">
           {summary.commands?.map(cmd => (
-            <span key={cmd} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs border border-gray-200">
-              <Command className="h-3 w-3" />
+            <StatusPill key={cmd} variant="secondary" size="sm" icon={<Command className="h-3 w-3" />}>
               {cmd}
-            </span>
+            </StatusPill>
           ))}
           {summary.tags?.map(tag => (
-            <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs border border-blue-200">
-              <Tag className="h-3 w-3" />
+            <StatusPill key={tag} variant="primary" size="sm" icon={<Tag className="h-3 w-3" />}>
               {tag}
-            </span>
+            </StatusPill>
           ))}
         </div>
 
@@ -363,12 +342,24 @@ export function WorkSummaryCard({
             )}
 
             {/* Todo Checklist */}
-            {todoItems.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                   <CheckSquare className="h-4 w-4" />
-                  Follow-up Tasks ({completedTodos}/{todoItems.length})
+                  Follow-up Tasks {todoItems.length > 0 && `(${completedTodos}/${todoItems.length})`}
                 </h4>
+                {onCreateFollowUpTask && (
+                  <button
+                    onClick={onCreateFollowUpTask}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Task
+                  </button>
+                )}
+              </div>
+              
+              {todoItems.length > 0 ? (
                 <div className="space-y-2">
                   {todoItems.map(item => (
                     <label key={item.id} className="flex items-start gap-2 cursor-pointer">
@@ -384,8 +375,10 @@ export function WorkSummaryCard({
                     </label>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-gray-500 italic">No follow-up tasks yet. Click "Add Task" to create one.</p>
+              )}
+            </div>
 
             {/* Action Required Notice */}
             {!validationInfo?.submitted && (
