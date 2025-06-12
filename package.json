@@ -17,6 +17,7 @@
     "kill-servers-bash": "bash ./scripts/cli-pipeline/servers/kill-all-servers.sh",
     "browser": "cd html && node server.js",
     "file-browser": "cd html && node server.js",
+    "test-runner": "cd apps/dhg-admin-code && TEST_RUNNER_PORT=3012 node test-runner-server.cjs",
     "// App Shortcuts": "Quick access to specific app development",
     "hub": "pnpm --filter dhg-hub dev",
     "hub-lovable": "pnpm --filter dhg-hub-lovable dev",
