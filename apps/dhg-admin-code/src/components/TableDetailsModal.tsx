@@ -52,11 +52,11 @@ export function TableDetailsModal({ table, isOpen, onClose }: TableDetailsModalP
     setPreviewError(null);
 
     try {
-      // Fetch limited rows for preview
+      // Fetch limited rows for preview (100 records for better sample)
       const { data, error } = await supabase
         .from(table.table_name)
         .select('*')
-        .limit(10);
+        .limit(100);
 
       if (error) {
         // Check if it's an RLS error
@@ -324,9 +324,14 @@ export function TableDetailsModal({ table, isOpen, onClose }: TableDetailsModalP
                           </tbody>
                         </table>
                       </div>
-                      {previewData.length === 10 && table.row_count > 10 && (
+                      {previewData.length === 100 && table.row_count > 100 && (
                         <div className="text-center py-2 text-sm text-gray-500 bg-gray-100">
-                          Showing first 10 records of {table.row_count.toLocaleString()} total
+                          Showing first 100 records of {table.row_count.toLocaleString()} total
+                        </div>
+                      )}
+                      {previewData.length < 100 && previewData.length > 0 && (
+                        <div className="text-center py-2 text-sm text-gray-500 bg-gray-100">
+                          Showing all {previewData.length} records
                         </div>
                       )}
                     </div>
