@@ -5,12 +5,30 @@
  * - Extracts text content from PDFs using Claude AI
  * - Downloads and caches PDFs from Google Drive
  * - Handles chunking for large PDFs
+ * 
+ * Note: This service only works in Node.js environments (CLI pipelines)
+ * Browser environments will receive a fallback implementation
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+// Conditional imports for Node.js only
+let fs: any = null;
+let path: any = null;
+let GoogleDriveService: any = null;
+
+const isBrowser = typeof window !== 'undefined';
+
+if (!isBrowser) {
+  try {
+    fs = require('fs');
+    path = require('path');
+    const googleDriveModule = require('../google-drive');
+    GoogleDriveService = googleDriveModule.GoogleDriveService;
+  } catch (e) {
+    // Node.js modules not available
+  }
+}
+
 import { SupabaseClientService } from '../supabase-client';
-import { GoogleDriveService } from '../google-drive';
 import { claudeService } from '../claude-service/claude-service';
 
 /**
@@ -45,9 +63,11 @@ export class PDFProcessorService {
   private constructor() {
     this.supabaseService = SupabaseClientService.getInstance();
     
-    // Create cache directory if it doesn't exist
-    if (!fs.existsSync(this.cacheDir)) {
-      fs.mkdirSync(this.cacheDir, { recursive: true });
+    // Only create cache directory in Node.js environments
+    if (!isBrowser && fs) {
+      if (!fs.existsSync(this.cacheDir)) {
+        fs.mkdirSync(this.cacheDir, { recursive: true });
+      }
     }
   }
 
@@ -68,9 +88,11 @@ export class PDFProcessorService {
   public setCacheDirectory(dir: string): void {
     this.cacheDir = dir;
     
-    // Create cache directory if it doesn't exist
-    if (!fs.existsSync(this.cacheDir)) {
-      fs.mkdirSync(this.cacheDir, { recursive: true });
+    // Only create cache directory in Node.js environments
+    if (!isBrowser && fs) {
+      if (!fs.existsSync(this.cacheDir)) {
+        fs.mkdirSync(this.cacheDir, { recursive: true });
+      }
     }
   }
 
@@ -85,6 +107,14 @@ export class PDFProcessorService {
     maxPages = 0,
     keepFile = false
   ): Promise<PDFProcessingResult> {
+    // Browser environment fallback
+    if (isBrowser) {
+      return {
+        success: false,
+        error: 'PDF processing from Google Drive is not available in browser environments. Use this feature in CLI pipelines.'
+      };
+    }
+
     try {
       // Get Supabase client
       const supabase = this.supabaseService.getClient();
@@ -289,6 +319,14 @@ export class PDFProcessorService {
     filePath: string,
     maxPages = 0
   ): Promise<PDFProcessingResult> {
+    // Browser environment fallback
+    if (isBrowser) {
+      return {
+        success: false,
+        error: 'PDF processing from local files is not available in browser environments. Use this feature in CLI pipelines.'
+      };
+    }
+
     try {
       // Check if file exists
       if (!fs.existsSync(filePath)) {

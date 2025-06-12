@@ -16,15 +16,24 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['winston', 'winston-transport', 'logform']
+    exclude: [
+      'winston', 
+      'winston-transport', 
+      'logform', 
+      'google-auth-library', 
+      'googleapis',
+      'fs',
+      'path',
+      'stream'
+    ]
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@shared': path.resolve(__dirname, '../../packages/shared'),
-      'util': 'util',
-      'stream': 'stream-browserify',
-      'buffer': 'buffer',
+      'util': path.resolve(__dirname, 'node_modules/util'),
+      'stream': path.resolve(__dirname, 'node_modules/stream-browserify'),
+      'buffer': path.resolve(__dirname, 'node_modules/buffer'),
     },
   },
   server: {
