@@ -20,7 +20,8 @@ export default defineConfig({
       host: 'localhost',
       port: 5177,
       clientPort: 5177, // Explicitly set client port
-      overlay: false // Disable error overlay if it's causing issues
+      overlay: false, // Disable error overlay if it's causing issues
+      timeout: 60000 // Increase timeout to 60 seconds to prevent frequent reconnections
     },
     proxy: {
       // Proxy markdown file requests to the markdown server
