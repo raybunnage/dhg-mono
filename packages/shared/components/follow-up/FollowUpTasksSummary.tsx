@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { followUpTaskService, type FollowUpTask } from '../../services/follow-up-task-service';
+import { FollowUpTaskService, type FollowUpTask } from '../../services/follow-up-task-service';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface FollowUpTasksSummaryProps {
   taskId?: string;
   workSummaryId?: string;
   className?: string;
+  supabaseClient?: SupabaseClient;
 }
 
-export function FollowUpTasksSummary({ taskId, workSummaryId, className = '' }: FollowUpTasksSummaryProps) {
+export function FollowUpTasksSummary({ taskId, workSummaryId, className = '', supabaseClient }: FollowUpTasksSummaryProps) {
   const [followUps, setFollowUps] = useState<FollowUpTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,9 +17,16 @@ export function FollowUpTasksSummary({ taskId, workSummaryId, className = '' }: 
   useEffect(() => {
     const loadFollowUps = async () => {
       try {
+        if (!supabaseClient) {
+          setError('No Supabase client provided');
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         setError(null);
 
+        const followUpTaskService = FollowUpTaskService.getInstance(supabaseClient);
         let data: FollowUpTask[] = [];
         if (taskId) {
           data = await followUpTaskService.getFollowUpsForTask(taskId);
@@ -34,10 +43,10 @@ export function FollowUpTasksSummary({ taskId, workSummaryId, className = '' }: 
       }
     };
 
-    if (taskId || workSummaryId) {
+    if ((taskId || workSummaryId) && supabaseClient) {
       loadFollowUps();
     }
-  }, [taskId, workSummaryId]);
+  }, [taskId, workSummaryId, supabaseClient]);
 
   if (loading) {
     return (

@@ -15,13 +15,16 @@ import type {
   CreateTaskInput,
   UpdateTaskInput
 } from './types';
+import { LifecycleTrackingMixin } from './lifecycle-tracking';
 
 export class DevTaskService {
   private static instances = new Map<SupabaseClient, DevTaskService>();
   private supabase: SupabaseClient;
+  public lifecycle: LifecycleTrackingMixin;
 
   private constructor(supabaseClient: SupabaseClient) {
     this.supabase = supabaseClient;
+    this.lifecycle = new LifecycleTrackingMixin(supabaseClient);
   }
 
   /**

@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Alert } from '../components/ui/Alert';
-import { Badge } from '../components/ui/Badge';
 import { CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, Loader } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 

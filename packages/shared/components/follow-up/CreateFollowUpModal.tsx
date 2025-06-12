@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { followUpTaskService } from '../../services/follow-up-task-service';
+import { FollowUpTaskService } from '../../services/follow-up-task-service';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface CreateFollowUpModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface CreateFollowUpModalProps {
   followUpTaskId: string;
   followUpTaskTitle: string;
   onCreated?: () => void;
+  supabaseClient: SupabaseClient;
 }
 
 export function CreateFollowUpModal({
@@ -18,7 +20,8 @@ export function CreateFollowUpModal({
   originalWorkSummaryId,
   followUpTaskId,
   followUpTaskTitle,
-  onCreated
+  onCreated,
+  supabaseClient
 }: CreateFollowUpModalProps) {
   const [followUpType, setFollowUpType] = useState('implementation');
   const [followUpSummary, setFollowUpSummary] = useState('');
@@ -32,6 +35,7 @@ export function CreateFollowUpModal({
       setCreating(true);
       setError(null);
 
+      const followUpTaskService = FollowUpTaskService.getInstance(supabaseClient);
       await followUpTaskService.createFollowUpRelationship({
         originalTaskId,
         originalWorkSummaryId,

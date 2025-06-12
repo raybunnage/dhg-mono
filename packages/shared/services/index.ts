@@ -23,3 +23,4 @@ export * from "./dev-task-service"; // Dev task service for comprehensive task m
 export * from "./clipboard-service"; // Clipboard service for managing reusable code snippets
 export * from "./server-registry-service"; // Server registry service for dynamic port discovery
 export * from "./ports-management-service"; // Ports management service for server lifecycle and health monitoring
+export * from "./work-summary-service"; // Work summary service for tracking development work and summaries
