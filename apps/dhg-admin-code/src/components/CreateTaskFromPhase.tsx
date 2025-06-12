@@ -7,6 +7,8 @@ interface CreateTaskFromPhaseProps {
   docId?: string;
   docTitle: string;
   docPath: string;
+  originalTaskId?: string;  // For follow-up relationships
+  originalWorkSummaryId?: string;  // For follow-up relationships
   onTaskCreated?: (taskId: string) => void;
   onCancel?: () => void;
 }
@@ -16,6 +18,8 @@ export function CreateTaskFromPhase({
   docId,
   docTitle,
   docPath,
+  originalTaskId,
+  originalWorkSummaryId,
   onTaskCreated,
   onCancel
 }: CreateTaskFromPhaseProps) {
@@ -25,6 +29,9 @@ export function CreateTaskFromPhase({
   const [taskDescription, setTaskDescription] = useState(generateDescription());
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [taskType, setTaskType] = useState<'feature' | 'bug' | 'refactor' | 'question'>('feature');
+  const [isFollowUp, setIsFollowUp] = useState(Boolean(originalTaskId || originalWorkSummaryId));
+  const [followUpType, setFollowUpType] = useState('implementation');
+  const [followUpSummary, setFollowUpSummary] = useState('');
 
   function generateDescription(): string {
     let desc = `## Implementation Plan for: ${phaseInfo.phaseName}\n\n`;
@@ -124,6 +131,28 @@ Phase: ${phaseInfo.phaseName}`;
         }
       }
 
+      // Create follow-up relationship if this is a follow-up task
+      if (data && isFollowUp && (originalTaskId || originalWorkSummaryId)) {
+        try {
+          const { data: followUpData, error: followUpError } = await supabase.rpc('create_follow_up_task_relationship', {
+            p_follow_up_task_id: data.id,
+            p_original_task_id: originalTaskId || null,
+            p_original_work_summary_id: originalWorkSummaryId || null,
+            p_follow_up_type: followUpType,
+            p_follow_up_summary: followUpSummary.trim() || null
+          });
+
+          if (followUpError) {
+            console.error('Error creating follow-up relationship:', followUpError);
+          } else {
+            console.log('Follow-up relationship created:', followUpData);
+          }
+        } catch (error) {
+          console.error('Error creating follow-up relationship:', error);
+          // Don't fail the task creation for follow-up errors
+        }
+      }
+
       if (onTaskCreated && data) {
         onTaskCreated(data.id);
       }
@@ -202,6 +231,55 @@ Phase: ${phaseInfo.phaseName}`;
                 </select>
               </div>
             </div>
+
+            {/* Follow-up Configuration */}
+            {(originalTaskId || originalWorkSummaryId) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-blue-900 mb-3">
+                  Follow-up Task Configuration
+                </h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Follow-up Type
+                    </label>
+                    <select
+                      value={followUpType}
+                      onChange={(e) => setFollowUpType(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="implementation">Implementation</option>
+                      <option value="validation">Validation</option>
+                      <option value="enhancement">Enhancement</option>
+                      <option value="bugfix">Bug Fix</option>
+                      <option value="documentation">Documentation</option>
+                      <option value="testing">Testing</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Follow-up Summary (Optional)
+                    </label>
+                    <textarea
+                      value={followUpSummary}
+                      onChange={(e) => setFollowUpSummary(e.target.value)}
+                      placeholder="Describe what this follow-up addresses..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Brief description of what this follow-up task addresses
+                    </p>
+                  </div>
+                  
+                  <div className="text-xs text-blue-700">
+                    💡 This task will be linked as a follow-up to the original {originalTaskId ? 'task' : 'work summary'}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <div>

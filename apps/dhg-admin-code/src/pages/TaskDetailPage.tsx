@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { TaskService } from '../services/task-service';
 import type { DevTask, DevTaskTag, DevTaskFile, DevTaskCommit, DevTaskWorkSession } from '../services/task-service';
 import { ArrowLeft, Copy, Check, Plus, X, FileText, Clock, CheckCircle, AlertCircle, GitBranch, GitCommit, Terminal, Calendar, FolderOpen, Trash2 } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { TaskWorkflowPanel } from '../components/TaskWorkflowPanel';
 import { TaskIterationTracker } from '../components/TaskIterationTracker';
+import { FollowUpInfoDisplay } from '@shared/components/follow-up/FollowUpInfoDisplay';
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [task, setTask] = useState<DevTask | null>(null);
   const [tags, setTags] = useState<DevTaskTag[]>([]);
   const [files, setFiles] = useState<DevTaskFile[]>([]);
@@ -395,6 +395,9 @@ cursor .`;
             </div>
 
         <div className="p-6 space-y-6">
+          {/* Follow-up Information */}
+          <FollowUpInfoDisplay taskId={task.id} />
+          
           {/* Description */}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Description</h2>
