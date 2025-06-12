@@ -1,4 +1,12 @@
-import * as winston from 'winston';
+// Conditional import for winston - only in Node.js environments
+let winston: any = null;
+try {
+  if (typeof process !== 'undefined' && process.env && !process.browser) {
+    winston = require('winston');
+  }
+} catch (e) {
+  // Winston not available or failed to load in browser
+}
 
 /**
  * Log levels for the application
@@ -12,29 +20,43 @@ export enum LogLevel {
 
 /**
  * Logger class for consistent logging across the application
+ * Works in both Node.js and browser environments
  */
 export class Logger {
-  private static logger: winston.Logger;
+  private static logger: any;
   private static currentLevel: LogLevel = LogLevel.INFO;
+  private static isBrowser: boolean = typeof window !== 'undefined';
 
   /**
    * Initialize the logger
    */
   private static initialize() {
     if (!this.logger) {
-      this.logger = winston.createLogger({
-        level: this.currentLevel,
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.colorize(),
-          winston.format.printf(
-            (info) => `${info.timestamp} [${info.level}]: ${info.message}`
-          )
-        ),
-        transports: [
-          new winston.transports.Console(),
-        ],
-      });
+      if (this.isBrowser || !winston) {
+        // Browser environment or winston not available - use console
+        this.logger = {
+          error: (message: string, meta?: any) => console.error(`[ERROR]: ${message}`, meta || ''),
+          warn: (message: string, meta?: any) => console.warn(`[WARN]: ${message}`, meta || ''),
+          info: (message: string, meta?: any) => console.info(`[INFO]: ${message}`, meta || ''),
+          debug: (message: string, meta?: any) => console.debug(`[DEBUG]: ${message}`, meta || ''),
+          level: this.currentLevel
+        };
+      } else {
+        // Node.js environment with winston available
+        this.logger = winston.createLogger({
+          level: this.currentLevel,
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.colorize(),
+            winston.format.printf(
+              (info: any) => `${info.timestamp} [${info.level}]: ${info.message}`
+            )
+          ),
+          transports: [
+            new winston.transports.Console(),
+          ],
+        });
+      }
     }
   }
 
@@ -45,7 +67,9 @@ export class Logger {
   public static setLevel(level: LogLevel) {
     this.currentLevel = level;
     this.initialize();
-    this.logger.level = level;
+    if (this.logger.level !== undefined) {
+      this.logger.level = level;
+    }
   }
 
   /**

@@ -15,10 +15,16 @@ export default defineConfig({
       versions: { node: '16.0.0' }
     }
   },
+  optimizeDeps: {
+    exclude: ['winston', 'winston-transport', 'logform']
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@shared': path.resolve(__dirname, '../../packages/shared'),
+      'util': 'util',
+      'stream': 'stream-browserify',
+      'buffer': 'buffer',
     },
   },
   server: {
