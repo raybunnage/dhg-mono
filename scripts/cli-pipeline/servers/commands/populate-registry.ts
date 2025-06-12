@@ -115,6 +115,20 @@ const SERVER_CONFIGS = [
   }
 ];
 
+function getHealthCheckEndpoint(serviceName: string): string | null {
+  const healthEndpoints: Record<string, string> = {
+    'test-runner-server': '/api/health',
+    'living-docs-server': '/api/health',
+    'git-api-server': '/api/health',
+    'git-server': '/api/health',
+    'md-server': '/health',
+    'script-server': '/health',
+    'docs-archive-server': '/health'
+  };
+  
+  return healthEndpoints[serviceName] || null;
+}
+
 async function populateRegistry() {
   const supabase = SupabaseClientService.getInstance().getClient();
   
@@ -131,13 +145,18 @@ async function populateRegistry() {
       status: 'inactive',
       environment: 'development',
       protocol: 'http',
-      host: 'localhost'
+      host: 'localhost',
+      health_check_endpoint: getHealthCheckEndpoint(config.service_name)
     };
     
     const { error } = await supabase
       .from('sys_server_ports_registry')
-      .update(update)
-      .eq('service_name', config.service_name);
+      .upsert({
+        service_name: config.service_name,
+        ...update
+      }, {
+        onConflict: 'service_name'
+      });
     
     if (error) {
       console.error(`❌ Failed to update ${config.service_name}:`, error.message);
