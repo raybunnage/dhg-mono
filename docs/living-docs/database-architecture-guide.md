@@ -57,6 +57,7 @@ The database has undergone a comprehensive reorganization with all 43 tables now
 
 ## Recent Updates
 
+- **June 11, 2025**: Added data preview feature to DatabasePage - click any table to see first 10 records
 - **June 9, 2025**: Created this living documentation consolidating database specs
 - **May 2025**: Completed phase 1 of prefix migration (37 table renames)
 - **May 2025**: Implemented `sys_table_migrations` tracking system

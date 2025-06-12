@@ -1,0 +1,10 @@
+{
+  "taskId": "323235be-b156-42f2-875a-baddd8628ecb",
+  "submissionId": "34fc6ed9-3631-4e2b-ab09-7ff822f03eba",
+  "worktree": "dhg-mono-admin-code",
+  "timestamp": "2025-06-12T05:11:35.230594+00:00",
+  "rawTask": "Explain work summary tracking elements and create living document",
+  "uncommittedFiles": [
+    "docs/living-docs/database-architecture-guide.md"
+  ]
+}
