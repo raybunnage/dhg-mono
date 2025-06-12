@@ -1,4 +1,4 @@
-import { SupabaseClientService } from './supabase-client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface FollowUpTask {
   id: string;
@@ -19,18 +19,18 @@ export interface CreateFollowUpRequest {
 }
 
 export class FollowUpTaskService {
-  private static instance: FollowUpTaskService;
-  private supabase;
+  private static instances = new Map<SupabaseClient, FollowUpTaskService>();
+  private supabase: SupabaseClient;
 
-  private constructor() {
-    this.supabase = SupabaseClientService.getInstance().getClient();
+  private constructor(supabaseClient: SupabaseClient) {
+    this.supabase = supabaseClient;
   }
 
-  public static getInstance(): FollowUpTaskService {
-    if (!FollowUpTaskService.instance) {
-      FollowUpTaskService.instance = new FollowUpTaskService();
+  public static getInstance(supabaseClient: SupabaseClient): FollowUpTaskService {
+    if (!FollowUpTaskService.instances.has(supabaseClient)) {
+      FollowUpTaskService.instances.set(supabaseClient, new FollowUpTaskService(supabaseClient));
     }
-    return FollowUpTaskService.instance;
+    return FollowUpTaskService.instances.get(supabaseClient)!;
   }
 
   /**
@@ -184,5 +184,3 @@ export class FollowUpTaskService {
     }));
   }
 }
-
-export const followUpTaskService = FollowUpTaskService.getInstance();

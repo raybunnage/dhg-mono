@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, CheckCircle, XCircle, Clock, RefreshCw, AlertCircle, Terminal, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { serverRegistry } from '@shared/services';
 
 interface TestResult {
   id: string;
@@ -93,10 +94,13 @@ export const TestingPage: React.FC = () => {
 
   const checkServerStatus = async () => {
     try {
+      // Get the test runner server URL from registry
+      const serverUrl = await serverRegistry.getServerUrl('test-runner-server');
+      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      const response = await fetch('/api/health', {
+      const response = await fetch(`${serverUrl}/api/health`, {
         method: 'GET',
         signal: controller.signal
       });
@@ -186,8 +190,11 @@ export const TestingPage: React.FC = () => {
     const startTime = Date.now();
 
     try {
+      // Get the test runner server URL from registry
+      const serverUrl = await serverRegistry.getServerUrl('test-runner-server');
+      
       // Call the test runner backend
-      const response = await fetch('/api/run-test', {
+      const response = await fetch(`${serverUrl}/api/run-test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: suite.command, suiteId: suite.id })

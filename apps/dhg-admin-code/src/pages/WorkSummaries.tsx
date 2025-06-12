@@ -3,10 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft, CheckCircle, Clock, AlertCircle, FileText, Hash } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { TaskService } from '../services/task-service';
-import type { DevTask, DevTaskTag } from '../services/task-service';
+import { TaskService, type DevTask, type DevTaskTag } from '../services/task-service';
 import { supabase } from '../lib/supabase';
-import { WorkSummaryService, type WorkSummary, type WorkItem } from '@shared/services/work-summary-service';
+import { type WorkSummary, type WorkItem } from '../../../../packages/shared/services/work-summary-service/types';
+import { WorkSummaryService } from '../../../../packages/shared/services/work-summary-service/work-summary-service';
 
 // Create work summary service instance
 const workSummaryService = WorkSummaryService.getInstance(supabase);

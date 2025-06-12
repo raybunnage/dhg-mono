@@ -6,7 +6,7 @@ import {
   GitCommit, CheckCircle, XCircle, Loader, TestTube,
   ListChecks, Activity, Code, Plus
 } from 'lucide-react';
-import { WorkSummary } from '@shared/services/work-summary-service';
+import { type WorkSummary } from '../../../../packages/shared/services/work-summary-service/types';
 import { StatusPill, StatusIndicatorGroup, getStatusVariant } from '@shared/components/ui/StatusPill';
 
 interface DevTaskInfo {
