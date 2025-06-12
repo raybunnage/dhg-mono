@@ -40,11 +40,19 @@ interface TodoItem {
   priority?: string;
 }
 
+interface DocumentationInfo {
+  hasDocumentation: boolean;
+  documentationType?: string;
+  lastUpdated?: string;
+  documentCount?: number;
+}
+
 interface WorkSummaryTrackingData {
   devTask?: DevTaskInfo;
   submissionInfo?: SubmissionInfo;
   validationInfo?: ValidationInfo;
   testResults?: TestResults;
+  documentationInfo?: DocumentationInfo;
   todoItems: TodoItem[];
 }
 
@@ -134,6 +142,24 @@ export function useWorkSummaryTracking(summaryId: string, taskId?: string) {
             };
           } else {
             results.testResults = { hasTests: false, needsAction: false };
+          }
+
+          // Fetch documentation status
+          const { data: docData, error: docError } = await supabase
+            .from('continuous_documentation_tracking')
+            .select('doc_type, updated_at, status')
+            .eq('task_id', taskId)
+            .order('updated_at', { ascending: false });
+
+          if (!docError && docData && docData.length > 0) {
+            results.documentationInfo = {
+              hasDocumentation: true,
+              documentationType: docData[0].doc_type,
+              lastUpdated: docData[0].updated_at,
+              documentCount: docData.length
+            };
+          } else {
+            results.documentationInfo = { hasDocumentation: false };
           }
 
           // Fetch follow-up tasks as todo items
