@@ -40,9 +40,39 @@ async function getUncommittedFiles(): Promise<string[]> {
   }
 }
 
+async function checkSyncStatus(): Promise<{ behindCount: number; branch: string }> {
+  try {
+    // Get current branch
+    const branch = execSync('git branch --show-current', { encoding: 'utf8' }).trim();
+    
+    // Fetch latest from origin
+    execSync('git fetch origin development', { encoding: 'utf8' });
+    
+    // Check how many commits behind we are
+    const behindCount = execSync('git rev-list --count HEAD..origin/development', { encoding: 'utf8' }).trim();
+    
+    return { behindCount: parseInt(behindCount) || 0, branch };
+  } catch (error) {
+    return { behindCount: 0, branch: 'unknown' };
+  }
+}
+
 async function submitTask(taskId: string, rawTask: string, options: any) {
   try {
     console.log(`${colors.blue}📝 Submitting task to Claude...${colors.reset}`);
+
+    // Check sync status first (unless disabled)
+    if (options.syncCheck !== false) {
+      const { behindCount, branch } = await checkSyncStatus();
+      
+      if (behindCount > 0) {
+        console.log(`\n${colors.yellow}⚠️  WARNING: Your branch '${branch}' is ${behindCount} commit(s) behind origin/development${colors.reset}`);
+        console.log(`${colors.yellow}📋 Remember to sync with development before starting work:${colors.reset}`);
+        console.log(`   git merge origin/development`);
+        console.log(`   git push origin ${branch}\n`);
+        console.log(`${colors.cyan}ℹ️  Use the clipboard snippet "Dev Task Submission - Sync with Development First" for the complete workflow${colors.reset}\n`);
+      }
+    }
 
     // Get current worktree if not specified
     const worktree = options.worktree || await getCurrentWorktree();
@@ -143,6 +173,7 @@ program
   .option('-t, --text <text>', 'Provide task text directly')
   .option('-w, --worktree <name>', 'Specify worktree (defaults to current)')
   .option('--stdin', 'Read task from stdin')
+  .option('--no-sync-check', 'Skip sync status check')
   .action(async (taskId, options) => {
     if (options.file) {
       await submitFromFile(taskId, options.file, options);
