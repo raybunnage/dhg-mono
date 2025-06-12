@@ -169,6 +169,37 @@ Shows completion of follow-up tasks:
 - **Second number**: Total tasks
 - **Progress bar**: Visual representation of completion percentage
 
+### Real-World Example
+Let's say you implement a new feature:
+
+1. **Initial State**: Progress shows `0/0` - no follow-up tasks yet
+2. **Tests fail**: System detects 3 failing tests
+3. **Create follow-up**: Click "Add Task" → "Fix failing tests"
+4. **Progress updates**: Now shows `0/1` 
+5. **Fix and complete**: Mark task done → Progress shows `1/1` ✓
+
+### How Follow-up Tasks Get Started
+
+1. **Automatic Detection**
+   - Failed tests → "Fix failing tests" task suggested
+   - Missing docs → "Update documentation" task suggested
+   - Validation issues → "Address validation warnings" task suggested
+
+2. **Manual Creation**
+   ```bash
+   # Create a follow-up task via CLI
+   ./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh create \
+     --parent-task-id <original-task-id> \
+     --type bug_fix \
+     --title "Fix test failures in UserService"
+   ```
+
+3. **UI Creation**
+   - Expand work summary card
+   - Click "Add Task" button
+   - Fill in task details
+   - Task automatically linked as follow-up
+
 ### Creating Follow-up Tasks
 1. **Via UI**: Click "Add Task" button in expanded work summary
 2. **Via CLI**: Use dev-tasks CLI to create linked tasks
@@ -179,6 +210,21 @@ Shows completion of follow-up tasks:
 - **Documentation**: For missing docs
 - **Refactoring**: For code improvements
 - **Testing**: For missing test coverage
+
+### Task Lifecycle
+```
+Original Task (Feature) 
+    ↓
+Tests Run → 2 failures detected
+    ↓
+Follow-up Task Created: "Fix test failures"
+    ↓
+Developer fixes tests
+    ↓
+Mark follow-up complete → Progress: 1/1
+    ↓
+Original task fully validated ✓
+```
 
 ---
 
@@ -272,12 +318,29 @@ Links parent tasks to follow-up tasks for tracking dependencies
 
 ## Visual Interface Guide
 
+### Understanding the Visual Indicators
+
+**The "X" Symbol**
+When you see an "✗" or gray dot next to a status, it means that step hasn't been completed yet. This is NOT a failure - it simply means the work hasn't reached that stage.
+
+Example statuses:
+- ✓ (Green dot) = Completed successfully  
+- ✗ (Gray dot) = Not started/not applicable
+- ⚠ (Orange dot) = Completed with warnings
+- ✖ (Red dot) = Failed or has errors
+
 ### Collapsed View
 Shows summary with status dots:
 ```
 [✓ Submitted] [✓ Validated] [✗ Tested] [✗ Documented]
 Progress: 2/5 tasks [====------]
 ```
+
+In this example:
+- ✓ Submitted = Work was submitted (green)
+- ✓ Validated = Validation passed (green)
+- ✗ Tested = Tests haven't been run yet (gray)
+- ✗ Documented = Documentation not updated yet (gray)
 
 ### Expanded View (Click Activity Icon)
 Shows detailed information:
