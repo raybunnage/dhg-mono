@@ -48,6 +48,10 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  copy-request Format task for copying to Claude"
   echo "  commit       Commit changes with automatic task linking"
   echo "  assign-worktrees  Analyze commits to assign worktrees to tasks"
+  echo "  create-summary      Create work summary with task link"
+  echo "  track-validation    Track validation submission results"
+  echo "  track-tests         Track test execution results"
+  echo "  show-tracking       Show work summary tracking info"
   echo "  git-history-server  Start the Git History Analysis Server"
   echo "  success-criteria    Manage task success criteria"
   echo "  health-check Run health check for dev tasks pipeline"
@@ -89,6 +93,16 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  # Find interrupted Claude tasks"
   echo "  ./dev-tasks-cli.sh submit recover"
   echo "  ./dev-tasks-cli.sh submit recover my-worktree --minutes 60"
+  echo ""
+  echo "  # Create work summary linked to task"
+  echo "  ./dev-tasks-cli.sh create-summary <task-id> --title \"Implemented feature\" --content \"Details...\""
+  echo ""
+  echo "  # Track validation and test results"
+  echo "  ./dev-tasks-cli.sh track-validation <task-id> --status passed --summary \"All checks passed\""
+  echo "  ./dev-tasks-cli.sh track-tests <task-id> --passed 45 --failed 5 --coverage 90"
+  echo ""
+  echo "  # Show comprehensive tracking info"
+  echo "  ./dev-tasks-cli.sh show-tracking <task-id>"
   exit 0
 fi
 
@@ -189,11 +203,6 @@ case "$1" in
     ts-node "$SCRIPT_DIR/submit-task.ts" "$@"
     ;;
     
-  *)
-    echo "Unknown command: $1"
-    echo "Run './dev-tasks-cli.sh help' for usage"
-    exit 1
-    ;;
   health-check)
     echo "🏥 Running health check for dev_tasks pipeline..."
     if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
@@ -201,5 +210,26 @@ case "$1" in
       exit 1
     fi
     echo "✅ dev_tasks pipeline is healthy"
+    ;;
+  create-summary)
+    track_command "dev-tasks" "create-summary"
+    ts-node "$SCRIPT_DIR/commands/create-work-summary.ts" "${@:2}"
+    ;;
+  track-validation)
+    track_command "dev-tasks" "track-validation"
+    ts-node "$SCRIPT_DIR/commands/track-validation.ts" "${@:2}"
+    ;;
+  track-tests)
+    track_command "dev-tasks" "track-tests"
+    ts-node "$SCRIPT_DIR/commands/track-tests.ts" "${@:2}"
+    ;;
+  show-tracking)
+    track_command "dev-tasks" "show-tracking"
+    ts-node "$SCRIPT_DIR/commands/show-tracking.ts" "${@:2}"
+    ;;
+  *)
+    echo "Unknown command: $1"
+    echo "Run './dev-tasks-cli.sh help' for usage"
+    exit 1
     ;;
 esac
