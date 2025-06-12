@@ -50,7 +50,9 @@ export class ClaudeService {
       this.defaultModel = 'claude-sonnet-4-20250514';
     }
 
-    if (!this.apiKey) {
+    // Only show API key error in Node.js environments where it should be immediately available
+    // In browser environments, configuration happens via configure() method
+    if (!this.apiKey && typeof process !== 'undefined' && process.env) {
       console.error('Claude API key is not configured. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY in your environment variables.');
     }
   }

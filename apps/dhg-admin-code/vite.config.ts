@@ -5,6 +5,16 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+    process: {
+      env: {},
+      browser: true,
+      version: '',
+      versions: { node: '16.0.0' }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
