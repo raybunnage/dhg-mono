@@ -233,3 +233,8 @@ scripts/cli-pipeline/viewers/raycast-scripts/.DS_Store
 docs/imports/*.xlsx
 docs/imports/*.csv
 docs/temp/
+
+# Claude submission backup files
+# These are temporary backup files created by the Claude submission system
+# to prevent work loss during timeouts or disconnections
+.claude-submission-*.json

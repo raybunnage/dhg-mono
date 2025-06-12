@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Search, AlertCircle, Plus } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { TaskService, type DevTask } from '../services/task-service';
 import { supabase } from '../lib/supabase';
 import { type WorkSummary } from '../../../../packages/shared/services/work-summary-service/types';
 import { WorkSummaryService } from '../../../../packages/shared/services/work-summary-service/work-summary-service';
@@ -13,10 +12,6 @@ import { StatusPill } from '@shared/components/ui/StatusPill';
 
 // Create work summary service instance
 const workSummaryService = WorkSummaryService.getInstance(supabase);
-
-interface TaskWithTags extends DevTask {
-  tags: string[];
-}
 
 // Component for individual work summary with tracking data
 function WorkSummaryWithTracking({ 
@@ -55,12 +50,14 @@ function WorkSummaryWithTracking({
 
 export function WorkSummariesEnhancedV2() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [summaries, setSummaries] = useState<WorkSummary[]>([]);
   const [filteredSummaries, setFilteredSummaries] = useState<WorkSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedValidationStatus, setSelectedValidationStatus] = useState<string>('all');
+  const [selectedWorktree, setSelectedWorktree] = useState<string>('all');
+  const [selectedDateRange, setSelectedDateRange] = useState<string>('all');
+  const [selectedTag, setSelectedTag] = useState<string>('all');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +67,7 @@ export function WorkSummariesEnhancedV2() {
 
   useEffect(() => {
     filterSummaries();
-  }, [searchQuery, selectedCategory, selectedValidationStatus, summaries]);
+  }, [searchQuery, selectedCategory, selectedValidationStatus, selectedWorktree, selectedDateRange, selectedTag, summaries]);
 
   const fetchSummaries = async () => {
     try {
@@ -102,6 +99,43 @@ export function WorkSummariesEnhancedV2() {
       filtered = filtered.filter(summary => summary.category === selectedCategory);
     }
 
+    // Worktree filter
+    if (selectedWorktree !== 'all') {
+      filtered = filtered.filter(summary => summary.worktree === selectedWorktree);
+    }
+
+    // Date range filter
+    if (selectedDateRange !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      filtered = filtered.filter(summary => {
+        const workDate = new Date(summary.work_date);
+        
+        switch (selectedDateRange) {
+          case 'today':
+            return workDate >= today;
+          case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return workDate >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return workDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Tag filter
+    if (selectedTag !== 'all') {
+      filtered = filtered.filter(summary => 
+        summary.tags?.includes(selectedTag)
+      );
+    }
+
     // Validation status filter (would need to fetch this data)
     // For now, this is a placeholder
     if (selectedValidationStatus !== 'all') {
@@ -124,12 +158,41 @@ export function WorkSummariesEnhancedV2() {
   };
 
   const categories = [...new Set(summaries.map(s => s.category))].filter(Boolean);
+  const worktrees = [...new Set(summaries.map(s => s.worktree))].filter(Boolean);
+  const allTags = summaries.flatMap(s => s.tags || []);
+  const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const topTags = Object.entries(tagCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 8)
+    .map(([tag]) => tag);
   
   // Calculate counts for filters
   const categoryCounts = categories.reduce((acc, cat) => {
     acc[cat] = summaries.filter(s => s.category === cat).length;
     return acc;
   }, {} as Record<string, number>);
+  
+  const worktreeCounts = worktrees.reduce((acc, wt) => {
+    acc[wt || ''] = summaries.filter(s => s.worktree === wt).length;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // Date range counts
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const monthAgo = new Date(today);
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  
+  const dateRangeCounts = {
+    today: summaries.filter(s => new Date(s.work_date) >= today).length,
+    week: summaries.filter(s => new Date(s.work_date) >= weekAgo).length,
+    month: summaries.filter(s => new Date(s.work_date) >= monthAgo).length
+  };
   
   // TODO: Calculate validation status counts once we have the data
   const validationCounts = {
@@ -165,6 +228,115 @@ export function WorkSummariesEnhancedV2() {
             <Plus className="h-5 w-5" />
             New Summary
           </button>
+        </div>
+
+        {/* Quick Filter Pills */}
+        <div className="mb-4 space-y-3">
+          {/* Date Range Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Date:</span>
+            <button
+              onClick={() => setSelectedDateRange('all')}
+              className={`px-3 py-1 rounded-full transition-colors ${
+                selectedDateRange === 'all'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All Time
+            </button>
+            <button
+              onClick={() => setSelectedDateRange('today')}
+              className={`px-3 py-1 rounded-full transition-colors ${
+                selectedDateRange === 'today'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Today ({dateRangeCounts.today})
+            </button>
+            <button
+              onClick={() => setSelectedDateRange('week')}
+              className={`px-3 py-1 rounded-full transition-colors ${
+                selectedDateRange === 'week'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              This Week ({dateRangeCounts.week})
+            </button>
+            <button
+              onClick={() => setSelectedDateRange('month')}
+              className={`px-3 py-1 rounded-full transition-colors ${
+                selectedDateRange === 'month'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              This Month ({dateRangeCounts.month})
+            </button>
+          </div>
+
+          {/* Worktree Pills */}
+          {worktrees.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Branch:</span>
+              <button
+                onClick={() => setSelectedWorktree('all')}
+                className={`px-3 py-1 rounded-full transition-colors ${
+                  selectedWorktree === 'all'
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All Branches
+              </button>
+              {worktrees.slice(0, 5).map(wt => (
+                <button
+                  key={wt}
+                  onClick={() => setSelectedWorktree(wt || '')}
+                  className={`px-3 py-1 rounded-full transition-colors ${
+                    selectedWorktree === wt
+                      ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {wt} ({worktreeCounts[wt || '']})
+                </button>
+              ))}
+            </div>
+          )}
+
+
+          {/* Popular Tags Pills */}
+          {topTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Tags:</span>
+              <button
+                onClick={() => setSelectedTag('all')}
+                className={`px-3 py-1 rounded-full transition-colors ${
+                  selectedTag === 'all'
+                    ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All Tags
+              </button>
+              {topTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTag(tag)}
+                  className={`px-3 py-1 rounded-full transition-colors ${
+                    selectedTag === tag
+                      ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  #{tag} ({tagCounts[tag]})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -289,7 +461,8 @@ export function WorkSummariesEnhancedV2() {
         </div>
 
         {/* Active Filters Indicator */}
-        {(selectedCategory !== 'all' || selectedValidationStatus !== 'all' || searchQuery) && (
+        {(selectedCategory !== 'all' || selectedValidationStatus !== 'all' || selectedWorktree !== 'all' || 
+          selectedDateRange !== 'all' || selectedTag !== 'all' || searchQuery) && (
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -301,6 +474,9 @@ export function WorkSummariesEnhancedV2() {
               onClick={() => {
                 setSelectedCategory('all');
                 setSelectedValidationStatus('all');
+                setSelectedWorktree('all');
+                setSelectedDateRange('all');
+                setSelectedTag('all');
                 setSearchQuery('');
               }}
               className="text-sm text-amber-700 hover:text-amber-900 font-medium underline"
