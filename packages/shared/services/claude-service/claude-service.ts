@@ -148,3 +148,6 @@ export class ClaudeService {
     }
   }
 }
+
+// Export singleton instance for direct use (following CLAUDE.md pattern)
+export const claudeService = ClaudeService.getInstance();
