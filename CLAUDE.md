@@ -129,7 +129,21 @@ All database views now follow a consistent naming convention:
 
 4. **Essential Patterns**:
 
-   **Singleton Services**: Always use the correct pattern for your environment:
+   **Singleton Services vs Dependency Injection - CLARIFICATION**:
+   
+   ⚠️ **IMPORTANT**: The "singleton" requirement applies ONLY to infrastructure services that manage expensive resources (database connections, API clients). It does NOT mean all services must be singletons!
+   
+   **Infrastructure Services (Use Singletons)**:
+   - Supabase client - manages database connection
+   - Claude AI client - manages API connection  
+   - Logger (if managing file handles)
+   
+   **Business Services (Use Dependency Injection)**:
+   - CLIRegistryService - `new CLIRegistryService(supabase)` ✅ CORRECT
+   - UserService - `new UserService(supabase, logger)` ✅ CORRECT
+   - TaskService - `new TaskService(supabase)` ✅ CORRECT
+   
+   See `docs/technical-specs/singleton-vs-dependency-injection-patterns.md` for detailed explanation.
    
    **Supabase Connection Patterns**:
    ```typescript
@@ -465,13 +479,6 @@ For commits related to dev tasks that need detailed tracking:
 
 **Integration Points**: This can be automated in git hooks or integrated into the worktree merging workflow for better commit tracking.
 
-## Completion Messages
-
-⚠️ **ALWAYS end responses with clear status messages:**
-1. After completing requested work: **"✅ I have finished the work you asked me to do. Your next step is to use a check-in prompt if you have more work to do."**
-2. After git synchronization: **"✅ Your worktree branch is aligned with the current development and ready for the next dev task."**
-
-These messages prevent confusion when switching between multiple worktrees.
 
 ## Final Checklist
 
@@ -710,15 +717,6 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 ## Google Drive Usage
   for any issues with gooogle drive open and read docs/claude_info_special/google_drive_claude_info.md 
 
-## Dynamic Server Port Discovery
-
-⚠️ **Server ports are now dynamically allocated** - Never hardcode port numbers.
-
-- Check ports: `./scripts/cli-pipeline/servers/servers-cli.sh status`
-- List servers: `./scripts/cli-pipeline/servers/servers-cli.sh list`
-- Frontend code: Use `ServerRegistryService.getInstance().getServerUrl('service-name')`
-- Key table: `sys_server_ports_registry` contains all server configurations
-- Active servers view: `sys_active_servers_view` shows currently running servers
 
 ## Git & Worktree Management
 

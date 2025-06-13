@@ -5,7 +5,7 @@ import App from './App-minimal.tsx'
 import './index.css'
 
 // Import auth initialization (this runs immediately)
-// import './lib/auth-init'
+import './lib/auth-init'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
