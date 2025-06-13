@@ -6,7 +6,7 @@
  */
 import * as readline from 'readline';
 import { Command, CommandOption } from '../interfaces/types';
-import { logger } from './logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 
 /**
  * CLI colors

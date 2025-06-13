@@ -7,7 +7,7 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import { logger } from './logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 import { DatabaseService } from './database-service';
 import { claudeService } from '../../../../packages/shared/services/claude-service';
 import { EnvironmentService } from './environment-service';

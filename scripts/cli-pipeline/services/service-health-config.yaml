@@ -1,0 +1,130 @@
+# Service Health Monitoring Configuration
+# Defines health checks and monitoring rules for shared services
+
+services:
+  SupabaseClientService:
+    checks:
+      - type: singleton_verification
+        description: Verify singleton pattern is maintained
+        critical: true
+      - type: connection_health
+        description: Check database connection is active
+        critical: true
+      - type: import_count
+        description: Track number of imports
+        threshold: 200
+        warning_threshold: 150
+      - type: response_time
+        description: Monitor average query response time
+        threshold_ms: 100
+        warning_threshold_ms: 50
+    monitoring:
+      frequency: daily
+      alerts:
+        - type: usage_spike
+          threshold_percentage: 50
+        - type: error_rate
+          threshold_percentage: 5
+    
+  LoggerService:
+    checks:
+      - type: import_migration
+        description: Verify all imports use new path
+        critical: true
+      - type: browser_compatibility
+        description: Ensure no Node.js deps in base logger
+        critical: true
+      - type: log_levels
+        description: Verify log level filtering works
+      - type: context_handling
+        description: Test context data is preserved
+    monitoring:
+      frequency: weekly
+      alerts:
+        - type: file_size
+          threshold_mb: 100
+          applies_to: node_logger_only
+  
+  createSupabaseAdapter:
+    checks:
+      - type: environment_detection
+        description: Verify correct client for browser/server
+        critical: true
+      - type: singleton_reuse
+        description: Ensure Node.js uses singleton
+      - type: browser_isolation
+        description: Ensure browser creates new instance
+    monitoring:
+      frequency: weekly
+      
+  claudeService:
+    checks:
+      - type: api_key_validation
+        description: Verify API key is configured
+        critical: true
+      - type: rate_limiting
+        description: Check rate limit compliance
+      - type: response_validation
+        description: Verify API responses are valid
+    monitoring:
+      frequency: daily
+      alerts:
+        - type: api_errors
+          threshold_count: 10
+        - type: rate_limit_exceeded
+          immediate: true
+
+# Health check definitions
+health_checks:
+  singleton_verification:
+    script: |
+      const instance1 = Service.getInstance();
+      const instance2 = Service.getInstance();
+      return instance1 === instance2;
+      
+  connection_health:
+    script: |
+      const client = service.getClient();
+      const { error } = await client.from('sys_shared_services').select('count').single();
+      return !error;
+      
+  browser_compatibility:
+    script: |
+      // Check for Node.js specific imports
+      const sourceCode = fs.readFileSync(servicePath, 'utf-8');
+      const nodeModules = ['fs', 'path', 'crypto', 'child_process'];
+      return !nodeModules.some(mod => sourceCode.includes(`from '${mod}'`));
+
+# Monitoring schedules
+schedules:
+  daily:
+    cron: "0 9 * * *"  # 9 AM daily
+    retention_days: 30
+    
+  weekly:
+    cron: "0 9 * * 1"  # 9 AM Monday
+    retention_days: 90
+    
+  monthly:
+    cron: "0 9 1 * *"  # 9 AM first of month
+    retention_days: 365
+
+# Alert configurations
+alerts:
+  channels:
+    - type: database
+      table: sys_service_health_alerts
+    - type: console
+      enabled: true
+      
+  escalation:
+    critical:
+      - immediate: database
+      - after_minutes: 30
+        action: create_github_issue
+    high:
+      - after_hours: 2
+        action: database
+    medium:
+      - after_days: 1
+        action: database

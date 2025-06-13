@@ -6,7 +6,7 @@
  */
 import { cliService } from '../shared/services/cli-service';
 import { documentService } from './services/document-service';
-import { logger } from '../shared/services/logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 import { environmentService } from '../shared/services/environment-service';
 
 // Register commands
