@@ -137,11 +137,14 @@ async function main() {
 
     const services = data || [];
     const totalUsage = services.reduce((sum, s) => sum + (s.usage_count || 0), 0);
-    const duplicates = services.filter(s => s.service_name !== 'SupabaseClientService');
+    
+    // Exclude services that are not actually duplicates
+    const nonDuplicates = ['SupabaseClientService', 'SupabaseService', 'SupabaseAdapter'];
+    const duplicates = services.filter(s => !nonDuplicates.includes(s.service_name));
     
     console.log(`   Found ${services.length} Supabase services`);
     console.log(`   Total usage: ${totalUsage} references`);
-    console.log(`   Duplicate services: ${duplicates.length}`);
+    console.log(`   True duplicate services: ${duplicates.length}`);
     
     if (duplicates.length > 0) {
       console.log(`   Duplicates need consolidation:`);

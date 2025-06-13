@@ -46,7 +46,7 @@ const SERVICE_GROUPS = {
     {
       name: 'SupabaseService',
       testFn: () => {
-        return SupabaseService.getInstance();
+        return new SupabaseService();
       }
     }
   ]

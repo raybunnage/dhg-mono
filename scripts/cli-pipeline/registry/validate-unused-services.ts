@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { getSupabaseClient } from './utils/supabase-helper';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,7 +14,7 @@ interface ValidationResult {
 }
 
 async function validateUnusedServices() {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   console.log('🔍 Validating unused services with string search...\n');
   

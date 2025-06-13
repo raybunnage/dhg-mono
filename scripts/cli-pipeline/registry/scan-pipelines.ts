@@ -168,7 +168,7 @@ async function scanPipelines(options: { verifyCommands?: boolean }): Promise<voi
     if (options.verifyCommands) {
       console.log('\n🔗 Cross-referencing with command_pipelines table...');
       
-      const supabase = getSupabaseClient();
+      const supabase = SupabaseClientService.getInstance().getClient();
       const { data: commandPipelines, error } = await supabase
         .from('command_pipelines')
         .select('name, display_name, status')

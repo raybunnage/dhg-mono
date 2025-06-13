@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
 
-import { getSupabaseClient } from './utils/supabase-helper';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function verifyAnalysisCoverage() {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   console.log('🔍 Verifying Analysis Coverage');
   console.log('==============================\n');
