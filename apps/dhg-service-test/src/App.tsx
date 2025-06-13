@@ -19,15 +19,30 @@ import { TestSupabaseConsolidation } from './components/TestSupabaseConsolidatio
 import { TestSupabaseServices } from './components/TestSupabaseServices';
 import { EnvDebug } from './components/EnvDebug';
 import { DebugSupabaseAdapter } from './components/DebugSupabaseAdapter';
+import { TestClaudeService } from './components/TestClaudeService';
+import { ViteEnvFixPage } from './components/ViteEnvFixPage';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services'>('services');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix'>('env-fix');
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 bg-white shadow-sm mb-4">
-        <div className="max-w-6xl mx-auto flex gap-4">
-          <h1 className="text-xl font-bold mr-4">DHG Service Test</h1>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex gap-4 items-center mb-2">
+            <h1 className="text-xl font-bold mr-4">DHG Service Test</h1>
+            <button
+              onClick={() => setView('env-fix')}
+              className={`px-4 py-2 rounded font-semibold ${
+                view === 'env-fix' 
+                  ? 'bg-red-600 text-white animate-pulse' 
+                  : 'bg-red-500 text-white hover:bg-red-600'
+              }`}
+            >
+              🚨 Fix Env Issues
+            </button>
+          </div>
+          <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setView('welcome')}
             className={`px-4 py-2 rounded ${
@@ -88,18 +103,35 @@ function App() {
           >
             All Supabase Services
           </button>
+          <button
+            onClick={() => setView('claude')}
+            className={`px-4 py-2 rounded ${
+              view === 'claude' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Claude Service
+          </button>
+          </div>
         </div>
       </div>
       
       <div className="max-w-6xl mx-auto p-4">
-        <EnvDebug />
-        <DebugSupabaseAdapter />
+        {view !== 'env-fix' && (
+          <>
+            <EnvDebug />
+            <DebugSupabaseAdapter />
+          </>
+        )}
+        {view === 'env-fix' && <ViteEnvFixPage />}
         {view === 'welcome' && <Welcome />}
         {view === 'supabase' && <TestSupabaseAdapter />}
         {view === 'logger' && <TestLogger />}
         {view === 'status' && <ServiceStatus />}
         {view === 'consolidation' && <TestSupabaseConsolidation />}
         {view === 'services' && <TestSupabaseServices />}
+        {view === 'claude' && <TestClaudeService />}
       </div>
     </div>
   );

@@ -10,14 +10,10 @@ import { SupabaseClientService } from '../../../packages/shared/services/supabas
 import * as fs from 'fs';
 
 export type CheckpointStage = 
-  | 'pre-cleanup'
-  | 'migration-complete'
-  | 'imports-updated'
-  | 'tests-added'
-  | 'validation-passed'
-  | 'visual-confirmed'
-  | 'production-verified'
-  | 'cleanup-finalized';
+  | 'baseline'
+  | 'migrated'
+  | 'validated'
+  | 'finalized';
 
 interface CheckpointConfig {
   stage: CheckpointStage;
@@ -28,54 +24,29 @@ interface CheckpointConfig {
 }
 
 const CHECKPOINT_CONFIGS: Record<CheckpointStage, CheckpointConfig> = {
-  'pre-cleanup': {
-    stage: 'pre-cleanup',
-    commitPrefix: 'chore',
-    description: 'checkpoint before cleanup',
+  'baseline': {
+    stage: 'baseline',
+    commitPrefix: 'checkpoint',
+    description: 'baseline - before service cleanup',
     validationRequired: false
   },
-  'migration-complete': {
-    stage: 'migration-complete',
-    commitPrefix: 'feat',
-    description: 'migrate service to shared location',
+  'migrated': {
+    stage: 'migrated',
+    commitPrefix: 'checkpoint',
+    description: 'migrated - service moved, imports updated, tests added',
     requiredFiles: ['packages/shared/services/'],
     validationRequired: true
   },
-  'imports-updated': {
-    stage: 'imports-updated',
-    commitPrefix: 'refactor',
-    description: 'update all service imports',
+  'validated': {
+    stage: 'validated',
+    commitPrefix: 'checkpoint',
+    description: 'validated - tests pass and visual confirmation complete',
     validationRequired: true
   },
-  'tests-added': {
-    stage: 'tests-added',
-    commitPrefix: 'test',
-    description: 'add integration tests',
-    requiredFiles: ['apps/dhg-service-test/'],
-    validationRequired: false
-  },
-  'validation-passed': {
-    stage: 'validation-passed',
-    commitPrefix: 'fix',
-    description: 'cleanup validation complete',
-    validationRequired: true
-  },
-  'visual-confirmed': {
-    stage: 'visual-confirmed',
-    commitPrefix: 'docs',
-    description: 'visual confirmation complete',
-    validationRequired: false
-  },
-  'production-verified': {
-    stage: 'production-verified',
-    commitPrefix: 'verify',
-    description: 'production validation complete',
-    validationRequired: true
-  },
-  'cleanup-finalized': {
-    stage: 'cleanup-finalized',
-    commitPrefix: 'chore',
-    description: 'finalize service cleanup',
+  'finalized': {
+    stage: 'finalized',
+    commitPrefix: 'checkpoint',
+    description: 'finalized - old files archived and docs updated',
     requiredFiles: ['.archived_scripts/'],
     validationRequired: false
   }
@@ -95,7 +66,7 @@ export class ServiceCleanupGitIntegration {
     
     // Check if we have uncommitted changes
     const status = this.getGitStatus();
-    if (!status.clean && stage !== 'pre-cleanup') {
+    if (!status.clean && stage !== 'baseline') {
       console.warn('⚠️  Uncommitted changes detected');
       
       // Stage appropriate files based on stage
@@ -118,7 +89,7 @@ export class ServiceCleanupGitIntegration {
       
       return commitHash;
     } catch (error) {
-      if (error.message.includes('nothing to commit')) {
+      if (error instanceof Error && error.message.includes('nothing to commit')) {
         console.log('ℹ️  No changes to commit at this checkpoint');
         return execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
       }
@@ -276,18 +247,18 @@ export class ServiceCleanupGitIntegration {
     
     // Add stage-specific details
     switch (config.stage) {
-      case 'migration-complete':
+      case 'migrated':
         lines.push(`- Moved to packages/shared/services/`);
-        lines.push(`- Preserved all functionality`);
+        lines.push(`- Updated all imports`);
+        lines.push(`- Added tests`);
         break;
-      case 'validation-passed':
-        lines.push(`✅ All validation checks passing`);
-        lines.push(`✅ TypeScript compilation: PASS`);
-        lines.push(`✅ Integration tests: PASS`);
+      case 'validated':
+        lines.push(`✅ All tests passing`);
+        lines.push(`✅ Visual confirmation complete`);
         break;
-      case 'production-verified':
-        lines.push(`- Tested in production usage`);
-        lines.push(`- No regressions found`);
+      case 'finalized':
+        lines.push(`- Old files archived`);
+        lines.push(`- Documentation updated`);
         break;
     }
     
@@ -330,7 +301,7 @@ export class ServiceCleanupGitIntegration {
   }
   
   private async getCheckpoint(serviceName: string, stage: CheckpointStage): Promise<any> {
-    const { data, error } = await this.supabase
+    const { data } = await this.supabase
       .from('sys_service_cleanup_checkpoints')
       .select('*')
       .eq('service_name', serviceName)
