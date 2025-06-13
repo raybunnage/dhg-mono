@@ -1,0 +1,69 @@
+# Continuous Improvement Standards
+# Phase 1: Keep it simple, measure what matters
+
+version: 1
+description: "Core standards that prevent real problems"
+
+# Critical patterns that actually cause issues
+services:
+  critical:
+    - name: "singleton_pattern"
+      description: "Service has getInstance method"
+      check: "contains getInstance"
+      reason: "Prevents multiple instances and environment issues"
+    
+    - name: "environment_detection" 
+      description: "Service detects browser vs node environment"
+      check: "contains typeof window"
+      reason: "Critical for shared services across apps and CLI"
+    
+    - name: "no_hardcoded_secrets"
+      description: "No API keys or passwords in code"
+      check: "not contains api_key:|password:|secret:"
+      reason: "Security vulnerability"
+
+database:
+  critical:
+    - name: "uuid_primary_key"
+      description: "Tables use UUID primary keys"
+      check: "id column is uuid type"
+      reason: "Prevents ID conflicts in distributed system"
+    
+    - name: "rls_enabled"
+      description: "Tables have row level security enabled"
+      check: "RLS is enabled"
+      reason: "Security requirement for multi-tenant system"
+    
+    - name: "timestamp_columns"
+      description: "Tables have created_at and updated_at"
+      check: "has created_at and updated_at columns"
+      reason: "Audit trail and debugging"
+
+cli_pipelines:
+  critical:
+    - name: "help_command"
+      description: "CLI scripts respond to --help"
+      check: "script --help returns 0"
+      reason: "Usability and discoverability"
+    
+    - name: "error_handling"
+      description: "Scripts use set -e for error handling"
+      check: "contains set -e"
+      reason: "Fail fast on errors"
+
+# What we DON'T check (Phase 1)
+# - Complex code metrics
+# - Documentation completeness  
+# - Performance benchmarks
+# - Advanced security patterns
+# - UI/UX standards
+
+# Severity levels
+severity:
+  critical: "Causes production issues or security problems"
+  warning: "Creates maintenance burden or confusion"
+  info: "Nice to have improvement"
+
+# Only report critical issues in Phase 1
+report_levels:
+  - critical
