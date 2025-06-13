@@ -1,5 +1,5 @@
 export * from "./supabase-client";
-export * from "./claude-service/claude-service"; // Main claude service export
+export * from '@shared/services/claude-service'; // Main claude service export
 export * from "./document-pipeline/document-pipeline-service";
 export * from "./script-pipeline/script-pipeline-service";
 // COMMENTED OUT: file-service uses Node.js fs module

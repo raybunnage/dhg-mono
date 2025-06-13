@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import { Database } from '../../../supabase/types';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../packages/shared/services/prompt-service';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import { BatchProcessingService } from '../../../packages/shared/services/batch-processing-service';
 import { documentClassificationService } from '../../../packages/shared/services/document-classification-service';

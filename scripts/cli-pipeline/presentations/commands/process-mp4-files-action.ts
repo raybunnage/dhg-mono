@@ -1,5 +1,5 @@
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
-import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { PromptService } from '../../../../packages/shared/services/prompt-service';
 import * as fs from 'fs';

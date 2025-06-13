@@ -6,7 +6,7 @@
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../packages/shared/services/prompt-service';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mammoth from 'mammoth';

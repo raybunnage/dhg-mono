@@ -4,7 +4,7 @@
  * Test script to check Claude 4.0 model availability
  */
 
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 async function testClaudeModels() {
   console.log('🧪 Testing Claude 4.0 Model Availability...\n');

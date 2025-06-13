@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { config as loadDotEnv } from 'dotenv';
-import { ClaudeService } from '../../packages/cli/src/services/claude-service';
+import { ClaudeService } from '@shared/services/claude-service';
 
 // Initialize environment variables
 loadDotEnv();

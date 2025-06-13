@@ -18,6 +18,7 @@ import { ServiceStatus } from './components/ServiceStatus';
 import { TestSupabaseConsolidation } from './components/TestSupabaseConsolidation';
 import { TestSupabaseServices } from './components/TestSupabaseServices';
 import { EnvDebug } from './components/EnvDebug';
+import { DebugSupabaseAdapter } from './components/DebugSupabaseAdapter';
 
 function App() {
   const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services'>('services');
@@ -92,6 +93,7 @@ function App() {
       
       <div className="max-w-6xl mx-auto p-4">
         <EnvDebug />
+        <DebugSupabaseAdapter />
         {view === 'welcome' && <Welcome />}
         {view === 'supabase' && <TestSupabaseAdapter />}
         {view === 'logger' && <TestLogger />}

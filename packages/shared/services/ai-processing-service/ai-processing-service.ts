@@ -5,7 +5,7 @@
  * and content extraction using the Claude service
  */
 
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 export interface ClassificationResult {
   document_type_id: string;

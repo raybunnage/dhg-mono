@@ -57,7 +57,7 @@ import { documentService } from '../services/document-service';
 import { databaseService } from '../../shared/services/database-service';
 import { fileService } from '../../shared/file-service';
 import { nodeLogger as logger } from '@shared/services/logger/logger-node';
-import { claudeService } from '../../../../packages/shared/services/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 describe('DocumentService', () => {
   beforeEach(() => {

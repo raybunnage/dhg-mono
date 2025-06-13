@@ -1,5 +1,5 @@
 #!/usr/bin/env ts-node
-import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import * as fs from 'fs';
 import * as path from 'path';
 

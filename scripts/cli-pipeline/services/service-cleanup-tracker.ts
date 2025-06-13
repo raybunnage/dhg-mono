@@ -157,7 +157,7 @@ class ServiceCleanupTracker {
     console.log(`\nCleanup Status for ${serviceName}:`);
     console.log('='.repeat(50));
     
-    const tasksByType = tasks.reduce((acc, task) => {
+    const tasksByType = tasks.reduce((acc: Record<string, CleanupTask[]>, task) => {
       if (!acc[task.task_type]) acc[task.task_type] = [];
       acc[task.task_type].push(task);
       return acc;
@@ -198,7 +198,7 @@ class ServiceCleanupTracker {
     console.log('\nPending Cleanup Tasks:');
     console.log('='.repeat(70));
     
-    const tasksByService = tasks.reduce((acc, task) => {
+    const tasksByService = tasks.reduce((acc: Record<string, CleanupTask[]>, task) => {
       if (!acc[task.service_name]) acc[task.service_name] = [];
       acc[task.service_name].push(task);
       return acc;

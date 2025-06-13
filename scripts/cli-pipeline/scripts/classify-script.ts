@@ -7,7 +7,7 @@
  */
 
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
