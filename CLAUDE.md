@@ -500,6 +500,14 @@ This ensures migrations are properly tested before applying to the database.
 
 ## Common Issues to Avoid
 
+⚠️ **CRITICAL: Node.js Dependencies in Browser Code**
+- ❌ **NEVER bypass TypeScript compilation errors by switching module systems**
+- ❌ **NEVER add Node.js polyfills to browser code** (process, fs, path, etc.)
+- ❌ **NEVER use Node.js-only libraries in shared services** (winston, colors, dotenv)
+- ✅ **ALWAYS fix the root cause** - if a module won't compile for browser, it shouldn't be there
+- ✅ **ALWAYS use browser-safe alternatives** (console.log vs winston, env injection vs dotenv)
+- **Lesson**: Shared services MUST work in both Node.js AND browser environments without polyfills
+
 1. **Creating files in wrong locations**: 
    - ❌ NEVER put scripts in the root directory
    - ❌ NEVER put scripts directly in `/scripts/` folder
