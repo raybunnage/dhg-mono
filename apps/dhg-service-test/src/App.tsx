@@ -15,9 +15,10 @@ import { Welcome } from './components/Welcome';
 import { TestSupabaseAdapter } from './components/TestSupabaseAdapter';
 import { TestLogger } from './components/TestLogger';
 import { ServiceStatus } from './components/ServiceStatus';
+import { TestSupabaseConsolidation } from './components/TestSupabaseConsolidation';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status'>('status');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation'>('consolidation');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,6 +65,16 @@ function App() {
           >
             Service Status
           </button>
+          <button
+            onClick={() => setView('consolidation')}
+            className={`px-4 py-2 rounded ${
+              view === 'consolidation' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Supabase Consolidation
+          </button>
         </div>
       </div>
       
@@ -72,6 +83,7 @@ function App() {
         {view === 'supabase' && <TestSupabaseAdapter />}
         {view === 'logger' && <TestLogger />}
         {view === 'status' && <ServiceStatus />}
+        {view === 'consolidation' && <TestSupabaseConsolidation />}
       </div>
     </div>
   );
