@@ -21,6 +21,13 @@ All database views now follow a consistent naming convention:
 - Let the user decide how to proceed - don't try to "make things work" by circumventing issues
 - When problems arise, focus on fixing root causes, not symptoms
 
+⚠️ **CRITICAL: NEVER CHANGE SHARED PACKAGE.JSON TO RAW TYPESCRIPT**
+- **NEVER change packages/shared/package.json main/module/types to point to .ts files**
+- **ALWAYS use compiled .js files**: `"main": "./dist/index.js"`
+- **Raw TypeScript imports cause Node.js modules (fs, crypto, path, os) to hit browsers directly**
+- **This breaks ALL browser apps and creates cascade of polyfill/winston "fixes"**
+- **If services suddenly fail across all apps, check if package.json points to .ts instead of .js**
+
 ⚠️ **CRITICAL: NO PULL REQUESTS WITH WORKTREES**
 - **NEVER create pull requests when working with worktrees**
 - **ALWAYS use direct push**: `git push origin branch-name:development`
@@ -30,6 +37,11 @@ All database views now follow a consistent naming convention:
 ⚠️ **SHARED SERVICES AVAILABLE**
 - Check `packages/shared/services/` for existing functionality before implementing new features
 - Health check tools: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
+
+⚠️ **CRITICAL: SYNC WITH DEVELOPMENT BEFORE STARTING NEW TASKS**
+- **ALWAYS fetch and merge latest development** before starting work on any new dev task
+- **Prevents merge conflicts** and ensures you build on the latest codebase
+- See "Claude Task Submission Tracking" section for the complete workflow
 
 ⚠️ **CRITICAL: CODE REVIEW CHECKLIST**
 
@@ -145,11 +157,12 @@ All database views now follow a consistent naming convention:
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
    - This is the single source of truth for all table structures and relationships
 
-   
-   ⚠️ **If your table doesn't fit any existing prefix**:
-   - STOP and ask the user what to do
-   
-   Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
+   **Table Naming Conventions**:
+   - ⚠️ **ALWAYS check `sys_table_prefixes` before creating any table**
+   - ⚠️ **NEVER create a table without checking existing prefixes**
+   - ⚠️ **ASK before using any prefix not in `sys_table_prefixes`**
+   - View approved prefixes: `SELECT * FROM sys_table_prefixes WHERE active = true`
+   - Check usage: `SELECT * FROM sys_table_prefix_usage_view`
    
    **Table Creation Dates**: When creating new tables, always add an entry to `sys_table_definitions` with the creation date:
    ```sql
@@ -159,10 +172,11 @@ All database views now follow a consistent naming convention:
    ```
    
    **Database View Naming Convention**:
-   - All views MUST end with `_view` suffix for clarity
-   - ⚠️ **CRITICAL: Views MUST use the prefix of their primary table**
-   - This ensures views sort alphabetically with their related tables
-   - The prefix determines which functional area owns the view
+   - ⚠️ **Two mandatory rules for all views**:
+     1. **MUST start with a prefix from `sys_table_prefixes`** - use the closest matching prefix for your view's domain
+     2. **MUST end with `_view` suffix** - no exceptions
+   - Example: `sys_active_servers_view`, `command_pipeline_usage_view`, `media_sessions_summary_view`
+   - This ensures views sort with their related tables and are clearly identifiable as views
    
    **Database Best Practices**:
    
@@ -250,6 +264,11 @@ All database views now follow a consistent naming convention:
    - Include proper error handling and logging
    - Test commands with real data before submitting
 
+4. **Work Summary CLI Usage**:
+   - ⚠️ **ALWAYS use single-line commands** - no backslashes or line breaks
+   - Format: `./work-summaries-cli.sh add --title "Title" --content "Content" --category "feature" --tags "tag1,tag2"`
+   - Valid categories: feature, bug_fix, refactoring, documentation
+
 ## CLI Command Registry
 
 **Before creating new CLI commands**, check the existing command registry:
@@ -296,14 +315,14 @@ ORDER BY cpt.table_name;
 
 2. **Database Migration Workflow**:
    - ✅ **Types.ts is automatically regenerated after successful migrations**
-   - The run-staged command now automatically runs: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - The run-staged command now automatically regenerates types
    - This ensures TypeScript interfaces always match the updated database schema
    - If type generation fails, the command provides manual instructions
    - Consider committing the updated types.ts file along with your migration
    
    **⚠️ Manual Type Generation** (when needed):
    ```bash
-   pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+   pnpm supabase gen types typescript --project-id <project-id> > supabase/types.ts
    ```
 
 3. **Safe Refactoring**:
@@ -318,6 +337,60 @@ ORDER BY cpt.table_name;
   -  Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions
    
+## Claude Task Submission Tracking (Recovery System)
+
+⚠️ **ALWAYS submit tasks to the database AND sync with development before starting work**
+
+To prevent work loss and ensure proper synchronization:
+
+### 1. **Submit task immediately when received** (Prevent Loss):
+```bash
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit <task-id> --text "task content"
+```
+This creates backups in case of timeouts or disconnections.
+
+### 2. **Sync with development BEFORE starting work** (Required):
+```bash
+# Check current state
+git status  # Ensure clean working tree
+git branch -vv  # Verify branch tracking
+
+# Commit any existing work first (if needed)
+git add -A && git commit -m "chore: checkpoint before syncing"
+
+# Fetch and merge latest development
+git fetch origin development
+git merge origin/development
+
+# Push updated branch back to origin
+git push origin $(git branch --show-current)
+```
+
+### 3. **Check for interrupted tasks** (Recovery):
+```bash
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit recover
+```
+
+### Benefits of this workflow:
+- **Submission first**: Prevents work loss during timeouts
+- **Sync before work**: Ensures you start from latest codebase
+- **Recovery system**: Easy task resumption after interruptions
+- **Clean merges**: Reduces conflicts by starting from current state
+
+### Recovery features:
+- Tracks when task was submitted to Claude
+- Saves raw task text for re-submission
+- Records uncommitted files at submission time
+- Creates local `.claude-submission-*.json` backup files
+- Enables easy task resumption after timeouts
+
+### If Claude times out:
+- Run recovery command to find interrupted tasks
+- Re-submit the same task text to continue work
+- All uncommitted changes remain for continuation
+
+⚠️ **NOTE**: There's a clipboard snippet "Dev Task Submission - Sync with Development First" that contains this complete workflow for easy reference.
+
 ## Task-Aware Git Commits
 
 ⚠️ **ALWAYS check for active tasks before committing changes**
@@ -392,6 +465,14 @@ For commits related to dev tasks that need detailed tracking:
 
 **Integration Points**: This can be automated in git hooks or integrated into the worktree merging workflow for better commit tracking.
 
+## Completion Messages
+
+⚠️ **ALWAYS end responses with clear status messages:**
+1. After completing requested work: **"✅ I have finished the work you asked me to do. Your next step is to use a check-in prompt if you have more work to do."**
+2. After git synchronization: **"✅ Your worktree branch is aligned with the current development and ready for the next dev task."**
+
+These messages prevent confusion when switching between multiple worktrees.
+
 ## Final Checklist
 
 ⚠️ **BEFORE SUBMITTING CODE:**
@@ -461,30 +542,21 @@ This ensures migrations are properly tested before applying to the database.
    - Each app should have ONE `lib/supabase.ts` file
    - If an app has multiple Supabase files, consolidate them into one
 
-8. **Incorrect Date Handling**:
-   - ❌ **Problem**: Using incorrect dates in file names or documentation
-   - ✅ **Solution**: Always check the actual date using system commands
-   - **Getting Current Date**:
-     ```bash
-     # For file names (YYYYMMDD format):
-     date +%Y%m%d  # Example: 20250607
-     
-     # For documentation headers:
-     date          # Example: Sat Jun  7 08:58:14 PDT 2025
-     
-     # For timestamp in file names:
-     date +%Y-%m-%dT%H-%M-%S  # Example: 2025-06-07T08-58-14
-     ```
-   - **In TypeScript/JavaScript**:
-     ```typescript
-     // Always use new Date() for current date
-     const currentDate = new Date();
-     const dateString = currentDate.toISOString().split('T')[0]; // 2025-06-07
-     const timestamp = currentDate.toISOString(); // 2025-06-07T15:58:14.000Z
-     ```
-   - ⚠️ **Important**: The environment shows today's date in `<env>` tags but should be verified with actual system date
+8. **Archive Date Accuracy**: Always verify current date with `date +%Y%m%d` before naming archive files - incorrect dates break archive organization
 
-9. **Conflicting JavaScript/TypeScript Files**:
+9. **App Vite Ports** (hardcoded):
+   - dhg-research: 5005
+   - dhg-hub-lovable: 5173
+   - dhg-hub: 5174
+   - dhg-admin-suite: 5175
+   - dhg-admin-google: 5176
+   - dhg-admin-code: 5177
+   - dhg-a: 5178
+   - dhg-b: 5179
+   - dhg-service-test: 5180
+   - dhg-audio: 5194
+
+10. **Conflicting JavaScript/TypeScript Files**:
    - ❌ **Problem**: Browser imports fail with "does not provide an export named" when both `.js` and `.ts` files exist
    - ✅ **Solution**: Remove compiled `.js` files that conflict with `.ts` source files
    - Example: Remove `packages/shared/services/supabase-client.js` if `supabase-client.ts` exists
@@ -533,16 +605,7 @@ This ensures migrations are properly tested before applying to the database.
 
 ### Common TypeScript Errors and Solutions
 
-1. **"Cannot find module" Errors**:
-   ```
-   ❌ Error: Cannot find module '@shared/services/...' or its corresponding type declarations
-   ```
-   **Solutions**:
-   - Check if the path is correct and file exists
-   - Verify tsconfig.json has proper path mappings
-   - For browser apps, check vite.config.ts alias configuration
-   - Try relative imports as a temporary workaround: `../../../packages/shared/...`
-   - Run `pnpm install` to ensure dependencies are linked
+1. **"Cannot find module" Errors**: Check path exists, verify tsconfig.json mappings, try relative imports
 
 2. **Type Mismatches with supabase/types.ts**:
    ```
@@ -551,7 +614,7 @@ This ensures migrations are properly tested before applying to the database.
    **Solutions**:
    - Always check for null: `if (data.field) { ... }`
    - Use nullish coalescing: `data.field ?? 'default'`
-   - Update types after schema changes: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - Update types after schema changes: `pnpm supabase gen types typescript --project-id <project-id> > supabase/types.ts`
    - Use type assertions carefully: `data.field as string` (only when certain)
 
 3. **ESM/CommonJS Compatibility Issues**:
@@ -639,92 +702,15 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
 ## Google Drive Usage
   for any issues with gooogle drive open and read docs/claude_info_special/google_drive_claude_info.md 
 
+## Dynamic Server Port Discovery
 
-## Port Management for Servers and Apps
+⚠️ **Server ports are now dynamically allocated** - Never hardcode port numbers.
 
-### Port Allocation Strategy
-
-To avoid port collisions in the monorepo, follow these standardized port ranges:
-
-**Port Ranges**:
-- **3000-3099**: Backend/API servers
-- **5000-5999**: Vite development servers  
-- **4000-4999**: Vite preview servers
-
-**Reserved Ports**:
-| Port | Service | Location |
-|------|---------|----------|
-| 3001 | Markdown Server | `scripts/cli-pipeline/viewers/simple-md-server.js` |
-| 3002 | Script Server | `scripts/cli-pipeline/viewers/simple-script-server.js` |
-| 3003 | Docs Archive Server | `scripts/cli-pipeline/viewers/docs-archive-server.js` |
-| 3004 | (Available) | - |
-| 3005 | Git Server | `apps/dhg-admin-code/git-server.cjs` |
-| 3006 | Audio Proxy Server | `apps/dhg-audio/server.js` |
-| 3007 | Experts Markdown Server | `apps/dhg-improve-experts/md-server.mjs` |
-| 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
-| 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
-| 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
-| 3011 | Git History Analysis Server | `scripts/cli-pipeline/dev_tasks/git-history-server.js` |
-
-**Vite App Ports**:
-| Port | App | Preview Port | Status |
-|------|-----|--------------|--------|
-| 5173 | dhg-hub-lovable | 4173 | Dedicated |
-| 5174 | dhg-hub | 4174 | Dedicated |
-| 5175 | dhg-admin-suite | 4175 | Dedicated |
-| 5176 | dhg-admin-google | 4176 | Dedicated |
-| 5177 | dhg-admin-code | 4177 | Dedicated |
-| 5178 | dhg-a | 4178 | Dedicated |
-| 5179 | dhg-b | 4179 | Dedicated |
-| 5194 | dhg-audio | - | Dedicated |
-| 5005 | dhg-research | - | Dedicated |
-| 8080 | dhg-improve-experts | - | Dedicated |
-
-### Starting All Servers
-
-Use the centralized server management script:
-```bash
-# Start all backend servers with proper port assignments
-pnpm servers
-
-# Or manually with:
-node scripts/start-all-servers.js
-```
-
-This script automatically:
-- Assigns unique ports using environment variables
-- Prevents port collisions
-- Shows status of all running servers
-- Handles graceful shutdown
-
-### Adding New Servers
-
-When creating a new server:
-
-1. **Check available ports** in the 3000-3099 range
-2. **Update `start-all-servers.js`** to include your server
-3. **Use environment variables** for port configuration:
-   ```javascript
-   const PORT = process.env.YOUR_SERVER_PORT || 3009;
-   ```
-4. **Update this documentation** with the new port assignment
-
-### Troubleshooting Port Issues
-
-If you encounter "address already in use" errors:
-
-1. **Check running processes**:
-   ```bash
-   # Find what's using a port
-   lsof -i :3001
-   
-   # Kill process using a port
-   kill -9 $(lsof -t -i:3001)
-   ```
-
-2. **Use the start-all-servers script** which handles port assignments automatically
-
-3. **For Vite apps**, ensure you're not running multiple apps on the same port
+- Check ports: `./scripts/cli-pipeline/servers/servers-cli.sh status`
+- List servers: `./scripts/cli-pipeline/servers/servers-cli.sh list`
+- Frontend code: Use `ServerRegistryService.getInstance().getServerUrl('service-name')`
+- Key table: `sys_server_ports_registry` contains all server configurations
+- Active servers view: `sys_active_servers_view` shows currently running servers
 
 ## Git & Worktree Management
 
