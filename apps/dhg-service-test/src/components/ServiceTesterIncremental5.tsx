@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { FilterService } from '@shared/services/filter-service';
 import { DatabaseMetadataService } from '@shared/services/database-metadata-service';
 import { createMediaTrackingService } from '@shared/services/media-tracking-service';
-import { UserProfileService } from '@shared/services/user-profile-service';
+import { userProfileService } from '@shared/services/user-profile-service';
 import { SupabaseService } from '@shared/services/supabase-service';
 
 // Define service groups

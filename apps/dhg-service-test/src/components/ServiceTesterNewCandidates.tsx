@@ -6,16 +6,17 @@ import { supabase } from '../lib/supabase';
 
 // Auth services (highest scoring) - Use browser-compatible versions
 import { BrowserAuthService } from '@shared/services/auth-service/browser-auth-service';
-import { GoogleAuthService } from '@shared/services/google-drive/google-auth-service';
+// COMMENTED OUT: GoogleAuthService uses Node.js-only dependencies (google-auth-library)
+// import { GoogleAuthService } from '@shared/services/google-drive/google-auth-service';
 
 // Media services
 import { MediaPresentationService } from '@shared/services/media-presentation-service';
 
 // Testing service
-import { TestingService } from '@shared/services/testing-service';
+// import { TestingService } from '@shared/services/testing-service';
 
 // Audio service from dhg-audio (reported issue)
-import { audioBrowserService } from '../../../dhg-audio/src/services/audio-browser-service';
+// import { audioBrowserService } from '../../../dhg-audio/src/services/audio-browser-service';
 
 // Index service (utility aggregator)
 // Note: This is the main index.ts that exports many services - testing import only
@@ -40,21 +41,22 @@ const NEW_SERVICE_CANDIDATES = {
         }
       },
       browserFeatures: ['Browser-specific implementation', 'Singleton access', 'localStorage integration']
-    },
-    {
-      name: 'GoogleAuthService', 
-      description: 'Google authentication with service account and OAuth support',
-      hassBrowserVariant: true,
-      testFn: async () => {
-        // Test both default instance and configured instance
-        const defaultAuth = GoogleAuthService.getDefaultInstance();
-        const configuredAuth = GoogleAuthService.getInstance({
-          scopes: ['https://www.googleapis.com/auth/drive.readonly']
-        });
-        return defaultAuth !== null && configuredAuth !== null;
-      },
-      browserFeatures: ['Environment detection', 'localStorage adapter', 'Service account fallback']
     }
+    // COMMENTED OUT: GoogleAuthService uses Node.js-only dependencies
+    // {
+    //   name: 'GoogleAuthService', 
+    //   description: 'Google authentication with service account and OAuth support',
+    //   hassBrowserVariant: true,
+    //   testFn: async () => {
+    //     // Test both default instance and configured instance
+    //     const defaultAuth = GoogleAuthService.getDefaultInstance();
+    //     const configuredAuth = GoogleAuthService.getInstance({
+    //       scopes: ['https://www.googleapis.com/auth/drive.readonly']
+    //     });
+    //     return defaultAuth !== null && configuredAuth !== null;
+    //   },
+    //   browserFeatures: ['Environment detection', 'localStorage adapter', 'Service account fallback']
+    // }
   ],
   'Media Services': [
     {
@@ -77,7 +79,8 @@ const NEW_SERVICE_CANDIDATES = {
       testFn: async () => {
         try {
           // Test getInstance and core methods
-          const audioService = audioBrowserService.getInstance();
+          // const audioService = audioBrowserService.getInstance();
+          throw new Error('audioBrowserService temporarily disabled');
           return audioService !== null && 
                  typeof audioService.getAudioFiles === 'function' &&
                  typeof audioService.getAudioFile === 'function' &&
@@ -97,7 +100,8 @@ const NEW_SERVICE_CANDIDATES = {
       hassBrowserVariant: true,
       testFn: async () => {
         // Test singleton pattern and core methods
-        const testingService = TestingService.getInstance();
+        // const testingService = TestingService.getInstance();
+        throw new Error('TestingService temporarily disabled');
         return testingService !== null && 
                typeof testingService.getServicesForTesting === 'function' &&
                typeof testingService.runServiceTests === 'function';

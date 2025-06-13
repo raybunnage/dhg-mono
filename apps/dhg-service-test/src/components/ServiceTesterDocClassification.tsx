@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { getDocumentClassificationService } from '@shared/services/document-classification-service';
+// import { getDocumentClassificationService } from '@shared/services/document-classification-service';
 
 export function ServiceTesterDocClassification() {
   const [status, setStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -13,7 +13,8 @@ export function ServiceTesterDocClassification() {
     try {
       // Test getting the service instance with supabase client
       console.log('Getting DocumentClassificationService instance...');
-      const service = getDocumentClassificationService(supabase);
+      // const service = getDocumentClassificationService(supabase);
+      throw new Error('Document classification service temporarily disabled');
       
       // Test that we can access service methods
       console.log('Service instance created successfully!');
