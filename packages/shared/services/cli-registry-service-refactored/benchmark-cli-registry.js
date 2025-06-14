@@ -41,7 +41,7 @@ async function benchmarkOriginalService() {
   
   try {
     // Try to load original service
-    const { CLIRegistryService: OriginalService } = require('../cli-registry-service/CLIRegistryService');
+    const { CLIRegistryService: OriginalService } = require('../cli-registry-service/cli-registry-service');
     const mockClient = createMockSupabaseClient();
     const mockLogger = new MockLogger();
     

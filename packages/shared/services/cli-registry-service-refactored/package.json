@@ -1,0 +1,6 @@
+{
+  "name": "@shared/services/cli-registry-service-refactored",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "types": "types.ts"
+}
