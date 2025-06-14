@@ -1,5 +1,5 @@
 import { performance } from 'perf_hooks';
-import { DatabaseService as OldDatabaseService } from '../../database-service/database-service';
+import { DatabaseService as OldDatabaseService } from '../../database-service-original/database-service';
 import { DatabaseService as NewDatabaseService } from '../DatabaseService';
 
 interface BenchmarkResult {

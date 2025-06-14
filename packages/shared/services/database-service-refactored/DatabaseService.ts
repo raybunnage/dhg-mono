@@ -77,11 +77,14 @@ export class DatabaseService extends SingletonService {
   private tableCache: Map<string, TableInfo[]> = new Map();
   private cacheExpiry: Map<string, number> = new Map();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  
-  protected serviceName = 'DatabaseService';
 
   protected constructor() {
-    super();
+    super('DatabaseService', {
+      info: (msg: string) => console.log(`[DatabaseService] ${msg}`),
+      error: (msg: string, error?: any) => console.error(`[DatabaseService] ${msg}`, error || ''),
+      debug: (msg: string) => console.debug(`[DatabaseService] ${msg}`),
+      warn: (msg: string) => console.warn(`[DatabaseService] ${msg}`)
+    });
   }
 
   /**
@@ -95,9 +98,16 @@ export class DatabaseService extends SingletonService {
   }
 
   /**
+   * Ensure the service is initialized (public wrapper for protected method)
+   */
+  public async ensureInitialized(): Promise<void> {
+    await super.ensureInitialized();
+  }
+
+  /**
    * Initialize the service with Supabase client
    */
-  protected async doInitialize(): Promise<void> {
+  protected async initialize(): Promise<void> {
     try {
       this.supabase = SupabaseClientService.getInstance().getClient();
       
@@ -111,20 +121,27 @@ export class DatabaseService extends SingletonService {
         throw new Error(`Database connection test failed: ${error.message}`);
       }
       
-      this.logger.info('DatabaseService initialized successfully');
+      this.logger?.info('DatabaseService initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize DatabaseService', error);
+      this.logger?.error('Failed to initialize DatabaseService', error);
       throw error;
     }
   }
 
   /**
-   * Shutdown the service and clear caches
+   * Release resources managed by this service
    */
-  protected async doShutdown(): Promise<void> {
+  protected async releaseResources(): Promise<void> {
     this.tableCache.clear();
     this.cacheExpiry.clear();
-    this.logger.info('DatabaseService shutdown complete');
+    this.logger?.info('DatabaseService shutdown complete');
+  }
+
+  /**
+   * Clean up resources (required by BaseService)
+   */
+  protected async cleanup(): Promise<void> {
+    await this.releaseResources();
   }
 
   /**
@@ -188,7 +205,7 @@ export class DatabaseService extends SingletonService {
     if (!forceRefresh && this.isCacheValid(cacheKey)) {
       const cached = this.tableCache.get(cacheKey);
       if (cached) {
-        this.logger.debug('Returning cached table counts');
+        this.logger?.debug('Returning cached table counts');
         return cached;
       }
     }
@@ -211,7 +228,7 @@ export class DatabaseService extends SingletonService {
       // If no tables were returned, try a fallback approach
       if (!tables || tables.length === 0) {
         // Fallback: Get tables and views separately and combine
-        this.logger.warn("Using fallback approach for table listing");
+        this.logger?.warn("Using fallback approach for table listing");
         const { data: fallbackTables, error: fallbackError } = await this.supabase
           .rpc('execute_sql', {
             sql_query: `
@@ -253,7 +270,7 @@ export class DatabaseService extends SingletonService {
 
             if (countError) {
               // Some views might have permission issues or complex queries, log but don't fail
-              this.logger.warn(`Warning getting count for ${table.table_type} ${table.table_name}: ${countError.message}`);
+              this.logger?.warn(`Warning getting count for ${table.table_type} ${table.table_name}: ${countError.message}`);
               return {
                 tableName: table.table_name,
                 count: -1, // Indicates error
@@ -278,7 +295,7 @@ export class DatabaseService extends SingletonService {
 
       return results;
     } catch (error) {
-      this.logger.error('Error in getTablesWithRecordCounts:', error);
+      this.logger?.error('Error in getTablesWithRecordCounts:', error);
       throw error;
     }
   }
@@ -295,7 +312,7 @@ export class DatabaseService extends SingletonService {
         .filter((table) => table.count === 0) // Only include tables/views with exactly 0 records
         .map((table) => ({ tableName: table.tableName, type: table.type }));
     } catch (error) {
-      this.logger.error('Error in getEmptyTables:', error);
+      this.logger?.error('Error in getEmptyTables:', error);
       throw error;
     }
   }
@@ -312,7 +329,7 @@ export class DatabaseService extends SingletonService {
         .filter((table) => table.count === -1) // Tables/views that had query errors
         .map((table) => ({ tableName: table.tableName, type: table.type }));
     } catch (error) {
-      this.logger.error('Error in getInaccessibleTables:', error);
+      this.logger?.error('Error in getInaccessibleTables:', error);
       throw error;
     }
   }
@@ -357,10 +374,10 @@ export class DatabaseService extends SingletonService {
       
       return data || [];
     } catch (error) {
-      this.logger.error('Error in getDatabaseFunctions:', error);
+      this.logger?.error('Error in getDatabaseFunctions:', error);
       
       // Last resort fallback: limited information
-      this.logger.warn('Attempting final fallback method');
+      this.logger?.warn('Attempting final fallback method');
       try {
         const { data: backupData, error: backupError } = await this.supabase.rpc('execute_sql', {
           sql_query: `
@@ -380,7 +397,7 @@ export class DatabaseService extends SingletonService {
         
         return backupData || [];
       } catch (fallbackError) {
-        this.logger.error('All fallback attempts failed:', fallbackError);
+        this.logger?.error('All fallback attempts failed:', fallbackError);
         // Return empty array to avoid crashes
         return [];
       }
@@ -403,7 +420,7 @@ export class DatabaseService extends SingletonService {
           return columnsPlus;
         }
       } catch (rpcError) {
-        this.logger.debug('RPC function not available, using direct query method');
+        this.logger?.debug('RPC function not available, using direct query method');
       }
       
       // Fallback method: query information_schema directly
@@ -458,7 +475,7 @@ export class DatabaseService extends SingletonService {
         indexes: indexes || []
       };
     } catch (error) {
-      this.logger.error(`Error in getTableStructure for ${tableName}:`, error);
+      this.logger?.error(`Error in getTableStructure for ${tableName}:`, error);
       throw error;
     }
   }
@@ -573,7 +590,7 @@ export class DatabaseService extends SingletonService {
       
       return { issues };
     } catch (error) {
-      this.logger.error('Error in analyzeSchemaHealth:', error);
+      this.logger?.error('Error in analyzeSchemaHealth:', error);
       throw error;
     }
   }
@@ -607,7 +624,7 @@ export class DatabaseService extends SingletonService {
       
       return data;
     } catch (error) {
-      this.logger.error('Error executing query:', error);
+      this.logger?.error('Error executing query:', error);
       throw error;
     }
   }
@@ -638,7 +655,7 @@ export class DatabaseService extends SingletonService {
       
       return data || [];
     } catch (error) {
-      this.logger.error('Error getting table sizes:', error);
+      this.logger?.error('Error getting table sizes:', error);
       throw error;
     }
   }
