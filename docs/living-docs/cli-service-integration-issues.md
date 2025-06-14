@@ -30,6 +30,16 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Impact**: Core functionality for content processing
 
 ### Medium Priority
+- [ ] **SystemService**
+  - **Needed by**: system-cli.sh, system monitoring operations
+  - **Functionality**: System information, process management, resource monitoring
+  - **Impact**: Core system operations and monitoring
+  
+- [ ] **HealthCheckService**
+  - **Needed by**: system-cli.sh, monitoring pipelines
+  - **Functionality**: Standardized health checks, service status monitoring
+  - **Impact**: Unified health check framework
+
 - [ ] **BackupService**
   - **Needed by**: database-cli.sh, all-pipelines-cli.sh
   - **Functionality**: Backup and restore operations
