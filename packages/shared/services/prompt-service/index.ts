@@ -1,29 +1,18 @@
 /**
- * Prompt Service Index
+ * DEPRECATED: This service has been refactored.
  * 
- * Exports the PromptService, PromptManagementService, CLI interface, and related interfaces
+ * Please use the new refactored version:
+ * import { PromptService } from '@shared/services/prompt-service-refactored';
+ * 
+ * Migration guide: packages/shared/services/prompt-service-refactored/MIGRATION.md
+ * 
+ * Original files archived in: .archived_20250614/
  */
-export * from './prompt-service';
-export * from './prompt-cli-interface';
 
-// Export specific items from modules that have conflicts
-export { 
-  PromptManagementService, 
-  promptManagementService,
-  type DocumentationFile,
-  type DocumentType,
-  type PromptCategory,
-  type RelationshipSettings,
-  type PackageJsonRelationship,
-  type PromptMetadata,
-  type DatabasePrompt
-} from './prompt-management-service';
+// Temporary re-export during migration period
+export { promptService } from './.archived_20250614/prompt-service';
 
-export { 
-  PromptOutputTemplateService,
-  promptOutputTemplateService,
-  type TemplateWithAssociation,
-  // Use aliases for conflicting types
-  type PromptOutputTemplate as OutputTemplate,
-  type PromptTemplateAssociation as TemplateAssociation
-} from './prompt-output-templates';
+console.warn(
+  'DEPRECATED: @shared/services/prompt-service is deprecated. ' +
+  'Use @shared/services/prompt-service-refactored instead.'
+);
