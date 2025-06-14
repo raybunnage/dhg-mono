@@ -111,6 +111,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Functionality**: Service/script deprecation analysis, archiving operations, usage monitoring, migration planning
   - **Impact**: Centralized deprecation workflow and monorepo cleanup operations
 
+- [ ] **AllPipelinesManagementService**
+  - **Needed by**: all-pipelines-cli.sh, meta-pipeline management
+  - **Functionality**: Cross-pipeline health monitoring, cache management, registry synchronization, reporting
+  - **Impact**: Centralized management of all CLI pipelines and monorepo-wide operations
+
 ---
 
 ## ⚠️ **Service Integration Issues**
