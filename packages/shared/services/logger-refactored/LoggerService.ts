@@ -8,7 +8,19 @@
  * Refactored to extend SingletonService for proper lifecycle management.
  */
 import { SingletonService } from '../base-classes/SingletonService';
-import { LogLevel, LoggerConfig, LogEntry } from './logger.types';
+import { LogLevel, LoggerConfig } from '../logger-original/logger.types';
+
+// Re-export for convenience
+export { LogLevel } from '../logger-original/logger.types';
+
+// Extended types for refactored service
+export interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  context?: Record<string, any>;
+  error?: Error;
+}
 
 // Extended configuration with more options
 export interface ExtendedLoggerConfig extends LoggerConfig {
@@ -448,6 +460,26 @@ export class LoggerService extends SingletonService {
   }
 
   /**
+   * Get buffer (alias for getBufferedLogs for compatibility)
+   */
+  public getBuffer(): LogEntry[] {
+    return this.getBufferedLogs();
+  }
+
+  /**
+   * Update configuration
+   */
+  public configure(config: Partial<ExtendedLoggerConfig>): void {
+    this.config = { ...this.config, ...config };
+    
+    // Restart flush interval if needed
+    if (config.buffer?.flushInterval) {
+      this.stopFlushInterval();
+      this.startFlushInterval();
+    }
+  }
+
+  /**
    * Clear buffered logs
    */
   public clearBuffer(): void {
@@ -478,6 +510,10 @@ export class ChildLogger {
 
   debug(message: string, context?: any): void {
     this.parent.debug(message, { ...this.childContext, ...context });
+  }
+
+  child(context: Record<string, any>): ChildLogger {
+    return new ChildLogger(this.parent, { ...this.childContext, ...context });
   }
 }
 
