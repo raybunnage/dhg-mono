@@ -40,8 +40,10 @@ const pipelines: PipelineInfo[] = [
   { name: 'proxy', description: 'Proxy server management and monitoring', path: 'proxy' },
   { name: 'refactor_tracking', description: 'Code refactoring tracking', path: 'refactor_tracking' },
   { name: 'scripts', description: 'Script registry and management', path: 'scripts' },
+  { name: 'servers', description: 'Server management with dynamic port allocation', path: 'servers' },
   { name: 'testing', description: 'Testing framework for shared services', path: 'testing' },
   { name: 'tracking', description: 'Command usage tracking', path: 'tracking' },
+  { name: 'utilities', description: 'SQLite imports and utility functions', path: 'utilities' },
   { name: 'work_summaries', description: 'AI work summary management', path: 'work_summaries' }
 ];
 

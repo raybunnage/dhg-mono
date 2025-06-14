@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft, CheckCircle, Clock, AlertCircle, FileText, Hash, Edit2, Save, X, GitBranch } from 'lucide-react';
+import { Search, Calendar, Tag, Command, ChevronDown, ChevronUp, ArrowLeft, CheckCircle, Clock, AlertCircle, FileText, Hash, Edit2, Save, X, GitBranch, CheckSquare } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { TaskService } from '../services/task-service';
-import type { DevTask, DevTaskTag } from '../services/task-service';
+import { TaskService, type DevTask, type DevTaskTag } from '../services/task-service';
 import { supabase } from '../lib/supabase';
-import { WorkSummaryService, type WorkSummary, type WorkItem } from '@shared/services/work-summary-service';
+import { type WorkSummary, type WorkItem } from '../../../../packages/shared/services/work-summary-service/types';
+import { WorkSummaryService } from '../../../../packages/shared/services/work-summary-service/work-summary-service';
+import { WorkSummaryValidationModal } from '../components/WorkSummaryValidationModal';
 
 // Create work summary service instance
 const workSummaryService = WorkSummaryService.getInstance(supabase);
@@ -23,15 +24,31 @@ interface EditingState {
 
 // Define standardized categories for work types
 const categoryMapping: Record<string, string> = {
-  // Summary categories
+  // Feature variations -> feature
   'feature': 'feature',
-  'bug_fix': 'bug',
-  'refactoring': 'refactor',
-  'documentation': 'documentation',
-  // Task types (already standardized)
+  'feature-development': 'feature',
+  
+  // Bug fix variations -> bug
   'bug': 'bug',
+  'bug_fix': 'bug',
+  'bug-fix': 'bug', 
+  'bugfix': 'bug',
+  
+  // Refactoring variations -> refactor
   'refactor': 'refactor',
-  // Any other mappings
+  'refactoring': 'refactor',
+  
+  // Documentation variations -> documentation
+  'documentation': 'documentation',
+  'docs': 'documentation',
+  
+  // Infrastructure and maintenance -> maintenance
+  'infrastructure': 'maintenance',
+  'maintenance': 'maintenance',
+  'merge': 'maintenance',
+  
+  // Keep question as is
+  'question': 'question',
 };
 
 export function WorkSummariesEnhanced() {
@@ -49,6 +66,8 @@ export function WorkSummariesEnhanced() {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<EditingState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
+  const [selectedSummaryForValidation, setSelectedSummaryForValidation] = useState<WorkSummary | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -218,6 +237,8 @@ export function WorkSummariesEnhanced() {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'documentation':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'maintenance':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'question':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
@@ -234,10 +255,13 @@ export function WorkSummariesEnhanced() {
       'feature': '✨',
       'refactor': '🔧',
       'documentation': '📚',
+      'maintenance': '🛠️',
       'question': '❓',
-      // Legacy mappings for backward compatibility
+      // Legacy mappings for backward compatibility (now handled by categoryMapping)
       'bug_fix': '🐛',
       'refactoring': '🔧',
+      'docs': '📚',
+      'infrastructure': '🛠️',
     };
     return emojis[normalized] || emojis[category] || '📋';
   };
@@ -463,6 +487,7 @@ export function WorkSummariesEnhanced() {
                       'bug': '🐛 Bug Fix',
                       'refactor': '🔧 Refactoring',
                       'documentation': '📚 Documentation',
+                      'maintenance': '🛠️ Maintenance',
                       'question': '❓ Question',
                     }[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
                     
@@ -730,13 +755,28 @@ export function WorkSummariesEnhanced() {
                             </button>
                           </>
                         ) : (
-                          <button
-                            onClick={() => startEditing(item)}
-                            className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors"
-                          >
-                            <Edit2 className="h-4 w-4 mr-1" />
-                            Edit
-                          </button>
+                          <>
+                            <button
+                              onClick={() => startEditing(item)}
+                              className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium transition-colors"
+                            >
+                              <Edit2 className="h-4 w-4 mr-1" />
+                              Edit
+                            </button>
+                            {!summary.metadata?.validation_task_id && (
+                              <button
+                                onClick={() => {
+                                  setSelectedSummaryForValidation(summary);
+                                  setValidationModalOpen(true);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 text-sm font-medium transition-colors"
+                                title="Create validation task"
+                              >
+                                <CheckSquare className="h-4 w-4 mr-1" />
+                                Validate
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -964,6 +1004,18 @@ export function WorkSummariesEnhanced() {
           </div>
         )}
       </div>
+
+      {/* Validation Modal */}
+      {selectedSummaryForValidation && (
+        <WorkSummaryValidationModal
+          isOpen={validationModalOpen}
+          onClose={() => {
+            setValidationModalOpen(false);
+            setSelectedSummaryForValidation(null);
+          }}
+          workSummary={selectedSummaryForValidation}
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client.js';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 interface DocumentConfig {
   path: string;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
+import { serverRegistry } from '@shared/services/server-registry-service';
 
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
 
@@ -51,8 +52,9 @@ export function WorktreeCommits({ worktreePath, onClose }: WorktreeCommitsProps)
       setError(null);
 
       // Fetch commits from git server
+      const gitServerUrl = await serverRegistry.getServerUrl('git-server');
       const response = await fetch(
-        `http://localhost:3005/api/git/worktree-commits?limit=100`,
+        `${gitServerUrl}/api/git/worktree-commits?limit=100`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

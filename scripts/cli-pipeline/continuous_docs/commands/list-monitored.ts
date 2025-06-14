@@ -22,7 +22,7 @@ program
       let query = supabase
         .from('doc_continuous_monitoring')
         .select('*')
-        .order('doc_type', { ascending: true })
+        .order('area', { ascending: true })
         .order('file_path', { ascending: true });
 
       // Apply filters
@@ -30,7 +30,7 @@ program
         query = query.eq('status', options.status);
       }
       if (options.type) {
-        query = query.eq('doc_type', options.type);
+        query = query.eq('area', options.type);
       }
 
       const { data, error } = await query;
@@ -50,10 +50,10 @@ program
         return;
       }
 
-      // Group by type
+      // Group by area
       const grouped = data.reduce((acc, doc) => {
-        if (!acc[doc.doc_type]) acc[doc.doc_type] = [];
-        acc[doc.doc_type].push(doc);
+        if (!acc[doc.area]) acc[doc.area] = [];
+        acc[doc.area].push(doc);
         return acc;
       }, {} as Record<string, any[]>);
 
@@ -70,8 +70,8 @@ program
           console.log(`\n${chalk.bold(doc.file_path.split('/').pop())}`);
           console.log(chalk.gray(`Path: ${doc.file_path}`));
           console.log(chalk.gray(`Status: ${statusColor(doc.status)}`));
-          console.log(chalk.gray(`Check frequency: Every ${doc.check_frequency_hours} hours`));
-          console.log(chalk.gray(`Auto-update: ${doc.auto_update_enabled ? '✓' : '✗'}`));
+          console.log(chalk.gray(`Review frequency: Every ${doc.review_frequency_days || 7} days`));
+          console.log(chalk.gray(`Priority: ${doc.priority || 'medium'}`));
           
           if (doc.last_checked) {
             const lastChecked = new Date(doc.last_checked);
@@ -81,8 +81,9 @@ program
             console.log(chalk.gray(`Last checked: Never`));
           }
 
-          if (doc.dependencies && doc.dependencies.length > 0) {
-            console.log(chalk.gray(`Dependencies: ${doc.dependencies.length} files`));
+          const dependencies = (doc.metadata as any)?.dependencies;
+          if (dependencies && dependencies.length > 0) {
+            console.log(chalk.gray(`Dependencies: ${dependencies.length} files`));
           }
         });
       });

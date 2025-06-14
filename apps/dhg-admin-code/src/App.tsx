@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { WorkSummariesEnhanced } from './pages/WorkSummariesEnhanced';
+import { WorkSummariesEnhancedV2 } from './pages/WorkSummariesEnhancedV2';
 import { CommandRefactorStatus } from './pages/CommandRefactorStatus';
 import { CLICommandsRegistry } from './pages/CLICommandsRegistry';
 import { DatabasePage } from './pages/DatabasePage';
@@ -20,6 +20,10 @@ import WorktreeMappings from './pages/WorktreeMappings';
 import ServiceDependencies from './pages/ServiceDependencies';
 import { DeprecationAnalysis } from './pages/DeprecationAnalysis';
 import { AIPage } from './pages/AIPage';
+import { SQLiteImportManager } from './pages/SQLiteImportManager';
+import { FeaturesPage } from './pages/FeaturesPage';
+import { TestingPage } from './pages/TestingPage';
+import DeploymentPage from './pages/DeploymentPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -40,7 +44,7 @@ function App() {
           path="/work-summaries" 
           element={
             <ProtectedRoute requireAdmin>
-              <WorkSummariesEnhanced />
+              <WorkSummariesEnhancedV2 />
             </ProtectedRoute>
           } 
         />
@@ -178,6 +182,38 @@ function App() {
           element={
             <ProtectedRoute requireAdmin>
               <AIPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/sqlite-import" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <SQLiteImportManager />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/features" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <FeaturesPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/testing" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <TestingPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/deployment" 
+          element={
+            <ProtectedRoute requireAdmin>
+              <DeploymentPage />
             </ProtectedRoute>
           } 
         />

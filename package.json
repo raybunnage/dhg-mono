@@ -34,12 +34,14 @@
     "admin-suite": "pnpm --filter dhg-admin-suite dev",
     "admin-google": "pnpm --filter dhg-admin-google dev",
     "research": "pnpm --filter @dhg/research dev",
+    
     "// Audio-specific Commands": "Audio app development utilities",
     "audio:install": "cd apps/dhg-audio && npm install express googleapis google-auth-library",
     "audio:setup": "node apps/dhg-audio/setup-proxy.js",
     "audio:build": "pnpm --filter dhg-audio build",
     "audio:proxy": "cd apps/dhg-audio && node server.js",
     "audio:start": "pnpm run audio:setup && pnpm run audio:build && pnpm run audio:proxy",
+    
     "// CLI Pipeline Commands": "Quick access to CLI pipeline tools",
     "google": "./scripts/cli-pipeline/google_sync/google-sync-cli.sh",
     "doc": "./scripts/cli-pipeline/document/doc-cli.sh",
@@ -61,6 +63,7 @@
     "all": "./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh",
     "maintenance": "./scripts/cli-pipeline/maintenance-cli.sh",
     "service-deps": "./scripts/cli-pipeline/service_dependencies/service-dependencies-cli.sh",
+    
     "// Utility Commands": "Helpful utilities",
     "tree": "node scripts/show-tree.js",
     "types": "supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts",
@@ -79,9 +82,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
-    "@types/better-sqlite3": "^7.6.13",
     "axios": "^1.8.4",
-    "better-sqlite3": "^11.10.0",
     "cli-table3": "^0.6.5",
     "csv-parse": "^5.6.0",
     "dotenv": "^16.5.0",

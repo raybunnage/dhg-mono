@@ -13,7 +13,7 @@ export default function ClipboardManager() {
   const [items, setItems] = useState<ClipboardItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const [editForm, setEditForm] = useState({ title: '', content: '', category: '' });
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState({ title: '', content: '', category: '' });
   const [loading, setLoading] = useState(true);
@@ -109,22 +109,35 @@ export default function ClipboardManager() {
 
   const startEdit = (item: ClipboardItem) => {
     setEditingId(item.id);
-    setEditContent(item.content);
+    setEditForm({
+      title: item.title,
+      content: item.content,
+      category: item.category || ''
+    });
   };
 
   const saveEdit = async () => {
     if (!editingId) return;
     
     try {
-      await clipboardService.updateItem(editingId, { content: editContent });
+      await clipboardService.updateItem(editingId, {
+        title: editForm.title,
+        content: editForm.content,
+        category: editForm.category || 'General'
+      });
       
       setItems(items.map(item => 
         item.id === editingId 
-          ? { ...item, content: editContent }
+          ? { 
+              ...item, 
+              title: editForm.title,
+              content: editForm.content,
+              category: editForm.category || 'General'
+            }
           : item
       ));
       setEditingId(null);
-      setEditContent('');
+      setEditForm({ title: '', content: '', category: '' });
     } catch (err) {
       console.error('Failed to save edit:', err);
       setError('Failed to update snippet');
@@ -133,7 +146,7 @@ export default function ClipboardManager() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditContent('');
+    setEditForm({ title: '', content: '', category: '' });
   };
 
   // Group items by category
@@ -279,13 +292,42 @@ export default function ClipboardManager() {
                   </div>
 
                   {editingId === item.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
-                        rows={4}
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Title
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="Snippet title"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.category}
+                          onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="e.g., Claude Prompts"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Content
+                        </label>
+                        <textarea
+                          value={editForm.content}
+                          onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+                          rows={4}
+                        />
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={saveEdit}

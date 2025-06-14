@@ -1,0 +1,29 @@
+{
+  "all": true,
+  "include": [
+    "packages/shared/services/**/*.js",
+    "packages/shared/services/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.js",
+    "**/*.test.ts",
+    "**/*.spec.js",
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "**/test/**",
+    "**/__tests__/**",
+    "**/coverage/**",
+    "**/*.d.ts"
+  ],
+  "reporter": [
+    "text",
+    "lcov",
+    "html"
+  ],
+  "reportsDirectory": "./coverage",
+  "checkCoverage": true,
+  "branches": 50,
+  "lines": 60,
+  "functions": 50,
+  "statements": 60
+}

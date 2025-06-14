@@ -61,8 +61,11 @@ program
         if (!options.dryRun) {
           await service.updateMonitoringRecord(doc.id, {
             last_checked: new Date().toISOString(),
-            content_hash: check.currentHash,
-            dependencies: check.dependencies
+            metadata: {
+              ...(doc.metadata || {}),
+              content_hash: check.currentHash,
+              dependencies: check.dependencies
+            }
           });
         }
       }

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createSupabaseAdapter } from '@shared/adapters/supabase-adapter';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { MaintenancePanel } from '../components/MaintenancePanel';
+import type { MaintenanceStats, MaintenanceAction } from '../components/MaintenancePanel';
+import { serverRegistry } from '@shared/services/server-registry-service';
+import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -47,6 +51,8 @@ export function ScriptsManagement() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [pipelineGroups, setPipelineGroups] = useState<PipelineGroup[]>([]);
+  const [runningCommand, setRunningCommand] = useState<string | null>(null);
+  const [commandStatus, setCommandStatus] = useState<string>('');
 
   // Extract pipeline from file path
   const extractPipelineFromPath = (filePath: string): string => {
@@ -94,6 +100,50 @@ export function ScriptsManagement() {
     return { icon: '❌', color: 'text-red-600', tooltip: 'Low confidence classification' };
   };
 
+  // Run CLI command via API
+  const runCliCommand = async (command: string, args: string[] = []) => {
+    setRunningCommand(command);
+    setCommandStatus(`Running ${command}...`);
+
+    try {
+      const gitApiUrl = await serverRegistry.getServerUrl('git-api-server');
+      const response = await fetch(`${gitApiUrl}/api/execute-command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command: './scripts/cli-pipeline/scripts/scripts-cli.sh',
+          args: [command, ...args]
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setCommandStatus(`${command} completed successfully`);
+        if (command === 'sync') {
+          // Refresh scripts after sync - trigger a reload
+          window.location.reload();
+        }
+      } else {
+        setCommandStatus(`${command} failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error running command:', error);
+      setCommandStatus('Failed to run command - is the API server running?');
+    } finally {
+      setRunningCommand(null);
+      // Clear status after 5 seconds
+      setTimeout(() => setCommandStatus(''), 5000);
+    }
+  };
+
+  // Handle specific command buttons
+  const handleSyncScripts = () => runCliCommand('sync');
+  const handleHealthCheck = () => runCliCommand('health-check');
+  const handleRunAnalysis = () => runCliCommand('stats');
+
   // Load scripts
   useEffect(() => {
     async function loadScripts() {
@@ -101,7 +151,7 @@ export function ScriptsManagement() {
         setLoading(true);
 
         let query = supabase
-          .from('scripts_registry')
+          .from('registry_scripts')
           .select('*')
           .order('last_modified_at', { ascending: false });
 
@@ -237,21 +287,148 @@ export function ScriptsManagement() {
   const classifiedScripts = scripts.filter(s => s.document_type_id).length;
   const archivedScripts = scripts.filter(s => s.metadata?.is_archived).length;
 
+  // Calculate maintenance statistics
+  const maintenanceStats: MaintenanceStats = {
+    totalItems: scripts.length,
+    lastUsed30Days: scripts.filter(s => {
+      const lastModified = new Date(s.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince <= 30;
+    }).length,
+    lastUsed90Days: scripts.filter(s => {
+      const lastModified = new Date(s.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince <= 90;
+    }).length,
+    neverUsed: scripts.filter(s => !s.last_indexed_at).length,
+    duplicates: 0, // TODO: Implement duplicate detection
+    outdated: scripts.filter(s => {
+      const lastModified = new Date(s.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince > 180; // 6 months
+    }).length,
+    oversized: scripts.filter(s => (s.metadata?.file_size || 0) > 100000).length, // > 100KB
+    archived: archivedScripts
+  };
+
+  const runMaintenanceAnalysis = async (): Promise<MaintenanceAction[]> => {
+    // Simulate AI analysis - in real implementation, this would call a CLI command
+    const actions: MaintenanceAction[] = [];
+    
+    scripts.forEach(script => {
+      const lastModified = new Date(script.last_modified_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Check for scripts not used in 90+ days
+      if (daysSince > 90 && !script.metadata?.is_archived) {
+        actions.push({
+          id: `archive-${script.id}`,
+          type: 'archive',
+          itemId: script.id,
+          itemPath: script.file_path,
+          reason: `Not modified in ${Math.round(daysSince)} days`,
+          confidence: daysSince > 180 ? 0.9 : 0.7
+        });
+      }
+      
+      // Check for oversized scripts
+      if ((script.metadata?.file_size || 0) > 100000) {
+        actions.push({
+          id: `review-${script.id}`,
+          type: 'review',
+          itemId: script.id,
+          itemPath: script.file_path,
+          reason: `Large file size (${Math.round((script.metadata?.file_size || 0) / 1024)}KB) - consider refactoring`,
+          confidence: 0.8
+        });
+      }
+    });
+    
+    return actions;
+  };
+
+  const executeMaintenanceAction = async (action: MaintenanceAction) => {
+    // In real implementation, this would call CLI commands
+    console.log('Executing action:', action);
+    
+    if (action.type === 'archive') {
+      // Call: ./scripts/cli-pipeline/scripts/scripts-cli.sh archive <file>
+      await supabase
+        .from('scripts_registry')
+        .update({ 
+          metadata: { 
+            ...scripts.find(s => s.id === action.itemId)?.metadata,
+            is_archived: true 
+          } 
+        })
+        .eq('id', action.itemId);
+    }
+  };
+
+  const bulkArchiveScripts = async (scriptIds: string[]) => {
+    // In real implementation, this would batch process through CLI
+    console.log('Bulk archiving scripts:', scriptIds);
+    
+    for (const id of scriptIds) {
+      await supabase
+        .from('scripts_registry')
+        .update({ 
+          metadata: { 
+            ...scripts.find(s => s.id === id)?.metadata,
+            is_archived: true 
+          } 
+        })
+        .eq('id', id);
+    }
+    
+    // Refresh the scripts list
+    loadScripts();
+  };
+
   return (
     <DashboardLayout>
       <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Scripts Management</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900">Scripts Management</h1>
+          <ServerStatusIndicator serviceName="git-api-server" showLabel={false} />
+        </div>
         
         <div className="flex space-x-4">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Sync Scripts
+          <button 
+            onClick={handleSyncScripts}
+            disabled={runningCommand === 'sync'}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
+          >
+            {runningCommand === 'sync' ? 'Syncing...' : 'Sync Scripts'}
           </button>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-            Run Health Check
+          <button 
+            onClick={handleHealthCheck}
+            disabled={runningCommand === 'health-check'}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 transition-colors"
+          >
+            {runningCommand === 'health-check' ? 'Checking...' : 'Run Health Check'}
+          </button>
+          <button 
+            onClick={handleRunAnalysis}
+            disabled={runningCommand === 'stats'}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-purple-400 transition-colors"
+          >
+            {runningCommand === 'stats' ? 'Analyzing...' : 'Run Analysis'}
           </button>
         </div>
       </div>
+
+      {/* Command Status */}
+      {commandStatus && (
+        <div className={`mb-6 px-4 py-2 rounded-md text-sm ${
+          commandStatus.includes('failed') || commandStatus.includes('Failed') 
+            ? 'bg-red-50 text-red-700 border border-red-200' 
+            : 'bg-blue-50 text-blue-700 border border-blue-200'
+        }`}>
+          {commandStatus}
+        </div>
+      )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -277,6 +454,15 @@ export function ScriptsManagement() {
           <p className="text-3xl font-bold text-gray-600">{archivedScripts}</p>
         </div>
       </div>
+
+      {/* Maintenance Panel */}
+      <MaintenancePanel
+        type="scripts"
+        stats={maintenanceStats}
+        onRunAnalysis={runMaintenanceAnalysis}
+        onExecuteAction={executeMaintenanceAction}
+        onBulkArchive={bulkArchiveScripts}
+      />
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
