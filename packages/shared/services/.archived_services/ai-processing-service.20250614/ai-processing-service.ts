@@ -5,7 +5,7 @@
  * and content extraction using the Claude service
  */
 
-import { ClaudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 export interface ClassificationResult {
   document_type_id: string;
@@ -39,7 +39,6 @@ export interface ContentAnalysisResult {
  */
 export class AIProcessingService {
   private static instance: AIProcessingService;
-  private claudeService: ClaudeService | null = null;
   
   private constructor() {}
   
@@ -54,21 +53,11 @@ export class AIProcessingService {
   }
   
   /**
-   * Get Claude service instance (lazy initialization)
-   */
-  private getClaudeService(): ClaudeService {
-    if (!this.claudeService) {
-      this.claudeService = ClaudeService.getInstance();
-    }
-    return this.claudeService;
-  }
-  
-  /**
    * Process general content with AI
    */
   public async processWithAI(prompt: string): Promise<any> {
     try {
-      const response = await this.getClaudeService().sendPrompt(prompt);
+      const response = await claudeService.sendPrompt(prompt);
       return response;
     } catch (error) {
       console.error('AI processing error:', error);
@@ -81,7 +70,7 @@ export class AIProcessingService {
    */
   public async processJsonRequest(prompt: string): Promise<any> {
     try {
-      const response = await this.getClaudeService().getJsonResponse(prompt);
+      const response = await claudeService.getJsonResponse(prompt);
       return response;
     } catch (error) {
       console.error('AI JSON processing error:', error);
@@ -332,5 +321,5 @@ export class AIProcessingService {
   }
 }
 
-// The class is already exported above
-// No need for additional export statement
+// Export singleton instance
+export const aiProcessing = AIProcessingService.getInstance();

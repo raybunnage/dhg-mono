@@ -56,8 +56,8 @@ jest.mock('../../../../packages/shared/services/claude-service', () => ({
 import { documentService } from '../services/document-service';
 import { databaseService } from '../../shared/services/database-service';
 import { fileService } from '../../shared/file-service';
-import { logger } from '../../shared/services/logger-service';
-import { claudeService } from '../../../../packages/shared/services/claude-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
+import { claudeService } from '@shared/services/claude-service';
 
 describe('DocumentService', () => {
   beforeEach(() => {

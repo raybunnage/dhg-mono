@@ -3,7 +3,7 @@
 import { program } from 'commander';
 import { execSync } from 'child_process';
 import * as path from 'path';
-import { getSupabaseClient } from './utils/supabase-helper';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 interface PopulateOptions {
   cleanFirst?: boolean;
@@ -15,7 +15,7 @@ interface PopulateOptions {
 async function clearRegistryData(): Promise<void> {
   console.log('🗑️  Clearing existing registry data...\n');
   
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   try {
     // Clear in correct order due to foreign key constraints
@@ -92,7 +92,7 @@ async function populateRegistry(options: PopulateOptions): Promise<void> {
     }
     
     // Get summary statistics
-    const supabase = getSupabaseClient();
+    const supabase = SupabaseClientService.getInstance().getClient();
     const [services, apps, pipelines] = await Promise.all([
       supabase.from('registry_services').select('id', { count: 'exact', head: true }),
       supabase.from('registry_apps').select('id', { count: 'exact', head: true }),

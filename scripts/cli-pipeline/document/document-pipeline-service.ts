@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import { Logger } from '../../packages/shared/utils/logger';
 import config from '../../packages/shared/utils/config';
 import { SupabaseClientService } from '../../packages/shared/services/supabase-client';
-import { claudeService } from '../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 // Define types for documents
 interface DocumentFile {

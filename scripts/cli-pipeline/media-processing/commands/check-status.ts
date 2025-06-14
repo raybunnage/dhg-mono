@@ -216,7 +216,8 @@ async function checkBatchProcesses(): Promise<StatusResult> {
   
   try {
     const supabaseClient = SupabaseClientService.getInstance().getClient();
-    const batchService = BatchProcessingService.getInstance(supabaseClient);
+    const logger = new Logger('CheckStatus', 'INFO');
+    const batchService = new BatchProcessingService(supabaseClient, logger);
     
     const batches = await batchService.getBatches(undefined, 10);
     

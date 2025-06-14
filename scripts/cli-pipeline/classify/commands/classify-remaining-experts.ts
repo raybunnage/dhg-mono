@@ -6,7 +6,7 @@
  */
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { promptService } from '../../../../packages/shared/services/prompt-service';
-import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 

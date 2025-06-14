@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { program } from 'commander';
-import { getSupabaseClient } from './utils/supabase-helper';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 interface UnusedService {
   id: string;
@@ -23,7 +23,7 @@ interface FindUnusedOptions {
 }
 
 async function checkCommandUsage(serviceName: string, daysThreshold: number): Promise<{ lastUsage: Date | null, usageCount: number }> {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   // Check command_tracking for any commands that might use this service
   const { data, error } = await supabase
@@ -54,7 +54,7 @@ async function checkCommandUsage(serviceName: string, daysThreshold: number): Pr
 async function findUnusedServices(options: FindUnusedOptions): Promise<void> {
   console.log('🔍 Finding unused services...\n');
   
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   const daysThreshold = parseInt(options.daysThreshold || '90');
   
   try {

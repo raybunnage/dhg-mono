@@ -4,7 +4,7 @@
  * Handles document classification using the prompt service and Claude
  */
 
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { promptService } from './prompt-service';
 import { SupabaseClientService } from '../supabase-client';
 import { Database } from '../../../../supabase/types';

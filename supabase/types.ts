@@ -201,15 +201,19 @@ export type Database = {
           category: string | null
           commands: string[] | null
           created_at: string | null
+          dev_task_id: string | null
           files_modified: string[] | null
+          has_tests: boolean | null
           id: string
           metadata: Json | null
           status: string | null
           summary_content: string
           tags: string[] | null
+          test_results_id: string | null
           title: string
           ui_components: string[] | null
           updated_at: string | null
+          validation_status: string | null
           work_date: string
           worktree: string | null
           worktree_path: string | null
@@ -218,15 +222,19 @@ export type Database = {
           category?: string | null
           commands?: string[] | null
           created_at?: string | null
+          dev_task_id?: string | null
           files_modified?: string[] | null
+          has_tests?: boolean | null
           id?: string
           metadata?: Json | null
           status?: string | null
           summary_content: string
           tags?: string[] | null
+          test_results_id?: string | null
           title: string
           ui_components?: string[] | null
           updated_at?: string | null
+          validation_status?: string | null
           work_date?: string
           worktree?: string | null
           worktree_path?: string | null
@@ -235,20 +243,74 @@ export type Database = {
           category?: string | null
           commands?: string[] | null
           created_at?: string | null
+          dev_task_id?: string | null
           files_modified?: string[] | null
+          has_tests?: boolean | null
           id?: string
           metadata?: Json | null
           status?: string | null
           summary_content?: string
           tags?: string[] | null
+          test_results_id?: string | null
           title?: string
           ui_components?: string[] | null
           updated_at?: string | null
+          validation_status?: string | null
           work_date?: string
           worktree?: string | null
           worktree_path?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_work_summaries_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
+          },
+        ]
       }
       app_features: {
         Row: {
@@ -856,7 +918,7 @@ export type Database = {
             foreignKeyName: "command_dependencies_command_id_fkey"
             columns: ["command_id"]
             isOneToOne: false
-            referencedRelation: "cli_commands_ordered_view"
+            referencedRelation: "command_commands_ordered_view"
             referencedColumns: ["id"]
           },
           {
@@ -1088,6 +1150,394 @@ export type Database = {
         }
         Relationships: []
       }
+      deployment_health_checks: {
+        Row: {
+          check_type: string
+          checked_at: string | null
+          created_at: string | null
+          deployment_run_id: string | null
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          response_time_ms: number | null
+          status: string
+        }
+        Insert: {
+          check_type: string
+          checked_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          status: string
+        }
+        Update: {
+          check_type?: string
+          checked_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          response_time_ms?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deploy_latest_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_health_checks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_status_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deployment_rollbacks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          deployment_run_id: string | null
+          error_message: string | null
+          id: string
+          initiated_at: string | null
+          reason: string | null
+          rollback_from_commit: string
+          rollback_to_commit: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          error_message?: string | null
+          id?: string
+          initiated_at?: string | null
+          reason?: string | null
+          rollback_from_commit: string
+          rollback_to_commit: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          error_message?: string | null
+          id?: string
+          initiated_at?: string | null
+          reason?: string | null
+          rollback_from_commit?: string
+          rollback_to_commit?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deploy_latest_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_rollbacks_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_status_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deployment_runs: {
+        Row: {
+          branch_from: string
+          branch_to: string
+          commit_hash: string | null
+          completed_at: string | null
+          created_at: string | null
+          deployment_id: string
+          deployment_type: string
+          deployment_url: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          started_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          branch_from: string
+          branch_to: string
+          commit_hash?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_id: string
+          deployment_type: string
+          deployment_url?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          branch_from?: string
+          branch_to?: string
+          commit_hash?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_id?: string
+          deployment_type?: string
+          deployment_url?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      deployment_validations: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          deployment_run_id: string | null
+          details: Json | null
+          error_message: string | null
+          id: string
+          started_at: string | null
+          status: string
+          validation_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status: string
+          validation_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          deployment_run_id?: string | null
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          validation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deploy_latest_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployment_validations_deployment_run_id_fkey"
+            columns: ["deployment_run_id"]
+            isOneToOne: false
+            referencedRelation: "deployment_status_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_follow_up_tasks: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          follow_up_summary: string | null
+          follow_up_task_id: string
+          follow_up_type: string
+          id: string
+          original_task_id: string | null
+          original_work_summary_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          follow_up_summary?: string | null
+          follow_up_task_id: string
+          follow_up_type?: string
+          id?: string
+          original_task_id?: string | null
+          original_work_summary_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          follow_up_summary?: string | null
+          follow_up_task_id?: string
+          follow_up_type?: string
+          id?: string
+          original_task_id?: string | null
+          original_work_summary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_task"
+            columns: ["original_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_work_summary"
+            columns: ["original_work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_work_summary"
+            columns: ["original_work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_recent_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_work_summary"
+            columns: ["original_work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_original_work_summary"
+            columns: ["original_work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_follow_up_task"
+            columns: ["follow_up_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
+          },
+        ]
+      }
       dev_merge_checklist: {
         Row: {
           check_type: string
@@ -1264,6 +1714,13 @@ export type Database = {
             foreignKeyName: "dev_task_commits_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1278,8 +1735,22 @@ export type Database = {
             foreignKeyName: "dev_task_commits_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_commits_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1340,6 +1811,13 @@ export type Database = {
             foreignKeyName: "task_criteria_inheritance_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1354,8 +1832,22 @@ export type Database = {
             foreignKeyName: "task_criteria_inheritance_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_criteria_inheritance_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1393,6 +1885,13 @@ export type Database = {
             foreignKeyName: "dev_task_element_links_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_element_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1407,8 +1906,22 @@ export type Database = {
             foreignKeyName: "dev_task_element_links_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_element_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_element_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1449,6 +1962,13 @@ export type Database = {
             foreignKeyName: "dev_task_elements_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1463,8 +1983,22 @@ export type Database = {
             foreignKeyName: "dev_task_elements_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_elements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1502,6 +2036,13 @@ export type Database = {
             foreignKeyName: "dev_task_files_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1516,8 +2057,22 @@ export type Database = {
             foreignKeyName: "dev_task_files_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1570,6 +2125,13 @@ export type Database = {
             foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1584,8 +2146,22 @@ export type Database = {
             foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_lifecycle_stages_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1635,6 +2211,13 @@ export type Database = {
             foreignKeyName: "dev_task_quality_gates_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_quality_gates_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1649,8 +2232,22 @@ export type Database = {
             foreignKeyName: "dev_task_quality_gates_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_quality_gates_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_quality_gates_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1709,6 +2306,13 @@ export type Database = {
             foreignKeyName: "dev_task_success_criteria_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_success_criteria_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1723,8 +2327,22 @@ export type Database = {
             foreignKeyName: "dev_task_success_criteria_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_success_criteria_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_success_criteria_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1759,6 +2377,13 @@ export type Database = {
             foreignKeyName: "dev_task_tags_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1773,8 +2398,22 @@ export type Database = {
             foreignKeyName: "dev_task_tags_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1834,6 +2473,13 @@ export type Database = {
             foreignKeyName: "dev_task_validations_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_validations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1848,8 +2494,22 @@ export type Database = {
             foreignKeyName: "dev_task_validations_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_validations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_validations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -1896,6 +2556,13 @@ export type Database = {
             foreignKeyName: "dev_task_work_sessions_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -1910,22 +2577,44 @@ export type Database = {
             foreignKeyName: "dev_task_work_sessions_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_task_work_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
       dev_tasks: {
         Row: {
           app: string | null
+          claude_last_activity: string | null
+          claude_raw_task: string | null
+          claude_recovery_notes: string | null
           claude_request: string | null
           claude_response: string | null
+          claude_submission_id: string | null
+          claude_submission_status: string | null
+          claude_submission_timestamp: string | null
+          claude_submission_worktree: string | null
           completed_at: string | null
           completion_confidence: number | null
           created_at: string | null
           created_by: string | null
           current_lifecycle_stage: string | null
           description: string
+          documentation_submission_id: string | null
           element_target: Json | null
           git_branch: string | null
           git_commit_current: string | null
@@ -1935,6 +2624,7 @@ export type Database = {
           id: string
           is_subtask: boolean | null
           last_commit_at: string | null
+          last_work_summary_at: string | null
           parent_task_id: string | null
           priority: string | null
           progress_status: string | null
@@ -1953,24 +2643,36 @@ export type Database = {
           success_criteria_defined: boolean | null
           success_criteria_met: number | null
           task_type: string | null
+          test_submission_id: string | null
           testing_notes: string | null
           title: string
           updated_at: string | null
           validation_status: string | null
+          validation_submission_id: string | null
           work_mode: string | null
+          work_summary_count: number | null
+          worktree: string | null
           worktree_active: boolean | null
           worktree_path: string | null
         }
         Insert: {
           app?: string | null
+          claude_last_activity?: string | null
+          claude_raw_task?: string | null
+          claude_recovery_notes?: string | null
           claude_request?: string | null
           claude_response?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
           completed_at?: string | null
           completion_confidence?: number | null
           created_at?: string | null
           created_by?: string | null
           current_lifecycle_stage?: string | null
           description: string
+          documentation_submission_id?: string | null
           element_target?: Json | null
           git_branch?: string | null
           git_commit_current?: string | null
@@ -1980,6 +2682,7 @@ export type Database = {
           id?: string
           is_subtask?: boolean | null
           last_commit_at?: string | null
+          last_work_summary_at?: string | null
           parent_task_id?: string | null
           priority?: string | null
           progress_status?: string | null
@@ -1998,24 +2701,36 @@ export type Database = {
           success_criteria_defined?: boolean | null
           success_criteria_met?: number | null
           task_type?: string | null
+          test_submission_id?: string | null
           testing_notes?: string | null
           title: string
           updated_at?: string | null
           validation_status?: string | null
+          validation_submission_id?: string | null
           work_mode?: string | null
+          work_summary_count?: number | null
+          worktree?: string | null
           worktree_active?: boolean | null
           worktree_path?: string | null
         }
         Update: {
           app?: string | null
+          claude_last_activity?: string | null
+          claude_raw_task?: string | null
+          claude_recovery_notes?: string | null
           claude_request?: string | null
           claude_response?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
           completed_at?: string | null
           completion_confidence?: number | null
           created_at?: string | null
           created_by?: string | null
           current_lifecycle_stage?: string | null
           description?: string
+          documentation_submission_id?: string | null
           element_target?: Json | null
           git_branch?: string | null
           git_commit_current?: string | null
@@ -2025,6 +2740,7 @@ export type Database = {
           id?: string
           is_subtask?: boolean | null
           last_commit_at?: string | null
+          last_work_summary_at?: string | null
           parent_task_id?: string | null
           priority?: string | null
           progress_status?: string | null
@@ -2043,11 +2759,15 @@ export type Database = {
           success_criteria_defined?: boolean | null
           success_criteria_met?: number | null
           task_type?: string | null
+          test_submission_id?: string | null
           testing_notes?: string | null
           title?: string
           updated_at?: string | null
           validation_status?: string | null
+          validation_submission_id?: string | null
           work_mode?: string | null
+          work_summary_count?: number | null
+          worktree?: string | null
           worktree_active?: boolean | null
           worktree_path?: string | null
         }
@@ -2057,6 +2777,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
             referencedColumns: ["id"]
           },
           {
@@ -2077,8 +2804,22 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
           {
             foreignKeyName: "dev_tasks_source_doc_id_fkey"
@@ -2147,6 +2888,7 @@ export type Database = {
           description: string | null
           file_path: string
           id: string
+          last_checked: string | null
           last_updated: string | null
           metadata: Json | null
           next_review_date: string
@@ -2163,6 +2905,7 @@ export type Database = {
           description?: string | null
           file_path: string
           id?: string
+          last_checked?: string | null
           last_updated?: string | null
           metadata?: Json | null
           next_review_date: string
@@ -2179,6 +2922,7 @@ export type Database = {
           description?: string | null
           file_path?: string
           id?: string
+          last_checked?: string | null
           last_updated?: string | null
           metadata?: Json | null
           next_review_date?: string
@@ -2367,6 +3111,51 @@ export type Database = {
           status_recommendation?: string | null
           summary?: string | null
           title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      doc_living_docs_metadata: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          last_updated: string | null
+          priority: string | null
+          status: string | null
+          update_frequency: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          last_updated?: string | null
+          priority?: string | null
+          status?: string | null
+          update_frequency?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          last_updated?: string | null
+          priority?: string | null
+          status?: string | null
+          update_frequency?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -5028,6 +5817,99 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_scripts: {
+        Row: {
+          ai_assessment: Json | null
+          ai_generated_tags: string[] | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          document_type_id: string | null
+          environment: string | null
+          file_hash: string | null
+          file_name: string
+          file_path: string
+          id: string
+          is_deprecated: boolean | null
+          language: string | null
+          last_indexed_at: string | null
+          last_modified_at: string | null
+          last_used_at: string | null
+          manual_tags: string[] | null
+          metadata: Json | null
+          package_location: string
+          script_command: string
+          script_name: string
+          script_type: string | null
+          shortcut_name: string | null
+          status: string | null
+          summary: string | null
+          title: string
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          document_type_id?: string | null
+          environment?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path: string
+          id?: string
+          is_deprecated?: boolean | null
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          last_used_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          package_location: string
+          script_command: string
+          script_name: string
+          script_type?: string | null
+          shortcut_name?: string | null
+          status?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          ai_assessment?: Json | null
+          ai_generated_tags?: string[] | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          document_type_id?: string | null
+          environment?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          is_deprecated?: boolean | null
+          language?: string | null
+          last_indexed_at?: string | null
+          last_modified_at?: string | null
+          last_used_at?: string | null
+          manual_tags?: string[] | null
+          metadata?: Json | null
+          package_location?: string
+          script_command?: string
+          script_name?: string
+          script_type?: string | null
+          shortcut_name?: string | null
+          status?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
+      }
       registry_services: {
         Row: {
           created_at: string | null
@@ -5073,84 +5955,6 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           version?: string | null
-        }
-        Relationships: []
-      }
-      scripts_registry: {
-        Row: {
-          ai_assessment: Json | null
-          ai_generated_tags: string[] | null
-          assessment_created_at: string | null
-          assessment_date: string | null
-          assessment_model: string | null
-          assessment_quality_score: number | null
-          assessment_updated_at: string | null
-          assessment_version: number | null
-          created_at: string
-          document_type_id: string | null
-          file_hash: string | null
-          file_path: string
-          id: string
-          language: string
-          last_indexed_at: string | null
-          last_modified_at: string | null
-          manual_tags: string[] | null
-          metadata: Json
-          package_json_references: Json | null
-          script_type_id: string | null
-          summary: Json | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path: string
-          id?: string
-          language: string
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          ai_assessment?: Json | null
-          ai_generated_tags?: string[] | null
-          assessment_created_at?: string | null
-          assessment_date?: string | null
-          assessment_model?: string | null
-          assessment_quality_score?: number | null
-          assessment_updated_at?: string | null
-          assessment_version?: number | null
-          created_at?: string
-          document_type_id?: string | null
-          file_hash?: string | null
-          file_path?: string
-          id?: string
-          language?: string
-          last_indexed_at?: string | null
-          last_modified_at?: string | null
-          manual_tags?: string[] | null
-          metadata?: Json
-          package_json_references?: Json | null
-          script_type_id?: string | null
-          summary?: Json | null
-          title?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -5414,6 +6218,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_documents: {
+        Row: {
+          archive_date: string | null
+          archive_reason: string
+          archived_by: string | null
+          content: string | null
+          created_at: string | null
+          document_type: string
+          file_name: string
+          id: string
+          metadata: Json | null
+          original_path: string
+          superseded_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_reason: string
+          archived_by?: string | null
+          content?: string | null
+          created_at?: string | null
+          document_type: string
+          file_name: string
+          id?: string
+          metadata?: Json | null
+          original_path: string
+          superseded_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          archive_date?: string | null
+          archive_reason?: string
+          archived_by?: string | null
+          content?: string | null
+          created_at?: string | null
+          document_type?: string
+          file_name?: string
+          id?: string
+          metadata?: Json | null
+          original_path?: string
+          superseded_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_archived_package_files: {
         Row: {
           archive_reason: string | null
@@ -5567,6 +6416,174 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_database_change_events: {
+        Row: {
+          change_details: Json | null
+          created_at: string | null
+          detected_at: string | null
+          event_type: string
+          id: string
+          object_name: string
+          object_schema: string
+          object_type: string | null
+          processed: boolean | null
+          processed_at: string | null
+          processing_notes: string | null
+        }
+        Insert: {
+          change_details?: Json | null
+          created_at?: string | null
+          detected_at?: string | null
+          event_type: string
+          id?: string
+          object_name: string
+          object_schema?: string
+          object_type?: string | null
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_notes?: string | null
+        }
+        Update: {
+          change_details?: Json | null
+          created_at?: string | null
+          detected_at?: string | null
+          event_type?: string
+          id?: string
+          object_name?: string
+          object_schema?: string
+          object_type?: string | null
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_notes?: string | null
+        }
+        Relationships: []
+      }
+      sys_database_maintenance_rules: {
+        Row: {
+          actions: Json
+          active: boolean | null
+          condition_sql: string | null
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          object_type: string | null
+          priority: number | null
+          rule_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json
+          active?: boolean | null
+          condition_sql?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          object_type?: string | null
+          priority?: number | null
+          rule_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json
+          active?: boolean | null
+          condition_sql?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          object_type?: string | null
+          priority?: number | null
+          rule_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sys_function_usage: {
+        Row: {
+          call_type: string | null
+          called_from: string | null
+          created_at: string | null
+          function_name: string
+          id: string
+          last_used: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          call_type?: string | null
+          called_from?: string | null
+          created_at?: string | null
+          function_name: string
+          id?: string
+          last_used?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          call_type?: string | null
+          called_from?: string | null
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          last_used?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_maintenance_action_log: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          event_id: string | null
+          id: string
+          rule_id: string | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          rule_id?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          rule_id?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_maintenance_action_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "sys_database_change_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_maintenance_action_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "sys_database_maintenance_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sys_mime_types: {
         Row: {
           category: string | null
@@ -5661,6 +6678,63 @@ export type Database = {
           },
         ]
       }
+      sys_server_ports_registry: {
+        Row: {
+          base_path: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          environment: string | null
+          health_check_endpoint: string | null
+          host: string | null
+          id: string
+          last_health_check: string | null
+          last_health_status: string | null
+          metadata: Json | null
+          port: number
+          protocol: string | null
+          service_name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_path?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          environment?: string | null
+          health_check_endpoint?: string | null
+          host?: string | null
+          id?: string
+          last_health_check?: string | null
+          last_health_status?: string | null
+          metadata?: Json | null
+          port: number
+          protocol?: string | null
+          service_name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_path?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          environment?: string | null
+          health_check_endpoint?: string | null
+          host?: string | null
+          id?: string
+          last_health_check?: string | null
+          last_health_status?: string | null
+          metadata?: Json | null
+          port?: number
+          protocol?: string | null
+          service_name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_service_dependencies: {
         Row: {
           created_at: string | null
@@ -5717,6 +6791,120 @@ export type Database = {
           },
         ]
       }
+      sys_service_migration_checklist: {
+        Row: {
+          base_class_type: string
+          checklist_items: Json
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          base_class_type: string
+          checklist_items: Json
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          base_class_type?: string
+          checklist_items?: Json
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      sys_service_migration_tasks: {
+        Row: {
+          assigned_to: string | null
+          checklist: Json | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          service_id: string | null
+          started_at: string | null
+          status: string | null
+          task_type: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          task_type: string
+        }
+        Update: {
+          assigned_to?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_service_migration_tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_service_migration_tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sys_service_monitoring_runs: {
+        Row: {
+          created_at: string | null
+          deprecated_services: number | null
+          duration_seconds: number | null
+          id: string
+          new_services_found: number | null
+          notes: string | null
+          refactoring_needed: number | null
+          run_date: string | null
+          run_type: string | null
+          services_scanned: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deprecated_services?: number | null
+          duration_seconds?: number | null
+          id?: string
+          new_services_found?: number | null
+          notes?: string | null
+          refactoring_needed?: number | null
+          run_date?: string | null
+          run_type?: string | null
+          services_scanned?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deprecated_services?: number | null
+          duration_seconds?: number | null
+          id?: string
+          new_services_found?: number | null
+          notes?: string | null
+          refactoring_needed?: number | null
+          run_date?: string | null
+          run_type?: string | null
+          services_scanned?: number | null
+        }
+        Relationships: []
+      }
       sys_service_test_runs: {
         Row: {
           created_at: string | null
@@ -5761,58 +6949,166 @@ export type Database = {
       }
       sys_shared_services: {
         Row: {
+          backwards_compatible: boolean | null
+          base_class_type: string | null
+          breaking_changes: boolean | null
           category: string | null
+          checklist_compliant: boolean | null
+          compliance_issues: Json | null
+          confidence_score: number | null
+          consolidation_candidate: boolean | null
           created_at: string | null
           dependencies: Json | null
           description: string | null
+          environment_config: Json | null
+          environment_support: string[] | null
+          environment_type: string | null
           exports: Json | null
           has_browser_variant: boolean | null
+          has_tests: boolean | null
           id: string
+          initialization_dependencies: string[] | null
+          instantiation_pattern: string | null
           is_singleton: boolean | null
+          last_test_run: string | null
+          last_usage_scan: string | null
           last_validated: string | null
+          maintenance_recommendation: string | null
+          migration_completed_at: string | null
+          migration_notes: string | null
+          migration_started_at: string | null
+          migration_status: string | null
+          next_scan_date: string | null
+          overlaps_with: string[] | null
+          performance_after: Json | null
+          performance_baseline: Json | null
+          refactoring_notes: string | null
+          requires_initialization: boolean | null
+          resource_management: Json | null
+          scan_frequency: string | null
+          service_health: string | null
           service_name: string
           service_name_normalized: string | null
           service_path: string
+          service_type: string | null
           status: string | null
+          test_coverage_percent: number | null
           updated_at: string | null
+          usage_count: number | null
+          usage_history: Json | null
+          usage_locations: Json | null
+          usage_trend: string | null
           used_by_apps: string[] | null
           used_by_pipelines: string[] | null
+          used_by_proxy_servers: string[] | null
         }
         Insert: {
+          backwards_compatible?: boolean | null
+          base_class_type?: string | null
+          breaking_changes?: boolean | null
           category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issues?: Json | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
           created_at?: string | null
           dependencies?: Json | null
           description?: string | null
+          environment_config?: Json | null
+          environment_support?: string[] | null
+          environment_type?: string | null
           exports?: Json | null
           has_browser_variant?: boolean | null
+          has_tests?: boolean | null
           id?: string
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
           is_singleton?: boolean | null
+          last_test_run?: string | null
+          last_usage_scan?: string | null
           last_validated?: string | null
+          maintenance_recommendation?: string | null
+          migration_completed_at?: string | null
+          migration_notes?: string | null
+          migration_started_at?: string | null
+          migration_status?: string | null
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          performance_after?: Json | null
+          performance_baseline?: Json | null
+          refactoring_notes?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          scan_frequency?: string | null
+          service_health?: string | null
           service_name: string
           service_name_normalized?: string | null
           service_path: string
+          service_type?: string | null
           status?: string | null
+          test_coverage_percent?: number | null
           updated_at?: string | null
+          usage_count?: number | null
+          usage_history?: Json | null
+          usage_locations?: Json | null
+          usage_trend?: string | null
           used_by_apps?: string[] | null
           used_by_pipelines?: string[] | null
+          used_by_proxy_servers?: string[] | null
         }
         Update: {
+          backwards_compatible?: boolean | null
+          base_class_type?: string | null
+          breaking_changes?: boolean | null
           category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issues?: Json | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
           created_at?: string | null
           dependencies?: Json | null
           description?: string | null
+          environment_config?: Json | null
+          environment_support?: string[] | null
+          environment_type?: string | null
           exports?: Json | null
           has_browser_variant?: boolean | null
+          has_tests?: boolean | null
           id?: string
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
           is_singleton?: boolean | null
+          last_test_run?: string | null
+          last_usage_scan?: string | null
           last_validated?: string | null
+          maintenance_recommendation?: string | null
+          migration_completed_at?: string | null
+          migration_notes?: string | null
+          migration_started_at?: string | null
+          migration_status?: string | null
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          performance_after?: Json | null
+          performance_baseline?: Json | null
+          refactoring_notes?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          scan_frequency?: string | null
+          service_health?: string | null
           service_name?: string
           service_name_normalized?: string | null
           service_path?: string
+          service_type?: string | null
           status?: string | null
+          test_coverage_percent?: number | null
           updated_at?: string | null
+          usage_count?: number | null
+          usage_history?: Json | null
+          usage_locations?: Json | null
+          usage_trend?: string | null
           used_by_apps?: string[] | null
           used_by_pipelines?: string[] | null
+          used_by_proxy_servers?: string[] | null
         }
         Relationships: []
       }
@@ -5908,6 +7204,416 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      sys_table_prefixes: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string
+          domain: string
+          example_tables: string[] | null
+          id: string
+          prefix: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description: string
+          domain: string
+          example_tables?: string[] | null
+          id?: string
+          prefix: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string
+          domain?: string
+          example_tables?: string[] | null
+          id?: string
+          prefix?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sys_test_results: {
+        Row: {
+          command: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_output: string | null
+          id: string
+          metadata: Json | null
+          output: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status: string
+          test_name: string
+          test_suite_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          command?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_output?: string | null
+          id?: string
+          metadata?: Json | null
+          output?: string | null
+          status?: string
+          test_name?: string
+          test_suite_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      task_todo_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          sequence_order: number
+          task_type: string
+          todo_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          sequence_order: number
+          task_type: string
+          todo_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          sequence_order?: number
+          task_type?: string
+          todo_text?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      test_results: {
+        Row: {
+          coverage_percentage: number | null
+          created_at: string | null
+          dev_task_id: string | null
+          execution_time_ms: number | null
+          failed_count: number | null
+          id: string
+          passed_count: number | null
+          report_url: string | null
+          skipped_count: number | null
+          test_output: Json | null
+          test_suite_name: string | null
+          total_count: number | null
+          work_summary_id: string | null
+        }
+        Insert: {
+          coverage_percentage?: number | null
+          created_at?: string | null
+          dev_task_id?: string | null
+          execution_time_ms?: number | null
+          failed_count?: number | null
+          id?: string
+          passed_count?: number | null
+          report_url?: string | null
+          skipped_count?: number | null
+          test_output?: Json | null
+          test_suite_name?: string | null
+          total_count?: number | null
+          work_summary_id?: string | null
+        }
+        Update: {
+          coverage_percentage?: number | null
+          created_at?: string | null
+          dev_task_id?: string | null
+          execution_time_ms?: number | null
+          failed_count?: number | null
+          id?: string
+          passed_count?: number | null
+          report_url?: string | null
+          skipped_count?: number | null
+          test_output?: Json | null
+          test_suite_name?: string | null
+          total_count?: number | null
+          work_summary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
+          },
+          {
+            foreignKeyName: "test_results_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_recent_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_summary_todos: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          priority: string | null
+          sequence_order: number | null
+          todo_text: string
+          work_summary_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          priority?: string | null
+          sequence_order?: number | null
+          todo_text: string
+          work_summary_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          priority?: string | null
+          sequence_order?: number | null
+          todo_text?: string
+          work_summary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_summary_todos_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_todos_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_recent_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_todos_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_todos_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_summary_validations: {
+        Row: {
+          created_at: string | null
+          dev_task_id: string | null
+          id: string
+          issues: Json | null
+          updated_at: string | null
+          validated_at: string | null
+          validation_status: string
+          validation_summary: string | null
+          validator_type: string | null
+          work_summary_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dev_task_id?: string | null
+          id?: string
+          issues?: Json | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validation_status: string
+          validation_summary?: string | null
+          validator_type?: string | null
+          work_summary_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dev_task_id?: string | null
+          id?: string
+          issues?: Json | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validation_status?: string
+          validation_summary?: string | null
+          validator_type?: string | null
+          work_summary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_dev_task_id_fkey"
+            columns: ["dev_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_recent_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "ai_work_summaries_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_summary_validations_work_summary_id_fkey"
+            columns: ["work_summary_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       worktree_app_mappings: {
         Row: {
@@ -6066,6 +7772,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_work_summaries_with_follow_ups_view: {
+        Row: {
+          category: string | null
+          commands: string[] | null
+          created_at: string | null
+          files_modified: string[] | null
+          follow_up_tasks: Json | null
+          id: string | null
+          metadata: Json | null
+          status: string | null
+          summary_content: string | null
+          tags: string[] | null
+          title: string | null
+          ui_components: string[] | null
+          updated_at: string | null
+          work_date: string | null
+          worktree: string | null
+          worktree_path: string | null
+        }
+        Insert: {
+          category?: string | null
+          commands?: string[] | null
+          created_at?: string | null
+          files_modified?: string[] | null
+          follow_up_tasks?: never
+          id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          summary_content?: string | null
+          tags?: string[] | null
+          title?: string | null
+          ui_components?: string[] | null
+          updated_at?: string | null
+          work_date?: string | null
+          worktree?: string | null
+          worktree_path?: string | null
+        }
+        Update: {
+          category?: string | null
+          commands?: string[] | null
+          created_at?: string | null
+          files_modified?: string[] | null
+          follow_up_tasks?: never
+          id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          summary_content?: string | null
+          tags?: string[] | null
+          title?: string | null
+          ui_components?: string[] | null
+          updated_at?: string | null
+          work_date?: string | null
+          worktree?: string | null
+          worktree_path?: string | null
+        }
+        Relationships: []
+      }
       app_hierarchy_view: {
         Row: {
           app_name: string | null
@@ -6081,7 +7844,7 @@ export type Database = {
         }
         Relationships: []
       }
-      cli_commands_ordered_view: {
+      command_commands_ordered_view: {
         Row: {
           command_name: string | null
           criteria_count: number | null
@@ -6124,6 +7887,101 @@ export type Database = {
           count: number | null
           current_status: string | null
           pipeline: string | null
+        }
+        Relationships: []
+      }
+      deploy_latest_view: {
+        Row: {
+          branch_from: string | null
+          branch_to: string | null
+          commit_hash: string | null
+          completed_at: string | null
+          created_at: string | null
+          deployment_id: string | null
+          deployment_type: string | null
+          deployment_url: string | null
+          error_message: string | null
+          id: string | null
+          metadata: Json | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      deployment_status_view: {
+        Row: {
+          branch_from: string | null
+          branch_to: string | null
+          commit_hash: string | null
+          completed_at: string | null
+          deployment_id: string | null
+          deployment_type: string | null
+          deployment_url: string | null
+          duration_seconds: number | null
+          error_message: string | null
+          health_check_count: number | null
+          health_checks_passed: number | null
+          id: string | null
+          started_at: string | null
+          status: string | null
+          validation_count: number | null
+          validations_failed: number | null
+          validations_passed: number | null
+        }
+        Relationships: []
+      }
+      dev_tasks_claude_active_view: {
+        Row: {
+          claude_last_activity: string | null
+          claude_recovery_notes: string | null
+          claude_submission_id: string | null
+          claude_submission_status: string | null
+          claude_submission_timestamp: string | null
+          claude_submission_worktree: string | null
+          git_branch: string | null
+          git_commits_count: number | null
+          id: string | null
+          minutes_since_activity: number | null
+          priority: string | null
+          status: string | null
+          task_preview: string | null
+          task_type: string | null
+          title: string | null
+        }
+        Insert: {
+          claude_last_activity?: string | null
+          claude_recovery_notes?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
+          git_branch?: string | null
+          git_commits_count?: number | null
+          id?: string | null
+          minutes_since_activity?: never
+          priority?: string | null
+          status?: string | null
+          task_preview?: never
+          task_type?: string | null
+          title?: string | null
+        }
+        Update: {
+          claude_last_activity?: string | null
+          claude_recovery_notes?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
+          git_branch?: string | null
+          git_commits_count?: number | null
+          id?: string | null
+          minutes_since_activity?: never
+          priority?: string | null
+          status?: string | null
+          task_preview?: never
+          task_type?: string | null
+          title?: string | null
         }
         Relationships: []
       }
@@ -6192,6 +8050,13 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -6206,8 +8071,22 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -6271,6 +8150,13 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -6285,8 +8171,244 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_source_doc_id_fkey"
+            columns: ["source_doc_id"]
+            isOneToOne: false
+            referencedRelation: "doc_continuous_monitoring"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_tasks_with_follow_ups_view: {
+        Row: {
+          app: string | null
+          claude_last_activity: string | null
+          claude_raw_task: string | null
+          claude_recovery_notes: string | null
+          claude_request: string | null
+          claude_response: string | null
+          claude_submission_id: string | null
+          claude_submission_status: string | null
+          claude_submission_timestamp: string | null
+          claude_submission_worktree: string | null
+          completed_at: string | null
+          completion_confidence: number | null
+          created_at: string | null
+          created_by: string | null
+          current_lifecycle_stage: string | null
+          description: string | null
+          element_target: Json | null
+          follow_up_tasks: Json | null
+          git_branch: string | null
+          git_commit_current: string | null
+          git_commit_start: string | null
+          git_commits_count: number | null
+          has_commits: boolean | null
+          id: string | null
+          is_subtask: boolean | null
+          last_commit_at: string | null
+          parent_task_id: string | null
+          priority: string | null
+          progress_status: string | null
+          quality_gates_status: string | null
+          requires_branch: boolean | null
+          revision_count: number | null
+          risk_assessment: string | null
+          source_doc_id: string | null
+          source_doc_path: string | null
+          source_doc_phase: string | null
+          status: string | null
+          submitted_at: string | null
+          submitted_on_worktree: string | null
+          submitted_to_claude: boolean | null
+          success_criteria_count: number | null
+          success_criteria_defined: boolean | null
+          success_criteria_met: number | null
+          task_type: string | null
+          testing_notes: string | null
+          title: string | null
+          updated_at: string | null
+          validation_status: string | null
+          work_mode: string | null
+          worktree: string | null
+          worktree_active: boolean | null
+          worktree_path: string | null
+        }
+        Insert: {
+          app?: string | null
+          claude_last_activity?: string | null
+          claude_raw_task?: string | null
+          claude_recovery_notes?: string | null
+          claude_request?: string | null
+          claude_response?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
+          completed_at?: string | null
+          completion_confidence?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          current_lifecycle_stage?: string | null
+          description?: string | null
+          element_target?: Json | null
+          follow_up_tasks?: never
+          git_branch?: string | null
+          git_commit_current?: string | null
+          git_commit_start?: string | null
+          git_commits_count?: number | null
+          has_commits?: boolean | null
+          id?: string | null
+          is_subtask?: boolean | null
+          last_commit_at?: string | null
+          parent_task_id?: string | null
+          priority?: string | null
+          progress_status?: string | null
+          quality_gates_status?: string | null
+          requires_branch?: boolean | null
+          revision_count?: number | null
+          risk_assessment?: string | null
+          source_doc_id?: string | null
+          source_doc_path?: string | null
+          source_doc_phase?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_on_worktree?: string | null
+          submitted_to_claude?: boolean | null
+          success_criteria_count?: number | null
+          success_criteria_defined?: boolean | null
+          success_criteria_met?: number | null
+          task_type?: string | null
+          testing_notes?: string | null
+          title?: string | null
+          updated_at?: string | null
+          validation_status?: string | null
+          work_mode?: string | null
+          worktree?: string | null
+          worktree_active?: boolean | null
+          worktree_path?: string | null
+        }
+        Update: {
+          app?: string | null
+          claude_last_activity?: string | null
+          claude_raw_task?: string | null
+          claude_recovery_notes?: string | null
+          claude_request?: string | null
+          claude_response?: string | null
+          claude_submission_id?: string | null
+          claude_submission_status?: string | null
+          claude_submission_timestamp?: string | null
+          claude_submission_worktree?: string | null
+          completed_at?: string | null
+          completion_confidence?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          current_lifecycle_stage?: string | null
+          description?: string | null
+          element_target?: Json | null
+          follow_up_tasks?: never
+          git_branch?: string | null
+          git_commit_current?: string | null
+          git_commit_start?: string | null
+          git_commits_count?: number | null
+          has_commits?: boolean | null
+          id?: string | null
+          is_subtask?: boolean | null
+          last_commit_at?: string | null
+          parent_task_id?: string | null
+          priority?: string | null
+          progress_status?: string | null
+          quality_gates_status?: string | null
+          requires_branch?: boolean | null
+          revision_count?: number | null
+          risk_assessment?: string | null
+          source_doc_id?: string | null
+          source_doc_path?: string | null
+          source_doc_phase?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_on_worktree?: string | null
+          submitted_to_claude?: boolean | null
+          success_criteria_count?: number | null
+          success_criteria_defined?: boolean | null
+          success_criteria_met?: number | null
+          task_type?: string | null
+          testing_notes?: string | null
+          title?: string | null
+          updated_at?: string | null
+          validation_status?: string | null
+          work_mode?: string | null
+          worktree?: string | null
+          worktree_active?: boolean | null
+          worktree_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_enhanced_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_continuous_docs_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks_with_git_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
           {
             foreignKeyName: "dev_tasks_source_doc_id_fkey"
@@ -6336,6 +8458,13 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_claude_active_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_enhanced_view"
             referencedColumns: ["id"]
           },
@@ -6350,8 +8479,22 @@ export type Database = {
             foreignKeyName: "dev_tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
+            referencedRelation: "dev_tasks_with_follow_ups_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
             referencedRelation: "dev_tasks_with_git_view"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dev_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "work_summary_tracking_view"
+            referencedColumns: ["dev_task_id"]
           },
         ]
       }
@@ -6527,6 +8670,54 @@ export type Database = {
           },
         ]
       }
+      registry_scripts_pnpm_view: {
+        Row: {
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          environment: string | null
+          id: string | null
+          is_deprecated: boolean | null
+          last_used_at: string | null
+          package_location: string | null
+          script_command: string | null
+          script_name: string | null
+          shortcut_name: string | null
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          environment?: string | null
+          id?: string | null
+          is_deprecated?: boolean | null
+          last_used_at?: string | null
+          package_location?: string | null
+          script_command?: string | null
+          script_name?: string | null
+          shortcut_name?: string | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          environment?: string | null
+          id?: string | null
+          is_deprecated?: boolean | null
+          last_used_at?: string | null
+          package_location?: string | null
+          script_command?: string | null
+          script_name?: string | null
+          shortcut_name?: string | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
+      }
       registry_service_usage_summary_view: {
         Row: {
           app_count: number | null
@@ -6563,6 +8754,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_active_servers_view: {
+        Row: {
+          base_url: string | null
+          display_name: string | null
+          last_health_check: string | null
+          last_health_status: string | null
+          port: number | null
+          service_name: string | null
+          status: string | null
+        }
+        Insert: {
+          base_url?: never
+          display_name?: string | null
+          last_health_check?: string | null
+          last_health_status?: string | null
+          port?: number | null
+          service_name?: string | null
+          status?: string | null
+        }
+        Update: {
+          base_url?: never
+          display_name?: string | null
+          last_health_check?: string | null
+          last_health_status?: string | null
+          port?: number | null
+          service_name?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       sys_app_dependencies_view: {
         Row: {
           app_description: string | null
@@ -6573,6 +8794,45 @@ export type Database = {
           service_category: string | null
           service_name: string | null
           usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_archived_living_docs_view: {
+        Row: {
+          archive_date: string | null
+          archive_reason: string | null
+          archived_by: string | null
+          file_name: string | null
+          id: string | null
+          last_updated_when_archived: string | null
+          original_path: string | null
+          priority_when_archived: string | null
+          status_when_archived: string | null
+          superseded_by: string | null
+        }
+        Insert: {
+          archive_date?: string | null
+          archive_reason?: string | null
+          archived_by?: string | null
+          file_name?: string | null
+          id?: string | null
+          last_updated_when_archived?: never
+          original_path?: string | null
+          priority_when_archived?: never
+          status_when_archived?: never
+          superseded_by?: string | null
+        }
+        Update: {
+          archive_date?: string | null
+          archive_reason?: string | null
+          archived_by?: string | null
+          file_name?: string | null
+          id?: string | null
+          last_updated_when_archived?: never
+          original_path?: string | null
+          priority_when_archived?: never
+          status_when_archived?: never
+          superseded_by?: string | null
         }
         Relationships: []
       }
@@ -6657,6 +8917,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_business_services_view: {
+        Row: {
+          created_at: string | null
+          dependencies: Json | null
+          environment_support: string[] | null
+          has_browser_variant: boolean | null
+          instantiation_pattern: string | null
+          service_name: string | null
+          service_path: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependencies?: Json | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          instantiation_pattern?: string | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          dependencies?: Json | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          instantiation_pattern?: string | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_database_objects_info_view: {
         Row: {
           column_count: number | null
@@ -6720,6 +9016,59 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_infrastructure_services_view: {
+        Row: {
+          created_at: string | null
+          environment_support: string[] | null
+          has_browser_variant: boolean | null
+          initialization_dependencies: string[] | null
+          instantiation_pattern: string | null
+          requires_initialization: boolean | null
+          resource_management: Json | null
+          service_name: string | null
+          service_path: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_pending_maintenance_actions_view: {
+        Row: {
+          action_details: Json | null
+          action_type: string | null
+          created_at: string | null
+          event_type: string | null
+          object_name: string | null
+          rule_name: string | null
+        }
+        Relationships: []
+      }
       sys_pipeline_dependencies_view: {
         Row: {
           command_name: string | null
@@ -6730,6 +9079,36 @@ export type Database = {
           service_category: string | null
           service_name: string | null
           usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_recent_database_changes_view: {
+        Row: {
+          change_details: Json | null
+          detected_at: string | null
+          event_type: string | null
+          object_name: string | null
+          object_type: string | null
+          processed: boolean | null
+          status: string | null
+        }
+        Insert: {
+          change_details?: Json | null
+          detected_at?: string | null
+          event_type?: string | null
+          object_name?: string | null
+          object_type?: string | null
+          processed?: boolean | null
+          status?: never
+        }
+        Update: {
+          change_details?: Json | null
+          detected_at?: string | null
+          event_type?: string | null
+          object_name?: string | null
+          object_type?: string | null
+          processed?: boolean | null
+          status?: never
         }
         Relationships: []
       }
@@ -6749,6 +9128,95 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_service_health_analysis_view: {
+        Row: {
+          category: string | null
+          checklist_compliant: boolean | null
+          confidence_score: number | null
+          consolidation_candidate: boolean | null
+          environment_type: string | null
+          has_tests: boolean | null
+          health_assessment: string | null
+          last_usage_scan: string | null
+          last_validated: string | null
+          maintenance_recommendation: string | null
+          needs_scan: boolean | null
+          next_scan_date: string | null
+          overlaps_with: string[] | null
+          service_health: string | null
+          service_name: string | null
+          usage_count: number | null
+          usage_level: string | null
+          usage_trend: string | null
+        }
+        Insert: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
+          environment_type?: string | null
+          has_tests?: boolean | null
+          health_assessment?: never
+          last_usage_scan?: string | null
+          last_validated?: string | null
+          maintenance_recommendation?: string | null
+          needs_scan?: never
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+          usage_level?: never
+          usage_trend?: string | null
+        }
+        Update: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
+          environment_type?: string | null
+          has_tests?: boolean | null
+          health_assessment?: never
+          last_usage_scan?: string | null
+          last_validated?: string | null
+          maintenance_recommendation?: string | null
+          needs_scan?: never
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+          usage_level?: never
+          usage_trend?: string | null
+        }
+        Relationships: []
+      }
+      sys_service_initialization_order_view: {
+        Row: {
+          init_level: number | null
+          init_path: string[] | null
+          initialization_dependencies: string[] | null
+          service_name: string | null
+          service_type: string | null
+        }
+        Relationships: []
+      }
+      sys_service_migration_progress_view: {
+        Row: {
+          backwards_compatible: boolean | null
+          base_class_type: string | null
+          breaking_changes: boolean | null
+          completed_tasks: number | null
+          migration_completed_at: string | null
+          migration_started_at: string | null
+          migration_status: string | null
+          progress_percentage: number | null
+          service_name: string | null
+          service_type: string | null
+          total_tasks: number | null
+        }
+        Relationships: []
+      }
       sys_service_test_health_view: {
         Row: {
           avg_execution_time: number | null
@@ -6762,6 +9230,100 @@ export type Database = {
           total_runs: number | null
           used_by_apps: string[] | null
           used_by_pipelines: string[] | null
+        }
+        Relationships: []
+      }
+      sys_services_needing_attention_view: {
+        Row: {
+          category: string | null
+          checklist_compliant: boolean | null
+          compliance_issue_count: number | null
+          has_tests: boolean | null
+          last_usage_scan: string | null
+          maintenance_recommendation: string | null
+          next_scan_date: string | null
+          service_health: string | null
+          service_name: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issue_count?: never
+          has_tests?: boolean | null
+          last_usage_scan?: string | null
+          maintenance_recommendation?: string | null
+          next_scan_date?: string | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issue_count?: never
+          has_tests?: boolean | null
+          last_usage_scan?: string | null
+          maintenance_recommendation?: string | null
+          next_scan_date?: string | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_table_prefix_usage_view: {
+        Row: {
+          description: string | null
+          domain: string | null
+          example_tables: string[] | null
+          prefix: string | null
+          table_count: number | null
+        }
+        Relationships: []
+      }
+      sys_tables_missing_definitions_view: {
+        Row: {
+          category: string | null
+          table_name: unknown | null
+          table_schema: unknown | null
+          table_type: string | null
+        }
+        Relationships: []
+      }
+      work_summary_tracking_view: {
+        Row: {
+          category: string | null
+          completed_follow_ups: number | null
+          completed_todos: number | null
+          coverage_percentage: number | null
+          created_at: string | null
+          dev_task_id: string | null
+          dev_task_priority: string | null
+          dev_task_status: string | null
+          dev_task_title: string | null
+          failed_count: number | null
+          follow_up_count: number | null
+          git_branch: string | null
+          git_commit: string | null
+          has_submission: boolean | null
+          has_tests: boolean | null
+          has_validation: boolean | null
+          id: string | null
+          issue_count: number | null
+          needs_action: boolean | null
+          passed_count: number | null
+          submission_timestamp: string | null
+          submission_worktree: string | null
+          summary_content: string | null
+          test_report_url: string | null
+          title: string | null
+          total_todos: number | null
+          validated_at: string | null
+          validation_status: string | null
+          validation_summary: string | null
+          work_date: string | null
+          worktree: string | null
         }
         Relationships: []
       }
@@ -6801,6 +9363,15 @@ export type Database = {
           potential_reference_table: string
           potential_reference_column: string
           match_percentage: number
+        }[]
+      }
+      analyze_function_dependencies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          function_name: string
+          depends_on: string[]
+          used_by: string[]
+          is_orphaned: boolean
         }[]
       }
       analyze_function_usage: {
@@ -6868,6 +9439,30 @@ export type Database = {
           user_exists: boolean
         }[]
       }
+      check_column_standards: {
+        Args: { p_table_name: string }
+        Returns: {
+          column_name: string
+          data_type: string
+          issue: string
+          suggestion: string
+        }[]
+      }
+      check_table_prefix_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
+      check_table_rls_status: {
+        Args: { p_table_name: string }
+        Returns: {
+          rls_enabled: boolean
+          policy_count: number
+        }[]
+      }
+      check_trigger_exists: {
+        Args: { p_table_name: string; p_trigger_pattern: string }
+        Returns: boolean
+      }
       check_user_id_foreign_keys: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -6881,6 +9476,37 @@ export type Database = {
       cleanup_expired_cli_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_follow_up_task: {
+        Args: {
+          p_parent_task_id: string
+          p_title: string
+          p_follow_up_type: string
+          p_priority?: string
+          p_description?: string
+        }
+        Returns: string
+      }
+      create_follow_up_task_relationship: {
+        Args: {
+          p_follow_up_task_id: string
+          p_original_task_id?: string
+          p_original_work_summary_id?: string
+          p_follow_up_type?: string
+          p_follow_up_summary?: string
+        }
+        Returns: string
+      }
+      create_work_summary_with_task_link: {
+        Args: {
+          p_title: string
+          p_content: string
+          p_task_id: string
+          p_worktree: string
+          p_git_commit: string
+          p_category?: string
+        }
+        Returns: string
       }
       deny_access_request: {
         Args: {
@@ -6933,6 +9559,24 @@ export type Database = {
           recommendation: string
         }[]
       }
+      find_duplicate_indexes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          index1: string
+          index2: string
+          index_definition: string
+        }[]
+      }
+      find_missing_fk_indexes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          column_name: string
+          referenced_table: string
+          suggested_index_name: string
+        }[]
+      }
       find_mp4_files_in_folder: {
         Args: { folder_id: string }
         Returns: {
@@ -6951,6 +9595,24 @@ export type Database = {
           column_name: string
           orphaned_user_id: string
           row_count: number
+        }[]
+      }
+      find_orphaned_views: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          view_name: string
+          definition: string
+          issue: string
+        }[]
+      }
+      find_unused_indexes: {
+        Args: { days_threshold?: number }
+        Returns: {
+          schema_name: string
+          table_name: string
+          index_name: string
+          index_scans: number
+          index_size: string
         }[]
       }
       generate_table_documentation: {
@@ -7105,6 +9767,15 @@ export type Database = {
           avg_duration_ms: number
         }[]
       }
+      get_database_functions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          function_name: string
+          return_type: string
+          argument_types: string
+          function_body: string
+        }[]
+      }
       get_database_views_info: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -7157,6 +9828,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_follow_ups: {
+        Args: { p_task_id?: string; p_work_summary_id?: string }
+        Returns: {
+          id: string
+          follow_up_task_id: string
+          follow_up_type: string
+          follow_up_summary: string
+          follow_up_title: string
+          follow_up_status: string
+          created_at: string
+        }[]
+      }
       get_foreign_key_info: {
         Args: { p_constraint_name: string }
         Returns: {
@@ -7184,6 +9867,18 @@ export type Database = {
       get_functions: {
         Args: { schema_name: string }
         Returns: Json
+      }
+      get_interrupted_claude_tasks: {
+        Args: { p_worktree?: string; p_timeout_minutes?: number }
+        Returns: {
+          task_id: string
+          title: string
+          submission_id: string
+          worktree: string
+          minutes_inactive: number
+          recovery_notes: string
+          raw_task: string
+        }[]
       }
       get_media_processing_stats: {
         Args: Record<PropertyKey, never>
@@ -7451,6 +10146,12 @@ export type Database = {
           is_enabled: boolean
         }[]
       }
+      get_tables_without_rls: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+        }[]
+      }
       get_triggers: {
         Args: { schema_name: string }
         Returns: Json
@@ -7458,6 +10159,28 @@ export type Database = {
       get_user_uuid_by_email: {
         Args: { email_input: string }
         Returns: string
+      }
+      get_work_summary_tracking: {
+        Args: { summary_id: string }
+        Returns: {
+          dev_task_id: string
+          dev_task_title: string
+          dev_task_status: string
+          submission_timestamp: string
+          submission_worktree: string
+          git_commit: string
+          has_validation: boolean
+          validation_status: string
+          validation_summary: string
+          issue_count: number
+          has_tests: boolean
+          test_passed: number
+          test_failed: number
+          test_coverage: number
+          subtask_total: number
+          subtask_completed: number
+          needs_action: boolean
+        }[]
       }
       increment_favorite_command_usage: {
         Args: { favorite_id: string }
@@ -7529,6 +10252,10 @@ export type Database = {
         }
         Returns: string
       }
+      record_migration_metrics: {
+        Args: { p_service_name: string; p_metric_type: string; p_metrics: Json }
+        Returns: undefined
+      }
       refresh_schema_and_fix_metadata: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -7598,6 +10325,10 @@ export type Database = {
         Args: { target_email: string; is_admin?: boolean }
         Returns: boolean
       }
+      start_service_migration: {
+        Args: { p_service_name: string; p_base_class_type: string }
+        Returns: string
+      }
       submit_access_request: {
         Args: {
           p_email: string
@@ -7608,6 +10339,10 @@ export type Database = {
           p_reason_for_access?: string
         }
         Returns: string
+      }
+      submit_task_to_claude: {
+        Args: { p_task_id: string; p_raw_task: string; p_worktree?: string }
+        Returns: Json
       }
       suggest_element_criteria: {
         Args: {
@@ -7624,9 +10359,29 @@ export type Database = {
           validation_method: string
         }[]
       }
+      sys_detect_database_changes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          change_type: string
+          object_name: string
+          details: Json
+        }[]
+      }
+      sys_process_maintenance_rules: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       table_exists: {
         Args: { p_schema_name: string; p_table_name: string }
         Returns: boolean
+      }
+      update_claude_activity: {
+        Args: {
+          p_task_id: string
+          p_status?: string
+          p_recovery_notes?: string
+        }
+        Returns: undefined
       }
       update_document_ai_metadata: {
         Args: {
@@ -7643,6 +10398,14 @@ export type Database = {
           p_error_message?: string
         }
         Returns: boolean
+      }
+      validate_service_dependencies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          service_name: string
+          missing_dependencies: string[]
+          circular_dependencies: boolean
+        }[]
       }
     }
     Enums: {

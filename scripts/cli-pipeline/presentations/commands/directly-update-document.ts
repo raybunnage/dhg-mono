@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 import { PresentationService } from '../services/presentation-service';
-import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';

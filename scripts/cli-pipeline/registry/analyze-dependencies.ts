@@ -41,7 +41,7 @@ interface DependencyAnalysis {
 }
 
 async function analyzeAppDependencies(appName: string, options: AnalyzeOptions): Promise<DependencyAnalysis> {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   const app = await getAppByName(appName);
   
   if (!app) {
@@ -159,7 +159,7 @@ async function analyzeAppDependencies(appName: string, options: AnalyzeOptions):
 }
 
 async function analyzePipelineDependencies(pipelineName: string, options: AnalyzeOptions): Promise<DependencyAnalysis> {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   const pipeline = await getPipelineByName(pipelineName);
   
   if (!pipeline) {
@@ -290,7 +290,7 @@ async function analyzeDependencies(options: AnalyzeOptions): Promise<void> {
   };
   
   try {
-    const supabase = getSupabaseClient();
+    const supabase = SupabaseClientService.getInstance().getClient();
     
     // Analyze specific app
     if (options.app) {

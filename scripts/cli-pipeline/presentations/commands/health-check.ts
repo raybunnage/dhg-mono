@@ -1,6 +1,6 @@
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { trackCommandExecution } from '../../../../packages/shared/services/tracking-service/cli-tracking-wrapper';
-import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';

@@ -817,6 +817,64 @@ importers:
         specifier: ^5.1.4
         version: 5.4.14(@types/node@22.13.1)(terser@5.39.0)
 
+  apps/dhg-service-test:
+    dependencies:
+      '@dhg/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@supabase/supabase-js':
+        specifier: ^2.45.4
+        version: 2.49.8
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+      react-router-dom:
+        specifier: ^6.22.1
+        version: 6.29.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.56
+        version: 18.3.18
+      '@types/react-dom':
+        specifier: ^18.2.19
+        version: 18.3.5(@types/react@18.3.18)
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^7.0.2
+        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/parser':
+        specifier: ^7.0.2
+        version: 7.18.0(eslint@8.57.1)(typescript@5.8.3)
+      '@vitejs/plugin-react':
+        specifier: ^4.2.1
+        version: 4.5.0(vite@5.4.14(@types/node@22.13.1)(terser@5.39.0))
+      autoprefixer:
+        specifier: ^10.4.17
+        version: 10.4.21(postcss@8.5.4)
+      eslint:
+        specifier: ^8.56.0
+        version: 8.57.1
+      eslint-plugin-react-hooks:
+        specifier: ^4.6.0
+        version: 4.6.2(eslint@8.57.1)
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.5
+        version: 0.4.19(eslint@8.57.1)
+      postcss:
+        specifier: ^8.4.35
+        version: 8.5.4
+      tailwindcss:
+        specifier: ^3.4.1
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.29)(@types/node@22.13.1)(typescript@5.8.3))
+      typescript:
+        specifier: ^5.2.2
+        version: 5.8.3
+      vite:
+        specifier: ^5.1.4
+        version: 5.4.14(@types/node@22.13.1)(terser@5.39.0)
+
   html:
     dependencies:
       cors:

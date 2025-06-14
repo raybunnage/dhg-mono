@@ -108,7 +108,8 @@ async function processBatch(
   
   // Setup batch processing
   const supabaseService = SupabaseClientService.getInstance().getClient();
-  const batchService = BatchProcessingService.getInstance(supabaseService);
+  const logger = new Logger('BatchProcess', 'INFO');
+  const batchService = new BatchProcessingService(supabaseService, logger);
   
   // Create a batch record
   const batch = await batchService.createBatch({

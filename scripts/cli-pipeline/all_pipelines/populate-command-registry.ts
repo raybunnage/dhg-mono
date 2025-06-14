@@ -37,6 +37,7 @@ const pipelines: PipelineInfo[] = [
   { name: 'monitoring', description: 'System monitoring and health checks', path: 'monitoring' },
   { name: 'presentations', description: 'Presentation management and processing', path: 'presentations' },
   { name: 'prompt_service', description: 'AI prompt management', path: 'prompt_service' },
+  { name: 'proxy', description: 'Proxy server management and monitoring', path: 'proxy' },
   { name: 'refactor_tracking', description: 'Code refactoring tracking', path: 'refactor_tracking' },
   { name: 'scripts', description: 'Script registry and management', path: 'scripts' },
   { name: 'testing', description: 'Testing framework for shared services', path: 'testing' },

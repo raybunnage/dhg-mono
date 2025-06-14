@@ -7,7 +7,7 @@
 import { scriptPipelineService } from '../shared/services/script-pipeline-service';
 import { cliService } from '../shared/services/cli-service';
 import { Command } from '../shared/interfaces/types';
-import { logger } from '../shared/services/logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 import { environmentService } from '../shared/services/environment-service';
 
 // Register commands

@@ -8,7 +8,7 @@
  */
 
 import { Command } from 'commander';
-import { claudeService } from '../../../packages/shared/services/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { Logger } from '../../../packages/shared/utils';
 
 // Set up command line program

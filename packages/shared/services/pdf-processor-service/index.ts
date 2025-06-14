@@ -11,7 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SupabaseClientService } from '../supabase-client';
 import { GoogleDriveService } from '../google-drive';
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 /**
  * PDF processing result

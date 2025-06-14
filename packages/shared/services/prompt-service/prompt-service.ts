@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Logger } from '../../utils';
 import { FileService } from '../file-service/file-service';
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { SupabaseClientService } from '../../services/supabase-client';
 import { promptOutputTemplateService, PromptOutputTemplate } from './prompt-output-templates';
 

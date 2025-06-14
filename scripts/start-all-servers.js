@@ -31,32 +31,33 @@ const SERVERS = [
     cwd: process.cwd(),
     description: 'Document archiving and retrieval'
   },
-  {
-    name: 'File Browser Server',
-    port: 3004,
-    command: 'node',
-    args: ['html/server.js'],
-    cwd: process.cwd(),
-    env: { FILE_BROWSER_PORT: '3004' },
-    description: 'File browser API'
-  },
-  {
-    name: 'Git Server (dhg-admin-code)',
-    port: 3005,
-    command: 'node',
-    args: ['git-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    description: 'Git worktree management'
-  },
-  {
-    name: 'Enhanced Audio Server (dhg-audio)',
-    port: 3006,
-    command: 'node',
-    args: ['server-enhanced.js'],
-    cwd: path.join(process.cwd(), 'apps/dhg-audio'),
-    env: { PORT: '3006' },
-    description: 'Local Google Drive + API audio server with 10-100x performance boost'
-  },
+  // MIGRATED TO NEW PROXY INFRASTRUCTURE:
+  // {
+  //   name: 'File Browser Server',
+  //   port: 3004,
+  //   command: 'node',
+  //   args: ['html/server.js'],
+  //   cwd: process.cwd(),
+  //   env: { FILE_BROWSER_PORT: '3004' },
+  //   description: 'File browser API'
+  // },
+  // {
+  //   name: 'Git Server (dhg-admin-code)',
+  //   port: 3005,
+  //   command: 'node',
+  //   args: ['git-server.cjs'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+  //   description: 'Git worktree management'
+  // },
+  // {
+  //   name: 'Enhanced Audio Server (dhg-audio)',
+  //   port: 3006,
+  //   command: 'node',
+  //   args: ['server-enhanced.js'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-audio'),
+  //   env: { PORT: '3006' },
+  //   description: 'Local Google Drive + API audio server with 10-100x performance boost'
+  // },
   {
     name: 'Experts Markdown Server',
     port: 3007,
@@ -65,23 +66,24 @@ const SERVERS = [
     cwd: path.join(process.cwd(), 'apps/dhg-improve-experts'),
     description: 'Markdown server for dhg-improve-experts'
   },
-  {
-    name: 'Continuous Docs Server',
-    port: 3008,
-    command: 'node',
-    args: ['continuous-docs-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    description: 'Continuous documentation tracking'
-  },
-  {
-    name: 'Git API Server (dhg-admin-code)',
-    port: 3009,
-    command: 'node',
-    args: ['git-api-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    env: { GIT_API_PORT: '3009' },
-    description: 'Git branch management API'
-  },
+  // MIGRATED TO NEW PROXY INFRASTRUCTURE:
+  // {
+  //   name: 'Continuous Docs Server',
+  //   port: 3008,
+  //   command: 'node',
+  //   args: ['continuous-docs-server.cjs'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+  //   description: 'Continuous documentation tracking'
+  // },
+  // {
+  //   name: 'Git API Server (dhg-admin-code)',
+  //   port: 3009,
+  //   command: 'node',
+  //   args: ['git-api-server.cjs'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+  //   env: { GIT_API_PORT: '3009' },
+  //   description: 'Git branch management API'
+  // },
   {
     name: 'Worktree Switcher',
     port: 3010,

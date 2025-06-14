@@ -21,6 +21,13 @@ All database views now follow a consistent naming convention:
 - Let the user decide how to proceed - don't try to "make things work" by circumventing issues
 - When problems arise, focus on fixing root causes, not symptoms
 
+⚠️ **CRITICAL: NEVER CHANGE SHARED PACKAGE.JSON TO RAW TYPESCRIPT**
+- **NEVER change packages/shared/package.json main/module/types to point to .ts files**
+- **ALWAYS use compiled .js files**: `"main": "./dist/index.js"`
+- **Raw TypeScript imports cause Node.js modules (fs, crypto, path, os) to hit browsers directly**
+- **This breaks ALL browser apps and creates cascade of polyfill/winston "fixes"**
+- **If services suddenly fail across all apps, check if package.json points to .ts instead of .js**
+
 ⚠️ **CRITICAL: NO PULL REQUESTS WITH WORKTREES**
 - **NEVER create pull requests when working with worktrees**
 - **ALWAYS use direct push**: `git push origin branch-name:development`
@@ -30,6 +37,11 @@ All database views now follow a consistent naming convention:
 ⚠️ **SHARED SERVICES AVAILABLE**
 - Check `packages/shared/services/` for existing functionality before implementing new features
 - Health check tools: `./scripts/cli-pipeline/maintenance-cli.sh health-check`
+
+⚠️ **CRITICAL: SYNC WITH DEVELOPMENT BEFORE STARTING NEW TASKS**
+- **ALWAYS fetch and merge latest development** before starting work on any new dev task
+- **Prevents merge conflicts** and ensures you build on the latest codebase
+- See "Claude Task Submission Tracking" section for the complete workflow
 
 ⚠️ **CRITICAL: CODE REVIEW CHECKLIST**
 
@@ -117,7 +129,21 @@ All database views now follow a consistent naming convention:
 
 4. **Essential Patterns**:
 
-   **Singleton Services**: Always use the correct pattern for your environment:
+   **Singleton Services vs Dependency Injection - CLARIFICATION**:
+   
+   ⚠️ **IMPORTANT**: The "singleton" requirement applies ONLY to infrastructure services that manage expensive resources (database connections, API clients). It does NOT mean all services must be singletons!
+   
+   **Infrastructure Services (Use Singletons)**:
+   - Supabase client - manages database connection
+   - Claude AI client - manages API connection  
+   - Logger (if managing file handles)
+   
+   **Business Services (Use Dependency Injection)**:
+   - CLIRegistryService - `new CLIRegistryService(supabase)` ✅ CORRECT
+   - UserService - `new UserService(supabase, logger)` ✅ CORRECT
+   - TaskService - `new TaskService(supabase)` ✅ CORRECT
+   
+   See `docs/technical-specs/singleton-vs-dependency-injection-patterns.md` for detailed explanation.
    
    **Supabase Connection Patterns**:
    ```typescript
@@ -139,17 +165,18 @@ All database views now follow a consistent naming convention:
    - ⚠️ **Browser apps MUST pass env** - `createSupabaseAdapter()` without env will fail
    
    **Claude AI**: 
-   - ⚠️ `import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';`
+   - ⚠️ `import { claudeService } from '@shared/services/claude-service';`
 
    **Database Schema**: 
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
    - This is the single source of truth for all table structures and relationships
 
-   
-   ⚠️ **If your table doesn't fit any existing prefix**:
-   - STOP and ask the user what to do
-   
-   Always check existing prefixes before creating a new one. All migrations must be tracked in `sys_table_migrations`.
+   **Table Naming Conventions**:
+   - ⚠️ **ALWAYS check `sys_table_prefixes` before creating any table**
+   - ⚠️ **NEVER create a table without checking existing prefixes**
+   - ⚠️ **ASK before using any prefix not in `sys_table_prefixes`**
+   - View approved prefixes: `SELECT * FROM sys_table_prefixes WHERE active = true`
+   - Check usage: `SELECT * FROM sys_table_prefix_usage_view`
    
    **Table Creation Dates**: When creating new tables, always add an entry to `sys_table_definitions` with the creation date:
    ```sql
@@ -159,10 +186,11 @@ All database views now follow a consistent naming convention:
    ```
    
    **Database View Naming Convention**:
-   - All views MUST end with `_view` suffix for clarity
-   - ⚠️ **CRITICAL: Views MUST use the prefix of their primary table**
-   - This ensures views sort alphabetically with their related tables
-   - The prefix determines which functional area owns the view
+   - ⚠️ **Two mandatory rules for all views**:
+     1. **MUST start with a prefix from `sys_table_prefixes`** - use the closest matching prefix for your view's domain
+     2. **MUST end with `_view` suffix** - no exceptions
+   - Example: `sys_active_servers_view`, `command_pipeline_usage_view`, `media_sessions_summary_view`
+   - This ensures views sort with their related tables and are clearly identifiable as views
    
    **Database Best Practices**:
    
@@ -191,27 +219,10 @@ All database views now follow a consistent naming convention:
    ON DELETE SET NULL    -- Set FK to null when parent deleted
    ```
    
-   **Common RLS (Row Level Security) Patterns**:
-   ```sql
-   -- Pattern 1: Public read, authenticated write
-   CREATE POLICY "Enable read access for all users" ON table_name
-       FOR SELECT USING (true);
-   CREATE POLICY "Enable insert for authenticated users" ON table_name
-       FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-   
-   -- Pattern 2: User-specific data
-   CREATE POLICY "Users can view own data" ON user_data
-       FOR SELECT USING (auth.uid() = user_id);
-   
-   -- Pattern 3: Admin override
-   CREATE POLICY "Admins can do anything" ON table_name
-       FOR ALL USING (
-         EXISTS (
-           SELECT 1 FROM auth_user_profiles
-           WHERE auth.uid() = id AND role = 'admin'
-         )
-       );
-   ```
+   **Common RLS Patterns**:
+   - Public read, authenticated write: `FOR SELECT USING (true)` + `FOR INSERT WITH CHECK (auth.role() = 'authenticated')`
+   - User-specific data: `FOR SELECT USING (auth.uid() = user_id)`
+   - Admin override: Check user role in auth_user_profiles table
 
    **Security**:
    - ⚠️ **NEVER hardcode credentials** - always use environment variables from `.env.development`
@@ -224,6 +235,18 @@ All database views now follow a consistent naming convention:
    - This keeps the active codebase clean while preserving code history for potential future reference
    - Before archiving, ensure the code is not referenced elsewhere in the project
 
+
+## Service Cleanup Checkpoint Requirements
+
+Use 4-checkpoint process for service cleanup:
+1. **baseline**: Before any changes (rollback point)
+2. **migrated**: Service moved, imports updated, tests added
+3. **validated**: Tests pass + visual confirmation
+4. **finalized**: Old files archived, docs updated
+
+```bash
+git add -A && git commit -m "checkpoint: [stage] - [ServiceName]"
+```
 
 ## CLI Pipeline Integration Requirements
 
@@ -249,6 +272,11 @@ All database views now follow a consistent naming convention:
    - Implement full functionality, not placeholder code
    - Include proper error handling and logging
    - Test commands with real data before submitting
+
+4. **Work Summary CLI Usage**:
+   - ⚠️ **ALWAYS use single-line commands** - no backslashes or line breaks
+   - Format: `./work-summaries-cli.sh add --title "Title" --content "Content" --category "feature" --tags "tag1,tag2"`
+   - Valid categories: feature, bug_fix, refactoring, documentation
 
 ## CLI Command Registry
 
@@ -296,14 +324,14 @@ ORDER BY cpt.table_name;
 
 2. **Database Migration Workflow**:
    - ✅ **Types.ts is automatically regenerated after successful migrations**
-   - The run-staged command now automatically runs: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
+   - The run-staged command now automatically regenerates types
    - This ensures TypeScript interfaces always match the updated database schema
    - If type generation fails, the command provides manual instructions
    - Consider committing the updated types.ts file along with your migration
    
    **⚠️ Manual Type Generation** (when needed):
    ```bash
-   pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+   pnpm supabase gen types typescript --project-id <project-id> > supabase/types.ts
    ```
 
 3. **Safe Refactoring**:
@@ -318,6 +346,60 @@ ORDER BY cpt.table_name;
   -  Add concise troubleshooting guidance for future reference
    - Include specific error messages, root causes, and solutions
    
+## Claude Task Submission Tracking (Recovery System)
+
+⚠️ **ALWAYS submit tasks to the database AND sync with development before starting work**
+
+To prevent work loss and ensure proper synchronization:
+
+### 1. **Submit task immediately when received** (Prevent Loss):
+```bash
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit <task-id> --text "task content"
+```
+This creates backups in case of timeouts or disconnections.
+
+### 2. **Sync with development BEFORE starting work** (Required):
+```bash
+# Check current state
+git status  # Ensure clean working tree
+git branch -vv  # Verify branch tracking
+
+# Commit any existing work first (if needed)
+git add -A && git commit -m "chore: checkpoint before syncing"
+
+# Fetch and merge latest development
+git fetch origin development
+git merge origin/development
+
+# Push updated branch back to origin
+git push origin $(git branch --show-current)
+```
+
+### 3. **Check for interrupted tasks** (Recovery):
+```bash
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh submit recover
+```
+
+### Benefits of this workflow:
+- **Submission first**: Prevents work loss during timeouts
+- **Sync before work**: Ensures you start from latest codebase
+- **Recovery system**: Easy task resumption after interruptions
+- **Clean merges**: Reduces conflicts by starting from current state
+
+### Recovery features:
+- Tracks when task was submitted to Claude
+- Saves raw task text for re-submission
+- Records uncommitted files at submission time
+- Creates local `.claude-submission-*.json` backup files
+- Enables easy task resumption after timeouts
+
+### If Claude times out:
+- Run recovery command to find interrupted tasks
+- Re-submit the same task text to continue work
+- All uncommitted changes remain for continuation
+
+⚠️ **NOTE**: There's a clipboard snippet "Dev Task Submission - Sync with Development First" that contains this complete workflow for easy reference.
+
 ## Task-Aware Git Commits
 
 ⚠️ **ALWAYS check for active tasks before committing changes**
@@ -392,6 +474,7 @@ For commits related to dev tasks that need detailed tracking:
 
 **Integration Points**: This can be automated in git hooks or integrated into the worktree merging workflow for better commit tracking.
 
+
 ## Final Checklist
 
 ⚠️ **BEFORE SUBMITTING CODE:**
@@ -418,6 +501,14 @@ When creating database migrations, use the CLI pipeline commands:
 This ensures migrations are properly tested before applying to the database.
 
 ## Common Issues to Avoid
+
+⚠️ **CRITICAL: Node.js Dependencies in Browser Code**
+- ❌ **NEVER bypass TypeScript compilation errors by switching module systems**
+- ❌ **NEVER add Node.js polyfills to browser code** (process, fs, path, etc.)
+- ❌ **NEVER use Node.js-only libraries in shared services** (winston, colors, dotenv)
+- ✅ **ALWAYS fix the root cause** - if a module won't compile for browser, it shouldn't be there
+- ✅ **ALWAYS use browser-safe alternatives** (console.log vs winston, env injection vs dotenv)
+- **Lesson**: Shared services MUST work in both Node.js AND browser environments without polyfills
 
 1. **Creating files in wrong locations**: 
    - ❌ NEVER put scripts in the root directory
@@ -461,34 +552,69 @@ This ensures migrations are properly tested before applying to the database.
    - Each app should have ONE `lib/supabase.ts` file
    - If an app has multiple Supabase files, consolidate them into one
 
-8. **Incorrect Date Handling**:
-   - ❌ **Problem**: Using incorrect dates in file names or documentation
-   - ✅ **Solution**: Always check the actual date using system commands
-   - **Getting Current Date**:
-     ```bash
-     # For file names (YYYYMMDD format):
-     date +%Y%m%d  # Example: 20250607
-     
-     # For documentation headers:
-     date          # Example: Sat Jun  7 08:58:14 PDT 2025
-     
-     # For timestamp in file names:
-     date +%Y-%m-%dT%H-%M-%S  # Example: 2025-06-07T08-58-14
-     ```
-   - **In TypeScript/JavaScript**:
-     ```typescript
-     // Always use new Date() for current date
-     const currentDate = new Date();
-     const dateString = currentDate.toISOString().split('T')[0]; // 2025-06-07
-     const timestamp = currentDate.toISOString(); // 2025-06-07T15:58:14.000Z
-     ```
-   - ⚠️ **Important**: The environment shows today's date in `<env>` tags but should be verified with actual system date
+8. **Archive Date Accuracy**: Always verify current date with `date +%Y%m%d` before naming archive files - incorrect dates break archive organization
 
-9. **Conflicting JavaScript/TypeScript Files**:
+9. **Port Registry** (hardcoded for simplicity):
+   
+   **Vite Apps:**
+   - dhg-research: 5005
+   - dhg-hub-lovable: 5173
+   - dhg-hub: 5174
+   - dhg-admin-suite: 5175
+   - dhg-admin-google: 5176
+   - dhg-admin-code: 5177
+   - dhg-a: 5178
+   - dhg-b: 5179
+   - dhg-service-test: 5180
+   - dhg-audio: 5194
+   
+   **Proxy Servers:**
+   - vite-fix-proxy: 9876 (Vite environment fix commands)
+   - continuous-monitoring-proxy: 9877 (System health monitoring)
+   - proxy-manager-proxy: 9878 (Start/stop/manage other proxies)
+   - git-operations-proxy: 9879 (Git operations and worktree management)
+   - file-browser-proxy: 9880 (File system operations)
+   - continuous-docs-proxy: 9882 (Documentation tracking)
+   - audio-streaming-proxy: 9883 (Audio file streaming from Google Drive)
+   - script-viewer-proxy: 9884 (View/archive/delete script files)
+   - markdown-viewer-proxy: 9885 (View/archive/delete markdown files)
+   - docs-archive-proxy: 9886 (Document file management)
+   - worktree-switcher-proxy: 9887 (Visual git worktree switcher)
+   - html-file-browser-proxy: 8080 (Web-based file browser UI)
+   - [Reserved: 9888-9899 for future proxy servers]
+   
+   **Other Services:**
+   - [Reserved: 8081-8099 for future services]
+   
+   **Why Hardcoded?** Simplicity > Complexity. No auth needed, no discovery protocol, just look here.
+
+10. **Conflicting JavaScript/TypeScript Files**:
    - ❌ **Problem**: Browser imports fail with "does not provide an export named" when both `.js` and `.ts` files exist
    - ✅ **Solution**: Remove compiled `.js` files that conflict with `.ts` source files
    - Example: Remove `packages/shared/services/supabase-client.js` if `supabase-client.ts` exists
    - Browser may resolve to outdated `.js` file instead of current `.ts` file
+
+11. **Vite Environment Variables Not Loading**:
+   - ❌ **Problem**: "Unable to find Supabase credentials" despite .env files existing
+   - ✅ **Root Causes**: 
+     - Vite cache in `node_modules/.vite` becomes stale
+     - Running Vite processes prevent proper restart
+     - Environment files not in expected locations
+   - ✅ **Reliable Fix Process**:
+     ```bash
+     # Quick fix (90% success rate):
+     ts-node scripts/cli-pipeline/utilities/fix-vite-env.ts [app-name]
+     
+     # Nuclear option (100% success rate):
+     ts-node scripts/cli-pipeline/utilities/fix-vite-env.ts [app-name] --nuclear
+     ```
+   - **What the fix does**:
+     1. Verifies .env files exist with required VITE_ variables
+     2. Kills any running Vite processes
+     3. Clears Vite cache in `node_modules/.vite`
+     4. Nuclear option: Fully reinstalls dependencies
+   - **Prevention**: Always restart Vite dev server after env changes
+   - **Diagnostic tool available**: `ts-node scripts/cli-pipeline/utilities/diagnose-vite-env.ts`
 
 ## Debugging in a Monorepo Context
 
@@ -531,48 +657,13 @@ This ensures migrations are properly tested before applying to the database.
 
 ## TypeScript Troubleshooting
 
-### Common TypeScript Errors and Solutions
+1. **"Cannot find module"**: Check path exists, verify tsconfig.json mappings, try relative imports
 
-1. **"Cannot find module" Errors**:
-   ```
-   ❌ Error: Cannot find module '@shared/services/...' or its corresponding type declarations
-   ```
-   **Solutions**:
-   - Check if the path is correct and file exists
-   - Verify tsconfig.json has proper path mappings
-   - For browser apps, check vite.config.ts alias configuration
-   - Try relative imports as a temporary workaround: `../../../packages/shared/...`
-   - Run `pnpm install` to ensure dependencies are linked
+2. **Type 'string | null' not assignable**: Check for null (`if (data.field)`), use nullish coalescing (`data.field ?? 'default'`), or update types after schema changes
 
-2. **Type Mismatches with supabase/types.ts**:
-   ```
-   ❌ Error: Type 'string | null' is not assignable to type 'string'
-   ```
-   **Solutions**:
-   - Always check for null: `if (data.field) { ... }`
-   - Use nullish coalescing: `data.field ?? 'default'`
-   - Update types after schema changes: `pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts`
-   - Use type assertions carefully: `data.field as string` (only when certain)
+3. **ESM/CommonJS errors**: Use `.mjs` extension, add `"type": "module"` to package.json, or use `ts-node --esm script.ts`
 
-3. **ESM/CommonJS Compatibility Issues**:
-   ```
-   ❌ Error: require() of ES Module not supported
-   ❌ Error: Cannot use import statement outside a module
-   ```
-   **Solutions**:
-   - For Node.js scripts, use `.mjs` extension or add `"type": "module"` to package.json
-   - For mixed environments, use dynamic imports: `const module = await import('./module.js')`
-   - In Vite apps, modules are ESM by default
-   - For CLI scripts using ts-node: `ts-node --esm script.ts`
-
-4. **Import.meta.env Errors in Shared Packages**:
-   ```
-   ❌ Error: Cannot access 'import.meta' outside a module
-   ```
-   **Solutions**:
-   - Shared packages cannot access `import.meta.env` directly
-   - Pass environment from the app: `createAdapter({ env: import.meta.env })`
-   - Use dependency injection pattern for environment-specific values
+4. **Import.meta.env in shared packages**: Pass environment from app: `createAdapter({ env: import.meta.env })`
 
 ## Supabase Query Patterns
 
@@ -640,92 +731,6 @@ const jsonResponse = await claudeService.getJsonResponse('Your prompt');
   for any issues with gooogle drive open and read docs/claude_info_special/google_drive_claude_info.md 
 
 
-## Port Management for Servers and Apps
-
-### Port Allocation Strategy
-
-To avoid port collisions in the monorepo, follow these standardized port ranges:
-
-**Port Ranges**:
-- **3000-3099**: Backend/API servers
-- **5000-5999**: Vite development servers  
-- **4000-4999**: Vite preview servers
-
-**Reserved Ports**:
-| Port | Service | Location |
-|------|---------|----------|
-| 3001 | Markdown Server | `scripts/cli-pipeline/viewers/simple-md-server.js` |
-| 3002 | Script Server | `scripts/cli-pipeline/viewers/simple-script-server.js` |
-| 3003 | Docs Archive Server | `scripts/cli-pipeline/viewers/docs-archive-server.js` |
-| 3004 | (Available) | - |
-| 3005 | Git Server | `apps/dhg-admin-code/git-server.cjs` |
-| 3006 | Audio Proxy Server | `apps/dhg-audio/server.js` |
-| 3007 | Experts Markdown Server | `apps/dhg-improve-experts/md-server.mjs` |
-| 3008 | Continuous Docs Server | `apps/dhg-admin-code/continuous-docs-server.cjs` |
-| 3009 | Git API Server | `apps/dhg-admin-code/git-api-server.cjs` |
-| 3010 | Worktree Switcher | `scripts/cli-pipeline/viewers/worktree-switcher-server.js` |
-| 3011 | Git History Analysis Server | `scripts/cli-pipeline/dev_tasks/git-history-server.js` |
-
-**Vite App Ports**:
-| Port | App | Preview Port | Status |
-|------|-----|--------------|--------|
-| 5173 | dhg-hub-lovable | 4173 | Dedicated |
-| 5174 | dhg-hub | 4174 | Dedicated |
-| 5175 | dhg-admin-suite | 4175 | Dedicated |
-| 5176 | dhg-admin-google | 4176 | Dedicated |
-| 5177 | dhg-admin-code | 4177 | Dedicated |
-| 5178 | dhg-a | 4178 | Dedicated |
-| 5179 | dhg-b | 4179 | Dedicated |
-| 5194 | dhg-audio | - | Dedicated |
-| 5005 | dhg-research | - | Dedicated |
-| 8080 | dhg-improve-experts | - | Dedicated |
-
-### Starting All Servers
-
-Use the centralized server management script:
-```bash
-# Start all backend servers with proper port assignments
-pnpm servers
-
-# Or manually with:
-node scripts/start-all-servers.js
-```
-
-This script automatically:
-- Assigns unique ports using environment variables
-- Prevents port collisions
-- Shows status of all running servers
-- Handles graceful shutdown
-
-### Adding New Servers
-
-When creating a new server:
-
-1. **Check available ports** in the 3000-3099 range
-2. **Update `start-all-servers.js`** to include your server
-3. **Use environment variables** for port configuration:
-   ```javascript
-   const PORT = process.env.YOUR_SERVER_PORT || 3009;
-   ```
-4. **Update this documentation** with the new port assignment
-
-### Troubleshooting Port Issues
-
-If you encounter "address already in use" errors:
-
-1. **Check running processes**:
-   ```bash
-   # Find what's using a port
-   lsof -i :3001
-   
-   # Kill process using a port
-   kill -9 $(lsof -t -i:3001)
-   ```
-
-2. **Use the start-all-servers script** which handles port assignments automatically
-
-3. **For Vite apps**, ensure you're not running multiple apps on the same port
-
 ## Git & Worktree Management
 
 ### ⚠️ CRITICAL: This Repository is Managed by Claude Code
@@ -736,49 +741,20 @@ If you encounter "address already in use" errors:
 - **NO GitHub UI operations** for merging or PRs
 - **Worktrees are used** for parallel development work
 
-### Understanding Worktree Branch Management
+### Worktrees for Multi-Agent Development
 
-**The Unique Nature of Worktrees**:
+This repo uses Git worktrees for parallel development. Each worktree is a separate directory with its own branch. Key commands:
 
-Each worktree is a **separate directory with its own branch**, allowing parallel development:
+```bash
+# Push to development (NO PRs!):
+git push origin feature-branch:development
+
+# Update from development:
+git fetch origin development
+git merge origin/development
 ```
-dhg-mono/                    # Main worktree (development branch)
-dhg-mono-improve-audio/      # Worktree for audio improvements
-dhg-mono-feature-xyz/        # Worktree for feature XYZ
-```
 
-**The Worktree Update Cycle** (unique to this workflow):
-
-1. **Branch lives independently** in its own directory
-   - You work in isolation without affecting other branches
-   - Changes accumulate over time in your worktree
-
-2. **Periodic merge to development**:
-   ```bash
-   # From worktree branch:
-   git push origin feature-branch:development
-   ```
-   - Your changes flow into the main development branch
-   - Other developers benefit from your work
-
-3. **Pull updates back from development**:
-   ```bash
-   # Still in worktree:
-   git fetch origin development
-   git merge origin/development
-   ```
-   - You receive everyone else's changes
-   - Your branch stays current with the project
-
-4. **The cycle repeats**:
-   - Work → Push to development → Pull from development → Work...
-   - This creates a "breathing" pattern of isolation and integration
-
-**Why This Is Different**:
-- Traditional branches require constant switching
-- Worktrees let each branch "live" permanently in its own space
-- No need to stash changes or switch contexts
-- Multiple features can progress simultaneously
+For detailed worktree philosophy and multi-agent development patterns, see separate documentation.
 
 ### Standard Git Workflow
 
