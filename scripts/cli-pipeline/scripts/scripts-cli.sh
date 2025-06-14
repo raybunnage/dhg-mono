@@ -5,7 +5,7 @@
 
 # Source the base class
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../base-classes/SimpleCLIPipeline.sh"
+source "$SCRIPT_DIR/../base-classes/SimpleCLIPipeline.sh"
 
 # Pipeline configuration
 PIPELINE_NAME="scripts"
