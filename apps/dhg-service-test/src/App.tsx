@@ -21,9 +21,11 @@ import { EnvDebug } from './components/EnvDebug';
 import { DebugSupabaseAdapter } from './components/DebugSupabaseAdapter';
 import { TestClaudeService } from './components/TestClaudeService';
 import { ViteEnvFixPage } from './components/ViteEnvFixPage';
+import { TestGitOperationsProxy } from './components/TestGitOperationsProxy';
+import { TestFileBrowserProxy } from './components/TestFileBrowserProxy';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix'>('env-fix');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser'>('env-fix');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,6 +115,26 @@ function App() {
           >
             Claude Service
           </button>
+          <button
+            onClick={() => setView('git-proxy')}
+            className={`px-4 py-2 rounded ${
+              view === 'git-proxy' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Git Proxy
+          </button>
+          <button
+            onClick={() => setView('file-browser')}
+            className={`px-4 py-2 rounded ${
+              view === 'file-browser' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            File Browser
+          </button>
           </div>
         </div>
       </div>
@@ -132,6 +154,8 @@ function App() {
         {view === 'consolidation' && <TestSupabaseConsolidation />}
         {view === 'services' && <TestSupabaseServices />}
         {view === 'claude' && <TestClaudeService />}
+        {view === 'git-proxy' && <TestGitOperationsProxy />}
+        {view === 'file-browser' && <TestFileBrowserProxy />}
       </div>
     </div>
   );
