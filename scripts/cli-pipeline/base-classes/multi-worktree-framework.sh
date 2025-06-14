@@ -9,8 +9,23 @@ COORDINATION_DB_TABLE="cli_pipeline_refactoring_coordination"
 SHARED_GLITCH_LOG="docs/living-docs/cli-service-integration-issues.md"
 
 # Source base classes
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/CLIPipelineBase.sh"
+# Handle both bash and zsh
+if [ -n "$BASH_VERSION" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+elif [ -n "$ZSH_VERSION" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${(%):-%x}")" && pwd)"
+else
+    # Fallback for other shells
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+fi
+
+# Source the base class
+if [ -f "$SCRIPT_DIR/CLIPipelineBase.sh" ]; then
+    source "$SCRIPT_DIR/CLIPipelineBase.sh"
+else
+    echo "Error: Cannot find CLIPipelineBase.sh in $SCRIPT_DIR"
+    return 1
+fi
 
 # Multi-worktree coordination functions
 
