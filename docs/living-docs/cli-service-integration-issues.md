@@ -96,6 +96,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Functionality**: Start/stop/restart Vite servers, dynamic port allocation, health monitoring
   - **Impact**: Centralized Vite server lifecycle management
 
+- [ ] **MonitoringService**
+  - **Needed by**: monitoring-cli.sh, continuous folder monitoring
+  - **Functionality**: Folder scanning, file change detection, monitoring metrics, historical tracking
+  - **Impact**: Centralized monitoring operations and metrics collection
+
 ---
 
 ## ⚠️ **Service Integration Issues**
