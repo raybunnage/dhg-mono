@@ -7,6 +7,7 @@
 
 import * as express from 'express';
 import { Express, Request, Response, NextFunction } from 'express';
+// @ts-ignore - CORS types not needed for base class
 import * as cors from 'cors';
 import { createServer, Server } from 'http';
 import { SingletonService } from '../base-classes/SingletonService';
