@@ -152,7 +152,16 @@ export class TaskService extends BusinessService {
     private supabase: SupabaseClient<any>,
     logger?: Logger
   ) {
-    super('TaskService', logger);
+    super('TaskService', { supabase }, logger);
+  }
+
+  /**
+   * Validate that all required dependencies are provided
+   */
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabase) {
+      throw new Error('SupabaseClient is required');
+    }
   }
 
   /**
@@ -793,4 +802,3 @@ Created: ${new Date(task.created_at).toLocaleDateString()}`;
 }
 
 // Export the service class and types
-export { TaskService };
