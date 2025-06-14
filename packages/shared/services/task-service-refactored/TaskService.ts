@@ -1,6 +1,6 @@
 import { BusinessService } from '../base-classes/BusinessService';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Logger } from '../logger-service/LoggerService';
+import { Logger } from '../base-classes/BaseService';
 
 // Task-related interfaces
 export interface DevTask {
