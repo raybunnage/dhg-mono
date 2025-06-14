@@ -101,6 +101,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Functionality**: Folder scanning, file change detection, monitoring metrics, historical tracking
   - **Impact**: Centralized monitoring operations and metrics collection
 
+- [ ] **RefactorTrackingService**
+  - **Needed by**: refactor-tracking-cli.sh, refactoring workflow management
+  - **Functionality**: Track refactoring progress, status updates, testing completion, sign-offs
+  - **Impact**: Centralized refactoring workflow and progress tracking
+
 ---
 
 ## ⚠️ **Service Integration Issues**
