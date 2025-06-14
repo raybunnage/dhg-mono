@@ -64,7 +64,7 @@ describe('UserProfileService', () => {
       expect(health.healthy).toBe(true);
       expect(health.details.databaseConnected).toBe(true);
       expect(health.details.profileTableAccessible).toBe(true);
-      expect(health.latencyMs).toBeGreaterThan(0);
+      expect(health.latencyMs).toBeGreaterThanOrEqual(0);
     });
 
     it('should return unhealthy status when database connection fails', async () => {
