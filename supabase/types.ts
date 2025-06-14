@@ -6791,6 +6791,81 @@ export type Database = {
           },
         ]
       }
+      sys_service_migration_checklist: {
+        Row: {
+          base_class_type: string
+          checklist_items: Json
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          base_class_type: string
+          checklist_items: Json
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          base_class_type?: string
+          checklist_items?: Json
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      sys_service_migration_tasks: {
+        Row: {
+          assigned_to: string | null
+          checklist: Json | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          service_id: string | null
+          started_at: string | null
+          status: string | null
+          task_type: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          task_type: string
+        }
+        Update: {
+          assigned_to?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_service_migration_tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_service_migration_tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sys_service_monitoring_runs: {
         Row: {
           created_at: string | null
@@ -6874,6 +6949,9 @@ export type Database = {
       }
       sys_shared_services: {
         Row: {
+          backwards_compatible: boolean | null
+          base_class_type: string | null
+          breaking_changes: boolean | null
           category: string | null
           checklist_compliant: boolean | null
           compliance_issues: Json | null
@@ -6896,8 +6974,14 @@ export type Database = {
           last_usage_scan: string | null
           last_validated: string | null
           maintenance_recommendation: string | null
+          migration_completed_at: string | null
+          migration_notes: string | null
+          migration_started_at: string | null
+          migration_status: string | null
           next_scan_date: string | null
           overlaps_with: string[] | null
+          performance_after: Json | null
+          performance_baseline: Json | null
           refactoring_notes: string | null
           requires_initialization: boolean | null
           resource_management: Json | null
@@ -6919,6 +7003,9 @@ export type Database = {
           used_by_proxy_servers: string[] | null
         }
         Insert: {
+          backwards_compatible?: boolean | null
+          base_class_type?: string | null
+          breaking_changes?: boolean | null
           category?: string | null
           checklist_compliant?: boolean | null
           compliance_issues?: Json | null
@@ -6941,8 +7028,14 @@ export type Database = {
           last_usage_scan?: string | null
           last_validated?: string | null
           maintenance_recommendation?: string | null
+          migration_completed_at?: string | null
+          migration_notes?: string | null
+          migration_started_at?: string | null
+          migration_status?: string | null
           next_scan_date?: string | null
           overlaps_with?: string[] | null
+          performance_after?: Json | null
+          performance_baseline?: Json | null
           refactoring_notes?: string | null
           requires_initialization?: boolean | null
           resource_management?: Json | null
@@ -6964,6 +7057,9 @@ export type Database = {
           used_by_proxy_servers?: string[] | null
         }
         Update: {
+          backwards_compatible?: boolean | null
+          base_class_type?: string | null
+          breaking_changes?: boolean | null
           category?: string | null
           checklist_compliant?: boolean | null
           compliance_issues?: Json | null
@@ -6986,8 +7082,14 @@ export type Database = {
           last_usage_scan?: string | null
           last_validated?: string | null
           maintenance_recommendation?: string | null
+          migration_completed_at?: string | null
+          migration_notes?: string | null
+          migration_started_at?: string | null
+          migration_status?: string | null
           next_scan_date?: string | null
           overlaps_with?: string[] | null
+          performance_after?: Json | null
+          performance_baseline?: Json | null
           refactoring_notes?: string | null
           requires_initialization?: boolean | null
           resource_management?: Json | null
@@ -9099,6 +9201,22 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_service_migration_progress_view: {
+        Row: {
+          backwards_compatible: boolean | null
+          base_class_type: string | null
+          breaking_changes: boolean | null
+          completed_tasks: number | null
+          migration_completed_at: string | null
+          migration_started_at: string | null
+          migration_status: string | null
+          progress_percentage: number | null
+          service_name: string | null
+          service_type: string | null
+          total_tasks: number | null
+        }
+        Relationships: []
+      }
       sys_service_test_health_view: {
         Row: {
           avg_execution_time: number | null
@@ -10134,6 +10252,10 @@ export type Database = {
         }
         Returns: string
       }
+      record_migration_metrics: {
+        Args: { p_service_name: string; p_metric_type: string; p_metrics: Json }
+        Returns: undefined
+      }
       refresh_schema_and_fix_metadata: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -10202,6 +10324,10 @@ export type Database = {
       set_user_admin_role: {
         Args: { target_email: string; is_admin?: boolean }
         Returns: boolean
+      }
+      start_service_migration: {
+        Args: { p_service_name: string; p_base_class_type: string }
+        Returns: string
       }
       submit_access_request: {
         Args: {
