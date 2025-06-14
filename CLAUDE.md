@@ -165,7 +165,7 @@ All database views now follow a consistent naming convention:
    - ⚠️ **Browser apps MUST pass env** - `createSupabaseAdapter()` without env will fail
    
    **Claude AI**: 
-   - ⚠️ `import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';`
+   - ⚠️ `import { claudeService } from '@shared/services/claude-service';`
 
    **Database Schema**: 
    - ⚠️ **ONLY use `supabase/types.ts`** for database schema information
