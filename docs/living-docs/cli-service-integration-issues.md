@@ -46,6 +46,16 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Impact**: Quality assurance for data operations
 
 ### Low Priority
+- [ ] **FileSystemService**
+  - **Needed by**: utilities-cli.sh, multiple file operations
+  - **Functionality**: Cross-platform file operations, permissions, metadata
+  - **Impact**: Standardized file handling across pipelines
+  
+- [ ] **UtilityService**
+  - **Needed by**: utilities-cli.sh, various utility operations
+  - **Functionality**: Common utility functions, string manipulation, data conversion
+  - **Impact**: Reusable utility functions
+
 - [ ] **ReportingService**
   - **Needed by**: Analytics and reporting pipelines
   - **Functionality**: Report generation and formatting
