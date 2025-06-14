@@ -91,6 +91,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Functionality**: Start/stop proxy servers, health monitoring, port management
   - **Impact**: Centralized proxy server control
 
+- [ ] **ServerManagementService**
+  - **Needed by**: servers-cli.sh, Vite app server management
+  - **Functionality**: Start/stop/restart Vite servers, dynamic port allocation, health monitoring
+  - **Impact**: Centralized Vite server lifecycle management
+
 ---
 
 ## ⚠️ **Service Integration Issues**
