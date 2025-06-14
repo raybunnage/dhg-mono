@@ -1,0 +1,590 @@
+{
+  "total_services": 139,
+  "unused_services": 116,
+  "services_by_category": {
+    "uncategorized": 139
+  },
+  "recommendations": [
+    {
+      "service_name": "AdapterService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "AIProcessingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "audio",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "AudioProxyService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "AudioService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "AudioTranscriptionService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "AuthService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "BaseService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "BatchDatabaseService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "batchProcessingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "BatchProcessingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "benchmark",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "browser",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "browser-auth",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "browserIndex",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "BusinessService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "CATEGORY_MAPPINGS",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ClassifyService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ClaudeService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ClipboardService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "CLIRegistryService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "cliTrackingWrapper",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "CommandExecutionClient",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "CommandExecutionService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "CommandTrackingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ContinuousDocsService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ConverterService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "coverageTest",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DatabaseMetadataService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DatabaseService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DeploymentService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DevTaskService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DocsArchiveService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DocumentArchivingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "document-pipeline",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DocumentPipelineService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "document-type-ai",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DocumentTypeAIService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "DocumentTypeService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ElementCatalogService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ElementCriteriaService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "EnvConfigService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FileBrowserService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FileService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FileSystemService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FilterService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "filter-service-client",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FilterServiceClient",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "folderHierarchyService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FolderHierarchyService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FollowUpTaskService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "FormatterService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "getBrowserAuthService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GIT_COMMAND_TEMPLATES",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GitOperationError",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GitOperationsService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GitOperationsService.benchmark",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GitService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "google-auth",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GoogleAuthService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "google-drive-browser",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GoogleDriveBrowserService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GoogleDriveExplorerService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GoogleDriveMimeTypes",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GOOGLE_DRIVE_MIME_TYPES",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GoogleDriveService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "google-drive-sync",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "googleDriveSyncService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GoogleDriveSyncService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "GOOGLE_SCOPES",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "healthCheck",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "HtmlFileBrowserService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "jest.setup",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "LifecycleTrackingMixin",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "LightAuthEnhancedService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "LivingDocsPrioritizationService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "LoggerService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "MarkdownViewerService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "MediaAnalyticsService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "MediaPresentationService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "media-tracking",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "MediaTrackingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "MockDataFactory",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "PORT_RANGES",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "PortsManagementService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "prompt-management",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "PromptManagementService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "PromptOutputTemplateService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "PromptService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ProxyServerBaseService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "report",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ReportService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "script-pipeline",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ScriptPipelineService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ScriptViewerService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "ServerRegistryService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "shellCommandTracker",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SingletonService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "sourcesGoogleUpdateService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SourcesGoogleUpdateService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "STANDARD_APPS",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SupabaseAdapterService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SupabaseCache",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SupabaseClientService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SupabaseClientServiceRefactored",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "SupabaseService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "TaskService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "TASK_TYPES",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "TestingService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "types",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "UnifiedClassificationService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "updateDatabase",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "UserProfileService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "WorkSummaryService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "WorktreeManagementService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    },
+    {
+      "service_name": "WorktreeSwitcherService",
+      "recommendation": "review",
+      "reason": "No dependencies found"
+    }
+  ],
+  "generated_at": "2025-06-14T23:12:17.913Z"
+}

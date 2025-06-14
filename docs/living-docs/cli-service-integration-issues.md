@@ -106,6 +106,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Functionality**: Track refactoring progress, status updates, testing completion, sign-offs
   - **Impact**: Centralized refactoring workflow and progress tracking
 
+- [ ] **DeprecationManagementService**
+  - **Needed by**: deprecation-cli.sh, deprecation analysis and management
+  - **Functionality**: Service/script deprecation analysis, archiving operations, usage monitoring, migration planning
+  - **Impact**: Centralized deprecation workflow and monorepo cleanup operations
+
 ---
 
 ## ⚠️ **Service Integration Issues**
