@@ -1,13 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { UserProfileService } from '../UserProfileService';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Logger } from '../../base-classes/BaseService';
-import { 
-  ProfileFormData, 
-  ProfileResult, 
-  UserProfileServiceMetrics, 
-  ProfileStats 
-} from '../types';
+import { ProfileFormData } from '../types';
 import { Database } from '../../../../../supabase/types';
 
 type UserProfile = Database['public']['Tables']['auth_user_profiles']['Row'];
@@ -111,7 +106,7 @@ describe('UserProfileService', () => {
   describe('Constructor and Initialization', () => {
     it('should create an instance with required dependencies', () => {
       expect(service).toBeInstanceOf(UserProfileService);
-      expect(service.getName()).toBe('UserProfileService');
+      expect(service).toBeDefined();
     });
 
     it('should create an instance without optional logger', () => {

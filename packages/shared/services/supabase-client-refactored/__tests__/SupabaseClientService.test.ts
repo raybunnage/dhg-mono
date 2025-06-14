@@ -129,8 +129,9 @@ SOME_OTHER_VAR=value
       
       // Check that createClient was called with fetch override
       const [, , options] = mockCreateClient.mock.calls[0];
-      expect(options.global).toBeDefined();
-      expect(options.global.fetch).toBeDefined();
+      expect(options).toBeDefined();
+      expect(options?.global).toBeDefined();
+      expect(options?.global?.fetch).toBeDefined();
     });
   });
 

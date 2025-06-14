@@ -42,16 +42,16 @@ export class MediaTrackingService extends BusinessService {
   private mediaDuration: number | null = null;
 
   constructor(supabaseClient: SupabaseClient<Database>, logger?: Logger) {
-    super('MediaTrackingService', { supabaseClient }
+    super('MediaTrackingService', { supabaseClient }, logger);
+  }
 
   /**
    * Validate that all required dependencies are provided
    */
   protected validateDependencies(): void {
-    if (!this.dependencies.supabase) {
+    if (!this.dependencies.supabaseClient) {
       throw new Error('SupabaseClient is required');
     }
-  }, logger);
   }
 
   protected async initialize(): Promise<void> {
