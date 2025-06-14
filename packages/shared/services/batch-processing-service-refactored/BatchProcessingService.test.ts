@@ -65,13 +65,13 @@ describe('BatchProcessingService', () => {
   describe('initialization', () => {
     it('should initialize successfully', async () => {
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
     });
 
     it('should only initialize once', async () => {
       await service.ensureInitialized();
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
       expect(mockLogger.info).toHaveBeenCalledTimes(1);
     });
   });
@@ -102,7 +102,7 @@ describe('BatchProcessingService', () => {
       
       const result = await errorService.healthCheck();
       expect(result.healthy).toBe(false);
-      expect(result.error).toBe('Connection failed');
+      expect(result.error?.message).toBe('Connection failed');
       
       await errorService.shutdown();
     });

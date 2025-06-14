@@ -1,18 +1,19 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SupabaseService } from '../SupabaseService';
 import { BusinessService } from '../../base-classes/BusinessService';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Mock Supabase client
 const mockSupabaseClient: Partial<SupabaseClient> = {
-  from: jest.fn()
+  from: vi.fn()
 };
 
 // Mock logger
 const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  warn: jest.fn()
+  info: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn()
 };
 
 describe('SupabaseService', () => {
@@ -20,8 +21,8 @@ describe('SupabaseService', () => {
   let mockFrom: jest.Mock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockFrom = mockSupabaseClient.from as jest.Mock;
+    vi.clearAllMocks();
+    mockFrom = mockSupabaseClient.from as any;
     service = new SupabaseService(mockSupabaseClient as SupabaseClient, mockLogger);
   });
 
@@ -43,8 +44,8 @@ describe('SupabaseService', () => {
   describe('health check', () => {
     it('should report healthy when database is accessible', async () => {
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          limit: jest.fn().mockResolvedValue({ error: null, data: [{ id: '123' }] })
+        select: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ error: null, data: [{ id: '123' }] })
         })
       });
 
@@ -57,8 +58,8 @@ describe('SupabaseService', () => {
 
     it('should report unhealthy on database error', async () => {
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          limit: jest.fn().mockResolvedValue({ 
+        select: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ 
             error: { message: 'Connection failed' }, 
             data: null 
           })
@@ -81,8 +82,8 @@ describe('SupabaseService', () => {
 
     it('should read env files and mask sensitive values', () => {
       const mockFs = require('fs');
-      mockFs.existsSync = jest.fn().mockReturnValue(true);
-      mockFs.readFileSync = jest.fn().mockReturnValue(`
+      mockFs.existsSync = vi.fn().mockReturnValue(true);
+      mockFs.readFileSync = vi.fn().mockReturnValue(`
 # Comment
 SUPABASE_URL=https://test.supabase.co
 SUPABASE_KEY=secret-key
@@ -105,9 +106,9 @@ NORMAL_VAR=value
       const mockPrompt = { id: '123', name: 'test-prompt', content: 'Test content' };
       
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ data: mockPrompt, error: null })
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: mockPrompt, error: null })
           })
         })
       });
@@ -120,9 +121,9 @@ NORMAL_VAR=value
 
     it('should return null on prompt error', async () => {
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ 
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ 
               data: null, 
               error: { message: 'Not found' } 
             })
@@ -145,9 +146,9 @@ NORMAL_VAR=value
       ];
 
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            order: jest.fn().mockResolvedValue({ data: mockTypes, error: null })
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockTypes, error: null })
           })
         })
       });
@@ -183,9 +184,9 @@ NORMAL_VAR=value
       };
 
       mockFrom.mockReturnValue({
-        upsert: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ 
+        upsert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ 
               data: { ...scriptData, id: '123', tags: ['single-tag'] }, 
               error: null 
             })
@@ -209,9 +210,9 @@ NORMAL_VAR=value
       };
 
       mockFrom.mockReturnValue({
-        upsert: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ 
+        upsert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ 
               data: { ...relationshipData, id: '789' }, 
               error: null 
             })
@@ -250,10 +251,10 @@ NORMAL_VAR=value
       ];
 
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          is: jest.fn().mockReturnValue({
-            order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue({ data: mockFiles, error: null })
+        select: vi.fn().mockReturnValue({
+          is: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue({ data: mockFiles, error: null })
             })
           })
         })
@@ -271,9 +272,9 @@ NORMAL_VAR=value
       let attempts = 0;
       
       mockFrom.mockImplementation(() => ({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockImplementation(() => {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockImplementation(() => {
               attempts++;
               if (attempts < 3) {
                 return Promise.reject({ code: 'ECONNRESET' });

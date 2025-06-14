@@ -60,13 +60,13 @@ describe('MediaTrackingService', () => {
   describe('initialization', () => {
     it('should initialize successfully', async () => {
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
     });
 
     it('should only initialize once', async () => {
       await service.ensureInitialized();
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
       expect(mockLogger.info).toHaveBeenCalledTimes(1);
     });
   });

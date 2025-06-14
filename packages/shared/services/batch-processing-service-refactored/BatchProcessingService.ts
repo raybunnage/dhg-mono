@@ -32,7 +32,16 @@ export class BatchProcessingService extends BusinessService {
   private activeProcesses: Map<string, { cancel: () => void }> = new Map();
 
   constructor(supabaseClient: SupabaseClient, logger?: Logger) {
-    super('BatchProcessingService', { supabaseClient }, logger);
+    super('BatchProcessingService', { supabaseClient }
+
+  /**
+   * Validate that all required dependencies are provided
+   */
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabase) {
+      throw new Error('SupabaseClient is required');
+    }
+  }, logger);
   }
 
   protected async initialize(): Promise<void> {

@@ -1,3 +1,11 @@
+#!/bin/bash
+
+# Fix DatabaseService tests by updating the mock patterns
+
+FILE="packages/shared/services/database-service-refactored/__tests__/DatabaseService.test.ts"
+
+# First, let's simplify the approach by using a more consistent mock pattern
+cat > "$FILE" << 'EOF'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseService } from '../DatabaseService';
 import { SupabaseClientService } from '../../supabase-client';
@@ -407,3 +415,6 @@ describe('DatabaseService', () => {
     });
   });
 });
+EOF
+
+echo "DatabaseService tests have been rewritten with proper mock patterns"

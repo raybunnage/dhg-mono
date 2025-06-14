@@ -1,20 +1,21 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SupabaseAdapterService, createSupabaseAdapter } from '../SupabaseAdapterService';
 import { AdapterService } from '../../base-classes/AdapterService';
 import { createClient } from '@supabase/supabase-js';
 
 // Mock Supabase
-jest.mock('@supabase/supabase-js', () => ({
-  createClient: jest.fn()
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn()
 }));
 
-const mockCreateClient = createClient as jest.Mock;
+const mockCreateClient = createClient as any;
 
 describe('SupabaseAdapterService', () => {
   let originalWindow: any;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Save original values
     originalWindow = global.window;
@@ -22,9 +23,9 @@ describe('SupabaseAdapterService', () => {
     
     // Set up default mock
     mockCreateClient.mockReturnValue({
-      from: jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          limit: jest.fn().mockResolvedValue({ error: null, data: [] })
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ error: null, data: [] })
         })
       })
     });
@@ -217,9 +218,9 @@ describe('SupabaseAdapterService', () => {
 
     it('should report unhealthy on query error', async () => {
       mockCreateClient.mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            limit: jest.fn().mockResolvedValue({ 
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ 
               error: { message: 'Connection failed' }, 
               data: null 
             })
@@ -247,7 +248,7 @@ describe('SupabaseAdapterService', () => {
 
     it('should execute queries with retry', async () => {
       let attempts = 0;
-      const mockQuery = jest.fn().mockImplementation(() => {
+      const mockQuery = vi.fn().mockImplementation(() => {
         attempts++;
         if (attempts < 2) {
           throw { status: 500, message: 'Server error' };
@@ -263,7 +264,7 @@ describe('SupabaseAdapterService', () => {
     });
 
     it('should not retry on client errors', async () => {
-      const mockQuery = jest.fn().mockRejectedValue({ 
+      const mockQuery = vi.fn().mockRejectedValue({ 
         status: 400, 
         message: 'Bad request' 
       });
