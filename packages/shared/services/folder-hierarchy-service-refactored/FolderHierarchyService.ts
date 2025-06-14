@@ -64,22 +64,24 @@ interface FolderHierarchyServiceConfig {
  * const assignments = await service.assignMainVideoIdsToHighLevelFolders();
  * ```
  */
-export class FolderHierarchyService extends BusinessService<Database> {
+export class FolderHierarchyService extends BusinessService {
   private readonly config: Required<FolderHierarchyServiceConfig>;
   private hierarchyCache: Map<string, HighLevelFolderResult> = new Map();
   private cacheExpiry: Map<string, number> = new Map();
+  private supabase: SupabaseClient<Database>;
   
   constructor(
     supabaseClient: SupabaseClient<Database>,
     config: FolderHierarchyServiceConfig = {}
   ) {
-    super('FolderHierarchyService', supabaseClient, {
+    super('FolderHierarchyService', { supabase: supabaseClient }, {
       info: (msg: string) => console.log(`[FolderHierarchyService] ${msg}`),
       error: (msg: string, error?: any) => console.error(`[FolderHierarchyService] ${msg}`, error || ''),
       debug: (msg: string) => console.debug(`[FolderHierarchyService] ${msg}`),
       warn: (msg: string) => console.warn(`[FolderHierarchyService] ${msg}`)
     });
     
+    this.supabase = supabaseClient;
     this.config = {
       maxTraversalDepth: config.maxTraversalDepth || 20,
       batchSize: config.batchSize || 50,
@@ -87,6 +89,15 @@ export class FolderHierarchyService extends BusinessService<Database> {
       cacheEnabled: config.cacheEnabled ?? true,
       cacheTTL: config.cacheTTL || 5 * 60 * 1000 // 5 minutes
     };
+  }
+
+  /**
+   * Validate that all required dependencies are provided
+   */
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabase) {
+      throw new Error('SupabaseClient is required');
+    }
   }
 
   /**
