@@ -65,6 +65,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Needed by**: utilities-cli.sh, various utility operations
   - **Functionality**: Common utility functions, string manipulation, data conversion
   - **Impact**: Reusable utility functions
+  
+- [ ] **RegistryService**
+  - **Needed by**: registry-cli.sh, service registry operations
+  - **Functionality**: Service registry management, component tracking, dependency mapping
+  - **Impact**: Centralized registry operations
 
 - [ ] **ReportingService**
   - **Needed by**: Analytics and reporting pipelines
