@@ -86,6 +86,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Functionality**: Job scheduling and queuing
   - **Impact**: Automation and scheduling improvements
 
+- [ ] **ProxyServerService**
+  - **Needed by**: proxy-cli.sh, proxy server management
+  - **Functionality**: Start/stop proxy servers, health monitoring, port management
+  - **Impact**: Centralized proxy server control
+
 ---
 
 ## ⚠️ **Service Integration Issues**
