@@ -265,7 +265,7 @@ export class DatabaseService extends SingletonService {
         const batchResults = await Promise.all(
           batch.map(async (table: { table_name: string; table_type: string }) => {
             const { count, error: countError } = await this.supabase
-              .from(table.table_name)
+              .from(table.table_name as any)
               .select('*', { count: 'exact', head: true });
 
             if (countError) {
@@ -480,11 +480,11 @@ export class DatabaseService extends SingletonService {
         throw new Error(`Failed to get indexes for ${tableName}: ${indexesError.message}`);
       }
       
-      // Merge all information
+      // Merge all information - need to properly type the RPC results
       return {
-        columns: columns || [],
-        constraints: constraints || [],
-        indexes: indexes || []
+        columns: (columns as ColumnInfo[]) || [],
+        constraints: (constraints as any[]) || [],
+        indexes: (indexes as IndexInfo[]) || []
       };
     } catch (error) {
       this.logger?.error(`Error in getTableStructure for ${tableName}:`, error);
@@ -525,10 +525,10 @@ export class DatabaseService extends SingletonService {
         throw new Error(`Failed to check tables without primary keys: ${pkError.message}`);
       }
       
-      if (tablesWithoutPK?.length > 0) {
+      if (tablesWithoutPK && Array.isArray(tablesWithoutPK) && tablesWithoutPK.length > 0) {
         issues.push({
           type: 'missing_primary_key',
-          tables: tablesWithoutPK,
+          tables: tablesWithoutPK as Array<{ table_name: string }>,
           severity: 'high'
         });
       }
@@ -560,10 +560,10 @@ export class DatabaseService extends SingletonService {
         throw new Error(`Failed to check nullable foreign keys: ${fkError.message}`);
       }
       
-      if (nullableFKs?.length > 0) {
+      if (nullableFKs && Array.isArray(nullableFKs) && nullableFKs.length > 0) {
         issues.push({
           type: 'nullable_foreign_keys',
-          entries: nullableFKs,
+          entries: nullableFKs as Array<{ table_name: string; column_name: string }>,
           severity: 'medium'
         });
       }
@@ -592,10 +592,10 @@ export class DatabaseService extends SingletonService {
         throw new Error(`Failed to check tables without indexes: ${indexError.message}`);
       }
       
-      if (tablesWithoutIndexes?.length > 0) {
+      if (tablesWithoutIndexes && Array.isArray(tablesWithoutIndexes) && tablesWithoutIndexes.length > 0) {
         issues.push({
           type: 'missing_indexes',
-          tables: tablesWithoutIndexes,
+          tables: tablesWithoutIndexes as Array<{ table_name: string }>,
           severity: 'medium'
         });
       }
@@ -665,7 +665,7 @@ export class DatabaseService extends SingletonService {
         throw new Error(`Failed to get table sizes: ${error.message}`);
       }
       
-      return data || [];
+      return (data as Array<{ table_name: string; size: string; rows: number }>) || [];
     } catch (error) {
       this.logger?.error('Error getting table sizes:', error);
       throw error;
