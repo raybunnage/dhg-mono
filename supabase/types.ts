@@ -6812,6 +6812,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_service_migration_log: {
+        Row: {
+          breaking_changes: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          from_location: string | null
+          from_pattern: string | null
+          id: string
+          lines_added: number | null
+          lines_removed: number | null
+          migration_notes: string | null
+          migration_type: string
+          performance_improvement: string | null
+          service_name: string
+          started_at: string | null
+          test_coverage_after: number | null
+          test_coverage_before: number | null
+          to_location: string | null
+          to_pattern: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          breaking_changes?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          from_location?: string | null
+          from_pattern?: string | null
+          id?: string
+          lines_added?: number | null
+          lines_removed?: number | null
+          migration_notes?: string | null
+          migration_type: string
+          performance_improvement?: string | null
+          service_name: string
+          started_at?: string | null
+          test_coverage_after?: number | null
+          test_coverage_before?: number | null
+          to_location?: string | null
+          to_pattern?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          breaking_changes?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          from_location?: string | null
+          from_pattern?: string | null
+          id?: string
+          lines_added?: number | null
+          lines_removed?: number | null
+          migration_notes?: string | null
+          migration_type?: string
+          performance_improvement?: string | null
+          service_name?: string
+          started_at?: string | null
+          test_coverage_after?: number | null
+          test_coverage_before?: number | null
+          to_location?: string | null
+          to_pattern?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_service_migration_tasks: {
         Row: {
           assigned_to: string | null
@@ -6953,13 +7016,16 @@ export type Database = {
           base_class_type: string | null
           breaking_changes: boolean | null
           category: string | null
+          category_description: string | null
           checklist_compliant: boolean | null
+          complementary_services: string | null
           compliance_issues: Json | null
           confidence_score: number | null
           consolidation_candidate: boolean | null
           created_at: string | null
           dependencies: Json | null
           description: string | null
+          differentiator: string | null
           environment_config: Json | null
           environment_support: string[] | null
           environment_type: string | null
@@ -6986,10 +7052,12 @@ export type Database = {
           requires_initialization: boolean | null
           resource_management: Json | null
           scan_frequency: string | null
+          service_category: string | null
           service_health: string | null
           service_name: string
           service_name_normalized: string | null
           service_path: string
+          service_purpose: string | null
           service_type: string | null
           status: string | null
           test_coverage_percent: number | null
@@ -7007,13 +7075,16 @@ export type Database = {
           base_class_type?: string | null
           breaking_changes?: boolean | null
           category?: string | null
+          category_description?: string | null
           checklist_compliant?: boolean | null
+          complementary_services?: string | null
           compliance_issues?: Json | null
           confidence_score?: number | null
           consolidation_candidate?: boolean | null
           created_at?: string | null
           dependencies?: Json | null
           description?: string | null
+          differentiator?: string | null
           environment_config?: Json | null
           environment_support?: string[] | null
           environment_type?: string | null
@@ -7040,10 +7111,12 @@ export type Database = {
           requires_initialization?: boolean | null
           resource_management?: Json | null
           scan_frequency?: string | null
+          service_category?: string | null
           service_health?: string | null
           service_name: string
           service_name_normalized?: string | null
           service_path: string
+          service_purpose?: string | null
           service_type?: string | null
           status?: string | null
           test_coverage_percent?: number | null
@@ -7061,13 +7134,16 @@ export type Database = {
           base_class_type?: string | null
           breaking_changes?: boolean | null
           category?: string | null
+          category_description?: string | null
           checklist_compliant?: boolean | null
+          complementary_services?: string | null
           compliance_issues?: Json | null
           confidence_score?: number | null
           consolidation_candidate?: boolean | null
           created_at?: string | null
           dependencies?: Json | null
           description?: string | null
+          differentiator?: string | null
           environment_config?: Json | null
           environment_support?: string[] | null
           environment_type?: string | null
@@ -7094,10 +7170,12 @@ export type Database = {
           requires_initialization?: boolean | null
           resource_management?: Json | null
           scan_frequency?: string | null
+          service_category?: string | null
           service_health?: string | null
           service_name?: string
           service_name_normalized?: string | null
           service_path?: string
+          service_purpose?: string | null
           service_type?: string | null
           status?: string | null
           test_coverage_percent?: number | null
