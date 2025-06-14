@@ -160,14 +160,10 @@ cat > temp/daily-checklist.md << EOF
 - [ ] Run Phase 5: Documentation (15-20 min)
 - [ ] Run Phase 6: Quality Gates (10 min)
 
-## 🔒 Checkpoint Commits (MANDATORY)
-1. **CHECKPOINT-1**: Pre-migration backup
-2. **CHECKPOINT-2**: Analysis complete
-3. **CHECKPOINT-3**: Base class structure created
-4. **CHECKPOINT-4**: Commands migrated
-5. **CHECKPOINT-5**: Services integrated
-6. **CHECKPOINT-6**: Tests passing
-7. **CHECKPOINT-7**: Documentation complete
+## 🔒 Simple 3-Checkpoint System
+1. **BACKUP**: Save original before changes
+2. **MIGRATED**: Base class migration complete  
+3. **VALIDATED**: Tests pass, ready to use
 
 ## End of Day
 - [ ] Update group progress log
@@ -192,15 +188,16 @@ submit_glitch "pipeline-name" "$GROUP_NAME" "issue-type" "description" "priority
 # Check for conflicts
 check_pipeline_conflicts "pipeline-name" "$GROUP_NAME"
 
-# Checkpoint commits
-checkpoint_commit 1 "example-cli.sh" "$GROUP_NAME" "backup example-cli.sh before migration" "Original state preserved"
-checkpoint_commit 2 "example-cli.sh" "$GROUP_NAME" "analysis complete for example-cli.sh" "Base class: ServiceCLIPipeline"
+# Simple checkpoint commands
+checkpoint "backup" "example-cli.sh" "$GROUP_NAME"
+checkpoint "migrated" "example-cli.sh" "$GROUP_NAME" "Base class: ServiceCLIPipeline"
+checkpoint "validated" "example-cli.sh" "$GROUP_NAME" "Tests passed"
 
 # List checkpoints
-list_pipeline_checkpoints "example-cli.sh"
+list_checkpoints "example-cli.sh"
 
 # Rollback if needed
-rollback_to_checkpoint "example-cli.sh" 3
+rollback_pipeline "example-cli.sh"
 \`\`\`
 EOF
 

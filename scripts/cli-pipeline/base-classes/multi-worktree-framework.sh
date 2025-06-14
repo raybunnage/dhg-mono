@@ -318,61 +318,58 @@ EOF
     echo "$output_file"
 }
 
-# Checkpoint commit helper function
-checkpoint_commit() {
-    local checkpoint_num="$1"
+# Simplified checkpoint helper
+checkpoint() {
+    local checkpoint_type="$1"  # backup, migrated, validated
     local pipeline_name="$2"
     local group_name="$3"
-    local checkpoint_name="$4"
-    local details="$5"
+    local notes="${4:-}"
     
-    # Update progress log with checkpoint
-    echo "$(date -Iseconds)|$group_name|$pipeline_name|checkpoint-$checkpoint_num|$checkpoint_name completed" >> temp/group-progress.log
+    # Update progress log
+    echo "$(date -Iseconds)|$group_name|$pipeline_name|checkpoint-$checkpoint_type" >> temp/group-progress.log
     
-    # Stage and commit with standard message
-    git add -A
-    git commit -m "checkpoint(cli-pipeline): $checkpoint_name for $pipeline_name
+    # Simple commit message
+    local commit_msg="checkpoint: $checkpoint_type $pipeline_name"
+    if [[ -n "$notes" ]]; then
+        commit_msg="$commit_msg
 
 Group: $group_name
-$details"
+$notes"
+    else
+        commit_msg="$commit_msg
+
+Group: $group_name"
+    fi
     
-    log_success "Checkpoint $checkpoint_num committed: $checkpoint_name"
+    # Stage and commit
+    git add -A
+    git commit -m "$commit_msg"
+    
+    log_success "Checkpoint: $checkpoint_type for $pipeline_name"
 }
 
-# List checkpoints for a pipeline
-list_pipeline_checkpoints() {
+# List checkpoints for a pipeline (simplified)
+list_checkpoints() {
     local pipeline_name="$1"
     
     log_info "📍 Checkpoints for $pipeline_name:"
-    git log --oneline --grep="checkpoint(cli-pipeline).*$pipeline_name" | head -10
+    git log --oneline --grep="checkpoint:.*$pipeline_name" | head -5
 }
 
-# Rollback to specific checkpoint
-rollback_to_checkpoint() {
+# Quick rollback helper
+rollback_pipeline() {
     local pipeline_name="$1"
-    local checkpoint_num="$2"
+    local backup_date="${2:-$(date +%Y%m%d)}"
     
-    local checkpoint_commit=$(git log --oneline --grep="checkpoint(cli-pipeline).*$pipeline_name" | grep -E "(checkpoint-$checkpoint_num|CHECKPOINT-$checkpoint_num)" | head -1 | awk '{print $1}')
-    
-    if [[ -n "$checkpoint_commit" ]]; then
-        log_info "🔄 Rolling back $pipeline_name to checkpoint $checkpoint_num (commit: $checkpoint_commit)"
-        git checkout "$checkpoint_commit" -- "scripts/cli-pipeline/*/$pipeline_name"
-        log_success "Rollback complete"
+    local backup_file="temp/archived-code/$pipeline_name.$backup_date"
+    if [[ -f "$backup_file" ]]; then
+        cp "$backup_file" "scripts/cli-pipeline/*/$pipeline_name"
+        git add -A
+        git commit -m "rollback: reverted $pipeline_name - manual rollback"
+        log_success "Rolled back to $backup_file"
     else
-        log_error "No checkpoint $checkpoint_num found for $pipeline_name"
+        log_error "No backup found: $backup_file"
         return 1
-    fi
-}
-
-# Get last checkpoint for a pipeline
-get_last_checkpoint() {
-    local pipeline_name="$1"
-    
-    local last_checkpoint=$(git log --oneline --grep="checkpoint(cli-pipeline).*$pipeline_name" | head -1)
-    if [[ -n "$last_checkpoint" ]]; then
-        echo "$last_checkpoint" | sed -E 's/.*checkpoint-([0-9]+).*/\1/'
-    else
-        echo "0"
     fi
 }
 
@@ -387,10 +384,9 @@ export -f submit_glitch
 export -f get_service_with_fallback
 export -f coordinate_worktrees
 export -f generate_group_report
-export -f checkpoint_commit
-export -f list_pipeline_checkpoints
-export -f rollback_to_checkpoint
-export -f get_last_checkpoint
+export -f checkpoint
+export -f list_checkpoints
+export -f rollback_pipeline
 
 log_info "Multi-worktree CLI pipeline refactoring framework loaded"
 log_info "Framework version: $FRAMEWORK_VERSION"
