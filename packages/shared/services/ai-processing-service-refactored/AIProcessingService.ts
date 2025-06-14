@@ -77,16 +77,25 @@ export class AIProcessingService extends BusinessService<Database> {
   private readonly defaultCacheDuration = 3600000; // 1 hour
   
   constructor(claudeService: ClaudeService) {
-    super();
+    super('AIProcessingService', { claudeService });
     this.claudeService = claudeService;
+  }
+  
+  /**
+   * Validate dependencies
+   */
+  protected validateDependencies(): void {
+    if (!this.dependencies.claudeService) {
+      throw new Error('ClaudeService is required');
+    }
   }
   
   /**
    * Initialize the service
    */
-  protected async doInitialize(): Promise<void> {
+  protected async initialize(): Promise<void> {
     // Ensure Claude service is initialized
-    await this.claudeService.initialize();
+    await this.claudeService.ensureInitialized();
     
     // Start cache cleanup interval
     setInterval(() => this.cleanupCache(), 300000); // Clean every 5 minutes
@@ -549,7 +558,7 @@ export class AIProcessingService extends BusinessService<Database> {
   /**
    * Shutdown
    */
-  protected async doShutdown(): Promise<void> {
+  protected async shutdown(): Promise<void> {
     this.resultCache.clear();
   }
   
