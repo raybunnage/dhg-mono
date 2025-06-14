@@ -1,6 +1,7 @@
-/**
- * PromptManagementService exports
- */
-
-export { PromptManagementService } from './PromptManagementService';
-export * from './types';
+export { PromptService } from './PromptService';
+export type {
+  PromptServiceConfig,
+  PromptServiceDependencies,
+  ServiceMetrics,
+  ValidationResult
+} from './PromptService';

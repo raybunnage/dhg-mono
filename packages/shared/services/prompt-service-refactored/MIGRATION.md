@@ -50,7 +50,6 @@ export class PromptManagementService {
   }
 }
 ```
-
 ### After (BusinessService Pattern):
 ```typescript
 export class PromptManagementService extends BusinessService {
