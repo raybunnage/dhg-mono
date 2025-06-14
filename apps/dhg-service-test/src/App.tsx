@@ -23,9 +23,12 @@ import { TestClaudeService } from './components/TestClaudeService';
 import { ViteEnvFixPage } from './components/ViteEnvFixPage';
 import { TestGitOperationsProxy } from './components/TestGitOperationsProxy';
 import { TestFileBrowserProxy } from './components/TestFileBrowserProxy';
+import { TestContinuousDocsProxy } from './components/TestContinuousDocsProxy';
+import { TestAudioStreamingProxy } from './components/TestAudioStreamingProxy';
+import { TestHtmlFileBrowserProxy } from './components/TestHtmlFileBrowserProxy';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser'>('env-fix');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser'>('env-fix');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -135,6 +138,36 @@ function App() {
           >
             File Browser
           </button>
+          <button
+            onClick={() => setView('continuous-docs')}
+            className={`px-4 py-2 rounded ${
+              view === 'continuous-docs' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Continuous Docs
+          </button>
+          <button
+            onClick={() => setView('audio-streaming')}
+            className={`px-4 py-2 rounded ${
+              view === 'audio-streaming' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Audio Streaming
+          </button>
+          <button
+            onClick={() => setView('html-browser')}
+            className={`px-4 py-2 rounded ${
+              view === 'html-browser' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            HTML Browser
+          </button>
           </div>
         </div>
       </div>
@@ -156,6 +189,9 @@ function App() {
         {view === 'claude' && <TestClaudeService />}
         {view === 'git-proxy' && <TestGitOperationsProxy />}
         {view === 'file-browser' && <TestFileBrowserProxy />}
+        {view === 'continuous-docs' && <TestContinuousDocsProxy />}
+        {view === 'audio-streaming' && <TestAudioStreamingProxy />}
+        {view === 'html-browser' && <TestHtmlFileBrowserProxy />}
       </div>
     </div>
   );

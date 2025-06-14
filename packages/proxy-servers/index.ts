@@ -12,6 +12,9 @@ export { ProxyManagerProxy } from './servers/proxy-manager/ProxyManagerProxy';
 export { ContinuousMonitoringProxy } from './servers/continuous-monitoring/ContinuousMonitoringProxy';
 export { GitOperationsProxy } from './servers/git-operations/GitOperationsProxy';
 export { FileBrowserProxy } from './servers/file-browser/FileBrowserProxy';
+export { ContinuousDocsProxy } from './servers/continuous-docs/ContinuousDocsProxy';
+export { AudioStreamingProxy } from './servers/audio-streaming/AudioStreamingProxy';
+export { HtmlFileBrowserProxy } from './servers/html-file-browser/HtmlFileBrowserProxy';
 
 // Services (for direct use if needed)
 export { ViteFixService } from './servers/vite-fix-proxy/ViteFixService';
