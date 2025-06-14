@@ -1,0 +1,49 @@
+# Discovery Rules - Prevent Duplicate Service Registration
+# This file controls what gets registered as a service
+
+# Minimum confidence threshold to register a service
+min_confidence_threshold: 80
+
+# Directories to completely ignore
+ignored_directories:
+  - __tests__
+  - .archived_services
+  - node_modules
+  - dist
+  - build
+
+# Service name patterns to ignore (regex)
+ignored_patterns:
+  - ".*test.*"
+  - ".*mock.*"
+  - ".*example.*"
+  - ".*temp.*"
+  - ".*backup.*"
+
+# Known services that should NOT be auto-discovered
+# (They exist in files but shouldn't be in registry)
+blacklisted_services:
+  - TestService
+  - MockDataFactory  # This is a utility, not a service
+  - ExampleService
+  - PlaceholderService
+
+# Required patterns for a file to be considered a service
+required_patterns:
+  - must_export_class: true
+  - must_have_methods: true
+  - min_file_size: 200  # bytes
+
+# Only register services from these directories
+allowed_directories:
+  - packages/shared/services
+
+# Stop auto-discovery completely (manual control)
+auto_discovery_enabled: false
+
+# When auto_discovery_enabled is false:
+# - No new services will be auto-registered
+# - Discovery will only run in analysis mode
+# - Manual approval required for new services
+
+manual_approval_required: true

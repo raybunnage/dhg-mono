@@ -10,7 +10,7 @@ import path from 'path';
 import { config, Logger } from '../../utils';
 import { FileService, FileResult } from '../file-service/file-service';
 import { supabaseDirect } from '../../services/supabase-direct-service';
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 /**
  * Prompt data structure

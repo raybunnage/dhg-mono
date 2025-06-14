@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { PresentationService } from '../services/presentation-service';
-import { claudeService } from '../../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { Logger } from '../../../../packages/shared/utils/logger';
 // Use require for chalk to avoid ESM compatibility issues
 const chalk = require('chalk');

@@ -13,7 +13,7 @@ import * as crypto from 'crypto';
 // Import shared services
 import { fileService } from '../../shared/file-service';
 import { databaseService } from '../../shared/services/database-service';
-import { logger } from '../../shared/services/logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 import { environmentService } from '../../shared/services/environment-service';
 // Claude service is now imported dynamically in the performHealthCheck method
 // to avoid the import error that was causing the health-check to fail

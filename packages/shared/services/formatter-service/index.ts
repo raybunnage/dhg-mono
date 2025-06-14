@@ -1,7 +1,2 @@
-/**
- * Formatter Service Index
- * 
- * Exports the formatter service singleton.
- */
-
-export { formatterService, FormatterService } from './formatter-service';
+// Re-export from refactored version for backwards compatibility
+export * from '../formatter-service-refactored';

@@ -1,2 +1,3 @@
-export { MediaTrackingService, createMediaTrackingService } from './media-tracking-service';
-export type { MediaTrackingOptions, PlaybackEventData } from './media-tracking-service';
+// Re-export from refactored location for backwards compatibility
+export { MediaTrackingService } from '../media-tracking-service-refactored';
+export * from '../media-tracking-service-refactored/types';

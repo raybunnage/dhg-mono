@@ -7,7 +7,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
-import { logger } from './logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 
 export class DocumentTypeService {
   private static instance: DocumentTypeService;

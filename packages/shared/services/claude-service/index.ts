@@ -1,4 +1,2 @@
-/**
- * Claude Service exports
- */
-export * from './claude-service';
+// Re-export from refactored version for backwards compatibility
+export * from '../claude-service-refactored';

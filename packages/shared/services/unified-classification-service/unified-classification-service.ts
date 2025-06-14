@@ -19,7 +19,7 @@ import {
 } from './types';
 import { SupabaseClientService } from '../supabase-client';
 import { promptService } from '../prompt-service';
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { GoogleDriveService } from '../google-drive';
 import { pdfProcessorService } from '../pdf-processor-service';
 import { FilterService } from '../filter-service';

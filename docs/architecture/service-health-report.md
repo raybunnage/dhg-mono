@@ -1,0 +1,341 @@
+# Service Health Report
+Generated: 2025-06-13T04:16:28.630Z
+
+## Summary
+- Total Services: 115
+- Essential: 0
+- Active: 0
+- Low Usage: 0
+- Deprecated: 38
+- Duplicates: 77
+
+## Services by Health Status
+
+### Essential Services (0)
+
+
+### Active Services (0)
+
+
+### Low Usage Services (0)
+
+
+### Deprecated Services (38)
+- **AdminUserService** - No usage found, recommend removal
+- **ClassifyService** - No usage found, recommend removal
+- **CliCommandUtils** - No usage found, recommend removal
+- **CLIExecutorService** - No usage found, recommend removal
+- **ClipboardService** - No usage found, recommend removal
+- **CommandExecutionClient** - No usage found, recommend removal
+- **ConverterService** - No usage found, recommend removal
+- **DatabaseMetadataService** - No usage found, recommend removal
+- **DocumentPipeline** - No usage found, recommend removal
+- **EnvConfigService** - No usage found, recommend removal
+- **FileReader** - No usage found, recommend removal
+- **FilterServiceClient** - No usage found, recommend removal
+- **FolderHierarchyService** - No usage found, recommend removal
+- **FollowUpTaskService** - No usage found, recommend removal
+- **FormatterService** - No usage found, recommend removal
+- **getBrowserAuthService** - No usage found, recommend removal
+- **GoogleUtils** - No usage found, recommend removal
+- **HTTPResponseHelpersService** - No usage found, recommend removal
+- **Index** - No usage found, recommend removal
+- **LifecycleTrackingMixin** - No usage found, recommend removal
+- **LightAuthEnhancedService** - No usage found, recommend removal
+- **LivingDocsPrioritizationService** - No usage found, recommend removal
+- **MediaAnalyticsService** - No usage found, recommend removal
+- **MediaPresentationService** - No usage found, recommend removal
+- **MockDataFactory** - No usage found, recommend removal
+- **PdfProcessor** - No usage found, recommend removal
+- **PromptCliInterface** - No usage found, recommend removal
+- **PromptOutputTemplateService** - No usage found, recommend removal
+- **PromptService** - No usage found, recommend removal
+- **ProxyServerBaseService** - No usage found, recommend removal
+- **ScriptPipeline** - No usage found, recommend removal
+- **ScriptService** - No usage found, recommend removal
+- **ServiceDependencyMapping** - No usage found, recommend removal
+- **SourcesGoogleUpdateService** - No usage found, recommend removal
+- **SupabaseCache** - No usage found, recommend removal
+- **ThemeService** - No usage found, recommend removal
+- **UserProfileService** - No usage found, recommend removal
+- **WorktreeService** - No usage found, recommend removal
+
+### Duplicate Services (77)
+- **AiProcessingService** overlaps with: AIProcessingService, BatchProcessingService, MediaProcessingService
+- **AIProcessingService** overlaps with: AiProcessingService, BatchProcessingService, MediaProcessingService
+- **AudioService** overlaps with: AuthService
+- **AudioTranscription** overlaps with: AudioTranscriptionService
+- **AudioTranscriptionService** overlaps with: AudioTranscription, TranscriptionService
+- **AuthService** overlaps with: AudioService, GitService
+- **BatchDatabaseService** overlaps with: DatabaseService
+- **BatchProcessingService** overlaps with: AiProcessingService, AIProcessingService, MediaProcessingService
+- **ClassificationService** overlaps with: DocumentClassificationService, UnifiedClassificationService
+- **claudeService** overlaps with: ClaudeService
+- **ClaudeService** overlaps with: claudeService
+- **CliRegistryService** overlaps with: CLIRegistryService, ServerRegistryService
+- **CLIRegistryService** overlaps with: CliRegistryService, ServerRegistryService
+- **command-execution-service** overlaps with: CommandExecutionService
+- **CommandExecutionService** overlaps with: command-execution-service
+- **CommandTrackingService** overlaps with: MediaTrackingService
+- **DatabaseService** overlaps with: BatchDatabaseService, SupabaseService
+- **DeploymentService** overlaps with: DocumentService
+- **DevTaskService** overlaps with: TaskService
+- **DocFilesService** overlaps with: FileService
+- **DocumentArchivingService** overlaps with: DocumentationService, DocumentPipelineService
+- **DocumentationService** overlaps with: DocumentArchivingService, DocumentService, DocumentTypeAIService, DocumentTypeService
+- **DocumentClassificationService** overlaps with: ClassificationService, UnifiedClassificationService
+- **DocumentMaintenanceService** overlaps with: DocumentPipelineService
+- **DocumentPipelineService** overlaps with: DocumentArchivingService, DocumentMaintenanceService, DocumentTypeAIService, DocumentTypeService, ScriptPipelineService
+- **DocumentService** overlaps with: DeploymentService, DocumentationService, DocumentTypeAIService, DocumentTypeService
+- **DocumentTypeAIService** overlaps with: DocumentationService, DocumentPipelineService, DocumentService, DocumentTypeService
+- **DocumentTypeService** overlaps with: DocumentationService, DocumentPipelineService, DocumentService, DocumentTypeAIService
+- **ElementCatalogService** overlaps with: ElementCriteriaService
+- **ElementCriteriaService** overlaps with: ElementCatalogService
+- **EmailService** overlaps with: GmailService
+- **ExpertService** overlaps with: ReportService
+- **FileOperationsService** overlaps with: GitOperationsService
+- **FileService** overlaps with: DocFilesService, FilterService, GitService
+- **FileSystemService** overlaps with: FilterService, SystemService
+- **FilterService** overlaps with: FileService, FileSystemService
+- **GitOperationsService** overlaps with: FileOperationsService
+- **GitService** overlaps with: AuthService, FileService, GmailService
+- **GmailService** overlaps with: EmailService, GitService
+- **GoogleAuthService** overlaps with: GoogleDriveService, GoogleSyncService, LightAuthService
+- **google-drive** overlaps with: GoogleDrive
+- **GoogleDrive** overlaps with: google-drive
+- **GoogleDriveBrowserService** overlaps with: GoogleDriveExplorerService, GoogleDriveService, GoogleDriveSyncService
+- **GoogleDriveExplorer** overlaps with: GoogleDriveExplorerService
+- **GoogleDriveExplorerService** overlaps with: GoogleDriveBrowserService, GoogleDriveExplorer
+- **GoogleDriveService** overlaps with: GoogleAuthService, GoogleDriveBrowserService, GoogleDriveSyncService, GoogleSyncService
+- **GoogleDriveSyncService** overlaps with: GoogleDriveBrowserService, GoogleDriveService, GoogleSyncService
+- **GoogleSyncService** overlaps with: GoogleAuthService, GoogleDriveService, GoogleDriveSyncService
+- **LightAuthService** overlaps with: GoogleAuthService
+- **MediaProcessingService** overlaps with: AiProcessingService, AIProcessingService, BatchProcessingService, MediaTrackingService
+- **MediaTrackingService** overlaps with: CommandTrackingService, MediaProcessingService, TrackingService
+- **PdfProcessorService** overlaps with: PDFProcessorService
+- **PDFProcessorService** overlaps with: PdfProcessorService
+- **PipelineService** overlaps with: ScriptPipelineService
+- **PortsManagementService** overlaps with: PromptManagementService, WorktreeManagementService
+- **PromptManagementService** overlaps with: PortsManagementService, WorktreeManagementService
+- **ReportService** overlaps with: ExpertService
+- **ScriptPipelineService** overlaps with: DocumentPipelineService, PipelineService
+- **ServerRegistryService** overlaps with: CliRegistryService, CLIRegistryService
+- **SupabaseAdapter** overlaps with: SupabaseClientAdapter
+- **SupabaseClient** overlaps with: SupabaseClientFixed
+- **SupabaseClientAdapter** overlaps with: SupabaseAdapter, SupabaseClientFixed
+- **SupabaseClientFixed** overlaps with: SupabaseClient, SupabaseClientAdapter, SupabaseClientService
+- **SupabaseClientService** overlaps with: SupabaseClientFixed, SupabaseService
+- **supabase-helpers** overlaps with: SupabaseHelpers
+- **SupabaseHelpers** overlaps with: supabase-helpers
+- **SupabaseService** overlaps with: DatabaseService, SupabaseClientService
+- **SystemService** overlaps with: FileSystemService
+- **TaskService** overlaps with: DevTaskService
+- **TestingService** overlaps with: TrackingService
+- **TrackingService** overlaps with: MediaTrackingService, TestingService
+- **TranscriptionService** overlaps with: AudioTranscriptionService
+- **UnifiedClassificationService** overlaps with: ClassificationService, DocumentClassificationService
+- **work-summary-service** overlaps with: WorkSummaryService
+- **WorkSummaryService** overlaps with: work-summary-service
+- **worktree-management-service** overlaps with: WorktreeManagementService
+- **WorktreeManagementService** overlaps with: PortsManagementService, PromptManagementService, worktree-management-service
+
+## Recommendations
+
+### Immediate Actions Required
+- Remove unused service: AdminUserService
+- Remove unused service: AiProcessingService
+- Remove unused service: AIProcessingService
+- Remove unused service: AudioService
+- Remove unused service: AudioTranscription
+- Remove unused service: AudioTranscriptionService
+- Remove unused service: AuthService
+- Remove unused service: BatchDatabaseService
+- Remove unused service: BatchProcessingService
+- Remove unused service: ClassificationService
+- Remove unused service: ClassifyService
+- Remove unused service: claudeService
+- Remove unused service: ClaudeService
+- Remove unused service: CliCommandUtils
+- Remove unused service: CLIExecutorService
+- Remove unused service: ClipboardService
+- Remove unused service: CliRegistryService
+- Remove unused service: CLIRegistryService
+- Remove unused service: CommandExecutionClient
+- Remove unused service: command-execution-service
+- Remove unused service: CommandExecutionService
+- Remove unused service: CommandTrackingService
+- Remove unused service: ConverterService
+- Remove unused service: DatabaseMetadataService
+- Remove unused service: DatabaseService
+- Remove unused service: DeploymentService
+- Remove unused service: DevTaskService
+- Remove unused service: DocFilesService
+- Remove unused service: DocumentArchivingService
+- Remove unused service: DocumentationService
+- Remove unused service: DocumentClassificationService
+- Remove unused service: DocumentMaintenanceService
+- Remove unused service: DocumentPipeline
+- Remove unused service: DocumentPipelineService
+- Remove unused service: DocumentService
+- Remove unused service: DocumentTypeAIService
+- Remove unused service: DocumentTypeService
+- Remove unused service: ElementCatalogService
+- Remove unused service: ElementCriteriaService
+- Remove unused service: EmailService
+- Remove unused service: EnvConfigService
+- Remove unused service: ExpertService
+- Remove unused service: FileOperationsService
+- Remove unused service: FileReader
+- Remove unused service: FileService
+- Remove unused service: FileSystemService
+- Remove unused service: FilterService
+- Remove unused service: FilterServiceClient
+- Remove unused service: FolderHierarchyService
+- Remove unused service: FollowUpTaskService
+- Remove unused service: FormatterService
+- Remove unused service: getBrowserAuthService
+- Remove unused service: GitOperationsService
+- Remove unused service: GitService
+- Remove unused service: GmailService
+- Remove unused service: GoogleAuthService
+- Remove unused service: google-drive
+- Remove unused service: GoogleDrive
+- Remove unused service: GoogleDriveBrowserService
+- Remove unused service: GoogleDriveExplorer
+- Remove unused service: GoogleDriveExplorerService
+- Remove unused service: GoogleDriveService
+- Remove unused service: GoogleDriveSyncService
+- Remove unused service: GoogleSyncService
+- Remove unused service: GoogleUtils
+- Remove unused service: HTTPResponseHelpersService
+- Remove unused service: Index
+- Remove unused service: LifecycleTrackingMixin
+- Remove unused service: LightAuthEnhancedService
+- Remove unused service: LightAuthService
+- Remove unused service: LivingDocsPrioritizationService
+- Remove unused service: MediaAnalyticsService
+- Remove unused service: MediaPresentationService
+- Remove unused service: MediaProcessingService
+- Remove unused service: MediaTrackingService
+- Remove unused service: MockDataFactory
+- Remove unused service: PdfProcessor
+- Remove unused service: PdfProcessorService
+- Remove unused service: PDFProcessorService
+- Remove unused service: PipelineService
+- Remove unused service: PortsManagementService
+- Remove unused service: PromptCliInterface
+- Remove unused service: PromptManagementService
+- Remove unused service: PromptOutputTemplateService
+- Remove unused service: PromptService
+- Remove unused service: ProxyServerBaseService
+- Remove unused service: ReportService
+- Remove unused service: ScriptPipeline
+- Remove unused service: ScriptPipelineService
+- Remove unused service: ScriptService
+- Remove unused service: ServerRegistryService
+- Remove unused service: ServiceDependencyMapping
+- Remove unused service: SourcesGoogleUpdateService
+- Remove unused service: SupabaseAdapter
+- Remove unused service: SupabaseCache
+- Remove unused service: SupabaseClient
+- Remove unused service: SupabaseClientAdapter
+- Remove unused service: SupabaseClientFixed
+- Remove unused service: SupabaseClientService
+- Remove unused service: supabase-helpers
+- Remove unused service: SupabaseHelpers
+- Remove unused service: SupabaseService
+- Remove unused service: SystemService
+- Remove unused service: TaskService
+- Remove unused service: TestingService
+- Remove unused service: ThemeService
+- Remove unused service: TrackingService
+- Remove unused service: TranscriptionService
+- Remove unused service: UnifiedClassificationService
+- Remove unused service: UserProfileService
+- Remove unused service: work-summary-service
+- Remove unused service: WorkSummaryService
+- Remove unused service: worktree-management-service
+- Remove unused service: WorktreeManagementService
+- Remove unused service: WorktreeService
+
+### Refactoring Needed
+
+
+### Consolidation Candidates
+- Consider consolidating AiProcessingService (overlaps with: AIProcessingService, BatchProcessingService, MediaProcessingService)
+- Consider consolidating AIProcessingService (overlaps with: AiProcessingService, BatchProcessingService, MediaProcessingService)
+- Consider consolidating AudioService (overlaps with: AuthService)
+- Consider consolidating AudioTranscription (overlaps with: AudioTranscriptionService)
+- Consider consolidating AudioTranscriptionService (overlaps with: AudioTranscription, TranscriptionService)
+- Consider consolidating AuthService (overlaps with: AudioService, GitService)
+- Consider consolidating BatchDatabaseService (overlaps with: DatabaseService)
+- Consider consolidating BatchProcessingService (overlaps with: AiProcessingService, AIProcessingService, MediaProcessingService)
+- Consider consolidating ClassificationService (overlaps with: DocumentClassificationService, UnifiedClassificationService)
+- Consider consolidating claudeService (overlaps with: ClaudeService)
+- Consider consolidating ClaudeService (overlaps with: claudeService)
+- Consider consolidating CliRegistryService (overlaps with: CLIRegistryService, ServerRegistryService)
+- Consider consolidating CLIRegistryService (overlaps with: CliRegistryService, ServerRegistryService)
+- Consider consolidating command-execution-service (overlaps with: CommandExecutionService)
+- Consider consolidating CommandExecutionService (overlaps with: command-execution-service)
+- Consider consolidating CommandTrackingService (overlaps with: MediaTrackingService)
+- Consider consolidating DatabaseService (overlaps with: BatchDatabaseService, SupabaseService)
+- Consider consolidating DeploymentService (overlaps with: DocumentService)
+- Consider consolidating DevTaskService (overlaps with: TaskService)
+- Consider consolidating DocFilesService (overlaps with: FileService)
+- Consider consolidating DocumentArchivingService (overlaps with: DocumentationService, DocumentPipelineService)
+- Consider consolidating DocumentationService (overlaps with: DocumentArchivingService, DocumentService, DocumentTypeAIService, DocumentTypeService)
+- Consider consolidating DocumentClassificationService (overlaps with: ClassificationService, UnifiedClassificationService)
+- Consider consolidating DocumentMaintenanceService (overlaps with: DocumentPipelineService)
+- Consider consolidating DocumentPipelineService (overlaps with: DocumentArchivingService, DocumentMaintenanceService, DocumentTypeAIService, DocumentTypeService, ScriptPipelineService)
+- Consider consolidating DocumentService (overlaps with: DeploymentService, DocumentationService, DocumentTypeAIService, DocumentTypeService)
+- Consider consolidating DocumentTypeAIService (overlaps with: DocumentationService, DocumentPipelineService, DocumentService, DocumentTypeService)
+- Consider consolidating DocumentTypeService (overlaps with: DocumentationService, DocumentPipelineService, DocumentService, DocumentTypeAIService)
+- Consider consolidating ElementCatalogService (overlaps with: ElementCriteriaService)
+- Consider consolidating ElementCriteriaService (overlaps with: ElementCatalogService)
+- Consider consolidating EmailService (overlaps with: GmailService)
+- Consider consolidating ExpertService (overlaps with: ReportService)
+- Consider consolidating FileOperationsService (overlaps with: GitOperationsService)
+- Consider consolidating FileService (overlaps with: DocFilesService, FilterService, GitService)
+- Consider consolidating FileSystemService (overlaps with: FilterService, SystemService)
+- Consider consolidating FilterService (overlaps with: FileService, FileSystemService)
+- Consider consolidating GitOperationsService (overlaps with: FileOperationsService)
+- Consider consolidating GitService (overlaps with: AuthService, FileService, GmailService)
+- Consider consolidating GmailService (overlaps with: EmailService, GitService)
+- Consider consolidating GoogleAuthService (overlaps with: GoogleDriveService, GoogleSyncService, LightAuthService)
+- Consider consolidating google-drive (overlaps with: GoogleDrive)
+- Consider consolidating GoogleDrive (overlaps with: google-drive)
+- Consider consolidating GoogleDriveBrowserService (overlaps with: GoogleDriveExplorerService, GoogleDriveService, GoogleDriveSyncService)
+- Consider consolidating GoogleDriveExplorer (overlaps with: GoogleDriveExplorerService)
+- Consider consolidating GoogleDriveExplorerService (overlaps with: GoogleDriveBrowserService, GoogleDriveExplorer)
+- Consider consolidating GoogleDriveService (overlaps with: GoogleAuthService, GoogleDriveBrowserService, GoogleDriveSyncService, GoogleSyncService)
+- Consider consolidating GoogleDriveSyncService (overlaps with: GoogleDriveBrowserService, GoogleDriveService, GoogleSyncService)
+- Consider consolidating GoogleSyncService (overlaps with: GoogleAuthService, GoogleDriveService, GoogleDriveSyncService)
+- Consider consolidating LightAuthService (overlaps with: GoogleAuthService)
+- Consider consolidating MediaProcessingService (overlaps with: AiProcessingService, AIProcessingService, BatchProcessingService, MediaTrackingService)
+- Consider consolidating MediaTrackingService (overlaps with: CommandTrackingService, MediaProcessingService, TrackingService)
+- Consider consolidating PdfProcessorService (overlaps with: PDFProcessorService)
+- Consider consolidating PDFProcessorService (overlaps with: PdfProcessorService)
+- Consider consolidating PipelineService (overlaps with: ScriptPipelineService)
+- Consider consolidating PortsManagementService (overlaps with: PromptManagementService, WorktreeManagementService)
+- Consider consolidating PromptManagementService (overlaps with: PortsManagementService, WorktreeManagementService)
+- Consider consolidating ReportService (overlaps with: ExpertService)
+- Consider consolidating ScriptPipelineService (overlaps with: DocumentPipelineService, PipelineService)
+- Consider consolidating ServerRegistryService (overlaps with: CliRegistryService, CLIRegistryService)
+- Consider consolidating SupabaseAdapter (overlaps with: SupabaseClientAdapter)
+- Consider consolidating SupabaseClient (overlaps with: SupabaseClientFixed)
+- Consider consolidating SupabaseClientAdapter (overlaps with: SupabaseAdapter, SupabaseClientFixed)
+- Consider consolidating SupabaseClientFixed (overlaps with: SupabaseClient, SupabaseClientAdapter, SupabaseClientService)
+- Consider consolidating SupabaseClientService (overlaps with: SupabaseClientFixed, SupabaseService)
+- Consider consolidating supabase-helpers (overlaps with: SupabaseHelpers)
+- Consider consolidating SupabaseHelpers (overlaps with: supabase-helpers)
+- Consider consolidating SupabaseService (overlaps with: DatabaseService, SupabaseClientService)
+- Consider consolidating SystemService (overlaps with: FileSystemService)
+- Consider consolidating TaskService (overlaps with: DevTaskService)
+- Consider consolidating TestingService (overlaps with: TrackingService)
+- Consider consolidating TrackingService (overlaps with: MediaTrackingService, TestingService)
+- Consider consolidating TranscriptionService (overlaps with: AudioTranscriptionService)
+- Consider consolidating UnifiedClassificationService (overlaps with: ClassificationService, DocumentClassificationService)
+- Consider consolidating work-summary-service (overlaps with: WorkSummaryService)
+- Consider consolidating WorkSummaryService (overlaps with: work-summary-service)
+- Consider consolidating worktree-management-service (overlaps with: WorktreeManagementService)
+- Consider consolidating WorktreeManagementService (overlaps with: PortsManagementService, PromptManagementService, worktree-management-service)

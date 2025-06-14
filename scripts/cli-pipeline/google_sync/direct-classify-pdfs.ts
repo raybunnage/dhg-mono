@@ -8,7 +8,7 @@ import { Command } from 'commander';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
 import { promptService } from '../../../packages/shared/services/prompt-service';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';

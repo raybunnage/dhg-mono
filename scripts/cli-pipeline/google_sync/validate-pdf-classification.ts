@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { GoogleDriveService } from '../../../packages/shared/services/google-drive';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 
 interface ValidationOptions {
   limit: number;

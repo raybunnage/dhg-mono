@@ -8,7 +8,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseConfig } from '../interfaces/types';
 import { environmentService } from './environment-service';
-import { logger } from './logger-service';
+import { nodeLogger as logger } from '@shared/services/logger/logger-node';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 /**

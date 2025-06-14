@@ -6,7 +6,7 @@
  */
 import { Logger } from '../../utils/logger';
 import { DocumentType, documentTypeService } from './document-type-service';
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { SupabaseClientService } from '../supabase-client';
 
 /**

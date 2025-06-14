@@ -10,7 +10,7 @@ import {
   documentTypeService, 
   documentTypeAIService,
 } from '../../../packages/shared/services/document-type-service';
-import { claudeService } from '../../../packages/shared/services/claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { SupabaseClientService } from '../../../packages/shared/services/supabase-client';
 import { Logger } from '../../../packages/shared/utils/logger';
 import cheatsheetCommand from './commands/cheatsheet';

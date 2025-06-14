@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { program } from 'commander';
-import { getSupabaseClient } from './utils/supabase-helper';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 interface PipelineGap {
   service_name: string;
@@ -100,7 +100,7 @@ async function generateCliCommands(gap: PipelineGap): Promise<string[]> {
 async function findPipelineGaps(options: FindGapsOptions): Promise<void> {
   console.log('🔍 Finding pipeline coverage gaps...\n');
   
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   const minApps = parseInt(options.minApps || '1');
   
   try {

@@ -5,15 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const net = require('net');
 
-// Validate environment before starting servers
-try {
-  const { validateServerEnvironment } = require('./cli-pipeline/servers/helpers/validate-environment.js');
-  validateServerEnvironment();
-} catch (error) {
-  console.error('❌ Environment validation failed:', error.message);
-  process.exit(1);
-}
-
 // Server configuration with dedicated ports
 const SERVERS = [
   {
@@ -40,58 +31,59 @@ const SERVERS = [
     cwd: process.cwd(),
     description: 'Document archiving and retrieval'
   },
+  // MIGRATED TO NEW PROXY INFRASTRUCTURE:
+  // {
+  //   name: 'File Browser Server',
+  //   port: 3004,
+  //   command: 'node',
+  //   args: ['html/server.js'],
+  //   cwd: process.cwd(),
+  //   env: { FILE_BROWSER_PORT: '3004' },
+  //   description: 'File browser API'
+  // },
+  // {
+  //   name: 'Git Server (dhg-admin-code)',
+  //   port: 3005,
+  //   command: 'node',
+  //   args: ['git-server.cjs'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+  //   description: 'Git worktree management'
+  // },
+  // {
+  //   name: 'Enhanced Audio Server (dhg-audio)',
+  //   port: 3006,
+  //   command: 'node',
+  //   args: ['server-enhanced.js'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-audio'),
+  //   env: { PORT: '3006' },
+  //   description: 'Local Google Drive + API audio server with 10-100x performance boost'
+  // },
   {
-    name: 'File Browser Server',
-    port: 3004,
-    command: 'node',
-    args: ['html/server.js'],
-    cwd: process.cwd(),
-    env: { FILE_BROWSER_PORT: '3004' },
-    description: 'File browser API'
-  },
-  {
-    name: 'Git Server (dhg-admin-code)',
-    port: 3005,
-    command: 'node',
-    args: ['git-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    description: 'Git worktree management'
-  },
-  {
-    name: 'Web Audio Server (dhg-audio)',
-    port: 3006,
-    command: 'node',
-    args: ['server.js'],
-    cwd: path.join(process.cwd(), 'apps/dhg-audio'),
-    env: { PORT: '3006' },
-    description: 'Web Google Drive audio API (works anywhere)'
-  },
-  {
-    name: 'Local Audio Server (dhg-audio)',
+    name: 'Experts Markdown Server',
     port: 3007,
     command: 'node',
-    args: ['server-enhanced.js'],
-    cwd: path.join(process.cwd(), 'apps/dhg-audio'),
-    env: { PORT: '3007' },
-    description: 'Local Google Drive audio (10-100x faster when files are synced)'
+    args: ['md-server.mjs'],
+    cwd: path.join(process.cwd(), 'apps/dhg-improve-experts'),
+    description: 'Markdown server for dhg-improve-experts'
   },
-  {
-    name: 'Living Docs Server',
-    port: 3008,
-    command: 'node',
-    args: ['living-docs-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    description: 'Living documentation tracking'
-  },
-  {
-    name: 'Git API Server (dhg-admin-code)',
-    port: 3009,
-    command: 'node',
-    args: ['git-api-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    env: { GIT_API_PORT: '3009' },
-    description: 'Git branch management API'
-  },
+  // MIGRATED TO NEW PROXY INFRASTRUCTURE:
+  // {
+  //   name: 'Continuous Docs Server',
+  //   port: 3008,
+  //   command: 'node',
+  //   args: ['continuous-docs-server.cjs'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+  //   description: 'Continuous documentation tracking'
+  // },
+  // {
+  //   name: 'Git API Server (dhg-admin-code)',
+  //   port: 3009,
+  //   command: 'node',
+  //   args: ['git-api-server.cjs'],
+  //   cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
+  //   env: { GIT_API_PORT: '3009' },
+  //   description: 'Git branch management API'
+  // },
   {
     name: 'Worktree Switcher',
     port: 3010,
@@ -109,15 +101,6 @@ const SERVERS = [
     cwd: process.cwd(),
     env: { GIT_HISTORY_PORT: '3011' },
     description: 'Git history analysis and worktree assignment'
-  },
-  {
-    name: 'Test Runner Server',
-    port: 3012,
-    command: 'node',
-    args: ['test-runner-server.cjs'],
-    cwd: path.join(process.cwd(), 'apps/dhg-admin-code'),
-    env: { TEST_RUNNER_PORT: '3012' },
-    description: 'Test execution API for dhg-admin-code'
   }
 ];
 

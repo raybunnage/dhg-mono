@@ -3,7 +3,7 @@
 import { program } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { getSupabaseClient } from './utils/supabase-helper';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 import { getMonorepoRoot } from './utils/file-scanner';
 
 interface ReportOptions {
@@ -47,7 +47,7 @@ interface ServiceReport {
 }
 
 async function generateServiceReport(serviceName: string): Promise<string> {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   // Get service details
   const { data: service } = await supabase
@@ -137,7 +137,7 @@ async function generateServiceReport(serviceName: string): Promise<string> {
 }
 
 async function generateFullReport(options: ReportOptions): Promise<ServiceReport> {
-  const supabase = getSupabaseClient();
+  const supabase = SupabaseClientService.getInstance().getClient();
   
   // Get overview statistics
   const [

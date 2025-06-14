@@ -7,7 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { SupabaseClientService } from '../supabase-client';
-import { claudeService } from '../claude-service/claude-service';
+import { claudeService } from '@shared/services/claude-service';
 import { promptService } from '../prompt-service';
 
 // Classification result interface

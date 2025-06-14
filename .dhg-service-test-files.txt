@@ -1,0 +1,37 @@
+# Files created for dhg-service-test app
+# This file helps track which files belong to the new test app
+# for selective git commits later
+
+# Core app files
+apps/dhg-service-test/package.json
+apps/dhg-service-test/vite.config.ts
+apps/dhg-service-test/tsconfig.json
+apps/dhg-service-test/tsconfig.node.json
+apps/dhg-service-test/index.html
+apps/dhg-service-test/tailwind.config.js
+apps/dhg-service-test/postcss.config.js
+apps/dhg-service-test/README.md
+apps/dhg-service-test/.env.development.example
+
+# Source files
+apps/dhg-service-test/src/vite-env.d.ts
+apps/dhg-service-test/src/index.css
+apps/dhg-service-test/src/main.tsx
+apps/dhg-service-test/src/App.tsx
+apps/dhg-service-test/src/lib/supabase.ts
+apps/dhg-service-test/src/lib/auth-init.ts
+apps/dhg-service-test/src/components/ServiceMonitor.tsx
+apps/dhg-service-test/src/components/ServiceTester.tsx
+apps/dhg-service-test/src/components/ServiceTesterFixed.tsx
+
+# Shared config
+packages/shared/apps-configs/dhg-service-test.json
+
+# This tracking file itself
+.dhg-service-test-files.txt
+
+# To commit only these files later:
+# git add apps/dhg-service-test/
+# git add packages/shared/apps-configs/dhg-service-test.json
+# git add .dhg-service-test-files.txt
+# git commit -m "feat: add dhg-service-test app for service debugging"

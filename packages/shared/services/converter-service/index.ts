@@ -1,7 +1,2 @@
-/**
- * Converter Service Index
- * 
- * Exports the converter service singleton.
- */
-
-export { converterService, ConverterService } from './converter-service';
+// Re-export from refactored version for backwards compatibility
+export * from '../converter-service-refactored';

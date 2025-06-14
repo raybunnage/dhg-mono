@@ -6416,6 +6416,174 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_database_change_events: {
+        Row: {
+          change_details: Json | null
+          created_at: string | null
+          detected_at: string | null
+          event_type: string
+          id: string
+          object_name: string
+          object_schema: string
+          object_type: string | null
+          processed: boolean | null
+          processed_at: string | null
+          processing_notes: string | null
+        }
+        Insert: {
+          change_details?: Json | null
+          created_at?: string | null
+          detected_at?: string | null
+          event_type: string
+          id?: string
+          object_name: string
+          object_schema?: string
+          object_type?: string | null
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_notes?: string | null
+        }
+        Update: {
+          change_details?: Json | null
+          created_at?: string | null
+          detected_at?: string | null
+          event_type?: string
+          id?: string
+          object_name?: string
+          object_schema?: string
+          object_type?: string | null
+          processed?: boolean | null
+          processed_at?: string | null
+          processing_notes?: string | null
+        }
+        Relationships: []
+      }
+      sys_database_maintenance_rules: {
+        Row: {
+          actions: Json
+          active: boolean | null
+          condition_sql: string | null
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          object_type: string | null
+          priority: number | null
+          rule_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json
+          active?: boolean | null
+          condition_sql?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          object_type?: string | null
+          priority?: number | null
+          rule_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json
+          active?: boolean | null
+          condition_sql?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          object_type?: string | null
+          priority?: number | null
+          rule_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sys_function_usage: {
+        Row: {
+          call_type: string | null
+          called_from: string | null
+          created_at: string | null
+          function_name: string
+          id: string
+          last_used: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          call_type?: string | null
+          called_from?: string | null
+          created_at?: string | null
+          function_name: string
+          id?: string
+          last_used?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          call_type?: string | null
+          called_from?: string | null
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          last_used?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_maintenance_action_log: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          event_id: string | null
+          id: string
+          rule_id: string | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          rule_id?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          rule_id?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_maintenance_action_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "sys_database_change_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_maintenance_action_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "sys_database_maintenance_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sys_mime_types: {
         Row: {
           category: string | null
@@ -6623,6 +6791,120 @@ export type Database = {
           },
         ]
       }
+      sys_service_migration_checklist: {
+        Row: {
+          base_class_type: string
+          checklist_items: Json
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          base_class_type: string
+          checklist_items: Json
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          base_class_type?: string
+          checklist_items?: Json
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      sys_service_migration_tasks: {
+        Row: {
+          assigned_to: string | null
+          checklist: Json | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          service_id: string | null
+          started_at: string | null
+          status: string | null
+          task_type: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          task_type: string
+        }
+        Update: {
+          assigned_to?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sys_service_migration_tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_service_dependency_summary_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sys_service_migration_tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "sys_shared_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sys_service_monitoring_runs: {
+        Row: {
+          created_at: string | null
+          deprecated_services: number | null
+          duration_seconds: number | null
+          id: string
+          new_services_found: number | null
+          notes: string | null
+          refactoring_needed: number | null
+          run_date: string | null
+          run_type: string | null
+          services_scanned: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deprecated_services?: number | null
+          duration_seconds?: number | null
+          id?: string
+          new_services_found?: number | null
+          notes?: string | null
+          refactoring_needed?: number | null
+          run_date?: string | null
+          run_type?: string | null
+          services_scanned?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deprecated_services?: number | null
+          duration_seconds?: number | null
+          id?: string
+          new_services_found?: number | null
+          notes?: string | null
+          refactoring_needed?: number | null
+          run_date?: string | null
+          run_type?: string | null
+          services_scanned?: number | null
+        }
+        Relationships: []
+      }
       sys_service_test_runs: {
         Row: {
           created_at: string | null
@@ -6667,58 +6949,166 @@ export type Database = {
       }
       sys_shared_services: {
         Row: {
+          backwards_compatible: boolean | null
+          base_class_type: string | null
+          breaking_changes: boolean | null
           category: string | null
+          checklist_compliant: boolean | null
+          compliance_issues: Json | null
+          confidence_score: number | null
+          consolidation_candidate: boolean | null
           created_at: string | null
           dependencies: Json | null
           description: string | null
+          environment_config: Json | null
+          environment_support: string[] | null
+          environment_type: string | null
           exports: Json | null
           has_browser_variant: boolean | null
+          has_tests: boolean | null
           id: string
+          initialization_dependencies: string[] | null
+          instantiation_pattern: string | null
           is_singleton: boolean | null
+          last_test_run: string | null
+          last_usage_scan: string | null
           last_validated: string | null
+          maintenance_recommendation: string | null
+          migration_completed_at: string | null
+          migration_notes: string | null
+          migration_started_at: string | null
+          migration_status: string | null
+          next_scan_date: string | null
+          overlaps_with: string[] | null
+          performance_after: Json | null
+          performance_baseline: Json | null
+          refactoring_notes: string | null
+          requires_initialization: boolean | null
+          resource_management: Json | null
+          scan_frequency: string | null
+          service_health: string | null
           service_name: string
           service_name_normalized: string | null
           service_path: string
+          service_type: string | null
           status: string | null
+          test_coverage_percent: number | null
           updated_at: string | null
+          usage_count: number | null
+          usage_history: Json | null
+          usage_locations: Json | null
+          usage_trend: string | null
           used_by_apps: string[] | null
           used_by_pipelines: string[] | null
+          used_by_proxy_servers: string[] | null
         }
         Insert: {
+          backwards_compatible?: boolean | null
+          base_class_type?: string | null
+          breaking_changes?: boolean | null
           category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issues?: Json | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
           created_at?: string | null
           dependencies?: Json | null
           description?: string | null
+          environment_config?: Json | null
+          environment_support?: string[] | null
+          environment_type?: string | null
           exports?: Json | null
           has_browser_variant?: boolean | null
+          has_tests?: boolean | null
           id?: string
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
           is_singleton?: boolean | null
+          last_test_run?: string | null
+          last_usage_scan?: string | null
           last_validated?: string | null
+          maintenance_recommendation?: string | null
+          migration_completed_at?: string | null
+          migration_notes?: string | null
+          migration_started_at?: string | null
+          migration_status?: string | null
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          performance_after?: Json | null
+          performance_baseline?: Json | null
+          refactoring_notes?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          scan_frequency?: string | null
+          service_health?: string | null
           service_name: string
           service_name_normalized?: string | null
           service_path: string
+          service_type?: string | null
           status?: string | null
+          test_coverage_percent?: number | null
           updated_at?: string | null
+          usage_count?: number | null
+          usage_history?: Json | null
+          usage_locations?: Json | null
+          usage_trend?: string | null
           used_by_apps?: string[] | null
           used_by_pipelines?: string[] | null
+          used_by_proxy_servers?: string[] | null
         }
         Update: {
+          backwards_compatible?: boolean | null
+          base_class_type?: string | null
+          breaking_changes?: boolean | null
           category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issues?: Json | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
           created_at?: string | null
           dependencies?: Json | null
           description?: string | null
+          environment_config?: Json | null
+          environment_support?: string[] | null
+          environment_type?: string | null
           exports?: Json | null
           has_browser_variant?: boolean | null
+          has_tests?: boolean | null
           id?: string
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
           is_singleton?: boolean | null
+          last_test_run?: string | null
+          last_usage_scan?: string | null
           last_validated?: string | null
+          maintenance_recommendation?: string | null
+          migration_completed_at?: string | null
+          migration_notes?: string | null
+          migration_started_at?: string | null
+          migration_status?: string | null
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          performance_after?: Json | null
+          performance_baseline?: Json | null
+          refactoring_notes?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          scan_frequency?: string | null
+          service_health?: string | null
           service_name?: string
           service_name_normalized?: string | null
           service_path?: string
+          service_type?: string | null
           status?: string | null
+          test_coverage_percent?: number | null
           updated_at?: string | null
+          usage_count?: number | null
+          usage_history?: Json | null
+          usage_locations?: Json | null
+          usage_trend?: string | null
           used_by_apps?: string[] | null
           used_by_pipelines?: string[] | null
+          used_by_proxy_servers?: string[] | null
         }
         Relationships: []
       }
@@ -8527,6 +8917,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_business_services_view: {
+        Row: {
+          created_at: string | null
+          dependencies: Json | null
+          environment_support: string[] | null
+          has_browser_variant: boolean | null
+          instantiation_pattern: string | null
+          service_name: string | null
+          service_path: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          dependencies?: Json | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          instantiation_pattern?: string | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          dependencies?: Json | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          instantiation_pattern?: string | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_database_objects_info_view: {
         Row: {
           column_count: number | null
@@ -8590,6 +9016,59 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_infrastructure_services_view: {
+        Row: {
+          created_at: string | null
+          environment_support: string[] | null
+          has_browser_variant: boolean | null
+          initialization_dependencies: string[] | null
+          instantiation_pattern: string | null
+          requires_initialization: boolean | null
+          resource_management: Json | null
+          service_name: string | null
+          service_path: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          environment_support?: string[] | null
+          has_browser_variant?: boolean | null
+          initialization_dependencies?: string[] | null
+          instantiation_pattern?: string | null
+          requires_initialization?: boolean | null
+          resource_management?: Json | null
+          service_name?: string | null
+          service_path?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      sys_pending_maintenance_actions_view: {
+        Row: {
+          action_details: Json | null
+          action_type: string | null
+          created_at: string | null
+          event_type: string | null
+          object_name: string | null
+          rule_name: string | null
+        }
+        Relationships: []
+      }
       sys_pipeline_dependencies_view: {
         Row: {
           command_name: string | null
@@ -8600,6 +9079,36 @@ export type Database = {
           service_category: string | null
           service_name: string | null
           usage_type: string | null
+        }
+        Relationships: []
+      }
+      sys_recent_database_changes_view: {
+        Row: {
+          change_details: Json | null
+          detected_at: string | null
+          event_type: string | null
+          object_name: string | null
+          object_type: string | null
+          processed: boolean | null
+          status: string | null
+        }
+        Insert: {
+          change_details?: Json | null
+          detected_at?: string | null
+          event_type?: string | null
+          object_name?: string | null
+          object_type?: string | null
+          processed?: boolean | null
+          status?: never
+        }
+        Update: {
+          change_details?: Json | null
+          detected_at?: string | null
+          event_type?: string | null
+          object_name?: string | null
+          object_type?: string | null
+          processed?: boolean | null
+          status?: never
         }
         Relationships: []
       }
@@ -8619,6 +9128,95 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_service_health_analysis_view: {
+        Row: {
+          category: string | null
+          checklist_compliant: boolean | null
+          confidence_score: number | null
+          consolidation_candidate: boolean | null
+          environment_type: string | null
+          has_tests: boolean | null
+          health_assessment: string | null
+          last_usage_scan: string | null
+          last_validated: string | null
+          maintenance_recommendation: string | null
+          needs_scan: boolean | null
+          next_scan_date: string | null
+          overlaps_with: string[] | null
+          service_health: string | null
+          service_name: string | null
+          usage_count: number | null
+          usage_level: string | null
+          usage_trend: string | null
+        }
+        Insert: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
+          environment_type?: string | null
+          has_tests?: boolean | null
+          health_assessment?: never
+          last_usage_scan?: string | null
+          last_validated?: string | null
+          maintenance_recommendation?: string | null
+          needs_scan?: never
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+          usage_level?: never
+          usage_trend?: string | null
+        }
+        Update: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          confidence_score?: number | null
+          consolidation_candidate?: boolean | null
+          environment_type?: string | null
+          has_tests?: boolean | null
+          health_assessment?: never
+          last_usage_scan?: string | null
+          last_validated?: string | null
+          maintenance_recommendation?: string | null
+          needs_scan?: never
+          next_scan_date?: string | null
+          overlaps_with?: string[] | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+          usage_level?: never
+          usage_trend?: string | null
+        }
+        Relationships: []
+      }
+      sys_service_initialization_order_view: {
+        Row: {
+          init_level: number | null
+          init_path: string[] | null
+          initialization_dependencies: string[] | null
+          service_name: string | null
+          service_type: string | null
+        }
+        Relationships: []
+      }
+      sys_service_migration_progress_view: {
+        Row: {
+          backwards_compatible: boolean | null
+          base_class_type: string | null
+          breaking_changes: boolean | null
+          completed_tasks: number | null
+          migration_completed_at: string | null
+          migration_started_at: string | null
+          migration_status: string | null
+          progress_percentage: number | null
+          service_name: string | null
+          service_type: string | null
+          total_tasks: number | null
+        }
+        Relationships: []
+      }
       sys_service_test_health_view: {
         Row: {
           avg_execution_time: number | null
@@ -8635,6 +9233,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_services_needing_attention_view: {
+        Row: {
+          category: string | null
+          checklist_compliant: boolean | null
+          compliance_issue_count: number | null
+          has_tests: boolean | null
+          last_usage_scan: string | null
+          maintenance_recommendation: string | null
+          next_scan_date: string | null
+          service_health: string | null
+          service_name: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issue_count?: never
+          has_tests?: boolean | null
+          last_usage_scan?: string | null
+          maintenance_recommendation?: string | null
+          next_scan_date?: string | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          checklist_compliant?: boolean | null
+          compliance_issue_count?: never
+          has_tests?: boolean | null
+          last_usage_scan?: string | null
+          maintenance_recommendation?: string | null
+          next_scan_date?: string | null
+          service_health?: string | null
+          service_name?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       sys_table_prefix_usage_view: {
         Row: {
           description: string | null
@@ -8642,6 +9279,15 @@ export type Database = {
           example_tables: string[] | null
           prefix: string | null
           table_count: number | null
+        }
+        Relationships: []
+      }
+      sys_tables_missing_definitions_view: {
+        Row: {
+          category: string | null
+          table_name: unknown | null
+          table_schema: unknown | null
+          table_type: string | null
         }
         Relationships: []
       }
@@ -8719,6 +9365,15 @@ export type Database = {
           match_percentage: number
         }[]
       }
+      analyze_function_dependencies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          function_name: string
+          depends_on: string[]
+          used_by: string[]
+          is_orphaned: boolean
+        }[]
+      }
       analyze_function_usage: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -8784,8 +9439,28 @@ export type Database = {
           user_exists: boolean
         }[]
       }
+      check_column_standards: {
+        Args: { p_table_name: string }
+        Returns: {
+          column_name: string
+          data_type: string
+          issue: string
+          suggestion: string
+        }[]
+      }
       check_table_prefix_exists: {
         Args: { table_name: string }
+        Returns: boolean
+      }
+      check_table_rls_status: {
+        Args: { p_table_name: string }
+        Returns: {
+          rls_enabled: boolean
+          policy_count: number
+        }[]
+      }
+      check_trigger_exists: {
+        Args: { p_table_name: string; p_trigger_pattern: string }
         Returns: boolean
       }
       check_user_id_foreign_keys: {
@@ -8884,6 +9559,24 @@ export type Database = {
           recommendation: string
         }[]
       }
+      find_duplicate_indexes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          index1: string
+          index2: string
+          index_definition: string
+        }[]
+      }
+      find_missing_fk_indexes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          column_name: string
+          referenced_table: string
+          suggested_index_name: string
+        }[]
+      }
       find_mp4_files_in_folder: {
         Args: { folder_id: string }
         Returns: {
@@ -8902,6 +9595,24 @@ export type Database = {
           column_name: string
           orphaned_user_id: string
           row_count: number
+        }[]
+      }
+      find_orphaned_views: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          view_name: string
+          definition: string
+          issue: string
+        }[]
+      }
+      find_unused_indexes: {
+        Args: { days_threshold?: number }
+        Returns: {
+          schema_name: string
+          table_name: string
+          index_name: string
+          index_scans: number
+          index_size: string
         }[]
       }
       generate_table_documentation: {
@@ -9054,6 +9765,15 @@ export type Database = {
           failure_count: number
           last_executed: string
           avg_duration_ms: number
+        }[]
+      }
+      get_database_functions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          function_name: string
+          return_type: string
+          argument_types: string
+          function_body: string
         }[]
       }
       get_database_views_info: {
@@ -9426,6 +10146,12 @@ export type Database = {
           is_enabled: boolean
         }[]
       }
+      get_tables_without_rls: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+        }[]
+      }
       get_triggers: {
         Args: { schema_name: string }
         Returns: Json
@@ -9526,6 +10252,10 @@ export type Database = {
         }
         Returns: string
       }
+      record_migration_metrics: {
+        Args: { p_service_name: string; p_metric_type: string; p_metrics: Json }
+        Returns: undefined
+      }
       refresh_schema_and_fix_metadata: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -9595,6 +10325,10 @@ export type Database = {
         Args: { target_email: string; is_admin?: boolean }
         Returns: boolean
       }
+      start_service_migration: {
+        Args: { p_service_name: string; p_base_class_type: string }
+        Returns: string
+      }
       submit_access_request: {
         Args: {
           p_email: string
@@ -9625,6 +10359,18 @@ export type Database = {
           validation_method: string
         }[]
       }
+      sys_detect_database_changes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          change_type: string
+          object_name: string
+          details: Json
+        }[]
+      }
+      sys_process_maintenance_rules: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       table_exists: {
         Args: { p_schema_name: string; p_table_name: string }
         Returns: boolean
@@ -9652,6 +10398,14 @@ export type Database = {
           p_error_message?: string
         }
         Returns: boolean
+      }
+      validate_service_dependencies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          service_name: string
+          missing_dependencies: string[]
+          circular_dependencies: boolean
+        }[]
       }
     }
     Enums: {
