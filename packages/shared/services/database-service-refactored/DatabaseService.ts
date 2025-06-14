@@ -425,12 +425,17 @@ export class DatabaseService extends SingletonService {
       
       // Fallback method: query information_schema directly
       // Get columns
+      // Use RPC to query information_schema since it's not directly accessible
       const { data: columns, error: columnsError } = await this.supabase
-        .from('information_schema.columns' as any)
-        .select('column_name, data_type, is_nullable, column_default')
-        .eq('table_schema', 'public')
-        .eq('table_name', tableName)
-        .order('ordinal_position');
+        .rpc('execute_sql', {
+          sql_query: `
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_schema = 'public' 
+            AND table_name = '${tableName}'
+            ORDER BY ordinal_position
+          `
+        });
       
       if (columnsError) {
         throw new Error(`Failed to get columns for ${tableName}: ${columnsError.message}`);
@@ -438,14 +443,21 @@ export class DatabaseService extends SingletonService {
       
       // Get constraints
       const { data: constraints, error: constraintsError } = await this.supabase
-        .from('information_schema.table_constraints' as any)
-        .select(`
-          constraint_name,
-          constraint_type,
-          information_schema.key_column_usage!inner(column_name)
-        `)
-        .eq('table_schema', 'public')
-        .eq('table_name', tableName);
+        .rpc('execute_sql', {
+          sql_query: `
+            SELECT 
+              tc.constraint_name,
+              tc.constraint_type,
+              kcu.column_name
+            FROM information_schema.table_constraints tc
+            LEFT JOIN information_schema.key_column_usage kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+              AND tc.table_name = kcu.table_name
+            WHERE tc.table_schema = 'public' 
+            AND tc.table_name = '${tableName}'
+          `
+        });
       
       if (constraintsError) {
         throw new Error(`Failed to get constraints for ${tableName}: ${constraintsError.message}`);
