@@ -22,7 +22,7 @@ import {
   UnifiedClassificationServiceMetrics,
   UnifiedClassificationServiceConfig
 } from './types';
-import { Logger } from '../../utils/logger';
+import { Logger } from '../base-classes/BaseService';
 import { Database } from '../../../../supabase/types';
 
 type GoogleSource = Database['public']['Tables']['google_sources']['Row'];
@@ -48,6 +48,8 @@ export class UnifiedClassificationService extends BusinessService {
     cacheMisses: 0,
     errors: 0
   };
+
+  private lastOperationTime: Date = new Date();
 
   // Mime type to prompt mapping
   private mimeTypeToPromptMap: MimeTypePromptMap = {
@@ -110,11 +112,13 @@ export class UnifiedClassificationService extends BusinessService {
     private config: UnifiedClassificationServiceConfig,
     logger?: Logger
   ) {
-    super('UnifiedClassificationService', logger);
-    this.validateConfig();
+    super('UnifiedClassificationService', { 
+      supabase, 
+      ...config 
+    }, logger);
   }
 
-  private validateConfig(): void {
+  protected validateDependencies(): void {
     if (!this.config.googleDriveService) {
       throw new Error('UnifiedClassificationServiceConfig.googleDriveService is required');
     }
@@ -132,13 +136,19 @@ export class UnifiedClassificationService extends BusinessService {
     }
   }
 
-  async getHealthStatus(): Promise<{ healthy: boolean; details: Record<string, any> }> {
+  protected async initialize(): Promise<void> {
+    // Service is ready to use immediately after dependency validation
+    this.logger?.info('UnifiedClassificationService initialized');
+  }
+
+  async healthCheck(): Promise<{ healthy: boolean; details: Record<string, any>; timestamp: Date; latencyMs?: number }> {
+    const startTime = Date.now();
     const checks = {
       databaseConnected: false,
       googleDriveService: false,
       promptService: false,
       claudeService: false,
-      lastOperationTime: this.getLastOperationTime()
+      lastOperationTime: this.lastOperationTime.toISOString()
     };
 
     try {
@@ -174,8 +184,21 @@ export class UnifiedClassificationService extends BusinessService {
                    checks.promptService && 
                    checks.claudeService;
 
-    return { healthy, details: { ...checks, metrics: this.metrics } };
+    const latencyMs = Date.now() - startTime;
+
+    return { 
+      healthy, 
+      details: { ...checks, metrics: this.metrics }, 
+      timestamp: new Date(),
+      latencyMs
+    };
   }
+
+  protected async cleanup(): Promise<void> {
+    // No specific cleanup needed for this service
+    this.logger?.info('UnifiedClassificationService cleaned up');
+  }
+
 
   getMetrics(): UnifiedClassificationServiceMetrics {
     return { ...this.metrics };
@@ -190,7 +213,7 @@ export class UnifiedClassificationService extends BusinessService {
     const errors: Array<{ fileName: string; error: string }> = [];
 
     this.metrics.classificationsRequested++;
-    this.updateLastOperationTime();
+    this.lastOperationTime = new Date();
 
     try {
       this.logger?.info('Starting document classification', { options });
