@@ -93,6 +93,7 @@ echo -e "\n${BOLD}INFRASTRUCTURE:${NC}"
 # Skip Supabase check as it requires a different path
 # run_health_check "supabase" "Supabase" "$ROOT_DIR/packages/shared/services/supabase-client/health-check.sh"
 run_health_check "database" "Database" "$ROOT_DIR/scripts/cli-pipeline/database/health-check.sh"
+run_health_check "proxy" "Proxy Servers" "$ROOT_DIR/scripts/cli-pipeline/proxy/proxy-cli.sh health-check"
 
 # Calculate overall health percentage
 if [ $total -gt 0 ]; then

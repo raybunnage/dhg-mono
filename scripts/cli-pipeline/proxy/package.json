@@ -1,0 +1,15 @@
+{
+  "name": "@dhg/cli-proxy",
+  "version": "1.0.0",
+  "description": "CLI commands for managing proxy servers",
+  "type": "module",
+  "scripts": {
+    "start": "./proxy-cli.sh"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
