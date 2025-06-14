@@ -26,9 +26,10 @@ import { TestFileBrowserProxy } from './components/TestFileBrowserProxy';
 import { TestContinuousDocsProxy } from './components/TestContinuousDocsProxy';
 import { TestAudioStreamingProxy } from './components/TestAudioStreamingProxy';
 import { TestHtmlFileBrowserProxy } from './components/TestHtmlFileBrowserProxy';
+import { ProxyServerDashboard } from './components/ProxyServerDashboard';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser'>('env-fix');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard'>('proxy-dashboard');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -168,6 +169,16 @@ function App() {
           >
             HTML Browser
           </button>
+          <button
+            onClick={() => setView('proxy-dashboard')}
+            className={`px-4 py-2 rounded ${
+              view === 'proxy-dashboard' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-green-200 text-green-700 hover:bg-green-300'
+            }`}
+          >
+            🚀 Proxy Dashboard
+          </button>
           </div>
         </div>
       </div>
@@ -192,6 +203,7 @@ function App() {
         {view === 'continuous-docs' && <TestContinuousDocsProxy />}
         {view === 'audio-streaming' && <TestAudioStreamingProxy />}
         {view === 'html-browser' && <TestHtmlFileBrowserProxy />}
+        {view === 'proxy-dashboard' && <ProxyServerDashboard />}
       </div>
     </div>
   );
