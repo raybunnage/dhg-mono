@@ -13,8 +13,17 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Source command tracking
-source "$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/command-tracking.sh"
+# Source command tracking if available
+TRACKING_SCRIPT="$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/command-tracking.sh"
+if [ -f "$TRACKING_SCRIPT" ]; then
+    source "$TRACKING_SCRIPT"
+else
+    # Fallback function if tracking not available
+    track_command() {
+        # Just log to console
+        echo "[Command] $1: $2 - $3" >&2
+    }
+fi
 
 show_help() {
     echo -e "${BLUE}Proxy Pipeline CLI${NC}"
