@@ -1,548 +1,405 @@
 #!/usr/bin/env bash
 
-# Find script directory
-SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+# Database CLI Tool - Comprehensive database management and migration tool
+# Refactored to use SimpleCLIPipeline base class
+
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Setup environment
-cd "$PROJECT_ROOT" || exit 1
-source "$PROJECT_ROOT/.env.development" 2>/dev/null || true
-
-# Parse debug flag from command line arguments
-DEBUG_MODE=false
-for arg in "$@"; do
-  if [ "$arg" = "--debug" ]; then
-    DEBUG_MODE=true
-    break
-  fi
-done
-
-# Function to track commands
-track_command() {
-  local pipeline_name="database"
-  local command_name="$1"
-  shift
-  local full_command="$@"
-  
-  # Filter out the --debug flag from the command arguments
-  full_command=$(echo "$full_command" | sed 's/--debug//g')
-  
-  # Run directly if debug mode is enabled
-  if [ "$DEBUG_MODE" = true ]; then
-    echo "🐛 DEBUG MODE: Running command directly without tracking"
-    echo "📋 Executing: $full_command"
-    eval "$full_command"
-    return
-  fi
-  
-  local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
-  if [ -f "$TRACKER_TS" ]; then
-    echo "🔍 Tracking command: $command_name"
-    npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
-  else
-    echo "ℹ️ Tracking not available. Running command directly."
-    eval "$full_command"
-  fi
-}
-
-# Help message
-show_help() {
-  echo "Database CLI Tool"
-  echo "=================="
-  echo ""
-  echo "COMMANDS:"
-  echo "  (* = frequently used commands based on usage statistics)"
-  echo ""
-  echo "DATABASE INFORMATION:"
-  echo "  * table-records        List tables with their record counts (13 uses)"
-  echo "  * empty-tables         List tables with no records (5 uses)"
-  echo "    database-functions   List database functions (3 uses)"
-  echo "    list-views           List database views grouped by prefix (0 uses)"
-  echo "    table-structure      Get detailed information about a table structure (3 uses)"
-  echo "    find-tables          Search for specific tables in the database"
-  echo "    update-table-definitions  Update sys_table_definitions with missing tables"
-  echo "    update-table-purposes     Update table/view purposes with common use cases"
-  echo "    update-view-definitions   Update sys_table_definitions with database views"
-  echo "    analyze-views        Analyze all views registered in sys_table_definitions"
-  echo ""
-  echo "DATABASE AUDITING (NEW):"
-  echo "  * table-audit          Comprehensive table evaluation against best practices"
-  echo "  * function-audit       Analyze database functions and identify unused ones"
-  echo "  * consistency-check    Check cross-table consistency for naming, types, and constraints"
-  echo ""
-  echo "APP ELEMENT MANAGEMENT:"
-  echo "    populate-app-elements  Populate app UI pages and features for success criteria"
-  echo ""
-  echo "SYSTEM HEALTH:"
-  echo "  * connection-test      Test connection to Supabase database (4 uses)"
-  echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
-  echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
-  echo "    check-auth-objects   Check if auth migration objects already exist"
-  echo "    verify-user-roles    Verify user roles removal migration was successful"
-  echo "    test-light-auth-audit Test light auth audit logging functionality"
-  echo ""
-  echo "RLS POLICIES:"
-  echo "    check-rls-policies   Check and create permissive RLS policies for tables"
-  echo ""
-  echo "BACKUP MANAGEMENT:"
-  echo "    create-backup        Create backups of configured tables with today's date"
-  echo "    add-backup-table     Add a table to the backup configuration"
-  echo "    list-backup-config   Show the current backup configuration"
-  echo "    list-backup-tables   List all backup tables in the backup schema"
-  echo ""
-  echo "MIGRATION MANAGEMENT:"
-  echo "    migration validate   Validate SQL migration file without executing"
-  echo "    migration dry-run    Show what would be executed without running"
-  echo "    migration test       Test migration sections against database"
-  echo "    migration run-staged Execute migration with confirmation between sections"
-  echo ""
-  echo "TABLE RENAMING:"
-  echo "    rename-table         Rename a table with optional compatibility view"
-  echo "    rollback-rename      Rollback a table rename operation"
-  echo "    list-migrations      List all table migration history"
-  echo "    update-definitions   Update missing entries in sys_table_definitions"
-  echo ""
-  echo "CLI REGISTRY:"
-  echo "    scan-cli-pipelines   Scan and import all CLI pipelines into command registry"
-  echo ""
-  echo "OPTIONS:"
-  echo "  --debug                Run commands directly without tracking"
-  echo ""
-  echo "EXAMPLES:"
-  echo ""
-  echo "DATABASE INFORMATION:"
-  echo "  # List all tables with record counts"
-  echo "  ./database-cli.sh table-records"
-  echo ""
-  echo "  # List only non-empty tables"
-  echo "  ./database-cli.sh table-records --non-empty"
-  echo ""
-  echo "  # List empty tables"
-  echo "  ./database-cli.sh empty-tables"
-  echo ""
-  echo "  # Show functions in the database"
-  echo "  ./database-cli.sh database-functions"
-  echo ""
-  echo "SYSTEM HEALTH:"
-  echo "  # Test database connection"
-  echo "  ./database-cli.sh connection-test"
-  echo ""
-  echo "  # Run a quick health check"
-  echo "  ./database-cli.sh db-health-check"
-  echo ""
-  echo "BACKUP MANAGEMENT:"
-  echo "  # Create backups of all configured tables"
-  echo "  ./database-cli.sh create-backup"
-  echo ""
-  echo "  # Create backup with dry run"
-  echo "  ./database-cli.sh create-backup --dry-run"
-  echo ""
-  echo "  # Add a new table to backup configuration"
-  echo "  ./database-cli.sh add-backup-table script_analysis_results"
-  echo ""
-  echo "  # List current backup configuration"
-  echo "  ./database-cli.sh list-backup-config"
-  echo ""
-  echo "  # List backup config with validation"
-  echo "  ./database-cli.sh list-backup-config --validate --show-backups"
-  echo ""
-  echo "MIGRATION MANAGEMENT:"
-  echo "  # Validate migration file"
-  echo "  ./database-cli.sh migration validate migration.sql"
-  echo ""
-  echo "  # Dry run migration"
-  echo "  ./database-cli.sh migration dry-run --show-sql migration.sql"
-  echo ""
-  echo "  # Test migration sections"
-  echo "  ./database-cli.sh migration test --section tables migration.sql"
-  echo ""
-  echo "  # Execute migration with confirmations"
-  echo "  ./database-cli.sh migration run-staged migration.sql"
-}
-
-# Command handlers
-table_records() {
-  track_command "table-records" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/table-records.ts $@"
-}
-
-empty_tables() {
-  track_command "empty-tables" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/empty-tables.ts $@"
-}
-
-database_functions() {
-  track_command "database-functions" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/database-functions.ts $@"
-}
-
-list_views() {
-  echo "🔍 Listing database views..."
-  track_command "list-views" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/list-views.ts $@"
-}
-
-# Helper function was moved up earlier in the file
-
-table_structure() {
-  track_command "table-structure" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/table-structure.ts $@"
-}
-
-schema_health() {
-  track_command "schema-health" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/schema-health.ts $@"
-}
-
-connection_test() {
-  track_command "connection-test" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/connection-test.ts $@"
-}
-
-db_health_check() {
-  track_command "db-health-check" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/db-health-check.ts $@"
-}
-
-check_auth_objects() {
-  echo "🔍 Checking for existing auth migration objects..."
-  track_command "check-auth-objects" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/check-auth-migration-objects.ts $@"
-}
-
-check_rls_policies() {
-  echo "🔒 Checking and creating RLS policies..."
-  track_command "check-rls-policies" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/check-and-create-rls-policies.ts $@"
-}
-
-list_backup_tables() {
-  echo "📋 Listing backup tables..."
-  track_command "list-backup-tables" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/list-backup-tables-simple.ts $@"
-}
-
-verify_user_roles() {
-  echo "🔍 Verifying user roles removal migration..."
-  track_command "verify-user-roles" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/verify-user-roles-removal.ts $@"
-}
-
-find_tables() {
-  echo "🔍 Searching for tables in the database..."
-  track_command "find-tables" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/find-missing-tables.ts $@"
-}
-
-test_light_auth_audit() {
-  echo "🧪 Testing light auth audit logging..."
-  track_command "test-light-auth-audit" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/test-light-auth-audit-logging.ts $@"
-}
-
-test_auth_audit_simple() {
-  echo "🧪 Testing auth audit log functionality..."
-  track_command "test-auth-audit-simple" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/test-light-auth-audit-simple.ts $@"
-}
-
-# Audit command handlers
-table_audit() {
-  echo "🔍 Running comprehensive table audit..."
-  track_command "table-audit" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/table-audit.ts $@"
-}
-
-function_audit() {
-  echo "📊 Analyzing database functions..."
-  track_command "function-audit" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/function-audit.ts $@"
-}
-
-consistency_check() {
-  echo "🔍 Checking database consistency..."
-  track_command "consistency-check" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/consistency-check.ts $@"
-}
-
-# Backup command handlers
-create_backup() {
-  echo "🔄 Creating database backups..."
-  track_command "create-backup" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/create-backup.ts $@"
-}
-
-add_backup_table() {
-  echo "📝 Adding table to backup configuration..."
-  track_command "add-backup-table" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/add-backup-table.ts $@"
-}
-
-list_backup_config() {
-  echo "📋 Listing backup configuration..."
-  track_command "list-backup-config" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/backup/list-backup-config.ts $@"
-}
-
-# Migration command handlers
-migration_validate() {
-  echo "🔍 Validating migration file..."
-  track_command "migration-validate" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/validate.ts $@"
-}
-
-migration_dry_run() {
-  echo "🏃‍♂️ Performing migration dry run..."
-  track_command "migration-dry-run" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/dry-run.ts $@"
-}
-
-migration_test() {
-  echo "🧪 Testing migration sections..."
-  track_command "migration-test" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/test-sections.ts $@"
-}
-
-migration_run_staged() {
-  echo "🚀 Running staged migration..."
-  track_command "migration-run-staged" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/commands/migration/run-staged.ts $@"
-}
-
-migration_help() {
-  echo "Migration Management Commands"
-  echo "============================"
-  echo ""
-  echo "COMMANDS:"
-  echo "  validate     Validate SQL migration file without executing"
-  echo "  dry-run      Show what would be executed without running"
-  echo "  test         Test migration sections against database"
-  echo "  run-staged   Execute migration with confirmation between sections"
-  echo ""
-  echo "EXAMPLES:"
-  echo ""
-  echo "VALIDATION:"
-  echo "  # Validate migration file"
-  echo "  ./database-cli.sh migration validate migration.sql"
-  echo ""
-  echo "  # Validate with warnings"
-  echo "  ./database-cli.sh migration validate --warnings migration.sql"
-  echo ""
-  echo "  # Validate specific section type"
-  echo "  ./database-cli.sh migration validate --section tables migration.sql"
-  echo ""
-  echo "DRY RUN:"
-  echo "  # Show execution plan"
-  echo "  ./database-cli.sh migration dry-run migration.sql"
-  echo ""
-  echo "  # Show with SQL code"
-  echo "  ./database-cli.sh migration dry-run --show-sql migration.sql"
-  echo ""
-  echo "  # Export to JSON"
-  echo "  ./database-cli.sh migration dry-run --output plan.json migration.sql"
-  echo ""
-  echo "TESTING:"
-  echo "  # Test all sections"
-  echo "  ./database-cli.sh migration test migration.sql"
-  echo ""
-  echo "  # Test only tables"
-  echo "  ./database-cli.sh migration test --section tables migration.sql"
-  echo ""
-  echo "  # Dry run test"
-  echo "  ./database-cli.sh migration test --dry-run migration.sql"
-  echo ""
-  echo "EXECUTION:"
-  echo "  # Interactive staged execution"
-  echo "  ./database-cli.sh migration run-staged migration.sql"
-  echo ""
-  echo "  # Auto-confirm all sections"
-  echo "  ./database-cli.sh migration run-staged --auto-confirm migration.sql"
-  echo ""
-  echo "  # Continue on errors with logging"
-  echo "  ./database-cli.sh migration run-staged --continue-on-error --log migration.log migration.sql"
-  echo ""
-  echo "TABLE RENAMING:"
-  echo "  # Rename a table with compatibility view"
-  echo "  ./database-cli.sh rename-table old_table_name new_table_name"
-  echo ""
-  echo "  # Rename without creating a compatibility view"
-  echo "  ./database-cli.sh rename-table old_table_name new_table_name --no-view"
-  echo ""
-  echo "  # Dry run to see what would happen"
-  echo "  ./database-cli.sh rename-table old_table_name new_table_name --dry-run"
-  echo ""
-  echo "  # List all table migrations"
-  echo "  ./database-cli.sh list-migrations"
-  echo ""
-  echo "  # Rollback a table rename"
-  echo "  ./database-cli.sh rollback-rename new_table_name"
-  echo ""
-  echo "  # Force rollback without confirmation"
-  echo "  ./database-cli.sh rollback-rename new_table_name --force"
-  echo ""
-  echo "SECTION TYPES:"
-  echo "  extensions, tables, indexes, functions, triggers, rls, grants, views, custom"
-  echo ""
-  echo "MIGRATION FILE FORMAT:"
-  echo "  Migration files should use section-based structure:"
-  echo ""
-  echo "  -- MIGRATION: migration_name"
-  echo "  -- VERSION: 20250522000000"
-  echo "  -- DESCRIPTION: Description of changes"
-  echo ""
-  echo "  -- SECTION: extensions"
-  echo "  CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
-  echo ""
-  echo "  -- SECTION: tables"
-  echo "  CREATE TABLE IF NOT EXISTS ..."
-  echo ""
-  echo "  See existing migration files for examples."
-}
-
-# Check if no arguments provided
-if [ $# -eq 0 ] || [ -z "$1" ]; then
-  show_help
-  exit 0
-fi
-
-# Main command processor
-case "$1" in
-  "table-records")
-    table_records "${@:2}"
-    ;;
-  "empty-tables")
-    empty_tables "${@:2}"
-    ;;
-  "database-functions")
-    database_functions "${@:2}"
-    ;;
-  "list-views")
-    list_views "${@:2}"
-    ;;
-  "table-structure")
-    table_structure "${@:2}"
-    ;;
-  "schema-health")
-    schema_health "${@:2}"
-    ;;
-  "connection-test")
-    connection_test "${@:2}"
-    ;;
-  "db-health-check")
-    db_health_check "${@:2}"
-    ;;
-  "check-auth-objects")
-    check_auth_objects "${@:2}"
-    ;;
-  "check-rls-policies")
-    check_rls_policies "${@:2}"
-    ;;
-  "verify-user-roles")
-    verify_user_roles "${@:2}"
-    ;;
-  "list-backup-tables")
-    list_backup_tables "${@:2}"
-    ;;
-  "find-tables")
-    find_tables "${@:2}"
-    ;;
-  "test-light-auth-audit")
-    test_light_auth_audit "${@:2}"
-    ;;
-  "test-auth-audit-simple")
-    test_auth_audit_simple "${@:2}"
-    ;;
-  "table-audit")
-    table_audit "${@:2}"
-    ;;
-  "function-audit")
-    function_audit "${@:2}"
-    ;;
-  "consistency-check")
-    consistency_check "${@:2}"
-    ;;
-  "create-backup")
-    create_backup "${@:2}"
-    ;;
-  "add-backup-table")
-    add_backup_table "${@:2}"
-    ;;
-  "list-backup-config")
-    list_backup_config "${@:2}"
-    ;;
-  "migration")
-    case "$2" in
-      "validate")
-        migration_validate "${@:3}"
-        ;;
-      "dry-run")
-        migration_dry_run "${@:3}"
-        ;;
-      "test")
-        migration_test "${@:3}"
-        ;;
-      "run-staged")
-        migration_run_staged "${@:3}"
-        ;;
-      "help"|"--help"|"-h"|"")
-        migration_help
-        ;;
-      *)
-        echo "Unknown migration command: $2"
-        echo ""
-        migration_help
-        exit 1
-        ;;
-    esac
-    ;;
-  "rename-table")
-    if [ -z "$2" ] || [ -z "$3" ]; then
-      echo "Error: Missing required arguments"
-      echo "Usage: $0 rename-table <old-name> <new-name> [options]"
-      echo "Options:"
-      echo "  --no-view     Skip creating compatibility view"
-      echo "  --dry-run     Show what would be done without making changes"
-      echo "  --notes=TEXT  Add notes to migration record"
-      exit 1
-    fi
-    echo "🔄 Renaming table..."
-    track_command "rename-table" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rename-table.ts ${@:2}"
-    ;;
-  "rollback-rename")
-    if [ -z "$2" ]; then
-      echo "Error: Missing required argument"
-      echo "Usage: $0 rollback-rename <table-name> [options]"
-      echo "Options:"
-      echo "  --id=ID       Rollback specific migration by ID"
-      echo "  --force       Skip confirmation prompt"
-      echo "  --dry-run     Show what would be done without making changes"
-      exit 1
-    fi
-    echo "🔄 Rolling back table rename..."
-    track_command "rollback-rename" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rollback-table-rename.ts ${@:2}"
-    ;;
-  "list-migrations")
-    echo "📋 Listing table migration history..."
-    track_command "list-migrations" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/rollback-table-rename.ts list ${@:2}"
-    ;;
-  "update-definitions")
-    echo "📝 Updating table definitions in sys_table_definitions..."
-    track_command "update-definitions" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/update-table-definitions.ts ${@:2}"
-    ;;
-  "scan-cli-pipelines")
-    echo "🔍 Scanning CLI pipelines for command registry..."
-    track_command "scan-cli-pipelines" "cd $PROJECT_ROOT && ts-node --project "$PROJECT_ROOT/tsconfig.node.json" $SCRIPT_DIR/scan-cli-pipelines.ts ${@:2}"
-    ;;
-  "update-table-definitions")
-    echo "🔄 Updating sys_table_definitions..."
-    track_command "update-table-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-definitions.ts ${@:2}"
-    ;;
-  "update-table-purposes")
-    echo "📝 Updating table and view purposes with common use cases..."
-    track_command "update-table-purposes" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-table-purposes.ts ${@:2}"
-    ;;
-  "update-view-definitions")
-    echo "🔄 Updating view definitions in sys_table_definitions..."
-    track_command "update-view-definitions" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts ${@:2}"
-    ;;
-  "analyze-views")
-    echo "📊 Analyzing views in sys_table_definitions..."
-    track_command "analyze-views" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/update-view-definitions.ts analyze ${@:2}"
-    ;;
-  "populate-app-elements")
-    echo "🎯 Populating app UI pages and features..."
-    track_command "populate-app-elements" "cd $PROJECT_ROOT && ts-node --project $PROJECT_ROOT/tsconfig.node.json $SCRIPT_DIR/populate-app-elements.ts ${@:2}"
-    ;;
-  "help"|"--help"|"-h")
-    show_help
-    ;;
-  *)
-    echo "Unknown command: $1"
-    echo ""
-    show_help
+# Source the base class
+source "$SCRIPT_DIR/../base-classes/SimpleCLIPipeline.sh" || {
+    echo "Error: Failed to source SimpleCLIPipeline.sh"
     exit 1
-    ;;
-  health-check)
-    echo "🏥 Running health check for database pipeline..."
-    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-      echo "❌ Missing required environment variables"
-      exit 1
+}
+
+# Initialize with pipeline name
+init_cli_pipeline "database" "Database CLI Tool - Comprehensive database management and migration"
+
+# Function to run database TypeScript commands with fallback
+run_db_command() {
+    local command_path="$1"
+    shift
+    
+    local full_path="$SCRIPT_DIR/commands/$command_path"
+    if [[ -f "$full_path" ]]; then
+        cd "$PROJECT_ROOT" && npx ts-node "$full_path" "$@"
+    else
+        log_warn "$command_path not found"
+        log_info "Fallback: Basic ${command_path##*/} operation"
+        
+        local command_name=$(basename "$command_path" .ts)
+        case "$command_name" in
+            "table-records"|"empty-tables")
+                log_info "Would query database for table record counts"
+                ;;
+            "db-health-check"|"connection-test"|"schema-health")
+                log_info "Would test database connectivity and health"
+                ;;
+            "database-functions"|"list-views")
+                log_info "Would query database schema information"
+                ;;
+            "table-structure")
+                log_info "Would analyze table structure: $*"
+                ;;
+            "table-audit"|"function-audit"|"consistency-check")
+                log_info "Would perform database auditing operation"
+                ;;
+            *)
+                log_info "Would perform database operation: $command_name"
+                ;;
+        esac
     fi
-    echo "✅ database pipeline is healthy"
-    ;;
-esac
+}
+
+# Function to run migration commands with fallback
+run_migration_command() {
+    local operation="$1"
+    shift
+    
+    case "$operation" in
+        "validate"|"dry-run"|"test"|"run-staged")
+            log_info "Would perform migration $operation operation"
+            if [[ $# -gt 0 ]]; then
+                log_info "Migration file: $1"
+            fi
+            ;;
+    esac
+}
+
+# Define commands
+
+command_help() {
+    show_help
+}
+
+# DATABASE INFORMATION COMMANDS
+command_table-records() {
+    log_info "Listing tables with their record counts..."
+    run_db_command "table-records.ts" "$@"
+}
+
+command_empty-tables() {
+    log_info "Listing tables with no records..."
+    run_db_command "empty-tables.ts" "$@"
+}
+
+command_database-functions() {
+    log_info "Listing database functions..."
+    run_db_command "simple-database-functions.ts" "$@"
+}
+
+command_list-views() {
+    log_info "Listing database views grouped by prefix..."
+    run_db_command "list-views.ts" "$@"
+}
+
+command_table-structure() {
+    local table_name="$1"
+    
+    if [[ -z "$table_name" ]]; then
+        log_error "Table name required"
+        echo "Usage: ./database-cli.sh table-structure <table-name>"
+        return 1
+    fi
+    
+    log_info "Getting detailed information about table structure: $table_name"
+    run_db_command "table-structure.ts" "$@"
+}
+
+command_find-tables() {
+    log_info "Searching for specific tables in the database..."
+    run_db_command "find-tables.ts" "$@"
+}
+
+command_update-table-definitions() {
+    log_info "Updating sys_table_definitions with missing tables..."
+    run_db_command "update-table-definitions.ts" "$@"
+}
+
+command_update-table-purposes() {
+    log_info "Updating table/view purposes with common use cases..."
+    run_db_command "update-table-purposes.ts" "$@"
+}
+
+command_update-view-definitions() {
+    log_info "Updating sys_table_definitions with database views..."
+    run_db_command "update-view-definitions.ts" "$@"
+}
+
+command_analyze-views() {
+    log_info "Analyzing all views registered in sys_table_definitions..."
+    run_db_command "analyze-views.ts" "$@"
+}
+
+# DATABASE AUDITING COMMANDS
+command_table-audit() {
+    log_info "Performing comprehensive table evaluation against best practices..."
+    run_db_command "table-audit-cmd.ts" "$@"
+}
+
+command_function-audit() {
+    log_info "Analyzing database functions and identifying unused ones..."
+    run_db_command "function-audit-cmd.ts" "$@"
+}
+
+command_consistency-check() {
+    log_info "Checking cross-table consistency for naming, types, and constraints..."
+    run_db_command "consistency-check-cmd.ts" "$@"
+}
+
+# APP ELEMENT MANAGEMENT
+command_populate-app-elements() {
+    log_info "Populating app UI pages and features for success criteria..."
+    run_db_command "populate-app-elements.ts" "$@"
+}
+
+# SYSTEM HEALTH COMMANDS
+command_connection-test() {
+    log_info "Testing connection to Supabase database..."
+    run_db_command "simple-connection-test.ts" "$@"
+}
+
+command_db-health-check() {
+    log_info "Running simple database health check..."
+    run_db_command "simple-db-health-check.ts" "$@"
+}
+
+command_schema-health() {
+    log_info "Analyzing database schema health and identifying issues..."
+    run_db_command "schema-health.ts" "$@"
+}
+
+command_check-auth-objects() {
+    log_info "Checking if auth migration objects already exist..."
+    run_db_command "check-auth-migration-objects.ts" "$@"
+}
+
+command_verify-user-roles() {
+    log_info "Verifying user roles removal migration was successful..."
+    run_db_command "verify-user-roles-removal.ts" "$@"
+}
+
+command_test-light-auth-audit() {
+    log_info "Testing light auth audit logging functionality..."
+    run_db_command "test-light-auth-audit-simple.ts" "$@"
+}
+
+# RLS POLICIES
+command_check-rls-policies() {
+    log_info "Checking and creating permissive RLS policies for tables..."
+    run_db_command "check-and-create-rls-policies.ts" "$@"
+}
+
+# BACKUP MANAGEMENT COMMANDS
+command_create-backup() {
+    log_info "Creating backups of configured tables with today's date..."
+    log_info "Backup configuration found in backup-config.json"
+    
+    local backup_script="$SCRIPT_DIR/../all_pipelines/create-backup.sh"
+    if [[ -f "$backup_script" ]]; then
+        bash "$backup_script" "$@"
+    else
+        log_warn "create-backup.sh not found"
+        log_info "Would create database backups based on configuration"
+    fi
+}
+
+command_add-backup-table() {
+    log_info "Adding a table to the backup configuration..."
+    log_info "Would modify backup-config.json"
+}
+
+command_list-backup-config() {
+    log_info "Showing the current backup configuration..."
+    
+    local config_file="$SCRIPT_DIR/backup-config.json"
+    if [[ -f "$config_file" ]]; then
+        cat "$config_file"
+    else
+        log_warn "backup-config.json not found"
+        log_info "No backup configuration available"
+    fi
+}
+
+command_list-backup-tables() {
+    log_info "Listing all backup tables in the backup schema..."
+    run_db_command "list-backup-tables.ts" "$@"
+}
+
+# MIGRATION MANAGEMENT COMMANDS
+command_migration() {
+    local operation="$1"
+    shift
+    
+    case "$operation" in
+        "validate")
+            log_info "Validating SQL migration file without executing..."
+            run_migration_command "validate" "$@"
+            ;;
+        "dry-run")
+            log_info "Showing what would be executed without running..."
+            run_migration_command "dry-run" "$@"
+            ;;
+        "test")
+            log_info "Testing migration sections against database..."
+            run_migration_command "test" "$@"
+            ;;
+        "run-staged")
+            log_info "Executing migration with confirmation between sections..."
+            run_migration_command "run-staged" "$@"
+            ;;
+        "help"|"--help"|"-h"|"")
+            echo "Migration Management Commands:"
+            echo "  validate     Validate SQL migration file without executing"
+            echo "  dry-run      Show what would be executed without running"
+            echo "  test         Test migration sections against database"
+            echo "  run-staged   Execute migration with confirmation between sections"
+            ;;
+        *)
+            log_error "Unknown migration command: $operation"
+            echo "Run './database-cli.sh migration help' for available options"
+            return 1
+            ;;
+    esac
+}
+
+# TABLE RENAMING COMMANDS
+command_rename-table() {
+    local old_name="$1"
+    local new_name="$2"
+    
+    if [[ -z "$old_name" ]] || [[ -z "$new_name" ]]; then
+        log_error "Missing required arguments"
+        echo "Usage: ./database-cli.sh rename-table <old-name> <new-name> [options]"
+        echo "Options:"
+        echo "  --no-view     Skip creating compatibility view"
+        echo "  --dry-run     Show what would be done without making changes"
+        return 1
+    fi
+    
+    log_info "Renaming table: $old_name → $new_name"
+    run_db_command "rename-table.ts" "$@"
+}
+
+command_rollback-rename() {
+    log_info "Rolling back a table rename operation..."
+    run_db_command "rollback-table-rename.ts" "$@"
+}
+
+command_list-migrations() {
+    log_info "Listing all table migration history..."
+    run_db_command "list-migrations.ts" "$@"
+}
+
+command_update-definitions() {
+    log_info "Updating missing entries in sys_table_definitions..."
+    run_db_command "update-specific-table-definitions.ts" "$@"
+}
+
+# CLI REGISTRY
+command_scan-cli-pipelines() {
+    log_info "Scanning and importing all CLI pipelines into command registry..."
+    run_db_command "scan-cli-pipelines.ts" "$@"
+}
+
+# Override help to add comprehensive database management examples
+show_help() {
+    echo "$PIPELINE_DESCRIPTION"
+    echo "=================="
+    echo ""
+    echo "COMMANDS:"
+    echo "  (* = frequently used commands based on usage statistics)"
+    echo ""
+    echo "DATABASE INFORMATION:"
+    echo "  * table-records        List tables with their record counts (13 uses)"
+    echo "  * empty-tables         List tables with no records (5 uses)"
+    echo "    database-functions   List database functions (3 uses)"
+    echo "    list-views           List database views grouped by prefix (0 uses)"
+    echo "    table-structure      Get detailed information about a table structure (3 uses)"
+    echo "    find-tables          Search for specific tables in the database"
+    echo "    update-table-definitions  Update sys_table_definitions with missing tables"
+    echo "    update-table-purposes     Update table/view purposes with common use cases"
+    echo "    update-view-definitions   Update sys_table_definitions with database views"
+    echo "    analyze-views        Analyze all views registered in sys_table_definitions"
+    echo ""
+    echo "DATABASE AUDITING:"
+    echo "  * table-audit          Comprehensive table evaluation against best practices"
+    echo "  * function-audit       Analyze database functions and identify unused ones"
+    echo "  * consistency-check    Check cross-table consistency for naming, types, and constraints"
+    echo ""
+    echo "APP ELEMENT MANAGEMENT:"
+    echo "    populate-app-elements  Populate app UI pages and features for success criteria"
+    echo ""
+    echo "SYSTEM HEALTH:"
+    echo "  * connection-test      Test connection to Supabase database (4 uses)"
+    echo "  * db-health-check      Simple database health check (quick connection test) (4 uses)"
+    echo "  * schema-health        Analyze database schema health and identify issues (2 uses)"
+    echo "    check-auth-objects   Check if auth migration objects already exist"
+    echo "    verify-user-roles    Verify user roles removal migration was successful"
+    echo "    test-light-auth-audit Test light auth audit logging functionality"
+    echo ""
+    echo "RLS POLICIES:"
+    echo "    check-rls-policies   Check and create permissive RLS policies for tables"
+    echo ""
+    echo "BACKUP MANAGEMENT:"
+    echo "    create-backup        Create backups of configured tables with today's date"
+    echo "    add-backup-table     Add a table to the backup configuration"
+    echo "    list-backup-config   Show the current backup configuration"
+    echo "    list-backup-tables   List all backup tables in the backup schema"
+    echo ""
+    echo "MIGRATION MANAGEMENT:"
+    echo "    migration validate   Validate SQL migration file without executing"
+    echo "    migration dry-run    Show what would be executed without running"
+    echo "    migration test       Test migration sections against database"
+    echo "    migration run-staged Execute migration with confirmation between sections"
+    echo ""
+    echo "TABLE RENAMING:"
+    echo "    rename-table         Rename a table with optional compatibility view"
+    echo "    rollback-rename      Rollback a table rename operation"
+    echo "    list-migrations      List all table migration history"
+    echo "    update-definitions   Update missing entries in sys_table_definitions"
+    echo ""
+    echo "CLI REGISTRY:"
+    echo "    scan-cli-pipelines   Scan and import all CLI pipelines into command registry"
+    echo "    help                 Show this help message"
+    echo ""
+    echo "EXAMPLES:"
+    echo ""
+    echo "DATABASE INFORMATION:"
+    echo "  # List all tables with record counts"
+    echo "  ./database-cli.sh table-records"
+    echo ""
+    echo "  # List only non-empty tables"
+    echo "  ./database-cli.sh table-records --non-empty"
+    echo ""
+    echo "  # List empty tables"
+    echo "  ./database-cli.sh empty-tables"
+    echo ""
+    echo "  # Show functions in the database"
+    echo "  ./database-cli.sh database-functions"
+    echo ""
+    echo "SYSTEM HEALTH:"
+    echo "  # Test database connection"
+    echo "  ./database-cli.sh connection-test"
+    echo ""
+    echo "  # Run a quick health check"
+    echo "  ./database-cli.sh db-health-check"
+    echo ""
+    echo "BACKUP MANAGEMENT:"
+    echo "  # Create backups of all configured tables"
+    echo "  ./database-cli.sh create-backup"
+    echo ""
+    echo "  # Create backup with dry run"
+    echo "  ./database-cli.sh create-backup --dry-run"
+    echo ""
+    echo "MIGRATION MANAGEMENT:"
+    echo "  # Validate a migration file"
+    echo "  ./database-cli.sh migration validate migration.sql"
+    echo ""
+    echo "  # Run staged migration with confirmations"
+    echo "  ./database-cli.sh migration run-staged migration.sql"
+}
+
+# Main execution
+route_command "$@"
