@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# Find script directory
+# Testing CLI Pipeline
+# Comprehensive testing for CLI pipelines
+
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
@@ -28,124 +30,87 @@ track_command() {
 # Help message
 show_help() {
   echo "Testing CLI Pipeline"
-  echo "===================="
+  echo "==================="
   echo ""
   echo "COMMANDS:"
-  echo ""
-  echo "TEST EXECUTION:"
-  echo "  run                Run tests for specific app or all apps"
-  echo "  watch              Run tests in watch mode"
-  echo "  coverage           Generate coverage report"
-  echo "  ci                 Run tests in CI mode"
-  echo ""
-  echo "TEST MANAGEMENT:"
-  echo "  list               List all test files"
-  echo "  stats              Show test statistics"
-  echo "  failed             Show recently failed tests"
-  echo "  slow               Show slowest tests"
-  echo ""
-  echo "SETUP & CONFIG:"
-  echo "  init               Initialize testing for an app"
-  echo "  add-test           Create a new test file"
-  echo "  update-deps        Update testing dependencies"
-  echo ""
-  echo "REPORTING:"
-  echo "  report             Generate HTML test report"
-  echo "  trends             Show test trends over time"
-  echo "  flaky              Identify flaky tests"
-  echo ""
-  echo "OPTIONS:"
-  echo "  --app <name>       Target specific app"
-  echo "  --type <type>      Filter by test type (unit|integration|e2e)"
-  echo "  --pattern <glob>   Match test files by pattern"
-  echo "  --bail             Stop on first test failure"
-  echo "  --debug            Show detailed debug output"
+  echo "  test-existence <pipeline>    Test command existence for a pipeline"
+  echo "  test-priority [level]        Test priority pipelines (default: level 1)"
+  echo "  test-pipeline <pipeline>     Run all tests for a specific pipeline"
+  echo "  test-all                     Test all registered pipelines"
+  echo "  coverage <pipeline>          Show test coverage for a pipeline"
+  echo "  report                       Generate test report"
+  echo "  health-check                 Check testing infrastructure health"
   echo ""
   echo "EXAMPLES:"
-  echo "  # Run all tests for dhg-audio"
-  echo "  ./testing-cli.sh run --app dhg-audio"
+  echo "  ./testing-cli.sh test-existence database"
+  echo "  ./testing-cli.sh test-priority 1"
+  echo "  ./testing-cli.sh test-pipeline dev_tasks"
+  echo "  ./testing-cli.sh coverage database"
+  echo "  ./testing-cli.sh report"
   echo ""
-  echo "  # Watch tests for dhg-hub"
-  echo "  ./testing-cli.sh watch --app dhg-hub"
-  echo ""
-  echo "  # Run only unit tests"
-  echo "  ./testing-cli.sh run --type unit"
-  echo ""
-  echo "  # Generate coverage for all apps"
-  echo "  ./testing-cli.sh coverage"
-  echo ""
-  echo "  # Initialize testing for new app"
-  echo "  ./testing-cli.sh init --app my-new-app"
+  echo "PRIORITY LEVELS:"
+  echo "  1 - Critical pipelines (database, dev_tasks, google_sync, document, ai)"
+  echo "  2 - Core pipelines (auth, monitoring, deployment, servers, work_summaries)"
+  echo "  3 - Support pipelines (docs, scripts, media_processing, email, presentations)"
 }
 
-# Command handlers
-run_tests() {
-  echo "🧪 Running tests..."
-  track_command "run" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/run-tests.ts $@"
-}
-
-watch_tests() {
-  echo "👁️  Starting test watcher..."
-  track_command "watch" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/watch-tests.ts $@"
-}
-
-coverage_report() {
-  echo "📊 Generating coverage report..."
-  track_command "coverage" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/coverage.ts $@"
-}
-
-ci_tests() {
-  echo "🤖 Running tests in CI mode..."
-  track_command "ci" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/ci-tests.ts $@"
-}
-
-list_tests() {
-  echo "📋 Listing test files..."
-  track_command "list" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/list-tests.ts $@"
-}
-
-test_stats() {
-  echo "📈 Calculating test statistics..."
-  track_command "stats" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/test-stats.ts $@"
-}
-
-init_testing() {
-  echo "🚀 Initializing testing..."
-  track_command "init" "cd $PROJECT_ROOT && ts-node $SCRIPT_DIR/commands/init-testing.ts $@"
-}
-
-# Main command processor
+# Main command handling
 case "$1" in
-  "run")
-    run_tests "${@:2}"
+  test-existence)
+    if [ -z "$2" ]; then
+      echo "❌ Pipeline name required"
+      echo "Usage: $0 test-existence <pipeline-name>"
+      exit 1
+    fi
+    track_command "test-existence" "ts-node $SCRIPT_DIR/commands/test-command-existence.ts $2"
     ;;
-  "watch")
-    watch_tests "${@:2}"
+    
+  test-priority)
+    LEVEL="${2:-1}"
+    track_command "test-priority" "ts-node $SCRIPT_DIR/commands/test-priority-pipelines.ts $LEVEL"
     ;;
-  "coverage")
-    coverage_report "${@:2}"
+    
+  test-pipeline)
+    if [ -z "$2" ]; then
+      echo "❌ Pipeline name required"
+      echo "Usage: $0 test-pipeline <pipeline-name>"
+      exit 1
+    fi
+    echo "🧪 Running comprehensive tests for $2..."
+    track_command "test-pipeline" "ts-node $SCRIPT_DIR/commands/test-command-existence.ts $2"
+    # Add more test types as they're implemented
     ;;
-  "ci")
-    ci_tests "${@:2}"
+    
+  test-all)
+    echo "🧪 Testing all registered pipelines..."
+    track_command "test-all" "ts-node $SCRIPT_DIR/commands/test-all-pipelines.ts"
     ;;
-  "list")
-    list_tests "${@:2}"
+    
+  coverage)
+    if [ -z "$2" ]; then
+      echo "❌ Pipeline name required"
+      echo "Usage: $0 coverage <pipeline-name>"
+      exit 1
+    fi
+    track_command "coverage" "ts-node $SCRIPT_DIR/commands/show-coverage.ts $2"
     ;;
-  "stats")
-    test_stats "${@:2}"
+    
+  report)
+    echo "📊 Generating test report..."
+    track_command "report" "ts-node $SCRIPT_DIR/commands/generate-report.ts"
     ;;
-  "init")
-    init_testing "${@:2}"
+    
+  health-check)
+    echo "🏥 Checking testing infrastructure..."
+    track_command "health-check" "ts-node $SCRIPT_DIR/commands/health-check.ts"
     ;;
-  "health-check")
-    echo "🏥 Running health check for testing pipeline..."
-    echo "✅ testing pipeline is healthy"
-    ;;
-  "help"|"--help"|"-h"|"")
+    
+  help|--help)
     show_help
     ;;
+    
   *)
-    echo "Unknown command: $1"
+    echo "❌ Unknown command: $1"
     echo ""
     show_help
     exit 1

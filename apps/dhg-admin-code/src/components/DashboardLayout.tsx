@@ -29,6 +29,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (location.pathname.startsWith('/service-dependencies')) return 'service-dependencies';
     if (location.pathname.startsWith('/deprecation-analysis')) return 'deprecation';
     if (location.pathname.startsWith('/ai')) return 'ai';
+    if (location.pathname.startsWith('/sqlite-import')) return 'sqlite-import';
+    if (location.pathname.startsWith('/features')) return 'features';
+    if (location.pathname.startsWith('/testing')) return 'testing';
+    if (location.pathname.startsWith('/deployment')) return 'deployment';
     return 'tasks'; // default
   };
   
@@ -281,6 +285,54 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               `}
             >
               AI 🤖
+            </button>
+            <button
+              onClick={() => navigate('/sqlite-import')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'sqlite-import'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              SQLite Import 💾
+            </button>
+            <button
+              onClick={() => navigate('/features')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'features'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Features 🔍
+            </button>
+            <button
+              onClick={() => navigate('/testing')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'testing'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Testing 🧪
+            </button>
+            <button
+              onClick={() => navigate('/deployment')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeTab === 'deployment'
+                  ? 'border-green-500 text-green-700 font-medium'
+                  : 'border-transparent text-green-600 hover:text-green-800 hover:border-green-300'
+                }
+              `}
+            >
+              Deployment 🚀
             </button>
           </nav>
         </div>

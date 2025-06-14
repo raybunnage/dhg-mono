@@ -8,7 +8,7 @@
 #   dhg-research Create a research task for Claude Code
 #   start-session       Start work session on a task
 #   list         List tasks with filtering options
-
+#   submit       Submit task to Claude Code (tracks submission immediately)
 #   update       Update task status or details
 #   complete     Mark task as complete with Claude's response
 #   add-file     Add file references to a task
@@ -40,6 +40,7 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  dhg-research Create a research task for Claude Code"
   echo "  start-session       Start work session on a task"
   echo "  list         List tasks with filtering options"
+  echo "  submit       Submit task to Claude Code (tracks submission immediately)"
   echo "  update       Update task status or details"
   echo "  complete     Mark task as complete with Claude's response"
   echo "  add-file     Add file references to a task"
@@ -47,8 +48,13 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  copy-request Format task for copying to Claude"
   echo "  commit       Commit changes with automatic task linking"
   echo "  assign-worktrees  Analyze commits to assign worktrees to tasks"
+  echo "  create-summary      Create work summary with task link"
+  echo "  track-validation    Track validation submission results"
+  echo "  track-tests         Track test execution results"
+  echo "  show-tracking       Show work summary tracking info"
   echo "  git-history-server  Start the Git History Analysis Server"
   echo "  success-criteria    Manage task success criteria"
+  echo "  backfill-submissions Backfill Claude submission data from commits/summaries"
   echo "  health-check Run health check for dev tasks pipeline"
   echo ""
   echo "Examples:"
@@ -79,6 +85,28 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo ""
   echo "  # Commit with automatic task linking"
   echo "  ./dev-tasks-cli.sh commit \"Fix authentication bug in OAuth flow\""
+  echo ""
+  echo "  # Submit task to Claude Code (saves raw task for recovery)"
+  echo "  ./dev-tasks-cli.sh submit <task-id> --text \"# Task: Fix auth bug...\""
+  echo "  ./dev-tasks-cli.sh submit <task-id> --file task.md"
+  echo "  echo \"# Task: Fix auth...\" | ./dev-tasks-cli.sh submit <task-id> --stdin"
+  echo ""
+  echo "  # Find interrupted Claude tasks"
+  echo "  ./dev-tasks-cli.sh submit recover"
+  echo "  ./dev-tasks-cli.sh submit recover my-worktree --minutes 60"
+  echo ""
+  echo "  # Create work summary linked to task"
+  echo "  ./dev-tasks-cli.sh create-summary <task-id> --title \"Implemented feature\" --content \"Details...\""
+  echo ""
+  echo "  # Track validation and test results"
+  echo "  ./dev-tasks-cli.sh track-validation <task-id> --status passed --summary \"All checks passed\""
+  echo "  ./dev-tasks-cli.sh track-tests <task-id> --passed 45 --failed 5 --coverage 90"
+  echo ""
+  echo "  # Show comprehensive tracking info"
+  echo "  ./dev-tasks-cli.sh show-tracking <task-id>"
+  echo ""
+  echo "  # Backfill Claude submission data for tasks"
+  echo "  ./dev-tasks-cli.sh backfill-submissions"
   exit 0
 fi
 
@@ -173,11 +201,12 @@ case "$1" in
     ts-node "$SCRIPT_DIR/add-success-criteria.ts" "$@"
     ;;
     
-  *)
-    echo "Unknown command: $1"
-    echo "Run './dev-tasks-cli.sh help' for usage"
-    exit 1
+  "submit")
+    track_command "dev-tasks" "submit"
+    shift
+    ts-node "$SCRIPT_DIR/submit-task.ts" "$@"
     ;;
+    
   health-check)
     echo "🏥 Running health check for dev_tasks pipeline..."
     if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
@@ -185,5 +214,30 @@ case "$1" in
       exit 1
     fi
     echo "✅ dev_tasks pipeline is healthy"
+    ;;
+  create-summary)
+    track_command "dev-tasks" "create-summary"
+    ts-node "$SCRIPT_DIR/commands/create-work-summary.ts" "${@:2}"
+    ;;
+  track-validation)
+    track_command "dev-tasks" "track-validation"
+    ts-node "$SCRIPT_DIR/commands/track-validation.ts" "${@:2}"
+    ;;
+  track-tests)
+    track_command "dev-tasks" "track-tests"
+    ts-node "$SCRIPT_DIR/commands/track-tests.ts" "${@:2}"
+    ;;
+  show-tracking)
+    track_command "dev-tasks" "show-tracking"
+    ts-node "$SCRIPT_DIR/commands/show-tracking.ts" "${@:2}"
+    ;;
+  backfill-submissions)
+    track_command "dev-tasks" "backfill-submissions"
+    ts-node "$SCRIPT_DIR/commands/backfill-claude-submissions.ts" "${@:2}"
+    ;;
+  *)
+    echo "Unknown command: $1"
+    echo "Run './dev-tasks-cli.sh help' for usage"
+    exit 1
     ;;
 esac

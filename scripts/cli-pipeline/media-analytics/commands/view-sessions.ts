@@ -1,5 +1,7 @@
 #!/usr/bin/env ts-node
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { MediaAnalyticsService } from '../../../../packages/shared/services/media-analytics-service';
+import { formatDuration, formatDate } from '../../../../packages/shared/utils';
 
 interface SessionData {
   id: string;
@@ -23,8 +25,10 @@ export async function viewSessions(options: {
   mediaId?: string;
   limit?: number;
   days?: number;
+  detailed?: boolean;
 }) {
   const supabase = SupabaseClientService.getInstance().getClient();
+  const analyticsService = MediaAnalyticsService.getInstance(supabase);
   
   try {
     let query = supabase
@@ -73,12 +77,12 @@ export async function viewSessions(options: {
 
     console.log(`\nFound ${data.length} sessions:\n`);
 
-    data.forEach((session: SessionData) => {
+    data.forEach(async (session: SessionData) => {
       const duration = formatDuration(session.total_duration_seconds);
       const email = session.auth_allowed_emails?.email || 'Unknown User';
       const mediaName = session.google_sources?.name || 'Unknown Media';
-      const startTime = new Date(session.session_start).toLocaleString();
-      const endTime = session.session_end ? new Date(session.session_end).toLocaleString() : 'In Progress';
+      const startTime = formatDate(session.session_start);
+      const endTime = session.session_end ? formatDate(session.session_end) : 'In Progress';
       
       console.log(`Session: ${session.id}`);
       console.log(`  User: ${email}`);
@@ -88,6 +92,23 @@ export async function viewSessions(options: {
       console.log(`  Duration: ${duration}`);
       console.log(`  Completion: ${session.completion_percentage?.toFixed(1) || 0}%`);
       console.log(`  Device: ${session.device_type}`);
+      
+      // If detailed flag is set, fetch more analytics
+      if (options.detailed) {
+        const detailedSession = await analyticsService.getSessionAnalytics(session.id);
+        if (detailedSession) {
+          console.log(`  Events: ${detailedSession.events.length} total`);
+          const eventCounts = detailedSession.events.reduce((acc: Record<string, number>, event) => {
+            acc[event.type] = (acc[event.type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          Object.entries(eventCounts).forEach(([type, count]) => {
+            console.log(`    - ${type}: ${count}`);
+          });
+        }
+      }
+      
       console.log('');
     });
 
@@ -96,17 +117,3 @@ export async function viewSessions(options: {
   }
 }
 
-function formatDuration(seconds: number): string {
-  if (!seconds) return '0s';
-  
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  
-  const parts = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-  
-  return parts.join(' ');
-}

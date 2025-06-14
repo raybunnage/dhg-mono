@@ -1,132 +1,73 @@
 #!/usr/bin/env ts-node
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { MediaAnalyticsService } from '../../../../packages/shared/services/media-analytics-service';
 
 export async function mediaStats(options: {
   days?: number;
   mediaId?: string;
 }) {
   const supabase = SupabaseClientService.getInstance().getClient();
+  const analyticsService = MediaAnalyticsService.getInstance(supabase);
   
   try {
-    let sessionsQuery = supabase
-      .from('learn_media_sessions')
-      .select(`
-        *,
-        google_sources!media_id (
-          id,
-          name
-        )
-      `);
+    // Get statistics using the MediaAnalyticsService
+    const stats = await analyticsService.getMediaStatistics(options);
 
-    if (options.days) {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - options.days);
-      sessionsQuery = sessionsQuery.gte('session_start', startDate.toISOString());
-    }
-
-    if (options.mediaId) {
-      sessionsQuery = sessionsQuery.eq('media_id', options.mediaId);
-    }
-
-    const { data: sessions, error: sessionsError } = await sessionsQuery;
-
-    if (sessionsError) {
-      console.error('Error fetching sessions:', sessionsError);
-      return;
-    }
-
-    if (!sessions || sessions.length === 0) {
+    if (!stats || stats.length === 0) {
       console.log('No sessions found for the given criteria.');
       return;
     }
 
-    // Calculate statistics
-    const mediaStats: Record<string, {
-      name: string;
-      sessions: number;
-      totalTime: number;
-      avgTime: number;
-      avgCompletion: number;
-      uniqueUsers: Set<string>;
-    }> = {};
-
-    sessions.forEach(session => {
-      const mediaId = session.media_id;
-      const mediaName = session.google_sources?.name || 'Unknown Media';
-      
-      if (!mediaStats[mediaId]) {
-        mediaStats[mediaId] = {
-          name: mediaName,
-          sessions: 0,
-          totalTime: 0,
-          avgTime: 0,
-          avgCompletion: 0,
-          uniqueUsers: new Set()
-        };
-      }
-      
-      const stats = mediaStats[mediaId];
-      stats.sessions++;
-      stats.totalTime += session.total_duration_seconds || 0;
-      stats.avgCompletion += session.completion_percentage || 0;
-      if (session.user_id) {
-        stats.uniqueUsers.add(session.user_id);
-      }
-    });
-
-    // Calculate averages
-    Object.values(mediaStats).forEach(stats => {
-      stats.avgTime = stats.sessions > 0 ? stats.totalTime / stats.sessions : 0;
-      stats.avgCompletion = stats.sessions > 0 ? stats.avgCompletion / stats.sessions : 0;
-    });
-
-    // Sort by number of sessions
-    const sortedStats = Object.entries(mediaStats)
-      .sort(([, a], [, b]) => b.sessions - a.sessions);
-
-    console.log(`\nMedia Statistics (${options.days ? `Last ${options.days} days` : 'All time'}):\n`);
-    console.log('Media Name                                      Sessions  Users  Avg Time  Avg Completion');
+    // Display header
+    console.log('\nMedia Analytics Report');
+    console.log('─'.repeat(88));
+    console.log('Media Name                              Sessions  Total Time    Avg Time    Completion  Users');
     console.log('─'.repeat(88));
 
-    sortedStats.forEach(([mediaId, stats]) => {
-      const name = stats.name.length > 45 ? stats.name.substring(0, 42) + '...' : stats.name;
-      const avgTime = formatDuration(stats.avgTime);
-      const completion = stats.avgCompletion.toFixed(1);
+    // Display each media's statistics
+    stats.forEach((mediaStat) => {
+      const name = mediaStat.mediaName.substring(0, 38).padEnd(38, ' ');
+      const sessions = mediaStat.sessionCount.toString().padStart(8, ' ');
+      const totalTime = analyticsService.formatDuration(mediaStat.totalPlayTime).padEnd(12, ' ');
+      const avgTime = analyticsService.formatDuration(mediaStat.averagePlayTime).padEnd(11, ' ');
+      const completion = `${Math.round(mediaStat.averageCompletion)}%`.padEnd(10, ' ');
+      const users = mediaStat.uniqueUsers.toString().padStart(5, ' ');
       
-      console.log(
-        `${name.padEnd(45)} ${stats.sessions.toString().padStart(8)} ${stats.uniqueUsers.size.toString().padStart(6)} ${avgTime.padStart(9)} ${completion.padStart(13)}%`
-      );
+      console.log(`${name} ${sessions} ${totalTime} ${avgTime} ${completion} ${users}`);
     });
+
+    console.log('─'.repeat(88));
 
     // Overall statistics
-    const totalSessions = sessions.length;
-    const totalUsers = new Set(sessions.map(s => s.user_id).filter(Boolean)).size;
-    const totalTime = sessions.reduce((sum, s) => sum + (s.total_duration_seconds || 0), 0);
+    const totalSessions = stats.reduce((sum: number, s) => sum + s.sessionCount, 0);
+    const totalUsers = stats.reduce((sum: number, s) => sum + s.uniqueUsers, 0);
+    const totalTime = stats.reduce((sum: number, s) => sum + s.totalPlayTime, 0);
     const avgSessionTime = totalSessions > 0 ? totalTime / totalSessions : 0;
 
-    console.log('─'.repeat(88));
     console.log(`\nOverall Statistics:`);
     console.log(`  Total Sessions: ${totalSessions}`);
     console.log(`  Unique Users: ${totalUsers}`);
-    console.log(`  Total Listening Time: ${formatDuration(totalTime)}`);
-    console.log(`  Average Session Time: ${formatDuration(avgSessionTime)}`);
+    console.log(`  Total Listening Time: ${analyticsService.formatDuration(totalTime)}`);
+    console.log(`  Average Session Time: ${analyticsService.formatDuration(avgSessionTime)}`);
+
+    // Show event statistics if available
+    const totalEvents = stats.reduce((sum: number, s) => 
+      sum + s.events.plays + s.events.pauses + s.events.seeks + s.events.completions, 0);
+    
+    if (totalEvents > 0) {
+      console.log(`\nEvent Statistics:`);
+      const totalPlays = stats.reduce((sum: number, s) => sum + s.events.plays, 0);
+      const totalPauses = stats.reduce((sum: number, s) => sum + s.events.pauses, 0);
+      const totalSeeks = stats.reduce((sum: number, s) => sum + s.events.seeks, 0);
+      const totalCompletions = stats.reduce((sum: number, s) => sum + s.events.completions, 0);
+      
+      console.log(`  Total Plays: ${totalPlays}`);
+      console.log(`  Total Pauses: ${totalPauses}`);
+      console.log(`  Total Seeks: ${totalSeeks}`);
+      console.log(`  Total Completions: ${totalCompletions}`);
+    }
 
   } catch (error) {
     console.error('Failed to get media statistics:', error);
   }
-}
-
-function formatDuration(seconds: number): string {
-  if (!seconds) return '0s';
-  
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  
-  const parts = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-  
-  return parts.join(' ');
 }

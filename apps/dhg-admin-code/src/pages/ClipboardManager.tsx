@@ -3,24 +3,17 @@ import { Copy, Check, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { ClipboardService, type ClipboardItem } from '@shared/services/clipboard-service';
 
-interface ClipboardItem {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  last_used?: string;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+// Create clipboard service instance
+const clipboardService = ClipboardService.getInstance(supabase);
 
 export default function ClipboardManager() {
   const { user } = useAuth();
   const [items, setItems] = useState<ClipboardItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const [editForm, setEditForm] = useState({ title: '', content: '', category: '' });
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState({ title: '', content: '', category: '' });
   const [loading, setLoading] = useState(true);
@@ -33,53 +26,14 @@ export default function ClipboardManager() {
     const loadItems = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('clipboard_snippets')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        const items = await clipboardService.getItems(user.id);
 
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          setItems(data);
+        if (items.length > 0) {
+          setItems(items);
         } else {
-          // Create default items for new users
-          const defaultItems = [
-            {
-              title: 'Claude Context Reminder',
-              content: `<system-reminder>
-As you answer the user's questions, you can use the following context:
-# claudeMd
-Codebase and user instructions are shown below. Be sure to adhere to these instructions. IMPORTANT: These instructions OVERRIDE any default behavior and you MUST follow them exactly as written.
-
-Contents of /Users/raybunnage/Documents/github/dhg-mono-improve-cli-pipelines/CLAUDE.md (project instructions, checked into the codebase):`,
-              category: 'Claude Prompts',
-              user_id: user.id
-            },
-            {
-              title: 'Important Instruction Reminders',
-              content: `# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-Please clean up any files that you've created for testing or debugging purposes after they're no longer needed.
-      
-      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.`,
-              category: 'Claude Prompts',
-              user_id: user.id
-            }
-          ];
-
-          // Insert default items
-          const { data: insertedData, error: insertError } = await supabase
-            .from('clipboard_snippets')
-            .insert(defaultItems)
-            .select();
-
-          if (insertError) throw insertError;
-          if (insertedData) setItems(insertedData);
+          // Initialize default items for new users
+          const defaultItems = await clipboardService.initializeDefaultItems(user.id);
+          setItems(defaultItems);
         }
       } catch (err) {
         console.error('Error loading clipboard snippets:', err);
@@ -98,12 +52,7 @@ Please clean up any files that you've created for testing or debugging purposes 
       setCopiedId(item.id);
       
       // Update last used time in database
-      const { error } = await supabase
-        .from('clipboard_snippets')
-        .update({ last_used: new Date().toISOString() })
-        .eq('id', item.id);
-
-      if (error) throw error;
+      await clipboardService.recordUsage(item.id);
 
       // Update local state
       setItems(items.map(i => 
@@ -150,13 +99,7 @@ Please clean up any files that you've created for testing or debugging purposes 
 
   const deleteItem = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('clipboard_snippets')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
+      await clipboardService.deleteItem(id);
       setItems(items.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to delete item:', err);
@@ -166,27 +109,35 @@ Please clean up any files that you've created for testing or debugging purposes 
 
   const startEdit = (item: ClipboardItem) => {
     setEditingId(item.id);
-    setEditContent(item.content);
+    setEditForm({
+      title: item.title,
+      content: item.content,
+      category: item.category || ''
+    });
   };
 
   const saveEdit = async () => {
     if (!editingId) return;
     
     try {
-      const { error } = await supabase
-        .from('clipboard_snippets')
-        .update({ content: editContent })
-        .eq('id', editingId);
-
-      if (error) throw error;
+      await clipboardService.updateItem(editingId, {
+        title: editForm.title,
+        content: editForm.content,
+        category: editForm.category || 'General'
+      });
       
       setItems(items.map(item => 
         item.id === editingId 
-          ? { ...item, content: editContent }
+          ? { 
+              ...item, 
+              title: editForm.title,
+              content: editForm.content,
+              category: editForm.category || 'General'
+            }
           : item
       ));
       setEditingId(null);
-      setEditContent('');
+      setEditForm({ title: '', content: '', category: '' });
     } catch (err) {
       console.error('Failed to save edit:', err);
       setError('Failed to update snippet');
@@ -195,7 +146,7 @@ Please clean up any files that you've created for testing or debugging purposes 
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditContent('');
+    setEditForm({ title: '', content: '', category: '' });
   };
 
   // Group items by category
@@ -341,13 +292,42 @@ Please clean up any files that you've created for testing or debugging purposes 
                   </div>
 
                   {editingId === item.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
-                        rows={4}
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Title
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="Snippet title"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.category}
+                          onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="e.g., Claude Prompts"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Content
+                        </label>
+                        <textarea
+                          value={editForm.content}
+                          onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+                          rows={4}
+                        />
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={saveEdit}

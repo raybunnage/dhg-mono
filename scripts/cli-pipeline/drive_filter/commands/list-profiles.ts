@@ -1,17 +1,10 @@
 #!/usr/bin/env ts-node
 import { Command } from 'commander';
 import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
+import { FilterService } from '../../../../packages/shared/services/filter-service';
 const chalk = require('chalk');
 
 const command = new Command('list-profiles');
-
-interface FilterProfile {
-  id: string;
-  name: string;
-  description?: string;
-  is_active: boolean;
-  created_at?: string;
-}
 
 command
   .description('List all available filter profiles')
@@ -19,16 +12,12 @@ command
   .option('--no-format', 'Output without formatting (for piping)')
   .action(async (options: { json?: boolean, format?: boolean }) => {
     try {
+      // Initialize services
       const supabase = SupabaseClientService.getInstance().getClient();
-      const { data: profiles, error } = await supabase
-        .from('filter_user_profiles')
-        .select('*')
-        .order('name');
+      const filterService = new FilterService(supabase);
       
-      if (error) {
-        console.error('Error listing profiles:', error);
-        process.exit(1);
-      }
+      // Get profiles using FilterService
+      const profiles = await filterService.listProfiles();
       
       if (!profiles || profiles.length === 0) {
         console.log('No profiles found');
@@ -51,7 +40,7 @@ command
       console.log('------------------------------------ | -------------------- | -------------------------------- | ------');
       
       // Print each profile
-      profiles.forEach((profile: FilterProfile) => {
+      profiles.forEach((profile) => {
         const id = profile.id.padEnd(36, ' ');
         const name = (profile.name || '').padEnd(20, ' ');
         const description = (profile.description || '').padEnd(32, ' ');

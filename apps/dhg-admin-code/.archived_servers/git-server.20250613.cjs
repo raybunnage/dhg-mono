@@ -15,6 +15,16 @@ app.use(cors({
 
 app.use(express.json());
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'git-server',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Get worktrees endpoint with enhanced info
 app.get('/api/git/worktrees', async (req, res) => {
   try {

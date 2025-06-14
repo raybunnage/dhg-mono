@@ -15,7 +15,14 @@ app.use(cors);
 // Serve static files from the 'dist' directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Note: Health endpoints removed from app servers - use CLI health-check commands instead
+// Health check endpoint for server registry
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    service: 'web-google-drive-audio',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Function to get Google Drive service account credentials
 function getGoogleAuthClient() {

@@ -2,6 +2,7 @@
  * Element Criteria Service - Manages success criteria and quality gates for elements
  */
 
+import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseClientService } from './supabase-client';
 
 export interface ElementSuccessCriteria {
@@ -62,18 +63,32 @@ export interface ElementWithCriteria {
 }
 
 export class ElementCriteriaService {
-  private static instance: ElementCriteriaService;
-  private supabase;
+  private static instances = new Map<SupabaseClient, ElementCriteriaService>();
+  private supabase: SupabaseClient;
 
-  private constructor() {
-    this.supabase = SupabaseClientService.getInstance().getClient();
+  private constructor(supabaseClient: SupabaseClient) {
+    this.supabase = supabaseClient;
   }
 
-  static getInstance(): ElementCriteriaService {
-    if (!ElementCriteriaService.instance) {
-      ElementCriteriaService.instance = new ElementCriteriaService();
+  /**
+   * Get instance for browser environments (requires Supabase client)
+   */
+  static getInstance(supabaseClient?: SupabaseClient): ElementCriteriaService {
+    // If no client provided, try to use the singleton (CLI/server only)
+    if (!supabaseClient) {
+      if (typeof window !== 'undefined') {
+        throw new Error('Browser environment requires a Supabase client to be passed to getInstance()');
+      }
+      // CLI/server environment - use singleton
+      supabaseClient = SupabaseClientService.getInstance().getClient();
     }
-    return ElementCriteriaService.instance;
+
+    // Check if we already have an instance for this client
+    if (!ElementCriteriaService.instances.has(supabaseClient)) {
+      ElementCriteriaService.instances.set(supabaseClient, new ElementCriteriaService(supabaseClient));
+    }
+    
+    return ElementCriteriaService.instances.get(supabaseClient)!;
   }
 
   /**

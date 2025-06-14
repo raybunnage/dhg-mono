@@ -4,6 +4,7 @@ import { CompareSupabaseClients } from '@/components/CompareSupabaseClients';
 import { CheckRLS } from '@/components/CheckRLS';
 import { FilterServiceTest } from '@/components/FilterServiceTest';
 import { MediaTrackingDebug } from '@/components/MediaTrackingDebug';
+import { AudioServerSwitch } from '@/components/AudioServerSwitch';
 import { useState } from 'react';
 
 export const DebugPage = () => {
@@ -55,15 +56,25 @@ export const DebugPage = () => {
       <div className="space-y-6">
         {activeTab === 'server' && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Audio Server Status</h2>
+            <h2 className="text-xl font-semibold mb-4">Audio Server Configuration</h2>
+            
+            {/* Server Selection */}
+            <div className="mb-6">
+              <AudioServerSwitch />
+            </div>
+            
+            {/* Server Debug Info */}
+            <h3 className="text-lg font-semibold mb-3">Server Debug Information</h3>
             <AudioServerDebug />
+            
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h3 className="font-semibold text-yellow-800 mb-2">Server Requirements:</h3>
               <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                <li>Audio proxy server must be running on port 3006</li>
+                <li>Audio servers must be running (Web on port 3006, Local on port 3007)</li>
                 <li>Run <code className="bg-yellow-100 px-1">pnpm servers</code> from the main directory</li>
                 <li>Service account file (.service-account.json) must exist in project root</li>
                 <li>Google Drive API must be enabled for the service account</li>
+                <li>For local server: Google Drive Desktop must be installed and synced</li>
               </ul>
             </div>
           </div>

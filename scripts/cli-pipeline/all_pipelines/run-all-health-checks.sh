@@ -67,13 +67,16 @@ run_health_check "classify" "Classification" "$ROOT_DIR/scripts/cli-pipeline/cla
 echo -e "\n${BOLD}AI SERVICES:${NC}"
 run_health_check "ai" "AI Service" "$ROOT_DIR/scripts/cli-pipeline/ai/ai-cli.sh health-check"
 run_health_check "prompt_service" "Prompt Service" "$ROOT_DIR/scripts/cli-pipeline/prompt_service/prompt-service-cli.sh health-check"
-run_health_check "analysis" "Script Analysis" "$ROOT_DIR/scripts/cli-pipeline/analysis/analysis-cli.sh health-check"
+# Script analysis functionality exists but no CLI wrapper
+# run_health_check "analysis" "Script Analysis" "$ROOT_DIR/scripts/cli-pipeline/analysis/analysis-cli.sh health-check"
 
 echo -e "\n${BOLD}DEVELOPMENT TOOLS:${NC}"
 run_health_check "git" "Git Management" "$ROOT_DIR/scripts/cli-pipeline/git/git-cli.sh health-check"
 run_health_check "git_workflow" "Git Workflow" "$ROOT_DIR/scripts/cli-pipeline/git_workflow/git-workflow-cli.sh health-check"
-run_health_check "merge" "Merge Queue" "$ROOT_DIR/scripts/cli-pipeline/merge/merge-cli.sh health-check"
-run_health_check "worktree" "Worktree Management" "$ROOT_DIR/scripts/cli-pipeline/worktree/worktree-cli.sh health-check"
+# Merge queue functionality is part of git pipeline
+# run_health_check "merge" "Merge Queue" "$ROOT_DIR/scripts/cli-pipeline/merge/merge-cli.sh health-check"
+# Worktree pipeline was archived on 2025-06-08
+# run_health_check "worktree" "Worktree Management" "$ROOT_DIR/scripts/cli-pipeline/worktree/worktree-cli.sh health-check"
 run_health_check "dev_tasks" "Dev Tasks" "$ROOT_DIR/scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh health-check"
 
 echo -e "\n${BOLD}SYSTEM MANAGEMENT:${NC}"
@@ -86,8 +89,12 @@ run_health_check "monitoring" "Monitoring" "$ROOT_DIR/scripts/cli-pipeline/monit
 run_health_check "deprecation" "Deprecation Analysis" "$ROOT_DIR/scripts/cli-pipeline/deprecation/deprecation-cli.sh health-check"
 
 echo -e "\n${BOLD}DOCUMENTATION:${NC}"
-run_health_check "documentation" "Documentation" "$ROOT_DIR/scripts/cli-pipeline/documentation/documentation-cli.sh health-check"
+# Documentation pipeline exists as 'docs' not 'documentation'
+run_health_check "documentation" "Documentation" "$ROOT_DIR/scripts/cli-pipeline/docs/docs-cli.sh health-check"
 run_health_check "work_summaries" "Work Summaries" "$ROOT_DIR/scripts/cli-pipeline/work_summaries/work-summaries-cli.sh health-check"
+
+echo -e "\n${BOLD}TESTING & QA:${NC}"
+run_health_check "testing" "Testing Framework" "$ROOT_DIR/scripts/cli-pipeline/testing/health-check.sh"
 
 echo -e "\n${BOLD}INFRASTRUCTURE:${NC}"
 # Skip Supabase check as it requires a different path

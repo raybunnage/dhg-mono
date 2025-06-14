@@ -6,7 +6,7 @@
  */
 
 import { program } from 'commander';
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client.js';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function listDocuments(options: any = {}) {
   try {

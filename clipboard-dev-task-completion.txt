@@ -1,0 +1,59 @@
+## 🔍 DEV TASK COMPLETION WORKFLOW
+After completing work, systematically execute this checklist:
+
+**1. VALIDATE COMPLETION**
+- Confirm all requirements met and functionality works
+- Run smoke tests on implemented features
+
+**2. DATABASE & MIGRATIONS**
+```bash
+./scripts/cli-pipeline/database/database-cli.sh migration run-staged
+pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts
+```
+
+**3. SUCCESS CRITERIA & GATES**
+- Add criteria to dev_task_success_criteria table
+- Update verification steps and completion gates
+
+**4. TESTING**
+- Create appropriate tests (unit/component/integration)
+- Include edge cases: null inputs, errors, boundaries
+- Run tests and document any failures/discrepancies
+
+**5. DOCUMENTATION**
+- Update relevant living document with learnings
+- Add to CLAUDE.md if new patterns established
+- Archive obsolete docs if consolidating
+
+**6. SERVICE ARCHITECTURE**
+- Move functionality to packages/shared/services/ if reusable
+- Ensure singleton patterns and cross-environment compatibility
+- Eliminate code duplication
+
+**7. CLI INTEGRATION**
+```bash
+# Add to appropriate pipeline, register command
+./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh populate-command-registry
+```
+
+**8. DATABASE TRACKING**
+- Update sys_table_definitions for new tables/columns
+- Record in command_definitions for new CLI commands
+- Track commits: `./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh commit`
+
+**9. QUALITY CHECKS**
+```bash
+tsc --noEmit  # TypeScript compilation
+# Check for hardcoded credentials, proper imports, error handling
+```
+
+**10. FINALIZATION**
+```bash
+# Create work summary
+./scripts/cli-pipeline/work_summaries/work-summaries-cli.sh auto "Title" "Description" "commands" "tags"
+
+# Complete task
+./scripts/cli-pipeline/dev_tasks/dev-tasks-cli.sh complete <task-id>
+```
+
+Execute systematically to ensure proper integration, testing, documentation, and knowledge capture.

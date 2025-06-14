@@ -2,31 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Save } from 'lucide-react';
+import { 
+  WorktreeManagementService, 
+  type WorktreeDefinition,
+  type WorktreeAppMapping,
+  type WorktreePipelineMapping,
+  type WorktreeServiceMapping,
+  type MappingChange,
+  STANDARD_APPS
+} from '@shared/services/worktree-management-service';
 
-interface WorktreeDefinition {
-  id: string;
-  path: string;
-  alias_name: string;
-  alias_number: string;
-  emoji: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Mapping {
-  id: string;
-  worktree_id: string;
-  app_name?: string;
-  pipeline_name?: string;
-}
-
-interface ServiceMapping {
-  id: string;
-  worktree_id: string | null;
-  service_id: string | null;
-  service_name?: string; // This will be populated from the joined service
-}
+// Create service instance
+const worktreeService = WorktreeManagementService.getInstance(supabase);
 
 interface SharedService {
   id: string;
@@ -35,25 +22,11 @@ interface SharedService {
   description: string | null;
 }
 
-// List of all apps (can be fetched from database if stored there)
-const ALL_APPS = [
-  'dhg-hub',
-  'dhg-hub-lovable',
-  'dhg-audio',
-  'dhg-admin-suite',
-  'dhg-admin-code',
-  'dhg-admin-google',
-  'dhg-a',
-  'dhg-b',
-  'dhg-improve-experts',
-  'dhg-research'
-];
-
 export default function WorktreeMappings() {
   const [worktrees, setWorktrees] = useState<WorktreeDefinition[]>([]);
-  const [appMappings, setAppMappings] = useState<Mapping[]>([]);
-  const [pipelineMappings, setPipelineMappings] = useState<Mapping[]>([]);
-  const [serviceMappings, setServiceMappings] = useState<ServiceMapping[]>([]);
+  const [appMappings, setAppMappings] = useState<WorktreeAppMapping[]>([]);
+  const [pipelineMappings, setPipelineMappings] = useState<WorktreePipelineMapping[]>([]);
+  const [serviceMappings, setServiceMappings] = useState<WorktreeServiceMapping[]>([]);
   const [allPipelines, setAllPipelines] = useState<string[]>([]);
   const [allServices, setAllServices] = useState<SharedService[]>([]);
   const [selectedWorktree, setSelectedWorktree] = useState<string>('');
@@ -76,75 +49,40 @@ export default function WorktreeMappings() {
       setLoading(true);
       setError(null);
 
-      // Load worktree definitions
-      const { data: worktreeData, error: worktreeError } = await supabase
-        .from('worktree_definitions')
-        .select('*')
-        .order('alias_number');
-      
-      if (worktreeError) throw worktreeError;
-      setWorktrees(worktreeData || []);
+      // Load all data using the service
+      const [
+        worktreeData,
+        appData,
+        pipelineData,
+        serviceData,
+        availablePipelines,
+        availableServices
+      ] = await Promise.all([
+        worktreeService.getWorktrees(),
+        worktreeService.getAppMappings(),
+        worktreeService.getPipelineMappings(),
+        worktreeService.getServiceMappings(),
+        worktreeService.getAvailablePipelines(),
+        worktreeService.getAvailableServices()
+      ]);
 
-      // Load app mappings
-      const { data: appData, error: appError } = await supabase
-        .from('worktree_app_mappings')
-        .select('*');
+      setWorktrees(worktreeData);
+      setAppMappings(appData);
+      setPipelineMappings(pipelineData);
+      setServiceMappings(serviceData);
+      setAllPipelines(availablePipelines);
       
-      if (appError) throw appError;
-      setAppMappings(appData || []);
-
-      // Load pipeline mappings
-      const { data: pipelineData, error: pipelineError } = await supabase
-        .from('worktree_pipeline_mappings')
-        .select('*');
-      
-      if (pipelineError) throw pipelineError;
-      setPipelineMappings(pipelineData || []);
-
-      // Load all CLI pipelines from command_pipelines table
-      const { data: pipelinesData, error: pipelinesError } = await supabase
-        .from('command_pipelines')
-        .select('name')
-        .eq('status', 'active')
-        .order('name');
-      
-      if (pipelinesError) throw pipelinesError;
-      setAllPipelines(pipelinesData?.map(p => p.name) || []);
-
-      // Load service mappings with joined service names
-      const { data: serviceData, error: serviceError } = await supabase
-        .from('worktree_service_mappings')
-        .select(`
-          id,
-          worktree_id,
-          service_id,
-          shared_services(service_name)
-        `);
-      
-      if (serviceError) throw serviceError;
-      
-      // Transform the data to include service_name at the top level
-      const transformedServiceData = serviceData?.map(item => ({
-        id: item.id,
-        worktree_id: item.worktree_id,
-        service_id: item.service_id,
-        service_name: (item as any).shared_services?.service_name
-      })) || [];
-      
-      setServiceMappings(transformedServiceData);
-
-      // Load all shared services
-      const { data: servicesData, error: servicesError } = await supabase
-        .from('shared_services')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
-      
-      if (servicesError) throw servicesError;
-      setAllServices(servicesData || []);
+      // Transform available services to match the existing format
+      const servicesData = availableServices.map(s => ({
+        id: s.id,
+        service_name: s.name,
+        category: s.category,
+        description: null
+      }));
+      setAllServices(servicesData);
 
       // Select first worktree by default
-      if (worktreeData && worktreeData.length > 0 && !selectedWorktree) {
+      if (worktreeData.length > 0 && !selectedWorktree) {
         setSelectedWorktree(worktreeData[0].id);
       }
     } catch (err) {
@@ -240,94 +178,50 @@ export default function WorktreeMappings() {
       setSaving(true);
       setError(null);
 
+      // Build list of changes
+      const changes: MappingChange[] = [];
+      
       // Process app changes
-      for (const [worktreeId, changes] of pendingAppChanges) {
-        for (const appName of changes) {
+      for (const [worktreeId, changedApps] of pendingAppChanges) {
+        for (const appName of changedApps) {
           const existing = appMappings.find(m => m.worktree_id === worktreeId && m.app_name === appName);
-          
-          console.log(`Processing app ${appName} for worktree ${worktreeId}, existing:`, existing);
-          
-          if (existing) {
-            // Remove mapping
-            const { error } = await supabase
-              .from('worktree_app_mappings')
-              .delete()
-              .eq('id', existing.id);
-            
-            if (error) {
-              console.error('Delete error:', error);
-              throw error;
-            }
-          } else {
-            // Add mapping
-            const { data, error } = await supabase
-              .from('worktree_app_mappings')
-              .insert({ worktree_id: worktreeId, app_name: appName })
-              .select();
-            
-            if (error) {
-              console.error('Insert error:', error);
-              throw error;
-            }
-            console.log('Inserted:', data);
-          }
+          changes.push({
+            worktreeId,
+            type: 'app',
+            name: appName,
+            action: existing ? 'remove' : 'add'
+          });
         }
       }
 
       // Process pipeline changes
-      for (const [worktreeId, changes] of pendingPipelineChanges) {
-        for (const pipelineName of changes) {
+      for (const [worktreeId, changedPipelines] of pendingPipelineChanges) {
+        for (const pipelineName of changedPipelines) {
           const existing = pipelineMappings.find(m => m.worktree_id === worktreeId && m.pipeline_name === pipelineName);
-          
-          if (existing) {
-            // Remove mapping
-            const { error } = await supabase
-              .from('worktree_pipeline_mappings')
-              .delete()
-              .eq('id', existing.id);
-            
-            if (error) throw error;
-          } else {
-            // Add mapping
-            const { error } = await supabase
-              .from('worktree_pipeline_mappings')
-              .insert({ worktree_id: worktreeId, pipeline_name: pipelineName });
-            
-            if (error) throw error;
-          }
+          changes.push({
+            worktreeId,
+            type: 'pipeline',
+            name: pipelineName,
+            action: existing ? 'remove' : 'add'
+          });
         }
       }
 
       // Process service changes
-      for (const [worktreeId, changes] of pendingServiceChanges) {
-        for (const serviceName of changes) {
+      for (const [worktreeId, changedServices] of pendingServiceChanges) {
+        for (const serviceName of changedServices) {
           const existing = serviceMappings.find(m => m.worktree_id === worktreeId && m.service_name === serviceName);
-          
-          if (existing) {
-            // Remove mapping
-            const { error } = await supabase
-              .from('worktree_service_mappings')
-              .delete()
-              .eq('id', existing.id);
-            
-            if (error) throw error;
-          } else {
-            // Find the service_id for this service_name
-            const service = allServices.find(s => s.service_name === serviceName);
-            if (!service) {
-              console.error(`Service not found: ${serviceName}`);
-              continue;
-            }
-            
-            // Add mapping using service_id
-            const { error } = await supabase
-              .from('worktree_service_mappings')
-              .insert({ worktree_id: worktreeId, service_id: service.id });
-            
-            if (error) throw error;
-          }
+          changes.push({
+            worktreeId,
+            type: 'service',
+            name: serviceName,
+            action: existing ? 'remove' : 'add'
+          });
         }
       }
+
+      // Apply all changes using the service
+      await worktreeService.applyMappingChanges(changes);
 
       // Clear pending changes
       setPendingAppChanges(new Map());
@@ -444,7 +338,7 @@ export default function WorktreeMappings() {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">Applications</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {ALL_APPS.map(app => (
+                {STANDARD_APPS.map(app => (
                   <label
                     key={app}
                     className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"

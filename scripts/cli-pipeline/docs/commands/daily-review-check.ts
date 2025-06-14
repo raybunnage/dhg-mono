@@ -5,7 +5,7 @@
  * Shows which documents need review and sends notifications
  */
 
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client.js';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function dailyReviewCheck() {
   try {

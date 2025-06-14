@@ -5,7 +5,7 @@
  * Shows documents that are overdue for their scheduled review
  */
 
-import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client.js';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 async function checkReviews() {
   try {
