@@ -572,10 +572,18 @@ This ensures migrations are properly tested before applying to the database.
    - vite-fix-proxy: 9876 (Vite environment fix commands)
    - continuous-monitoring-proxy: 9877 (System health monitoring)
    - proxy-manager-proxy: 9878 (Start/stop/manage other proxies)
-   - [Reserved: 9879-9899 for future proxy servers]
+   - git-operations-proxy: 9879 (Git operations and worktree management)
+   - file-browser-proxy: 9880 (File system operations)
+   - continuous-docs-proxy: 9882 (Documentation tracking)
+   - audio-streaming-proxy: 9883 (Audio file streaming from Google Drive)
+   - script-viewer-proxy: 9884 (View/archive/delete script files)
+   - markdown-viewer-proxy: 9885 (View/archive/delete markdown files)
+   - docs-archive-proxy: 9886 (Document file management)
+   - worktree-switcher-proxy: 9887 (Visual git worktree switcher)
+   - html-file-browser-proxy: 8080 (Web-based file browser UI)
+   - [Reserved: 9888-9899 for future proxy servers]
    
    **Other Services:**
-   - file-browser: 8080 (HTML file browser)
    - [Reserved: 8081-8099 for future services]
    
    **Why Hardcoded?** Simplicity > Complexity. No auth needed, no discovery protocol, just look here.
