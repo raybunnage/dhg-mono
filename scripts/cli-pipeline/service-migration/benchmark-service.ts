@@ -95,3 +95,4 @@ if (require.main === module) {
 }
 
 export { benchmarkCurrentSupabase };
+export type { BenchmarkResult };
