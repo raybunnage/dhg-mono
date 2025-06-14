@@ -23,3 +23,9 @@ export * from "./ai-processing-service"; // AI processing service for document a
 export * from "./batch-database-service"; // Batch database service with retry logic and progress tracking
 export * from "./element-catalog-service"; // Element catalog service for app features and CLI commands
 export * from "./element-criteria-service"; // Element criteria service for success criteria and quality gates
+export * from "./media-analytics-service"; // Media analytics service for media consumption statistics
+export * from "./dev-task-service"; // Dev task service for comprehensive task management
+export * from "./clipboard-service"; // Clipboard service for managing reusable code snippets
+export * from "./server-registry-service"; // Server registry service for dynamic port discovery
+export * from "./ports-management-service"; // Ports management service for server lifecycle and health monitoring
+export * from "./work-summary-service"; // Work summary service for tracking development work and summaries

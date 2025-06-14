@@ -1,4 +1,5 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface TableInfo {
   table_name: string;
@@ -24,6 +25,65 @@ interface TableDetailsModalProps {
 }
 
 export function TableDetailsModal({ table, isOpen, onClose }: TableDetailsModalProps) {
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewColumns, setPreviewColumns] = useState<string[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && table.table_type !== 'VIEW' && table.row_count > 0) {
+      // Automatically show preview for tables with data
+      setShowPreview(true);
+      loadPreviewData();
+    } else {
+      // Reset state when modal closes or table changes
+      setShowPreview(false);
+      setPreviewData([]);
+      setPreviewColumns([]);
+      setPreviewError(null);
+    }
+  }, [isOpen, table]);
+
+  const loadPreviewData = async () => {
+    if (table.table_type === 'VIEW' || table.row_count === 0) return;
+
+    setLoadingPreview(true);
+    setPreviewError(null);
+
+    try {
+      // Fetch limited rows for preview (100 records for better sample)
+      const { data, error } = await supabase
+        .from(table.table_name)
+        .select('*')
+        .limit(100);
+
+      if (error) {
+        // Check if it's an RLS error
+        if (error.code === '42501' || error.message?.includes('policy')) {
+          setPreviewError('Access denied: Row Level Security policies prevent viewing this table');
+        } else {
+          setPreviewError(`Failed to load preview: ${error.message}`);
+        }
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Extract column names from the first record
+        const columns = Object.keys(data[0]);
+        setPreviewColumns(columns);
+        setPreviewData(data);
+      } else {
+        setPreviewError('No data available for preview');
+      }
+    } catch (err) {
+      console.error('Error loading preview:', err);
+      setPreviewError('Failed to load preview data');
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -176,6 +236,108 @@ export function TableDetailsModal({ table, isOpen, onClose }: TableDetailsModalP
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Data Preview Section */}
+          {table.table_type !== 'VIEW' && table.row_count > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Data Preview {previewData.length > 0 && `(${previewData.length} of ${table.row_count.toLocaleString()} records)`}
+                </h3>
+                {!showPreview && (
+                  <button
+                    onClick={() => {
+                      setShowPreview(true);
+                      loadPreviewData();
+                    }}
+                    className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  >
+                    Load Preview
+                  </button>
+                )}
+              </div>
+
+              {showPreview && (
+                <>
+                  {loadingPreview && (
+                    <div className="text-center py-8">
+                      <div className="inline-flex items-center gap-2 text-gray-600">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading preview data...
+                      </div>
+                    </div>
+                  )}
+
+                  {previewError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                      {previewError}
+                    </div>
+                  )}
+
+                  {!loadingPreview && !previewError && previewData.length > 0 && (
+                    <div className="bg-gray-50 rounded-lg p-1 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              {previewColumns.map((column) => (
+                                <th
+                                  key={column}
+                                  className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                                >
+                                  {column}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {previewData.map((row, rowIndex) => (
+                              <tr key={rowIndex} className="hover:bg-gray-50">
+                                {previewColumns.map((column) => (
+                                  <td
+                                    key={column}
+                                    className="px-3 py-2 text-sm text-gray-900 max-w-xs truncate"
+                                    title={String(row[column])}
+                                  >
+                                    {row[column] === null ? (
+                                      <span className="text-gray-400 italic">null</span>
+                                    ) : typeof row[column] === 'boolean' ? (
+                                      <span className={row[column] ? 'text-green-600' : 'text-red-600'}>
+                                        {String(row[column])}
+                                      </span>
+                                    ) : typeof row[column] === 'object' ? (
+                                      <span className="text-gray-600 font-mono text-xs">
+                                        {JSON.stringify(row[column]).substring(0, 50)}...
+                                      </span>
+                                    ) : (
+                                      String(row[column]).substring(0, 100)
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {previewData.length === 100 && table.row_count > 100 && (
+                        <div className="text-center py-2 text-sm text-gray-500 bg-gray-100">
+                          Showing first 100 records of {table.row_count.toLocaleString()} total
+                        </div>
+                      )}
+                      {previewData.length < 100 && previewData.length > 0 && (
+                        <div className="text-center py-2 text-sm text-gray-500 bg-gray-100">
+                          Showing all {previewData.length} records
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>

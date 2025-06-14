@@ -13,7 +13,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, isAdmin, isLoading } = useAuth();
   
-  console.log('ProtectedRoute - isLoading:', isLoading, 'user:', user, 'isAdmin:', isAdmin, 'requireAdmin:', requireAdmin);
+  // Only log in development when there's a state change
+  if (process.env.NODE_ENV === 'development' && !isLoading) {
+    console.debug('ProtectedRoute - user:', !!user, 'isAdmin:', isAdmin, 'requireAdmin:', requireAdmin);
+  }
 
   if (isLoading) {
     return (

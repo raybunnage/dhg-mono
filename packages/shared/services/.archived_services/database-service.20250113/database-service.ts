@@ -383,4 +383,5 @@ export class DatabaseService {
   }
 }
 
-export const databaseService = DatabaseService.getInstance();
+// The class is already exported above
+// No need for additional export statement

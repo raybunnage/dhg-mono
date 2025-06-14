@@ -7,17 +7,13 @@ import { supabase } from '../lib/supabase';
 import { ElementCatalogService } from '@shared/services/element-catalog-service';
 import { ElementCriteriaService } from '@shared/services/element-criteria-service';
 import type { TaskElement } from '@shared/services/element-catalog-service';
+import { 
+  WorktreeManagementService, 
+  type WorktreeDefinition 
+} from '@shared/services/worktree-management-service';
 
-interface WorktreeDefinition {
-  id: string;
-  path: string;
-  alias_name: string;
-  alias_number: string;
-  emoji: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Create service instance
+const worktreeService = WorktreeManagementService.getInstance(supabase);
 
 export default function CreateTaskPage() {
   const navigate = useNavigate();
@@ -40,8 +36,8 @@ export default function CreateTaskPage() {
   const [selectedElement, setSelectedElement] = useState<TaskElement | null>(null);
   const [elementsLoading, setElementsLoading] = useState(false);
   const [elementCriteria, setElementCriteria] = useState<{ criteriaCount: number; gatesCount: number }>({ criteriaCount: 0, gatesCount: 0 });
-  const elementCatalog = ElementCatalogService.getInstance();
-  const criteriaService = ElementCriteriaService.getInstance();
+  const elementCatalog = ElementCatalogService.getInstance(supabase);
+  const criteriaService = ElementCriteriaService.getInstance(supabase);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -63,36 +59,18 @@ export default function CreateTaskPage() {
     try {
       setWorktreesLoading(true);
       
-      // Load worktree definitions
-      const { data: worktreeData, error: worktreeError } = await supabase
-        .from('worktree_definitions')
-        .select('*')
-        .order('alias_number');
+      // Load all data using the service
+      const [worktreeData, appData, pipelineData] = await Promise.all([
+        worktreeService.getWorktrees(),
+        worktreeService.getAppMappings(),
+        worktreeService.getPipelineMappings()
+      ]);
       
-      if (worktreeError) {
-        console.error('Error loading worktrees:', worktreeError);
-        setError('Failed to load worktrees');
-        return;
-      }
+      setWorktrees(worktreeData);
+      setAppMappings(appData);
+      setPipelineMappings(pipelineData);
       
-      setWorktrees(worktreeData || []);
-      console.log('✅ Loaded', worktreeData?.length, 'worktrees for CreateTaskPage');
-      
-      // Load app mappings
-      const { data: appData, error: appError } = await supabase
-        .from('worktree_app_mappings')
-        .select('*');
-      
-      if (appError) console.error('Error loading app mappings:', appError);
-      setAppMappings(appData || []);
-      
-      // Load pipeline mappings
-      const { data: pipelineData, error: pipelineError } = await supabase
-        .from('worktree_pipeline_mappings')
-        .select('*');
-      
-      if (pipelineError) console.error('Error loading pipeline mappings:', pipelineError);
-      setPipelineMappings(pipelineData || []);
+      console.log('✅ Loaded', worktreeData.length, 'worktrees for CreateTaskPage');
       
     } catch (err) {
       console.error('Error in loadWorktreeData:', err);
@@ -255,12 +233,18 @@ export default function CreateTaskPage() {
         task_type: formData.task_type,
         priority: formData.priority,
         app: formData.app || undefined,
-        status: 'pending',
-        git_branch: gitBranch,
-        work_mode: formData.work_mode,
-        requires_branch: needsBranch,
-        worktree_path: formData.worktree_path || undefined
+        worktree: selectedWorktree?.alias_name
       });
+      
+      // Update task with additional fields
+      if (task.id) {
+        await TaskService.updateTask(task.id, {
+          git_branch: gitBranch,
+          work_mode: formData.work_mode,
+          requires_branch: needsBranch,
+          worktree_path: formData.worktree_path || undefined
+        });
+      }
 
       // Link selected element to the task if one was chosen
       if (selectedElement && task.id) {

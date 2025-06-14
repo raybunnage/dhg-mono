@@ -484,5 +484,5 @@ export class BatchDatabaseService {
   }
 }
 
-// Export singleton instance
-export const batchDatabaseService = BatchDatabaseService.getInstance();
+// The class is already exported above
+// No need for additional export statement

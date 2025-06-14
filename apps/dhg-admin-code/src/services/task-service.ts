@@ -1,389 +1,99 @@
+/**
+ * Task Service Adapter
+ * Wraps the shared DevTaskService for backward compatibility
+ */
+
 import { supabase } from '../lib/supabase';
+import { DevTaskService } from '@shared/services/dev-task-service';
 
-export interface DevTask {
-  id: string;
-  title: string;
-  description: string;
-  task_type: 'bug' | 'feature' | 'refactor' | 'question' | 'documentation';
-  status: 'pending' | 'in_progress' | 'testing' | 'revision' | 'completed' | 'merged' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
-  app?: string;
-  claude_request?: string;
-  claude_response?: string;
-  created_at: string;
-  updated_at: string;
-  completed_at?: string;
-  created_by?: string;
-  // Git integration fields
-  git_branch?: string;
-  git_commit_start?: string;
-  git_commit_current?: string;
-  git_commits_count?: number;
-  parent_task_id?: string;
-  is_subtask?: boolean;
-  testing_notes?: string;
-  revision_count?: number;
-  // Worktree fields
-  worktree_path?: string;
-  worktree_active?: boolean;
-  work_mode?: 'single-file' | 'feature' | 'exploration' | 'cross-repo';
-  requires_branch?: boolean;
-  worktree?: string;
-  // Progress tracking fields
-  submitted_to_claude?: boolean;
-  submitted_at?: string;
-  submitted_on_worktree?: string;
-  has_commits?: boolean;
-  last_commit_at?: string;
-  progress_status?: 'not_started' | 'claude_submitted' | 'in_development' | 'has_commits' | 'ready_for_review' | 'completed';
-  // Success criteria fields
-  success_criteria_defined?: boolean;
-  validation_status?: string;
-  quality_gates_status?: string;
-  completion_confidence?: number;
-  risk_assessment?: string;
-  current_lifecycle_stage?: string;
-  success_criteria_count?: number;
-  success_criteria_met?: number;
-  criteria_completion_percentage?: number;
-  total_quality_gates?: number;
-  passed_quality_gates?: number;
-  // Source document fields
-  source_doc_id?: string;
-  source_doc_path?: string;
-  source_doc_phase?: string;
-  failed_quality_gates?: number;
-  overall_completion_score?: number;
-  // View-specific fields
-  current_stage_name?: string;
-  current_stage_status?: string;
-  current_stage_confidence?: number;
-  current_stage_risk?: string;
-}
+// Re-export types for backward compatibility
+export type {
+  DevTask,
+  DevTaskTag,
+  DevTaskFile,
+  DevTaskCommit,
+  DevTaskWorkSession
+} from '@shared/services/dev-task-service';
 
-export interface DevTaskTag {
-  id: string;
-  task_id: string;
-  tag: string;
-  created_at: string;
-}
-
-export interface DevTaskFile {
-  id: string;
-  task_id: string;
-  file_path: string;
-  action: 'created' | 'modified' | 'deleted';
-  created_at: string;
-}
-
-export interface DevTaskCommit {
-  id: string;
-  task_id: string;
-  commit_hash: string;
-  commit_message?: string;
-  files_changed?: number;
-  insertions?: number;
-  deletions?: number;
-  created_at: string;
-}
-
-export interface DevTaskWorkSession {
-  id: string;
-  task_id: string;
-  claude_session_id?: string;
-  started_at: string;
-  ended_at?: string;
-  summary?: string;
-  commands_used?: string[];
-  files_modified?: string[];
-}
+// Create a singleton instance for this app
+const devTaskService = DevTaskService.getInstance(supabase);
 
 export class TaskService {
-  // Task CRUD operations
+  // Delegate all static methods to the shared service instance
   static async getTasks(filters?: {
     status?: string;
     priority?: string;
     search?: string;
     app?: string;
   }) {
-    let query = supabase
-      .from('dev_tasks_enhanced_view')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters?.priority) {
-      query = query.eq('priority', filters.priority);
-    }
-    if (filters?.app) {
-      query = query.eq('app', filters.app);
-    }
-    if (filters?.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data as DevTask[];
+    return devTaskService.getTasks(filters);
   }
 
   static async getTask(id: string) {
-    const { data, error } = await supabase
-      .from('dev_tasks_enhanced_view')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as DevTask;
+    return devTaskService.getTask(id);
   }
 
-  static async createTask(task: Partial<DevTask>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { data, error } = await supabase
-      .from('dev_tasks')
-      .insert({
-        ...task,
-        created_by: user?.id
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as DevTask;
+  static async createTask(task: Parameters<typeof devTaskService.createTask>[0]) {
+    return devTaskService.createTask(task);
   }
 
-  static async updateTask(id: string, updates: Partial<DevTask>) {
-    console.log('Updating task:', id, updates);
-    
-    // Check auth status
-    const { data: { user } } = await supabase.auth.getUser();
-    console.log('Auth status in updateTask:', user ? `Authenticated as ${user.email}` : 'Not authenticated');
-    
-    // Update the task in dev_tasks table
-    const { data: updateData, error: updateError } = await supabase
-      .from('dev_tasks')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (updateError) {
-      console.error('Error updating task:', updateError);
-      console.error('Error details:', {
-        message: updateError.message,
-        details: updateError.details,
-        hint: updateError.hint,
-        code: updateError.code
-      });
-      throw new Error(`Failed to update task: ${updateError.message}`);
-    }
-    
-    console.log('Task updated in dev_tasks table:', updateData);
-    
-    // Now fetch the updated task from the enhanced view to get computed fields
-    const { data: enhancedData, error: fetchError } = await supabase
-      .from('dev_tasks_enhanced_view')
-      .select('*')
-      .eq('id', id)
-      .single();
-      
-    if (fetchError) {
-      console.error('Error fetching enhanced task data:', fetchError);
-      // Fall back to the basic update data if enhanced view fails
-      return updateData as DevTask;
-    }
-    
-    console.log('Task fetched from enhanced view:', enhancedData);
-    return enhancedData as DevTask;
+  static async updateTask(id: string, updates: Parameters<typeof devTaskService.updateTask>[1]) {
+    return devTaskService.updateTask(id, updates);
   }
 
   static async deleteTask(id: string) {
-    const { error } = await supabase
-      .from('dev_tasks')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    return devTaskService.deleteTask(id);
   }
 
-  // Tag operations
   static async getTaskTags(taskId: string) {
-    const { data, error } = await supabase
-      .from('dev_task_tags')
-      .select('*')
-      .eq('task_id', taskId)
-      .order('tag');
-    
-    if (error) throw error;
-    return data as DevTaskTag[];
+    return devTaskService.getTaskTags(taskId);
   }
 
   static async addTag(taskId: string, tag: string) {
-    const { data, error } = await supabase
-      .from('dev_task_tags')
-      .insert({ task_id: taskId, tag })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as DevTaskTag;
+    return devTaskService.addTag(taskId, tag);
   }
 
   static async removeTag(tagId: string) {
-    const { error } = await supabase
-      .from('dev_task_tags')
-      .delete()
-      .eq('id', tagId);
-    
-    if (error) throw error;
+    return devTaskService.removeTag(tagId);
   }
 
-  // File operations
   static async getTaskFiles(taskId: string) {
-    const { data, error } = await supabase
-      .from('dev_task_files')
-      .select('*')
-      .eq('task_id', taskId)
-      .order('file_path');
-    
-    if (error) throw error;
-    return data as DevTaskFile[];
+    return devTaskService.getTaskFiles(taskId);
   }
 
   static async addFile(taskId: string, filePath: string, action: 'created' | 'modified' | 'deleted' = 'modified') {
-    const { data, error } = await supabase
-      .from('dev_task_files')
-      .insert({ task_id: taskId, file_path: filePath, action })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as DevTaskFile;
+    return devTaskService.addFile(taskId, filePath, action);
   }
 
   static async removeFile(fileId: string) {
-    const { error } = await supabase
-      .from('dev_task_files')
-      .delete()
-      .eq('id', fileId);
-    
-    if (error) throw error;
+    return devTaskService.removeFile(fileId);
   }
 
-  // Git integration methods
   static async getTaskCommits(taskId: string) {
-    const { data, error } = await supabase
-      .from('dev_task_commits')
-      .select('*')
-      .eq('task_id', taskId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching commits:', error);
-      throw new Error(`Failed to fetch commits: ${error.message}`);
-    }
-    return data as DevTaskCommit[];
+    return devTaskService.getTaskCommits(taskId);
   }
 
   static async getTaskWorkSessions(taskId: string) {
-    const { data, error } = await supabase
-      .from('dev_task_work_sessions')
-      .select('*')
-      .eq('task_id', taskId)
-      .order('started_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching work sessions:', error);
-      throw new Error(`Failed to fetch work sessions: ${error.message}`);
-    }
-    return data as DevTaskWorkSession[];
+    return devTaskService.getTaskWorkSessions(taskId);
   }
 
-  // Helper to format task for Claude
-  static formatForClaude(task: DevTask, tags: string[] = []): string {
-    const tagString = tags.length > 0 ? `Tags: ${tags.join(', ')}\n` : '';
-    
-    return `# Task: ${task.title}
-ID: ${task.id}
-Type: ${task.task_type}
-Priority: ${task.priority}
-
-## Description
-${task.description}
-
-## Context
-${tagString}
-Created: ${new Date(task.created_at).toLocaleDateString()}`;
+  static formatForClaude(task: Parameters<typeof devTaskService.formatForClaude>[0], tags: string[] = []) {
+    return devTaskService.formatForClaude(task, tags);
   }
 
-  // Mark task as complete with Claude response
   static async completeTask(id: string, claudeResponse: string) {
-    console.log('Completing task:', id, 'with response length:', claudeResponse?.length);
-    
-    try {
-      const result = await this.updateTask(id, {
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        claude_response: claudeResponse
-      });
-      
-      console.log('Task completed successfully');
-      return result;
-    } catch (error) {
-      console.error('Failed to complete task:', error);
-      throw error;
-    }
+    return devTaskService.completeTask(id, claudeResponse);
   }
 
-  // Work session management
   static async startWorkSession(taskId: string) {
-    const { data, error } = await supabase
-      .from('dev_task_work_sessions')
-      .insert({
-        task_id: taskId,
-        started_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as DevTaskWorkSession;
+    return devTaskService.startWorkSession(taskId);
   }
 
   static async endWorkSession(sessionId: string, summary: string, filesModified?: string[]) {
-    const { data, error } = await supabase
-      .from('dev_task_work_sessions')
-      .update({
-        ended_at: new Date().toISOString(),
-        summary,
-        files_modified: filesModified
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as DevTaskWorkSession;
+    return devTaskService.endWorkSession(sessionId, summary, filesModified);
   }
 
   static async updateWorkSessionClaude(sessionId: string, claudeSessionId: string) {
-    const { data, error } = await supabase
-      .from('dev_task_work_sessions')
-      .update({
-        claude_session_id: claudeSessionId
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as DevTaskWorkSession;
+    return devTaskService.updateWorkSessionClaude(sessionId, claudeSessionId);
   }
 }

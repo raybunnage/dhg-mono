@@ -423,15 +423,23 @@ export class FilterService {
   /**
    * Apply filter to a query based on active profile
    * This method modifies a Supabase query to filter results based on the active profile's drive IDs
+   * Supports different filter types: 'sources' for google_sources filtering, 'presentations' for video_source_id filtering
    * @param query - The Supabase query to modify
-   * @param activeProfileId - Optional profile ID (uses active profile if not provided)
+   * @param options - Filtering options
    * @returns The modified query with filters applied
    */
   public async applyFilterToQuery(
     query: any,
-    activeProfileId?: string
+    options: {
+      activeProfileId?: string;
+      filterType?: 'sources' | 'presentations';
+      sourceTable?: string;
+    } = {}
   ): Promise<any> {
     try {
+      const { activeProfileId: providedProfileId, filterType = 'sources', sourceTable = 'sources_google' } = options;
+      
+      let activeProfileId = providedProfileId;
       if (!activeProfileId) {
         const activeProfile = await this.loadActiveProfile();
         if (!activeProfile) {
@@ -441,7 +449,7 @@ export class FilterService {
         activeProfileId = activeProfile.id;
       }
       
-      console.log(`FilterService: Applying filter for profile ${activeProfileId}`);
+      console.log(`FilterService: Applying ${filterType} filter for profile ${activeProfileId}`);
       
       // Get root_drive_ids for this profile
       const rootDriveIds = await this.getProfileDriveIds(activeProfileId);
@@ -453,9 +461,79 @@ export class FilterService {
       
       console.log(`FilterService: Using ${rootDriveIds.length} root_drive_ids for filtering`);
       
+      if (filterType === 'presentations') {
+        // For presentations: filter by video_source_id using sources_google table
+        return await this.applyPresentationsFilter(query, rootDriveIds, sourceTable);
+      } else {
+        // For sources: filter by root_drive_id directly
+        return await this.applySourcesFilter(query, rootDriveIds, sourceTable);
+      }
+    } catch (err) {
+      console.error('FilterService: Error in applyFilterToQuery:', err);
+      return query; // Return unfiltered query on any error
+    }
+  }
+
+  /**
+   * Apply presentations filter (used by dhg-hub)
+   * Filters presentations by their video_source_id field
+   */
+  private async applyPresentationsFilter(query: any, rootDriveIds: string[], sourceTable: string): Promise<any> {
+    try {
+      // Get all sources where root_drive_id matches one of our allowed drive IDs
+      console.log('FilterService: Finding sources with matching root_drive_id for presentations...');
+      const { data: matchingSources, error: sourcesError } = await this.supabase
+        .from(sourceTable)
+        .select('id, name, root_drive_id')
+        .in('root_drive_id', rootDriveIds);
+      
+      if (sourcesError) {
+        console.error('FilterService: Error querying sources with root_drive_id:', sourcesError);
+        return query; // Return unfiltered query on error
+      }
+      
+      if (!matchingSources || matchingSources.length === 0) {
+        console.log('FilterService: No sources found with matching root_drive_id');
+        return query; // Return unmodified query instead of empty result
+      }
+      
+      console.log(`FilterService: Found ${matchingSources.length} sources with matching root_drive_id`);
+      
+      // Show a few examples for diagnostics
+      if (matchingSources.length > 0) {
+        console.log('FilterService: Sample matches:');
+        matchingSources.slice(0, 3).forEach(src => {
+          console.log(`- ${src.name} (root_drive_id: ${src.root_drive_id}, id: ${src.id})`);
+        });
+      }
+      
+      // Get the source IDs to use in our presentation filter
+      const sourceIds = matchingSources.map(src => src.id);
+      
+      // Apply filter to presentations by video_source_id
+      const maxSourceIds = 1500;
+      if (sourceIds.length > maxSourceIds) {
+        console.log(`FilterService: Limiting to ${maxSourceIds} source IDs due to URL length constraints`);
+        const limitedSourceIds = sourceIds.slice(0, maxSourceIds);
+        return query.in('video_source_id', limitedSourceIds);
+      }
+      
+      return query.in('video_source_id', sourceIds);
+    } catch (error) {
+      console.error('FilterService: Error in applyPresentationsFilter:', error);
+      return query;
+    }
+  }
+
+  /**
+   * Apply sources filter (original behavior)
+   * Filters sources by their root_drive_id field directly
+   */
+  private async applySourcesFilter(query: any, rootDriveIds: string[], sourceTable: string): Promise<any> {
+    try {
       // Get all sources where root_drive_id matches one of our allowed drive IDs
       const { data: matchingSources, error: sourcesError } = await this.supabase
-        .from('google_sources')
+        .from(sourceTable)
         .select('id')
         .in('root_drive_id', rootDriveIds);
       
@@ -475,7 +553,6 @@ export class FilterService {
       const sourceIds = matchingSources.map(src => src.id);
       
       // Apply filter to query
-      // Limit to 1500 source IDs to avoid URL length issues
       const maxSourceIds = 1500;
       if (sourceIds.length > maxSourceIds) {
         console.log(`FilterService: Limiting to ${maxSourceIds} source IDs due to URL length constraints`);
@@ -484,9 +561,9 @@ export class FilterService {
       }
       
       return query.in('id', sourceIds);
-    } catch (err) {
-      console.error('FilterService: Error in applyFilterToQuery:', err);
-      return query; // Return unfiltered query on any error
+    } catch (error) {
+      console.error('FilterService: Error in applySourcesFilter:', error);
+      return query;
     }
   }
 

@@ -34,6 +34,17 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = url.pathname;
   
+  // Health check endpoint
+  if (pathname === '/health') {
+    sendJson(res, 200, { 
+      status: 'healthy',
+      service: 'markdown-server',
+      port: PORT,
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+  
   if (pathname === '/api/markdown-file') {
     const filePath = url.searchParams.get('path');
     

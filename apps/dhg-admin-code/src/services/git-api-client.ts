@@ -1,18 +1,24 @@
 import type { GitBranch } from '../types/git';
-
-const API_BASE_URL = 'http://localhost:3009/api/git';
+import { CommandExecutionClient } from '@shared/services/browser';
+import { supabase } from '../lib/supabase';
+import { serverRegistry } from '@shared/services/server-registry-service';
 
 export class GitApiClient {
+  private commandClient: CommandExecutionClient | null = null;
+
+  private async getCommandClient(): Promise<CommandExecutionClient> {
+    if (!this.commandClient) {
+      const gitApiUrl = await serverRegistry.getServerUrl('git-api-server');
+      this.commandClient = CommandExecutionClient.getInstance(gitApiUrl, supabase);
+    }
+    return this.commandClient;
+  }
   async getAllBranches(): Promise<GitBranch[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/branches`);
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch branches');
-      }
-      
-      return result.data;
+      const commandClient = await this.getCommandClient();
+      const branches = await commandClient.getGitBranches();
+      // Transform to match GitBranch interface if needed
+      return branches as any;
     } catch (error) {
       console.error('Error fetching branches:', error);
       throw error;
@@ -21,15 +27,8 @@ export class GitApiClient {
 
   async deleteBranch(branchName: string, force: boolean = false): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/branches/${encodeURIComponent(branchName)}?force=${force}`, {
-        method: 'DELETE'
-      });
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete branch');
-      }
+      const commandClient = await this.getCommandClient();
+      await commandClient.deleteBranch(branchName, force);
     } catch (error) {
       console.error('Error deleting branch:', error);
       throw error;
@@ -38,15 +37,8 @@ export class GitApiClient {
 
   async pruneWorktrees(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/worktrees/prune`, {
-        method: 'POST'
-      });
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to prune worktrees');
-      }
+      const commandClient = await this.getCommandClient();
+      await commandClient.pruneWorktrees();
     } catch (error) {
       console.error('Error pruning worktrees:', error);
       throw error;

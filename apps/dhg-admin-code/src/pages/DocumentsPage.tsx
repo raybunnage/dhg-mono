@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DocumentList } from '../components/documents/DocumentList';
 import type { DocumentFilters } from '../components/documents/DocumentList';
 import { MarkdownViewer } from '../components/documents/MarkdownViewer';
 import { useSupabase } from '../hooks/useSupabase';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { FileText, Folder, Clock, Star, Filter, RefreshCw, Plus } from 'lucide-react';
+import { FileText, Folder, Clock, Star, Filter, RefreshCw, Plus, Wrench } from 'lucide-react';
+import { MaintenancePanel, type MaintenanceStats, type MaintenanceAction } from '../components/MaintenancePanel';
 
 // Define types locally until we have proper type imports
 interface DocFile {
@@ -35,6 +36,170 @@ export const DocumentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<DocumentFilters>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [showMaintenance, setShowMaintenance] = useState(false);
+  const [documents, setDocuments] = useState<DocFile[]>([]);
+  const [maintenanceStats, setMaintenanceStats] = useState<MaintenanceStats>({
+    totalItems: 0,
+    lastUsed30Days: 0,
+    lastUsed90Days: 0,
+    neverUsed: 0,
+    duplicates: 0,
+    outdated: 0,
+    oversized: 0,
+    archived: 0
+  });
+
+  // Fetch documents for maintenance stats
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      const { data, error } = await supabase
+        .from('doc_files')
+        .select('*')
+        .order('last_modified_at', { ascending: false });
+      
+      if (!error && data) {
+        setDocuments(data);
+        calculateMaintenanceStats(data);
+      }
+    };
+    
+    fetchDocuments();
+  }, [supabase]);
+
+  // Calculate maintenance statistics
+  const calculateMaintenanceStats = (docs: DocFile[]) => {
+    const now = Date.now();
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
+    
+    const stats: MaintenanceStats = {
+      totalItems: docs.length,
+      lastUsed30Days: 0,
+      lastUsed90Days: 0,
+      neverUsed: 0,
+      duplicates: 0,
+      outdated: 0,
+      oversized: 0,
+      archived: docs.filter(d => d.is_deleted).length
+    };
+    
+    // Track duplicate titles
+    const titleCounts = new Map<string, number>();
+    
+    docs.forEach(doc => {
+      const lastModified = new Date(doc.last_modified_at || doc.created_at).getTime();
+      
+      if (lastModified > thirtyDaysAgo) {
+        stats.lastUsed30Days++;
+      } else if (lastModified > ninetyDaysAgo) {
+        stats.lastUsed90Days++;
+      }
+      
+      if (!doc.view_count || doc.view_count === 0) {
+        stats.neverUsed++;
+      }
+      
+      // Check for duplicates by title
+      const title = doc.title.toLowerCase();
+      titleCounts.set(title, (titleCounts.get(title) || 0) + 1);
+      
+      // Check if outdated (not modified in 180 days)
+      if (lastModified < now - (180 * 24 * 60 * 60 * 1000)) {
+        stats.outdated++;
+      }
+      
+      // Check if oversized (> 100KB)
+      if (doc.file_size && doc.file_size > 100000) {
+        stats.oversized++;
+      }
+    });
+    
+    // Count duplicates
+    stats.duplicates = Array.from(titleCounts.values()).filter(count => count > 1).length;
+    
+    setMaintenanceStats(stats);
+  };
+
+  // Run maintenance analysis
+  const runMaintenanceAnalysis = async (): Promise<MaintenanceAction[]> => {
+    const actions: MaintenanceAction[] = [];
+    
+    documents.forEach(doc => {
+      const lastModified = new Date(doc.last_modified_at || doc.created_at);
+      const daysSince = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Suggest archiving old, unviewed documents
+      if (daysSince > 90 && (!doc.view_count || doc.view_count === 0) && !doc.is_deleted) {
+        actions.push({
+          id: `archive-${doc.id}`,
+          type: 'archive',
+          itemId: doc.id,
+          itemPath: doc.file_path,
+          reason: `Not viewed and not modified in ${Math.round(daysSince)} days`,
+          confidence: daysSince > 180 ? 0.9 : 0.7
+        });
+      }
+      
+      // Suggest deduplication for documents with same title
+      const similarDocs = documents.filter(d => 
+        d.id !== doc.id && 
+        d.title.toLowerCase() === doc.title.toLowerCase()
+      );
+      
+      if (similarDocs.length > 0) {
+        actions.push({
+          id: `dedupe-${doc.id}`,
+          type: 'deduplicate',
+          itemId: doc.id,
+          itemPath: doc.file_path,
+          reason: `Found ${similarDocs.length} document(s) with same title`,
+          confidence: 0.8,
+          relatedItems: similarDocs.map(d => d.id)
+        });
+      }
+      
+      // Suggest review for oversized documents
+      if (doc.file_size && doc.file_size > 100000) {
+        actions.push({
+          id: `review-${doc.id}`,
+          type: 'review',
+          itemId: doc.id,
+          itemPath: doc.file_path,
+          reason: `Document is ${Math.round(doc.file_size / 1024)}KB - consider splitting or optimizing`,
+          confidence: 0.6
+        });
+      }
+    });
+    
+    return actions;
+  };
+
+  // Execute maintenance actions
+  const executeMaintenanceActions = async (actions: MaintenanceAction[]) => {
+    console.log('Executing maintenance actions:', actions);
+    
+    for (const action of actions) {
+      if (action.type === 'archive') {
+        // Mark document as deleted
+        await supabase
+          .from('doc_files')
+          .update({ is_deleted: true })
+          .eq('id', action.itemId);
+      }
+      // Add other action types as needed
+    }
+    
+    // Refresh documents
+    const { data } = await supabase
+      .from('doc_files')
+      .select('*')
+      .order('last_modified_at', { ascending: false });
+    
+    if (data) {
+      setDocuments(data);
+      calculateMaintenanceStats(data);
+    }
+  };
 
   const handleDocumentSelect = async (doc: DocFile) => {
     setSelectedDocument(doc);
@@ -192,6 +357,17 @@ This will:
                 <Plus className="w-4 h-4" />
                 New
               </button>
+              
+              <button
+                onClick={() => setShowMaintenance(!showMaintenance)}
+                className={`flex items-center gap-1 px-3 py-1 rounded ${
+                  showMaintenance ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-100'
+                }`}
+                title="Document maintenance tools"
+              >
+                <Wrench className="w-4 h-4" />
+                Maintenance
+              </button>
             </div>
           </div>
           
@@ -259,6 +435,18 @@ This will:
           </div>
         )}
       </div>
+      
+      {/* Maintenance Panel */}
+      {showMaintenance && (
+        <MaintenancePanel
+          isOpen={showMaintenance}
+          onClose={() => setShowMaintenance(false)}
+          stats={maintenanceStats}
+          onRunAnalysis={runMaintenanceAnalysis}
+          onExecuteActions={executeMaintenanceActions}
+          itemType="document"
+        />
+      )}
       </div>
     </DashboardLayout>
   );

@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { getWorktreeAliasInfo } from '../utils/worktree-alias-mapping';
 import { WorktreeCommits } from '../components/WorktreeCommits';
+import { serverRegistry } from '@shared/services/server-registry-service';
+import { ServerStatusIndicator } from '../components/ServerStatusIndicator';
 
 // Create supabase client with environment variables
 const supabase = createSupabaseAdapter({ env: import.meta.env as any });
@@ -126,7 +128,8 @@ export function GitManagement() {
   const handleRefreshWorktrees = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch('http://localhost:3005/api/git/worktrees');
+      const gitServerUrl = await serverRegistry.getServerUrl('git-server');
+      const response = await fetch(`${gitServerUrl}/api/git/worktrees`);
       if (!response.ok) {
         throw new Error('Failed to fetch worktrees');
       }
@@ -202,7 +205,8 @@ export function GitManagement() {
         // Try to fetch worktrees from git server first
         let worktreesToUse = defaultWorktrees;
         try {
-          const response = await fetch('http://localhost:3005/api/git/worktrees');
+          const gitServerUrl = await serverRegistry.getServerUrl('git-server');
+          const response = await fetch(`${gitServerUrl}/api/git/worktrees`);
           if (response.ok) {
             const data = await response.json();
             if (data.worktrees && data.worktrees.length > 0) {
@@ -238,7 +242,8 @@ export function GitManagement() {
   const loadBranches = async () => {
     setIsLoadingBranches(true);
     try {
-      const response = await fetch('http://localhost:3005/api/git/branches');
+      const gitServerUrl = await serverRegistry.getServerUrl('git-server');
+      const response = await fetch(`${gitServerUrl}/api/git/branches`);
       if (!response.ok) {
         throw new Error('Failed to fetch branches');
       }
@@ -267,7 +272,8 @@ export function GitManagement() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3005/api/git/branches/${encodeURIComponent(branchName)}`, {
+      const gitServerUrl = await serverRegistry.getServerUrl('git-server');
+      const response = await fetch(`${gitServerUrl}/api/git/branches/${encodeURIComponent(branchName)}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ force })
@@ -310,7 +316,8 @@ export function GitManagement() {
     }
 
     try {
-      const response = await fetch('http://localhost:3005/api/git/cleanup-branches', {
+      const gitServerUrl = await serverRegistry.getServerUrl('git-server');
+      const response = await fetch(`${gitServerUrl}/api/git/cleanup-branches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ branches: branchesToCleanup, dryRun })
@@ -473,7 +480,10 @@ export function GitManagement() {
     <DashboardLayout>
       <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Git Management</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900">Git Management</h1>
+          <ServerStatusIndicator serviceName="git-server" showLabel={false} />
+        </div>
         
         <div className="flex space-x-4">
           <button 

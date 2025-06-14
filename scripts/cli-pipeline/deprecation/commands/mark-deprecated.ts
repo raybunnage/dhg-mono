@@ -148,7 +148,7 @@ async function deprecateService(supabase: any, serviceName: string, reason: stri
 async function deprecateScript(supabase: any, scriptPath: string, reason: string) {
   // Find the script
   const { data: script, error: findError } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .select('*')
     .or(`file_path.eq.${scriptPath},file_name.eq.${scriptPath}`)
     .single();
@@ -159,7 +159,7 @@ async function deprecateScript(supabase: any, scriptPath: string, reason: string
   
   // Update status
   const { error: updateError } = await supabase
-    .from('scripts_registry')
+    .from('registry_scripts')
     .update({
       status: 'deprecated',
       metadata: {

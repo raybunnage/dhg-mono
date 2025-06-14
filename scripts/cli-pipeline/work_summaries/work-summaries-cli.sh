@@ -22,12 +22,14 @@ if [ $# -eq 0 ] || [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; 
   echo "  add          Add a new work summary (manual)"
   echo "  auto         Auto-generate a work summary (AI-friendly)"
   echo "  import       Import summaries from claude_code_prompts.txt"
+  echo "  link-tasks   Link work summaries to dev tasks using git history"
   echo "  health-check Run health check for work summaries pipeline"
   echo ""
   echo "Examples:"
   echo "  ./work-summaries-cli.sh add --title \"Fixed bug\" --content \"Description\" --commands \"cmd1,cmd2\""
   echo "  ./work-summaries-cli.sh auto \"Fixed bug\" \"Description of the fix\""
   echo "  ./work-summaries-cli.sh import"
+  echo "  ./work-summaries-cli.sh link-tasks"
   exit 0
 fi
 
@@ -48,6 +50,11 @@ case "$1" in
     ts-node "$SCRIPT_DIR/import-from-prompts.ts" "$@"
     ;;
     
+  "link-tasks")
+    shift
+    ts-node "$SCRIPT_DIR/commands/link-dev-tasks.ts" "$@"
+    ;;
+    
   "health-check")
     "$SCRIPT_DIR/health-check.sh"
     ;;
@@ -56,13 +63,5 @@ case "$1" in
     echo "Unknown command: $1"
     echo "Run './work-summaries-cli.sh help' for usage"
     exit 1
-    ;;
-  health-check)
-    echo "🏥 Running health check for work_summaries pipeline..."
-    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-      echo "❌ Missing required environment variables"
-      exit 1
-    fi
-    echo "✅ work_summaries pipeline is healthy"
     ;;
 esac

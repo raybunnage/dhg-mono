@@ -723,4 +723,5 @@ export class PromptService {
 export const promptService = PromptService.getInstance();
 
 // Export document classifier
-export { documentClassifier, ClassificationRequest, ClassificationResult } from './document-classifier';
+export { documentClassifier } from './document-classifier';
+export type { ClassificationRequest, ClassificationResult } from './document-classifier';

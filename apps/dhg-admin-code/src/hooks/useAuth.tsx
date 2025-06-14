@@ -17,11 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log('=== AuthProvider rendering ===');
-  console.log('Current state:', { user, isAdmin, isLoading });
-
   useEffect(() => {
-    console.log('=== AuthProvider mounted, checking user... ===');
     checkUser();
     
     const subscription = browserAuthService().onAuthStateChange(async (user) => {
@@ -42,18 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkUser = async () => {
     try {
-      console.log('=== Checking current user... ===');
       const currentUser = await browserAuthService().getCurrentUser();
-      console.log('Current user:', currentUser);
       setUser(currentUser);
       if (currentUser) {
-        console.log('User found, checking admin status...');
         const adminStatus = await isUserAdmin();
-        console.log('Admin status:', adminStatus);
         setIsAdmin(adminStatus);
       }
     } catch (error) {
-      console.error('=== Error checking user ===:', error);
+      console.error('Error checking user:', error);
     } finally {
       setIsLoading(false);
     }
@@ -73,8 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setIsAdmin(false);
   };
-
-  console.log('AuthProvider render - isLoading:', isLoading, 'user:', user, 'isAdmin:', isAdmin);
   
   return (
     <AuthContext.Provider value={{ user, isAdmin, isLoading, signIn, signOut }}>

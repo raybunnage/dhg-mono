@@ -16,10 +16,12 @@ This document outlines the mapping of imported SQLite tables that currently lack
    **Established Prefixes**:
    - `auth_` - Authentication & user management (e.g., auth_sessions, auth_tokens)
    - `ai_` - AI & prompt management (e.g., ai_models, ai_conversations)
+   - `app_` - Application-specific tables (e.g., app_configurations, app_user_settings)
    - `google_` - Google Drive integration (e.g., google_folders, google_permissions)
    - `learn_` - Learning platform features (e.g., learn_courses, learn_progress)
    - `media_` - Media & presentations (e.g., media_thumbnails, media_transcripts)
    - `doc_` - Document management (e.g., doc_versions, doc_comments, doc_continuous_monitoring)
+   - `element_` - Element catalog system (e.g., element_types, element_categories, element_success_criteria)
    - `expert_` - Expert system (e.g., expert_ratings, expert_specialties)
    - `email_` - Email system (e.g., email_templates, email_logs)
    - `command_` - Command & analytics (e.g., command_aliases, command_logs)
