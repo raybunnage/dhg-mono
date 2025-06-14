@@ -15,6 +15,7 @@ export { FileBrowserProxy } from './servers/file-browser/FileBrowserProxy';
 export { ContinuousDocsProxy } from './servers/continuous-docs/ContinuousDocsProxy';
 export { AudioStreamingProxy } from './servers/audio-streaming/AudioStreamingProxy';
 export { HtmlFileBrowserProxy } from './servers/html-file-browser/HtmlFileBrowserProxy';
+export { ScriptViewerProxy } from './servers/script-viewer/ScriptViewerProxy';
 
 // Services (for direct use if needed)
 export { ViteFixService } from './servers/vite-fix-proxy/ViteFixService';
