@@ -70,6 +70,11 @@ Track issues, glitches, and service integration problems discovered during CLI p
   - **Needed by**: registry-cli.sh, service registry operations
   - **Functionality**: Service registry management, component tracking, dependency mapping
   - **Impact**: Centralized registry operations
+  
+- [ ] **TrackingService**
+  - **Needed by**: tracking-cli.sh, command tracking operations
+  - **Functionality**: Command execution tracking, error tracking, statistics
+  - **Impact**: Centralized tracking operations with circular dependency prevention
 
 - [ ] **ReportingService**
   - **Needed by**: Analytics and reporting pipelines
