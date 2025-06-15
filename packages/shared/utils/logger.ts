@@ -1,7 +1,7 @@
 // Conditional import for winston - only in Node.js environments
 let winston: any = null;
 try {
-  if (typeof process !== 'undefined' && process.env && !process.browser) {
+  if (typeof process !== 'undefined' && process.env && !(process as any).browser) {
     winston = require('winston');
   }
 } catch (e) {

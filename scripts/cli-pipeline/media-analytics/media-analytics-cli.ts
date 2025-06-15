@@ -4,6 +4,7 @@ import { viewSessions } from './commands/view-sessions';
 import { viewEvents } from './commands/view-events';
 import { mediaStats } from './commands/media-stats';
 import { testAudioPerformance, compareServers } from './commands/test-audio-performance';
+import { SupabaseClientService } from '../../../../packages/shared/services/supabase-client';
 
 const program = new Command();
 
@@ -76,7 +77,6 @@ program
   .command('health-check')
   .description('Check media tracking system health')
   .action(async () => {
-    const { SupabaseClientService } = await import('../../../../packages/shared/services/supabase-client/index.js');
     const supabase = SupabaseClientService.getInstance().getClient();
     
     try {
