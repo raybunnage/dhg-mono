@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "^1.0.1",
+    "@types/glob": "^8.1.0",
     "@vitest/ui": "^3.2.3",
     "gray-matter": "^4.0.3",
     "netlify-cli": "18.0.4",
