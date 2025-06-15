@@ -22,15 +22,24 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Get the main worktree directory (parent of all worktrees)
-MAIN_WORKTREE_DIR=$(dirname "$GIT_ROOT")
+# Get the base name of current directory to determine main repo location
+CURRENT_DIR_NAME=$(basename "$GIT_ROOT")
 
-# Define worktrees to update
-declare -A WORKTREES=(
-    ["improve-cli-pipelines"]="CLI Pipelines work"
-    ["improve-google"]="Google integration work" 
-    ["improve-suite"]="Suite applications work"
-)
+# Determine the main worktree directory based on current location
+if [[ "$CURRENT_DIR_NAME" == "dhg-mono-integration-bug-fixes-tweaks" ]] || 
+   [[ "$CURRENT_DIR_NAME" == "dhg-mono-improve-cli-pipelines" ]] || 
+   [[ "$CURRENT_DIR_NAME" == "dhg-mono-improve-google" ]] || 
+   [[ "$CURRENT_DIR_NAME" == "dhg-mono-improve-suite" ]]; then
+    # We're in one of the worktrees
+    MAIN_WORKTREE_DIR=$(dirname "$GIT_ROOT")
+else
+    # Fallback - assume standard structure
+    MAIN_WORKTREE_DIR="/Users/raybunnage/Documents/github"
+fi
+
+# Define worktrees to update (using arrays instead of associative arrays for macOS compatibility)
+WORKTREE_NAMES=("dhg-mono-improve-cli-pipelines" "dhg-mono-improve-google" "dhg-mono-improve-suite")
+WORKTREE_DESCS=("CLI Pipelines work" "Google integration work" "Suite applications work")
 
 # Integration branch name
 INTEGRATION_BRANCH="integration/bug-fixes-tweaks"
@@ -133,12 +142,12 @@ FAIL_COUNT=0
 FAILED_WORKTREES=()
 
 # Process each worktree
-for worktree_name in "${!WORKTREES[@]}"; do
-    if sync_worktree "$worktree_name" "${WORKTREES[$worktree_name]}"; then
+for i in "${!WORKTREE_NAMES[@]}"; do
+    if sync_worktree "${WORKTREE_NAMES[$i]}" "${WORKTREE_DESCS[$i]}"; then
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
         FAIL_COUNT=$((FAIL_COUNT + 1))
-        FAILED_WORKTREES+=("$worktree_name")
+        FAILED_WORKTREES+=("${WORKTREE_NAMES[$i]}")
     fi
 done
 
@@ -166,7 +175,9 @@ echo -e "${BLUE}📋 FINAL WORKTREE STATUS REPORT${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Check final status of each worktree
-for worktree_name in "${!WORKTREES[@]}"; do
+for i in "${!WORKTREE_NAMES[@]}"; do
+    worktree_name="${WORKTREE_NAMES[$i]}"
+    worktree_desc="${WORKTREE_DESCS[$i]}"
     worktree_path="$MAIN_WORKTREE_DIR/$worktree_name"
     
     if [ -d "$worktree_path" ]; then
@@ -202,7 +213,7 @@ for worktree_name in "${!WORKTREES[@]}"; do
             fi
             
             # Display worktree status
-            echo -e "\n${YELLOW}$worktree_name${NC} (${WORKTREES[$worktree_name]})"
+            echo -e "\n${YELLOW}$worktree_name${NC} ($worktree_desc)"
             echo -e "  Branch: $CURRENT_BRANCH"
             echo -e "  Status: $STATUS"
             echo -e "  Details: $STATUS_DETAIL"
@@ -218,7 +229,7 @@ for worktree_name in "${!WORKTREES[@]}"; do
             fi
         fi
     else
-        echo -e "\n${YELLOW}$worktree_name${NC} (${WORKTREES[$worktree_name]})"
+        echo -e "\n${YELLOW}$worktree_name${NC} ($worktree_desc)"
         echo -e "  ${RED}Status: ❌ NOT FOUND${NC}"
         echo -e "  Details: Worktree directory does not exist"
     fi
@@ -235,22 +246,29 @@ echo -e "${BLUE}========================================${NC}"
 if [ ${#FAILED_WORKTREES[@]} -eq 0 ] && [ $FAIL_COUNT -eq 0 ]; then
     echo -e "${GREEN}✅ ALL WORKTREES ARE UP TO DATE AND READY FOR NEXT TASKS!${NC}"
     echo -e "\nYou can now safely work in any of the following worktrees:"
-    for worktree_name in "${!WORKTREES[@]}"; do
-        echo -e "  • ${GREEN}$worktree_name${NC}: ${WORKTREES[$worktree_name]}"
+    for i in "${!WORKTREE_NAMES[@]}"; do
+        echo -e "  • ${GREEN}${WORKTREE_NAMES[$i]}${NC}: ${WORKTREE_DESCS[$i]}"
     done
 else
     echo -e "${YELLOW}⚠️  SOME WORKTREES NEED ATTENTION:${NC}"
     echo -e "\nWorktrees ready for work:"
-    for worktree_name in "${!WORKTREES[@]}"; do
+    for i in "${!WORKTREE_NAMES[@]}"; do
+        worktree_name="${WORKTREE_NAMES[$i]}"
         if [[ ! " ${FAILED_WORKTREES[@]} " =~ " ${worktree_name} " ]]; then
-            echo -e "  • ${GREEN}$worktree_name${NC}: ${WORKTREES[$worktree_name]}"
+            echo -e "  • ${GREEN}$worktree_name${NC}: ${WORKTREE_DESCS[$i]}"
         fi
     done
     
     if [ ${#FAILED_WORKTREES[@]} -gt 0 ]; then
         echo -e "\nWorktrees needing attention:"
         for failed in "${FAILED_WORKTREES[@]}"; do
-            echo -e "  • ${RED}$failed${NC}: ${WORKTREES[$failed]}"
+            # Find the description for this failed worktree
+            for i in "${!WORKTREE_NAMES[@]}"; do
+                if [[ "${WORKTREE_NAMES[$i]}" == "$failed" ]]; then
+                    echo -e "  • ${RED}$failed${NC}: ${WORKTREE_DESCS[$i]}"
+                    break
+                fi
+            done
         done
     fi
 fi
