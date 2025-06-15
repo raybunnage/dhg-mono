@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ServiceTestResult {
   name: string;
@@ -86,6 +86,9 @@ export function RefactoredServiceTestRunner() {
     pending: REFACTORED_SERVICES.length,
     successRate: 0
   });
+  const [executionId, setExecutionId] = useState<string | null>(null);
+  const [proxyStatus, setProxyStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   // Calculate summary from test results
   const updateSummary = (results: ServiceTestResult[]) => {
@@ -106,58 +109,107 @@ export function RefactoredServiceTestRunner() {
     setSummary(summary);
   };
 
+  // Check proxy server status
+  useEffect(() => {
+    const checkProxy = async () => {
+      try {
+        const response = await fetch('http://localhost:9890/health'); // Updated to use consolidated test-execution-proxy
+        if (response.ok) {
+          setProxyStatus('online');
+        } else {
+          setProxyStatus('offline');
+        }
+      } catch (error) {
+        setProxyStatus('offline');
+      }
+    };
+
+    checkProxy();
+    const interval = setInterval(checkProxy, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   // Run all tests
   const runAllTests = async () => {
+    if (proxyStatus !== 'online') {
+      alert(`Test Runner Proxy is not running!
+
+Please start it with:
+ts-node scripts/cli-pipeline/proxy/start-test-runner-proxy.ts
+
+Or add it to package.json and run:
+pnpm proxy:test-runner`);
+      return;
+    }
+
     setIsRunning(true);
     setLogs(['Starting test run for all refactored services...']);
 
-    // Note: In a real implementation, this would make an API call to a proxy server
-    // that executes the shell script. For now, we'll simulate the test run.
-    alert(`To run all refactored service tests, execute this command in your terminal:
-
-./scripts/cli-pipeline/utilities/run-all-refactored-service-tests.sh
-
-Or for a quick test summary:
-./scripts/cli-pipeline/utilities/test-summary-refactored-services.sh`);
-
-    // Simulate test execution
-    for (let i = 0; i < testResults.length; i++) {
-      const service = testResults[i];
-      
-      // Update status to running
-      setTestResults(prev => {
-        const updated = [...prev];
-        updated[i] = { ...updated[i], status: 'running' };
-        return updated;
+    try {
+      // Start test execution
+      const response = await fetch('http://localhost:9890/tests/run-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
-      setCurrentService(service.name);
-      
-      // Simulate test delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Randomly assign test results for demo
-      const hasTests = Math.random() > 0.2;
-      const passed = hasTests && Math.random() > 0.3;
-      
-      setTestResults(prev => {
-        const updated = [...prev];
-        updated[i] = {
-          ...updated[i],
-          status: hasTests ? (passed ? 'passed' : 'failed') : 'no-tests',
-          testsRun: hasTests ? Math.floor(Math.random() * 20) + 1 : 0,
-          testsPassed: hasTests ? (passed ? Math.floor(Math.random() * 15) + 1 : 0) : 0,
-          testsFailed: hasTests ? (passed ? 0 : Math.floor(Math.random() * 5) + 1) : 0,
-          duration: hasTests ? Math.floor(Math.random() * 5000) + 500 : 0
-        };
-        return updated;
-      });
-      
-      setLogs(prev => [...prev, `${hasTests ? (passed ? '✅' : '❌') : '⚠️'} ${service.name}`]);
+
+      if (!response.ok) {
+        throw new Error('Failed to start test run');
+      }
+
+      const { executionId: execId } = await response.json();
+      setExecutionId(execId);
+
+      // Set up SSE for real-time updates
+      const eventSource = new EventSource(`http://localhost:9890/tests/stream/${execId}`);
+      eventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'update') {
+          const { execution } = data;
+          
+          // Update test results
+          if (execution.services) {
+            const updatedResults = REFACTORED_SERVICES.map(serviceName => {
+              const serviceResult = execution.services.find((s: any) => s.name === serviceName);
+              return serviceResult || { name: serviceName, status: 'pending' };
+            });
+            setTestResults(updatedResults);
+          }
+
+          // Update logs
+          if (execution.logs) {
+            setLogs(execution.logs);
+          }
+
+          // Update summary
+          if (execution.summary) {
+            setSummary(execution.summary);
+          }
+
+          // Update current service
+          const runningService = execution.services?.find((s: any) => s.status === 'running');
+          setCurrentService(runningService?.name || null);
+        } else if (data.type === 'complete') {
+          setIsRunning(false);
+          setCurrentService(null);
+          eventSource.close();
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        setIsRunning(false);
+        setCurrentService(null);
+        eventSource.close();
+        setLogs(prev => [...prev, '❌ Connection to test runner lost']);
+      };
+    } catch (error) {
+      console.error('Error starting tests:', error);
+      setIsRunning(false);
+      setLogs(prev => [...prev, `❌ Error: ${error}`]);
     }
-    
-    setIsRunning(false);
-    setCurrentService(null);
-    setLogs(prev => [...prev, 'Test run completed!']);
   };
 
   // Run tests for a single service
@@ -172,6 +224,15 @@ npx vitest run --reporter=verbose`);
   useEffect(() => {
     updateSummary(testResults);
   }, [testResults]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -197,7 +258,28 @@ npx vitest run --reporter=verbose`);
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-4">Refactored Service Test Runner</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Refactored Service Test Runner</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Proxy Status:</span>
+            <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
+              proxyStatus === 'online' 
+                ? 'bg-green-100 text-green-800' 
+                : proxyStatus === 'offline'
+                ? 'bg-red-100 text-red-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                proxyStatus === 'online' 
+                  ? 'bg-green-500' 
+                  : proxyStatus === 'offline'
+                  ? 'bg-red-500'
+                  : 'bg-gray-500'
+              }`} />
+              {proxyStatus === 'online' ? 'Online' : proxyStatus === 'offline' ? 'Offline' : 'Checking...'}
+            </div>
+          </div>
+        </div>
         
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
@@ -329,18 +411,30 @@ npx vitest run --reporter=verbose`);
 
       {/* Help Section */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">Command Line Usage</h3>
-        <div className="space-y-2 font-mono text-sm">
-          <p className="text-blue-800">
-            <span className="font-bold">Run all tests:</span> ./scripts/cli-pipeline/utilities/run-all-refactored-service-tests.sh
-          </p>
-          <p className="text-blue-800">
-            <span className="font-bold">Quick summary:</span> ./scripts/cli-pipeline/utilities/test-summary-refactored-services.sh
-          </p>
-          <p className="text-blue-800">
-            <span className="font-bold">Test single service:</span> cd packages/shared/services/[service-name] && npx vitest run
-          </p>
-        </div>
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">
+          {proxyStatus === 'online' ? '🟢 Real-Time Test Execution' : '🔴 Proxy Server Required'}
+        </h3>
+        {proxyStatus === 'online' ? (
+          <div className="space-y-2 text-sm">
+            <p className="text-blue-800">
+              The Test Runner Proxy is online! Click "Run All Tests" to execute real tests on your refactored services.
+            </p>
+            <p className="text-blue-700">
+              Tests will run using vitest and results will stream to this UI in real-time.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-blue-800 font-semibold">Start the Test Runner Proxy to enable real test execution:</p>
+            <div className="font-mono text-sm bg-white p-3 rounded">
+              <p className="text-gray-800">pnpm proxy:test-runner</p>
+            </div>
+            <div className="text-sm text-blue-700 mt-3">
+              <p className="font-semibold">Alternative command line usage:</p>
+              <p className="font-mono">./scripts/cli-pipeline/utilities/run-all-refactored-service-tests.sh</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

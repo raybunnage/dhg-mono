@@ -20,7 +20,8 @@ const PROXY_SERVERS = [
   { name: 'markdown-viewer-proxy', port: 9885, script: 'start-markdown-viewer-proxy.ts' },
   { name: 'docs-archive-proxy', port: 9886, script: 'start-docs-archive-proxy.ts' },
   { name: 'worktree-switcher-proxy', port: 9887, script: 'start-worktree-switcher-proxy.ts' },
-  { name: 'cli-test-runner-proxy', port: 9890, script: 'start-cli-test-runner-proxy.ts' }
+  { name: 'cli-test-runner-proxy', port: 9890, script: 'start-cli-test-runner-proxy.ts' },
+  { name: 'test-runner-proxy', port: 9891, script: 'start-test-runner-proxy.ts' }
 ];
 
 async function waitForServer(port: number, maxAttempts = 30): Promise<boolean> {
