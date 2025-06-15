@@ -27,9 +27,10 @@ import { TestContinuousDocsProxy } from './components/TestContinuousDocsProxy';
 import { TestAudioStreamingProxy } from './components/TestAudioStreamingProxy';
 import { TestHtmlFileBrowserProxy } from './components/TestHtmlFileBrowserProxy';
 import { ProxyServerDashboard } from './components/ProxyServerDashboard';
+import { CLIPipelineTestRunner } from './components/CLIPipelineTestRunner';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard'>('proxy-dashboard');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard' | 'cli-tests'>('cli-tests');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,6 +180,16 @@ function App() {
           >
             🚀 Proxy Dashboard
           </button>
+          <button
+            onClick={() => setView('cli-tests')}
+            className={`px-4 py-2 rounded ${
+              view === 'cli-tests' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-purple-200 text-purple-700 hover:bg-purple-300'
+            }`}
+          >
+            🧪 CLI Pipeline Tests
+          </button>
           </div>
         </div>
       </div>
@@ -204,6 +215,7 @@ function App() {
         {view === 'audio-streaming' && <TestAudioStreamingProxy />}
         {view === 'html-browser' && <TestHtmlFileBrowserProxy />}
         {view === 'proxy-dashboard' && <ProxyServerDashboard />}
+        {view === 'cli-tests' && <CLIPipelineTestRunner />}
       </div>
     </div>
   );
