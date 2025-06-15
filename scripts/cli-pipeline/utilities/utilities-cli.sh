@@ -164,6 +164,15 @@ command_sync-worktrees() {
         "$SCRIPT_DIR/sync-all-worktrees.sh"
 }
 
+# Standards Validation
+command_validate-standards() {
+    log_info "Validating project against continuous development standards"
+    log_info "Standards file: .continuous/standards.yaml"
+    
+    track_and_execute "validate-standards" "Validate code against development standards" \
+        "npx ts-node $SCRIPT_DIR/validate-standards.ts"
+}
+
 # System Health Check
 command_health-check() {
     log_info "Running utilities pipeline health check"
@@ -267,6 +276,9 @@ VITE UTILITIES:
 
 WORKTREE MANAGEMENT:
   * sync-worktrees              Sync all worktrees with latest integration/bug-fixes-tweaks
+
+STANDARDS & VALIDATION:
+  * validate-standards          Validate code against continuous development standards
 
 SYSTEM:
     check-ports                 Check port registry configuration

@@ -1,69 +1,273 @@
-# Continuous Improvement Standards
-# Phase 1: Keep it simple, measure what matters
+# Continuous Development Standards
+# Version-controlled standards for the DHG monorepo
+# Last Updated: 2025-06-15
 
-version: 1
-description: "Core standards that prevent real problems"
-
-# Critical patterns that actually cause issues
-services:
-  critical:
-    - name: "singleton_pattern"
-      description: "Service has getInstance method"
-      check: "contains getInstance"
-      reason: "Prevents multiple instances and environment issues"
-    
-    - name: "environment_detection" 
-      description: "Service detects browser vs node environment"
-      check: "contains typeof window"
-      reason: "Critical for shared services across apps and CLI"
-    
-    - name: "no_hardcoded_secrets"
-      description: "No API keys or passwords in code"
-      check: "not contains api_key:|password:|secret:"
-      reason: "Security vulnerability"
+# Core principle: "Measure and alert on what breaks, standardize what causes confusion"
 
 database:
-  critical:
-    - name: "uuid_primary_key"
-      description: "Tables use UUID primary keys"
-      check: "id column is uuid type"
-      reason: "Prevents ID conflicts in distributed system"
+  # Table naming conventions
+  tables:
+    naming:
+      - pattern: snake_case_plural  # users, not user
+      - prefix_required: true       # sys_users, media_assets, doc_templates
+      - reserved_prefixes:
+          - sys_    # System tables
+          - auth_   # Authentication tables
+          - media_  # Media management
+          - doc_    # Document management
+          - google_ # Google integration
+          - dev_    # Development tracking
+      - examples:
+          good: ["user_profiles", "media_assets", "sys_table_definitions"]
+          bad: ["UserProfiles", "userProfile", "settings"]
     
-    - name: "rls_enabled"
-      description: "Tables have row level security enabled"
-      check: "RLS is enabled"
-      reason: "Security requirement for multi-tenant system"
+  # Column naming conventions
+  columns:
+    naming:
+      - pattern: snake_case
+      - foreign_keys: "{table}_id"  # user_id, document_id
+      - booleans: 
+          prefix: ["is_", "has_"]   # is_active, has_access
+      - timestamps:
+          suffix: "_at"             # created_at, updated_at
+      - counts:
+          suffix: "_count"          # view_count, download_count
     
-    - name: "timestamp_columns"
-      description: "Tables have created_at and updated_at"
-      check: "has created_at and updated_at columns"
-      reason: "Audit trail and debugging"
-
-cli_pipelines:
-  critical:
-    - name: "help_command"
-      description: "CLI scripts respond to --help"
-      check: "script --help returns 0"
-      reason: "Usability and discoverability"
+    # Required fields for every table
+    required_fields:
+      timestamps:
+        - name: created_at
+          type: TIMESTAMPTZ
+          default: NOW()
+          nullable: false
+        - name: updated_at
+          type: TIMESTAMPTZ
+          default: NOW()
+          nullable: false
+      
+      # Optional but recommended
+      soft_delete:
+        - name: deleted_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - name: is_deleted
+          type: BOOLEAN
+          default: false
+          nullable: false
+      
+      # Audit fields (recommended)
+      audit:
+        - name: created_by
+          type: UUID
+          references: auth.users(id)
+        - name: updated_by
+          type: UUID
+          references: auth.users(id)
     
-    - name: "error_handling"
-      description: "Scripts use set -e for error handling"
-      check: "contains set -e"
-      reason: "Fail fast on errors"
+    # Field type standards
+    field_types:
+      ids:
+        type: UUID
+        default: gen_random_uuid()
+        never_use: ["SERIAL", "BIGSERIAL", "INTEGER"]
+      
+      text:
+        short: VARCHAR(255)    # Names, titles
+        medium: TEXT           # Descriptions, comments
+        long: TEXT             # Content, documents
+        json: JSONB            # Structured data
+      
+      money:
+        type: DECIMAL
+        precision: [10, 2]
+        never_use: ["FLOAT", "REAL", "DOUBLE PRECISION"]
+      
+      dates:
+        type: TIMESTAMPTZ      # Always with timezone
+        never_use: ["TIMESTAMP", "DATE", "TIME"]
+  
+  # What NOT to do
+  prohibited:
+    - "Using SERIAL/BIGSERIAL for IDs"
+    - "Storing timestamps without timezone"
+    - "Using FLOAT for monetary values"
+    - "Creating tables without RLS policies"
+    - "Using reserved keywords as column names"
+    - "Storing calculated values that can be derived"
+    - "Creating circular foreign key dependencies"
+  
+  # Index standards
+  indexes:
+    naming: "idx_{table}_{column(s)}"
+    required:
+      - foreign_keys
+      - commonly_queried_fields
+    patterns:
+      - single: "CREATE INDEX idx_users_email ON users(email)"
+      - composite: "CREATE INDEX idx_posts_user_created ON posts(user_id, created_at DESC)"
+      - partial: "CREATE INDEX idx_active_users ON users(email) WHERE NOT is_deleted"
 
-# What we DON'T check (Phase 1)
-# - Complex code metrics
-# - Documentation completeness  
-# - Performance benchmarks
-# - Advanced security patterns
-# - UI/UX standards
+services:
+  # Service implementation patterns by type
+  implementation_patterns:
+    # Infrastructure services (Supabase, Claude, Logger)
+    infrastructure:
+      pattern: singleton
+      requirements:
+        - "Static instance management"
+        - "Resource lifecycle control"
+        - "Thread-safe initialization"
+      example: "SupabaseClientService, ClaudeService"
+    
+    # Business logic services
+    business:
+      pattern: dependency_injection
+      requirements:
+        - "Constructor injection for dependencies"
+        - "Stateless operations"
+        - "Testable with mocks"
+      example: "CLIRegistryService, TaskService, UserService"
+    
+    # Utility services
+    utility:
+      pattern: static_methods
+      requirements:
+        - "Pure functions"
+        - "No state management"
+        - "Side-effect free"
+      example: "FormatterService, ValidatorService"
+  
+  # Environment awareness requirements
+  environment_detection:
+    browser_check: "typeof window !== 'undefined'"
+    required_handling:
+      - "Clear error messages for unsupported environments"
+      - "Environment-specific initialization"
+      - "Graceful fallbacks where appropriate"
+  
+  # Standard singleton implementation
+  singleton_template: |
+    export class ServiceName extends SingletonService {
+      private static instance: ServiceName | null = null;
+      
+      private constructor() {
+        super('ServiceName');
+      }
+      
+      static getInstance(): ServiceName {
+        if (!this.instance) {
+          this.instance = new ServiceName();
+        }
+        return this.instance;
+      }
+      
+      async initialize(): Promise<void> {
+        // One-time setup
+      }
+      
+      async healthCheck(): Promise<HealthCheckResult> {
+        // Return health status
+      }
+      
+      async releaseResources(): Promise<void> {
+        // Cleanup
+      }
+    }
+  
+  # Error handling standards
+  error_handling:
+    requirements:
+      - "Never silent failures"
+      - "Always log or throw errors"
+      - "Include context in error messages"
+      - "Use typed errors where possible"
+    
+    template: |
+      try {
+        // operation
+      } catch (error) {
+        console.error(`[${this.serviceName}] Operation failed:`, error);
+        throw new Error(`ServiceName.method failed: ${error.message}`);
+      }
+  
+  # Required for all services
+  required_features:
+    - environment_detection
+    - error_handling
+    - typescript_types
+    - jsdoc_comments
+  
+  # Service categories
+  categories:
+    universal:
+      description: "Works in all environments"
+      examples: ["AuthService", "DataFormatter", "APIClient"]
+    
+    node_only:
+      description: "CLI/Server only"
+      examples: ["FileService", "DatabaseMigration", "ProcessRunner"]
+    
+    browser_only:
+      description: "Browser environment only"
+      examples: ["DOMService", "LocalStorageService"]
+    
+    proxy_required:
+      description: "Browser services needing proxy"
+      examples: ["GitOperations", "FileSystemAccess"]
 
-# Severity levels
-severity:
-  critical: "Causes production issues or security problems"
-  warning: "Creates maintenance burden or confusion"
-  info: "Nice to have improvement"
+testing:
+  # Minimum test coverage requirements
+  coverage:
+    services:
+      minimum: 60
+      critical_paths: 90
+    cli_pipelines:
+      minimum: 50
+      commands: 80
+  
+  # Test file naming
+  naming:
+    pattern: "{filename}.test.ts"
+    location: "__tests__"
+  
+  # Required test scenarios
+  required_tests:
+    - "Happy path functionality"
+    - "Error cases"
+    - "Environment compatibility"
+    - "Edge cases"
 
-# Only report critical issues in Phase 1
-report_levels:
-  - critical
+# Validation and enforcement
+validation:
+  # When to validate
+  triggers:
+    - pre_commit
+    - pull_request
+    - continuous_monitoring
+  
+  # What to validate
+  checks:
+    database:
+      - table_naming
+      - required_columns
+      - field_types
+    services:
+      - singleton_pattern
+      - error_handling
+      - environment_detection
+    testing:
+      - coverage_thresholds
+      - test_presence
+
+# Migration from database-driven standards
+migration_notes: |
+  This file replaces the following database tables:
+  - sys_database_standards
+  - sys_service_standards
+  - sys_testing_requirements
+  
+  Benefits:
+  - Version controlled with code
+  - PR review process for changes
+  - Simpler to understand and modify
+  - No database dependencies for standards
