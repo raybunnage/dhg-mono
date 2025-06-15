@@ -27,9 +27,11 @@ import { TestContinuousDocsProxy } from './components/TestContinuousDocsProxy';
 import { TestAudioStreamingProxy } from './components/TestAudioStreamingProxy';
 import { TestHtmlFileBrowserProxy } from './components/TestHtmlFileBrowserProxy';
 import { ProxyServerDashboard } from './components/ProxyServerDashboard';
+import { CLIPipelineTestRunner } from './components/CLIPipelineTestRunner';
+import { ProxyServerStatus } from './components/ProxyServerStatus';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard'>('proxy-dashboard');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard' | 'cli-tests' | 'proxy-status'>('proxy-status');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,6 +181,26 @@ function App() {
           >
             🚀 Proxy Dashboard
           </button>
+          <button
+            onClick={() => setView('cli-tests')}
+            className={`px-4 py-2 rounded ${
+              view === 'cli-tests' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-purple-200 text-purple-700 hover:bg-purple-300'
+            }`}
+          >
+            🧪 CLI Pipeline Tests
+          </button>
+          <button
+            onClick={() => setView('proxy-status')}
+            className={`px-4 py-2 rounded ${
+              view === 'proxy-status' 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-indigo-200 text-indigo-700 hover:bg-indigo-300'
+            }`}
+          >
+            🔌 Proxy Server Status
+          </button>
           </div>
         </div>
       </div>
@@ -204,6 +226,8 @@ function App() {
         {view === 'audio-streaming' && <TestAudioStreamingProxy />}
         {view === 'html-browser' && <TestHtmlFileBrowserProxy />}
         {view === 'proxy-dashboard' && <ProxyServerDashboard />}
+        {view === 'cli-tests' && <CLIPipelineTestRunner />}
+        {view === 'proxy-status' && <ProxyServerStatus />}
       </div>
     </div>
   );

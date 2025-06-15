@@ -10,7 +10,6 @@
 
 import { BusinessService } from '../base-classes/BusinessService';
 import { ClaudeService } from '../claude-service-refactored/ClaudeService';
-import type { Database } from '../../../types/supabase';
 
 // Re-export types for backward compatibility
 export interface ClassificationResult {
@@ -64,7 +63,7 @@ interface CachedResult {
 /**
  * AI Processing Service for common AI operations
  */
-export class AIProcessingService extends BusinessService<Database> {
+export class AIProcessingService extends BusinessService {
   private claudeService: ClaudeService;
   private resultCache: Map<string, CachedResult> = new Map();
   private metrics: ProcessingMetrics = {
@@ -94,8 +93,10 @@ export class AIProcessingService extends BusinessService<Database> {
    * Initialize the service
    */
   protected async initialize(): Promise<void> {
-    // Ensure Claude service is initialized
-    await this.claudeService.ensureInitialized();
+    // Ensure Claude service is initialized if it has the method
+    if (typeof this.claudeService.ensureInitialized === 'function') {
+      await this.claudeService.ensureInitialized();
+    }
     
     // Start cache cleanup interval
     setInterval(() => this.cleanupCache(), 300000); // Clean every 5 minutes
@@ -201,20 +202,24 @@ export class AIProcessingService extends BusinessService<Database> {
       
       const response = await this.processJsonRequest(prompt);
       
-      // Validate the response with enhanced validation
-      const validatedResponse = this.validateInput(response, {
-        document_type_id: { type: 'string', required: true },
-        document_type_name: { type: 'string', required: true },
-        confidence: { type: 'number', required: true, min: 0, max: 1 },
-        reasoning: { type: 'string', required: true }
+      // Validate the response
+      const validatedResponse = this.validateInput(response, (data) => {
+        if (!data.document_type_id || typeof data.document_type_id !== 'string') {
+          throw new Error('document_type_id is required and must be a string');
+        }
+        if (!data.document_type_name || typeof data.document_type_name !== 'string') {
+          throw new Error('document_type_name is required and must be a string');
+        }
+        if (typeof data.confidence !== 'number' || data.confidence < 0 || data.confidence > 1) {
+          throw new Error('confidence must be a number between 0 and 1');
+        }
+        if (!data.reasoning || typeof data.reasoning !== 'string') {
+          throw new Error('reasoning is required and must be a string');
+        }
+        return data as ClassificationResult;
       });
       
-      const result: ClassificationResult = {
-        document_type_id: validatedResponse.document_type_id,
-        document_type_name: validatedResponse.document_type_name,
-        confidence: validatedResponse.confidence,
-        reasoning: validatedResponse.reasoning
-      };
+      const result: ClassificationResult = validatedResponse;
       
       // Cache the result
       this.setCachedResult(cacheKey, result);
@@ -540,19 +545,34 @@ export class AIProcessingService extends BusinessService<Database> {
    */
   public async healthCheck(): Promise<{
     healthy: boolean;
-    details: Record<string, any>;
+    serviceName: string;
+    timestamp: Date;
+    details?: Record<string, any>;
+    error?: string;
   }> {
-    const claudeHealth = await this.claudeService.healthCheck();
-    
-    return {
-      healthy: this.initialized && claudeHealth.healthy,
-      details: {
-        initialized: this.initialized,
-        metrics: this.getMetrics(),
-        cacheSize: this.resultCache.size,
-        claudeService: claudeHealth
-      }
-    };
+    try {
+      const claudeHealth = await this.claudeService.healthCheck();
+      
+      return {
+        healthy: this.initialized && claudeHealth.healthy,
+        serviceName: this.serviceName,
+        timestamp: new Date(),
+        details: {
+          initialized: this.initialized,
+          metrics: this.getMetrics(),
+          cacheSize: this.resultCache.size,
+          claudeServiceHealthy: claudeHealth.healthy
+        },
+        error: !claudeHealth.healthy ? 'Claude service is unhealthy' : undefined
+      };
+    } catch (error: any) {
+      return {
+        healthy: false,
+        serviceName: this.serviceName,
+        timestamp: new Date(),
+        error: error.message
+      };
+    }
   }
   
   /**

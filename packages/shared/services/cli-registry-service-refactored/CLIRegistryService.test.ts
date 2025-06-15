@@ -48,13 +48,13 @@ describe('CLIRegistryService', () => {
   describe('initialization', () => {
     it('should initialize successfully', async () => {
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
     });
 
     it('should only initialize once', async () => {
       await service.ensureInitialized();
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
     });
   });
 
@@ -388,7 +388,7 @@ describe('CLIRegistryService', () => {
       }
       
       // Service should still be functional
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
       
       const healthCheck = await service.healthCheck();
       expect(healthCheck.healthy).toBe(true);

@@ -101,6 +101,13 @@ const PROXY_SERVERS: ProxyServer[] = [
     scriptPath: 'start-html-file-browser-proxy.ts',
     status: 'stopped',
     healthEndpoint: '/health'
+  },
+  {
+    name: 'CLI Test Runner',
+    port: 9890,
+    scriptPath: 'start-cli-test-runner-proxy.ts',
+    status: 'stopped',
+    healthEndpoint: '/health'
   }
 ];
 
@@ -126,11 +133,20 @@ function startProxyServer(server: ProxyServer): void {
   const scriptPath = path.join(__dirname, server.scriptPath);
   const tsNode = path.join(__dirname, '../../../node_modules/.bin/ts-node');
   
-  server.process = spawn(tsNode, [scriptPath], {
-    cwd: process.cwd(),
-    env: { ...process.env },
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
+  // Check if it's a shell script or TypeScript file
+  if (server.scriptPath.endsWith('.sh')) {
+    server.process = spawn('bash', [scriptPath], {
+      cwd: process.cwd(),
+      env: { ...process.env },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+  } else {
+    server.process = spawn(tsNode, [scriptPath], {
+      cwd: process.cwd(),
+      env: { ...process.env },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+  }
 
   server.process.stdout?.on('data', (data) => {
     const output = data.toString().trim();
