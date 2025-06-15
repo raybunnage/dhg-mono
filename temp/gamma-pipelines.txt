@@ -1,0 +1,22 @@
+# GROUP GAMMA: Development & Communication (16 pipelines)
+# Focus: Git workflows, email/communication, continuous processes, development tools
+
+HIGH COMPLEXITY (2):
+1. git-workflow-cli.sh (GIT) - Critical git operations
+2. email-cli.sh (GOOGLE) - Email processing
+
+MEDIUM COMPLEXITY (7):
+3. gmail-cli.sh
+4. continuous-docs-cli.sh
+5. living-docs-cli.sh
+6. work-summaries-cli.sh
+7. ai-cli.sh
+8. auth-cli.sh
+9. git-cli.sh
+
+LOW COMPLEXITY (7):
+10. scripts-cli.sh
+11. test-git-cli.sh
+12. migrated_scripts/analysis-cli.sh
+13. migrated_scripts/archive-cli.sh
+14-16. Archived pipelines (validate archival)

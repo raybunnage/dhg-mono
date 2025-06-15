@@ -9,100 +9,33 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 
-# Source common functions if available
-if [ -f "$PROJECT_ROOT/scripts/cli-pipeline/common/functions.sh" ]; then
-    source "$PROJECT_ROOT/scripts/cli-pipeline/common/functions.sh"
-fi
+# Source the ServiceCLIPipeline base class
+source "$SCRIPT_DIR/../base-classes/ServiceCLIPipeline.sh"
 
-# Function to track command usage
-track_command() {
-    local command_name=$1
-    local options=$2
-    
-    # Run the tracking script if it exists
-    if [ -f "$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/track-command.ts" ]; then
-        npx ts-node "$PROJECT_ROOT/scripts/cli-pipeline/all_pipelines/track-command.ts" \
-            --pipeline="gmail" \
-            --command="$command_name" \
-            --options="$options" \
-            2>/dev/null || true
-    fi
-}
+# Define service-specific variables
+PIPELINE_NAME="gmail"
+PIPELINE_DESCRIPTION="Gmail CLI Pipeline - Email synchronization and management"
+SERVICE_NAME="gmail-service"
+SERVICE_CHECK_COMMAND="test-connection"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Gmail-specific commands array
+declare -a GMAIL_COMMANDS=(
+    "sync-emails:Sync emails from Gmail"
+    "process-emails:Process emails with AI"
+    "manage-addresses:Manage important email addresses"
+    "analyze-concepts:Analyze email concepts"
+    "export-data:Export email data"
+    "test-connection:Test database connection"
+    "stats:Show email statistics"
+    "import-sqlite:Import SQLite email data from CSV files"
+    "status:Show pipeline status"
+)
 
-# Function to print colored output
-print_color() {
-    local color=$1
-    local message=$2
-    echo -e "${color}${message}${NC}"
-}
+# Initialize the pipeline
+init_service_pipeline "$PIPELINE_NAME" "$PIPELINE_DESCRIPTION"
 
-# Function to show help
-show_help() {
-    echo "Gmail CLI Pipeline"
-    echo ""
-    echo "Usage: $0 [command] [options]"
-    echo ""
-    echo "Commands:"
-    echo "  sync-emails         Sync emails from Gmail"
-    echo "  process-emails      Process emails with AI"
-    echo "  manage-addresses    Manage important email addresses"
-    echo "  analyze-concepts    Analyze email concepts"
-    echo "  export-data        Export email data"
-    echo "  test-connection    Test database connection"
-    echo "  stats              Show email statistics"
-    echo "  import-sqlite      Import SQLite email data from CSV files"
-    echo "  status             Show pipeline status"
-    echo "  help               Show this help message"
-    echo ""
-    echo "Options:"
-    echo "  --days=N           Number of days to sync (default: 7)"
-    echo "  --limit=N          Limit number of items to process"
-    echo "  --importance=N     Importance level filter (1-3)"
-    echo "  --format=FORMAT    Export format (csv, json)"
-    echo "  --output=PATH      Output directory for exports"
-    echo ""
-    echo "Examples:"
-    echo "  $0 sync-emails --days=7"
-    echo "  $0 process-emails --limit=50"
-    echo "  $0 manage-addresses add 'email@example.com' --importance=2"
-    echo "  $0 export-data --format=csv --output=./exports/"
-}
-
-# Function to check dependencies
-check_dependencies() {
-    local missing_deps=()
-    
-    # Check for Node.js
-    if ! command -v node &> /dev/null; then
-        missing_deps+=("node")
-    fi
-    
-    # Check for Python
-    if ! command -v python3 &> /dev/null; then
-        missing_deps+=("python3")
-    fi
-    
-    # Check for ts-node
-    if ! command -v npx &> /dev/null; then
-        missing_deps+=("npx")
-    fi
-    
-    if [ ${#missing_deps[@]} -ne 0 ]; then
-        print_color "$RED" "Error: Missing dependencies: ${missing_deps[*]}"
-        print_color "$YELLOW" "Please install the missing dependencies and try again."
-        exit 1
-    fi
-}
-
-# Function to sync emails
-sync_emails() {
+# Command implementations
+command_sync_emails() {
     local days=7
     local importance=""
     
@@ -118,21 +51,18 @@ sync_emails() {
         esac
     done
     
-    print_color "$BLUE" "Syncing emails from the last $days days..."
-    track_command "sync-emails" "--days=$days --importance=$importance"
+    print_info "Syncing emails from the last $days days..."
     
     # Check if TypeScript file exists
     if [ -f "$SCRIPT_DIR/sync-emails.ts" ]; then
         npx ts-node "$SCRIPT_DIR/sync-emails.ts" --days="$days" --importance="$importance"
     else
-        print_color "$YELLOW" "sync-emails.ts not found. Creating placeholder..."
-        # For now, just show a message
-        print_color "$GREEN" "Email sync functionality will be implemented soon."
+        print_warning "sync-emails.ts not found. Creating placeholder..."
+        print_success "Email sync functionality will be implemented soon."
     fi
 }
 
-# Function to process emails
-process_emails() {
+command_process_emails() {
     local limit=50
     
     # Parse options
@@ -144,28 +74,24 @@ process_emails() {
         esac
     done
     
-    print_color "$BLUE" "Processing up to $limit emails..."
-    track_command "process-emails" "--limit=$limit"
+    print_info "Processing up to $limit emails..."
     
     if [ -f "$SCRIPT_DIR/process-emails.ts" ]; then
         npx ts-node "$SCRIPT_DIR/process-emails.ts" --limit="$limit"
     else
-        print_color "$GREEN" "Email processing functionality will be implemented soon."
+        print_success "Email processing functionality will be implemented soon."
     fi
 }
 
-# Function to manage addresses
-manage_addresses() {
+command_manage_addresses() {
     local action=$1
-    shift
-    
-    track_command "manage-addresses" "$action $*"
+    shift || true
     
     case $action in
         add)
             local email=$1
             local importance=1
-            shift
+            shift || true
             
             for arg in "$@"; do
                 case $arg in
@@ -175,43 +101,42 @@ manage_addresses() {
                 esac
             done
             
-            print_color "$BLUE" "Adding email address: $email with importance level $importance"
+            print_info "Adding email address: $email with importance level $importance"
             
             if [ -f "$SCRIPT_DIR/manage-addresses.ts" ]; then
                 npx ts-node "$SCRIPT_DIR/manage-addresses.ts" add "$email" --importance="$importance"
             else
-                print_color "$GREEN" "Address management functionality will be implemented soon."
+                print_success "Address management functionality will be implemented soon."
             fi
             ;;
         list)
-            print_color "$BLUE" "Listing important email addresses..."
+            print_info "Listing important email addresses..."
             
             if [ -f "$SCRIPT_DIR/manage-addresses.ts" ]; then
                 npx ts-node "$SCRIPT_DIR/manage-addresses.ts" list
             else
-                print_color "$GREEN" "Address listing functionality will be implemented soon."
+                print_success "Address listing functionality will be implemented soon."
             fi
             ;;
         remove)
             local email=$1
-            print_color "$BLUE" "Removing email address: $email"
+            print_info "Removing email address: $email"
             
             if [ -f "$SCRIPT_DIR/manage-addresses.ts" ]; then
                 npx ts-node "$SCRIPT_DIR/manage-addresses.ts" remove "$email"
             else
-                print_color "$GREEN" "Address removal functionality will be implemented soon."
+                print_success "Address removal functionality will be implemented soon."
             fi
             ;;
         *)
-            print_color "$RED" "Unknown action: $action"
+            print_error "Unknown action: $action"
             echo "Usage: $0 manage-addresses [add|list|remove] [email] [options]"
-            exit 1
+            return 1
             ;;
     esac
 }
 
-# Function to analyze concepts
-analyze_concepts() {
+command_analyze_concepts() {
     local from_date=""
     
     # Parse options
@@ -223,18 +148,16 @@ analyze_concepts() {
         esac
     done
     
-    print_color "$BLUE" "Analyzing email concepts..."
-    track_command "analyze-concepts" "--from=$from_date"
+    print_info "Analyzing email concepts..."
     
     if [ -f "$SCRIPT_DIR/analyze-concepts.ts" ]; then
         npx ts-node "$SCRIPT_DIR/analyze-concepts.ts" --from="$from_date"
     else
-        print_color "$GREEN" "Concept analysis functionality will be implemented soon."
+        print_success "Concept analysis functionality will be implemented soon."
     fi
 }
 
-# Function to export data
-export_data() {
+command_export_data() {
     local format="csv"
     local output="./exports/"
     
@@ -250,126 +173,161 @@ export_data() {
         esac
     done
     
-    print_color "$BLUE" "Exporting email data as $format to $output..."
-    track_command "export-data" "--format=$format --output=$output"
+    print_info "Exporting email data as $format to $output..."
     
     if [ -f "$SCRIPT_DIR/export-data.ts" ]; then
         npx ts-node "$SCRIPT_DIR/export-data.ts" --format="$format" --output="$output"
     else
-        print_color "$GREEN" "Export functionality will be implemented soon."
+        print_success "Export functionality will be implemented soon."
     fi
 }
 
-# Function to test connection
-test_connection() {
-    print_color "$BLUE" "Testing database connection..."
-    track_command "test-connection" ""
+command_test_connection() {
+    print_info "Testing database connection..."
     
     if [ -f "$SCRIPT_DIR/test-connection.ts" ]; then
         npx ts-node "$SCRIPT_DIR/test-connection.ts"
     else
-        print_color "$RED" "test-connection.ts not found."
+        print_error "test-connection.ts not found."
     fi
 }
 
-# Function to show stats
-show_stats() {
-    print_color "$BLUE" "Generating email statistics..."
-    track_command "stats" ""
+command_stats() {
+    print_info "Generating email statistics..."
     
     if [ -f "$SCRIPT_DIR/stats.ts" ]; then
         npx ts-node "$SCRIPT_DIR/stats.ts"
     else
-        print_color "$RED" "stats.ts not found."
+        print_error "stats.ts not found."
     fi
 }
 
-# Function to import SQLite data
-import_sqlite() {
-    print_color "$BLUE" "Importing SQLite email data from CSV files..."
-    track_command "import-sqlite" "$*"
+command_import_sqlite() {
+    print_info "Importing SQLite email data from CSV files..."
     
     if [ -f "$SCRIPT_DIR/import-sqlite-data-simple.js" ]; then
         node "$SCRIPT_DIR/import-sqlite-data-simple.js" "$@"
     else
-        print_color "$RED" "import-sqlite-data-simple.js not found."
+        print_error "import-sqlite-data-simple.js not found."
     fi
 }
 
-# Function to show status
-show_status() {
-    print_color "$BLUE" "Gmail Pipeline Status"
+command_status() {
+    print_info "Gmail Pipeline Status"
     echo "===================="
-    
-    track_command "status" ""
     
     # Check if status script exists
     if [ -f "$SCRIPT_DIR/show-status.ts" ]; then
         npx ts-node "$SCRIPT_DIR/show-status.ts"
     else
         # Show basic status
-        print_color "$YELLOW" "Status functionality not yet implemented."
+        print_warning "Status functionality not yet implemented."
         echo ""
         echo "Available commands:"
-        echo "- sync-emails"
-        echo "- process-emails"
-        echo "- manage-addresses"
-        echo "- analyze-concepts"
-        echo "- export-data"
-        echo "- test-connection"
-        echo "- stats"
+        for cmd_desc in "${GMAIL_COMMANDS[@]}"; do
+            IFS=':' read -r cmd desc <<< "$cmd_desc"
+            echo "- $cmd: $desc"
+        done
     fi
 }
 
-# Main command handler
-main() {
-    # Check dependencies first
-    check_dependencies
+# Override show_help to add Gmail-specific options
+show_help() {
+    echo "$PIPELINE_DESCRIPTION"
+    echo ""
+    echo "Usage: $0 [command] [options]"
+    echo ""
+    echo "Commands:"
+    for cmd_desc in "${GMAIL_COMMANDS[@]}"; do
+        IFS=':' read -r cmd desc <<< "$cmd_desc"
+        printf "  %-20s %s\n" "$cmd" "$desc"
+    done
     
-    # Get the command
-    local command=${1:-help}
-    shift || true
+    # Add service commands
+    echo ""
+    echo "Service Commands:"
+    printf "  %-20s %s\n" "service-status" "Check service health status"
+    printf "  %-20s %s\n" "service-restart" "Restart the service"
+    printf "  %-20s %s\n" "service-logs" "View service logs"
+    printf "  %-20s %s\n" "health-check" "Run comprehensive health check"
     
-    # Handle the command
-    case $command in
-        sync-emails)
-            sync_emails "$@"
-            ;;
-        process-emails)
-            process_emails "$@"
-            ;;
-        manage-addresses)
-            manage_addresses "$@"
-            ;;
-        analyze-concepts)
-            analyze_concepts "$@"
-            ;;
-        export-data)
-            export_data "$@"
-            ;;
-        test-connection)
-            test_connection "$@"
-            ;;
-        stats)
-            show_stats "$@"
-            ;;
-        import-sqlite)
-            import_sqlite "$@"
-            ;;
-        status)
-            show_status
-            ;;
-        help|--help|-h)
-            show_help
-            ;;
-        *)
-            print_color "$RED" "Unknown command: $command"
-            echo ""
-            show_help
-            exit 1
-            ;;
-    esac
+    echo ""
+    echo "Options:"
+    echo "  --days=N           Number of days to sync (default: 7)"
+    echo "  --limit=N          Limit number of items to process"
+    echo "  --importance=N     Importance level filter (1-3)"
+    echo "  --format=FORMAT    Export format (csv, json)"
+    echo "  --output=PATH      Output directory for exports"
+    echo ""
+    echo "Examples:"
+    echo "  $0 sync-emails --days=7"
+    echo "  $0 process-emails --limit=50"
+    echo "  $0 manage-addresses add 'email@example.com' --importance=2"
+    echo "  $0 export-data --format=csv --output=./exports/"
 }
 
-# Run the main function
-main "$@"
+# Main command routing
+case "${1:-help}" in
+    sync-emails)
+        shift
+        track_and_execute "sync-emails" command_sync_emails "$@"
+        ;;
+    process-emails)
+        shift
+        track_and_execute "process-emails" command_process_emails "$@"
+        ;;
+    manage-addresses)
+        shift
+        track_and_execute "manage-addresses" command_manage_addresses "$@"
+        ;;
+    analyze-concepts)
+        shift
+        track_and_execute "analyze-concepts" command_analyze_concepts "$@"
+        ;;
+    export-data)
+        shift
+        track_and_execute "export-data" command_export_data "$@"
+        ;;
+    test-connection)
+        shift
+        track_and_execute "test-connection" command_test_connection "$@"
+        ;;
+    stats)
+        shift
+        track_and_execute "stats" command_stats "$@"
+        ;;
+    import-sqlite)
+        shift
+        track_and_execute "import-sqlite" command_import_sqlite "$@"
+        ;;
+    status)
+        shift
+        track_and_execute "status" command_status "$@"
+        ;;
+    # Service management commands
+    service-status)
+        shift
+        track_and_execute "service-status" health_check_service "${SERVICE_NAME:-$1}" "$@"
+        ;;
+    service-restart)
+        shift
+        track_and_execute "service-restart" restart_service "${SERVICE_NAME:-$1}" "$@"
+        ;;
+    service-logs)
+        shift
+        track_and_execute "service-logs" show_service_logs "${SERVICE_NAME:-$1}" "$@"
+        ;;
+    health-check)
+        shift
+        track_and_execute "health-check" health_check_all "$@"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        print_error "Unknown command: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

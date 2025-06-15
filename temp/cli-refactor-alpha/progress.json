@@ -1,0 +1,31 @@
+{
+  "group": "alpha",
+  "worktree": "$(pwd)",
+  "started": "$(date -Iseconds)",
+  "pipelines": {
+    "high_complexity": [
+      "all-pipelines-cli.sh",
+      "deployment-cli.sh", 
+      "database-cli.sh"
+    ],
+    "medium_complexity": [
+      "proxy-cli.sh",
+      "servers-cli.sh",
+      "monitoring-cli.sh",
+      "shared-services-cli.sh",
+      "service-dependencies-cli.sh",
+      "refactor-tracking-cli.sh",
+      "deprecation-cli.sh"
+    ],
+    "low_complexity": [
+      "utilities-cli.sh",
+      "system-cli.sh",
+      "services-cli.sh",
+      "dev-tasks-cli.sh",
+      "views-cli.sh",
+      "logging-cli.sh",
+      "testing-cli.sh"
+    ]
+  },
+  "status": "initialized"
+}
