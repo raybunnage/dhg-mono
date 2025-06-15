@@ -12,12 +12,12 @@
 5. ✅ **drive-filter-cli.sh** - Google Drive filtering (6/6 tests)
 6. ✅ **gmail-cli.sh** - Gmail operations (7/7 tests)
 
-## ⚡ MEDIUM COMPLEXITY (3/8) - IN PROGRESS
+## ⚡ MEDIUM COMPLEXITY (5/8) - IN PROGRESS
 1. ✅ **media-analytics-cli.sh** - Media analysis and reporting (5/5 tests)
 2. ✅ **classify-cli.sh** - Document classification engine (8/8 routing tests)
 3. ✅ **document-types-cli.sh** - Document type management (10/10 tests)
-4. 🔄 **experts-cli.sh** - Expert profile management
-5. 🔄 **presentations-cli.sh** - Presentation processing
+4. ✅ **experts-cli.sh** - Expert profile management (9/9 tests)
+5. ✅ **presentations-cli.sh** - Presentation processing (9/9 tests)
 6. 🔄 **prompt-service-cli.sh** - AI prompt management
 7. 🔄 **element-criteria-cli.sh** - Element criteria system
 8. 🔄 **document-archiving-cli.sh** - Document archive management
@@ -28,9 +28,9 @@
 3. ⏳ **media-processing-cli.sh** - Audio/video processing
 
 ## Summary
-- **Completed**: 9/17 pipelines (53%)
+- **Completed**: 11/17 pipelines (65%)
 - **In Progress**: 0 pipelines
-- **Remaining**: 8 pipelines (1 with issues)
+- **Remaining**: 6 pipelines (1 with issues)
 
 ## Notes
 - All LOW complexity pipelines completed except document-pipeline-service which has module path issues
