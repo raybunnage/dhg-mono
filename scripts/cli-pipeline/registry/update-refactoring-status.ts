@@ -86,7 +86,7 @@ async function updateRefactoringStatus() {
       const { error } = await supabase
         .from('sys_cli_pipelines')
         .update(dataWithTimestamp)
-        .eq('name', name);
+        .eq('pipeline_name', name);
       
       if (error) {
         console.error(`❌ Error updating ${name}:`, error.message);
