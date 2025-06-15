@@ -293,7 +293,7 @@ export class MediaTrackingService extends BusinessService {
       }
     }, { 
       maxAttempts: 2 // Reduce retries for events to avoid flooding
-    }));
+    });
   }
 
   /**
@@ -354,7 +354,7 @@ export class MediaTrackingService extends BusinessService {
         this.logger?.info(`Created bookmark at ${this.lastPosition}s: ${title}`);
         return data as MediaBookmark;
       });
-    }));
+    });
   }
 
   /**
@@ -384,7 +384,7 @@ export class MediaTrackingService extends BusinessService {
       if (error) throw error;
 
       return (data as MediaBookmark[]) || [];
-    }));
+    });
   }
 
   /**
@@ -423,7 +423,7 @@ export class MediaTrackingService extends BusinessService {
       if (error) throw error;
 
       return (data as MediaSession[]) || [];
-    }));
+    });
   }
 
   /**
@@ -482,7 +482,7 @@ export class MediaTrackingService extends BusinessService {
         averageCompletion: Math.round(averageCompletion),
         bookmarkCount: bookmarkCount || 0
       };
-    }));
+    });
   }
 
   /**

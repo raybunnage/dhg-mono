@@ -12,11 +12,12 @@ import { useState } from 'react';
 // import { ServiceTesterDocClassification } from './components/ServiceTesterDocClassification';
 // import { ServiceTesterNewCandidates } from './components/ServiceTesterNewCandidates';
 import { Welcome } from './components/Welcome';
-import { TestSupabaseAdapter } from './components/TestSupabaseAdapter';
+// Temporarily disable Supabase tests due to caching issues
+// import { TestSupabaseAdapter } from './components/TestSupabaseAdapter';
 import { TestLogger } from './components/TestLogger';
 import { ServiceStatus } from './components/ServiceStatus';
-import { TestSupabaseConsolidation } from './components/TestSupabaseConsolidation';
-import { TestSupabaseServices } from './components/TestSupabaseServices';
+// import { TestSupabaseConsolidation } from './components/TestSupabaseConsolidation';
+// import { TestSupabaseServices } from './components/TestSupabaseServices';
 import { EnvDebug } from './components/EnvDebug';
 import { DebugSupabaseAdapter } from './components/DebugSupabaseAdapter';
 import { TestClaudeService } from './components/TestClaudeService';
@@ -29,9 +30,10 @@ import { TestHtmlFileBrowserProxy } from './components/TestHtmlFileBrowserProxy'
 import { ProxyServerDashboard } from './components/ProxyServerDashboard';
 import { CLIPipelineTestRunner } from './components/CLIPipelineTestRunner';
 import { ProxyServerStatus } from './components/ProxyServerStatus';
+import { RefactoredServiceTestRunner } from './components/RefactoredServiceTestRunner';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard' | 'cli-tests' | 'proxy-status'>('proxy-status');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard' | 'cli-tests' | 'proxy-status' | 'refactored-tests'>('refactored-tests');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -201,6 +203,16 @@ function App() {
           >
             🔌 Proxy Server Status
           </button>
+          <button
+            onClick={() => setView('refactored-tests')}
+            className={`px-4 py-2 rounded ${
+              view === 'refactored-tests' 
+                ? 'bg-teal-600 text-white' 
+                : 'bg-teal-200 text-teal-700 hover:bg-teal-300'
+            }`}
+          >
+            🔬 Refactored Service Tests
+          </button>
           </div>
         </div>
       </div>
@@ -214,11 +226,11 @@ function App() {
         )}
         {view === 'env-fix' && <ViteEnvFixPage />}
         {view === 'welcome' && <Welcome />}
-        {view === 'supabase' && <TestSupabaseAdapter />}
+        {view === 'supabase' && <div className="p-6"><p className="text-gray-600">Supabase tests temporarily disabled due to caching issues.</p></div>}
         {view === 'logger' && <TestLogger />}
         {view === 'status' && <ServiceStatus />}
-        {view === 'consolidation' && <TestSupabaseConsolidation />}
-        {view === 'services' && <TestSupabaseServices />}
+        {view === 'consolidation' && <div className="p-6"><p className="text-gray-600">Supabase consolidation tests temporarily disabled due to caching issues.</p></div>}
+        {view === 'services' && <div className="p-6"><p className="text-gray-600">Supabase services tests temporarily disabled due to caching issues.</p></div>}
         {view === 'claude' && <TestClaudeService />}
         {view === 'git-proxy' && <TestGitOperationsProxy />}
         {view === 'file-browser' && <TestFileBrowserProxy />}
@@ -228,6 +240,7 @@ function App() {
         {view === 'proxy-dashboard' && <ProxyServerDashboard />}
         {view === 'cli-tests' && <CLIPipelineTestRunner />}
         {view === 'proxy-status' && <ProxyServerStatus />}
+        {view === 'refactored-tests' && <RefactoredServiceTestRunner />}
       </div>
     </div>
   );
