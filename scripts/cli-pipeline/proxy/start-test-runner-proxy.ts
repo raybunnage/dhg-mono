@@ -296,7 +296,7 @@ async function runAllTests(executionId: string) {
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
-    status: 'healthy',
+    status: 'ok',
     service: 'test-runner-proxy',
     port: PORT,
     activeExecutions: activeExecutions.size
