@@ -1,38 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { ContinuousDocsProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-/**
- * Start the Continuous Docs proxy server
- * This proxy manages documentation tracking for continuously updated files
- */
+const app = express();
+const PORT = 9882;
 
-async function main() {
-  console.log('Starting Continuous Docs Proxy Server...');
-  
-  try {
-    const proxy = new ContinuousDocsProxy();
-    await proxy.start();
-    
-    console.log(`
-Continuous Docs Proxy is running on http://localhost:9882
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-Available endpoints:
-- GET    /api/continuous-docs                    - Get all tracked documents
-- GET    /api/continuous-docs/category/:category - Get documents by category
-- GET    /api/continuous-docs/needs-update       - Get documents needing update
-- PATCH  /api/continuous-docs/:path/frequency    - Update document frequency
-- POST   /api/continuous-docs/:path/update       - Manually trigger update
-- POST   /api/continuous-docs                    - Add new document to tracking
-- DELETE /api/continuous-docs/:path              - Remove document from tracking
-- GET    /health                                 - Health check
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Continuous Docs Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start Continuous Docs Proxy:', error);
-    process.exit(1);
-  }
-}
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Continuous Docs Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
 
-main();
+// Start server
+app.listen(PORT, () => {
+  console.log('[continuous-docs-proxy] Server started on http://localhost:' + PORT);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[continuous-docs-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[continuous-docs-proxy] Shutting down server...');
+  process.exit(0);
+});

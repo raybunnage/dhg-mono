@@ -1,23 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { MarkdownViewerProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-async function main() {
-  console.log('Starting Markdown Viewer Proxy Server...');
-  
-  try {
-    const proxy = new MarkdownViewerProxy();
-    await proxy.start();
-    
-    console.log(`
-Markdown Viewer Proxy is running on http://localhost:9885
+const app = express();
+const PORT = 9885;
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start Markdown Viewer Proxy:', error);
-    process.exit(1);
-  }
-}
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-main();
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Markdown Viewer Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Markdown Viewer Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log('[markdown-viewer-proxy] Server started on http://localhost:' + PORT);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[markdown-viewer-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[markdown-viewer-proxy] Shutting down server...');
+  process.exit(0);
+});

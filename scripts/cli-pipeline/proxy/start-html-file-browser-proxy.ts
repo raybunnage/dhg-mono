@@ -1,45 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { HtmlFileBrowserProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-/**
- * Start the HTML File Browser proxy server
- * This proxy provides a web-based file browser interface
- */
+const app = express();
+const PORT = 8080;
 
-async function main() {
-  console.log('Starting HTML File Browser Proxy Server...');
-  
-  try {
-    const proxy = new HtmlFileBrowserProxy();
-    await proxy.start();
-    
-    console.log(`
-HTML File Browser Proxy is running on http://localhost:8080
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-Available endpoints:
-- GET  /file-browser.html        - Web-based file browser UI
-- POST /api/list-directory       - List directory contents
-- POST /api/read-file           - Read file content
-- POST /api/search-files        - Search for files
-- POST /api/file-stats          - Get file statistics
-- GET  /api/info                - API information
-- GET  /health                  - Health check
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'HTML File Browser Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
-Features:
-- Web-based UI for browsing files
-- Directory navigation with breadcrumbs
-- File content viewing
-- File search functionality
-- Sorting by modification time
-- Security: Path validation prevents access outside project
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'HTML File Browser Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start HTML File Browser Proxy:', error);
-    process.exit(1);
-  }
-}
+// Start server
+app.listen(PORT, () => {
+  console.log('[html-file-browser-proxy] Server started on http://localhost:' + PORT);
+});
 
-main();
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[html-file-browser-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[html-file-browser-proxy] Shutting down server...');
+  process.exit(0);
+});

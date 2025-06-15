@@ -1,37 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { ScriptViewerProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-/**
- * Start the Script Viewer proxy server
- * This proxy manages script files
- */
+const app = express();
+const PORT = 9884;
 
-async function main() {
-  console.log('Starting Script Viewer Proxy Server...');
-  
-  try {
-    const proxy = new ScriptViewerProxy();
-    await proxy.start();
-    
-    console.log(`
-Script Viewer Proxy is running on http://localhost:9884
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-Available endpoints:
-- GET /api/script-file?path=<path> - Get script file content
-- GET /api/script-files - List all script files
-- POST /api/script-file/archive - Archive a script file
-- DELETE /api/script-file - Delete a script file permanently
-- GET /health - Health check
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Script Viewer Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
-Supported extensions: .sh, .js, .ts, .py
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Script Viewer Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start Script Viewer Proxy:', error);
-    process.exit(1);
-  }
-}
+// Start server
+app.listen(PORT, () => {
+  console.log('[script-viewer-proxy] Server started on http://localhost:' + PORT);
+});
 
-main();
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[script-viewer-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[script-viewer-proxy] Shutting down server...');
+  process.exit(0);
+});

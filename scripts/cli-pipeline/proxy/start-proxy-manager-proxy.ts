@@ -1,35 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { ProxyManagerProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-/**
- * Start the Proxy Manager proxy server
- * This proxy manages other proxy servers
- */
+const app = express();
+const PORT = 9878;
 
-async function main() {
-  console.log('Starting Proxy Manager Proxy Server...');
-  
-  try {
-    const proxy = new ProxyManagerProxy();
-    await proxy.start();
-    
-    console.log(`
-Proxy Manager Proxy is running on http://localhost:9878
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-Available endpoints:
-- GET /api/proxies - List all proxy servers
-- POST /api/proxies/:name/start - Start a proxy server
-- POST /api/proxies/:name/stop - Stop a proxy server
-- GET /api/proxies/:name/status - Get proxy status
-- GET /health - Health check
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Proxy Manager Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start Proxy Manager Proxy:', error);
-    process.exit(1);
-  }
-}
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Proxy Manager Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
 
-main();
+// Start server
+app.listen(PORT, () => {
+  console.log('[proxy-manager-proxy] Server started on http://localhost:' + PORT);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[proxy-manager-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[proxy-manager-proxy] Shutting down server...');
+  process.exit(0);
+});

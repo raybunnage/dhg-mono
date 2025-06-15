@@ -2,9 +2,12 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
-import * as http from 'http';
-import * as https from 'https';
 import axios from 'axios';
+import { fileURLToPath } from 'url';
+
+// ES Module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface ProxyServer {
   name: string;
@@ -131,7 +134,7 @@ function startProxyServer(server: ProxyServer): void {
   server.status = 'starting';
 
   const scriptPath = path.join(__dirname, server.scriptPath);
-  const tsNode = path.join(__dirname, '../../../node_modules/.bin/ts-node');
+  const tsNode = 'ts-node'; // Use global ts-node instead of local path
   
   // Check if it's a shell script or TypeScript file
   if (server.scriptPath.endsWith('.sh')) {

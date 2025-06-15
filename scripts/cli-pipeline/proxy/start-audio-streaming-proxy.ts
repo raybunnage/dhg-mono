@@ -1,40 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { AudioStreamingProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-/**
- * Start the Audio Streaming proxy server
- * This proxy handles audio streaming from Google Drive with local file support
- */
+const app = express();
+const PORT = 9883;
 
-async function main() {
-  console.log('Starting Audio Streaming Proxy Server...');
-  
-  try {
-    const proxy = new AudioStreamingProxy();
-    await proxy.start();
-    
-    console.log(`
-Audio Streaming Proxy is running on http://localhost:9883
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-Available endpoints:
-- GET /api/audio/:fileId     - Stream audio file from Google Drive
-- GET /api/audio-status      - Get service configuration status
-- GET /health                - Health check
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Audio Streaming Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
-Features:
-- Google Drive API streaming
-- Local Google Drive file support (if configured)
-- Range request support for audio seeking
-- Automatic MIME type detection
-- Fallback between local and API access
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Audio Streaming Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start Audio Streaming Proxy:', error);
-    process.exit(1);
-  }
-}
+// Start server
+app.listen(PORT, () => {
+  console.log('[audio-streaming-proxy] Server started on http://localhost:' + PORT);
+});
 
-main();
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[audio-streaming-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[audio-streaming-proxy] Shutting down server...');
+  process.exit(0);
+});

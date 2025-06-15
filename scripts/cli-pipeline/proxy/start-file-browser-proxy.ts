@@ -1,28 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { FileBrowserProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-async function main() {
-  console.log('Starting File Browser Proxy Server...');
-  
-  const proxy = new FileBrowserProxy();
-  
-  try {
-    await proxy.start();
-    console.log('File Browser Proxy is running on port 9880');
-    console.log('Open http://localhost:9880/file-browser.html in your browser');
-    
-    // Keep the process running
-    process.on('SIGINT', async () => {
-      console.log('\nShutting down gracefully...');
-      await proxy.stop();
-      process.exit(0);
-    });
-    
-  } catch (error) {
-    console.error('Failed to start proxy:', error);
-    process.exit(1);
-  }
-}
+const app = express();
+const PORT = 9880;
 
-main();
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'File Browser Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'File Browser Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log('[file-browser-proxy] Server started on http://localhost:' + PORT);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[file-browser-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[file-browser-proxy] Shutting down server...');
+  process.exit(0);
+});

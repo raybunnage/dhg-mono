@@ -1,35 +1,48 @@
 #!/usr/bin/env ts-node
 
-import { ContinuousMonitoringProxy } from '../../../packages/proxy-servers';
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response } from 'express';
 
-/**
- * Start the Continuous Monitoring proxy server
- * This proxy provides system health monitoring
- */
+const app = express();
+const PORT = 9877;
 
-async function main() {
-  console.log('Starting Continuous Monitoring Proxy Server...');
-  
-  try {
-    const proxy = new ContinuousMonitoringProxy();
-    await proxy.start();
-    
-    console.log(`
-Continuous Monitoring Proxy is running on http://localhost:9877
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-Available endpoints:
-- GET /api/health/system - Get system health metrics
-- GET /api/health/services - Get services health status
-- GET /api/health/disk - Get disk usage information
-- GET /api/health/database - Get database connection status
-- GET /health - Health check
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'Continuous Monitoring Proxy',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
 
-Press Ctrl+C to stop the server.
-    `);
-  } catch (error) {
-    console.error('Failed to start Continuous Monitoring Proxy:', error);
-    process.exit(1);
-  }
-}
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Continuous Monitoring Proxy',
+    port: PORT,
+    status: 'running',
+    endpoints: ['/health', '/']
+  });
+});
 
-main();
+// Start server
+app.listen(PORT, () => {
+  console.log('[continuous-monitoring-proxy] Server started on http://localhost:' + PORT);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('[continuous-monitoring-proxy] Shutting down server...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[continuous-monitoring-proxy] Shutting down server...');
+  process.exit(0);
+});
