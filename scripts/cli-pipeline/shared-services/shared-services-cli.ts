@@ -1,7 +1,16 @@
 #!/usr/bin/env ts-node
 
 import { Command } from 'commander';
-import * as path from 'path';
+
+interface ServiceRecord {
+  service_name: string;
+  service_health: 'essential' | 'active' | 'low-usage' | 'deprecated';
+  usage_count: number;
+  environment_type?: string;
+  has_tests: boolean;
+  checklist_compliant: boolean;
+  maintenance_recommendation: string;
+}
 
 const program = new Command();
 
@@ -25,7 +34,7 @@ program
   .description('Analyze all services for compliance, usage, and health')
   .option('--category <category>', 'Analyze only services in specific category')
   .option('--fix', 'Attempt to fix compliance issues automatically')
-  .action(async (options) => {
+  .action(async () => {
     console.log('📊 Analyzing services...');
     require('./analyze-and-rate-services');
   });
@@ -68,12 +77,12 @@ program
     // Summary statistics
     const stats = {
       total: data.length,
-      essential: data.filter(s => s.service_health === 'essential').length,
-      active: data.filter(s => s.service_health === 'active').length,
-      lowUsage: data.filter(s => s.service_health === 'low-usage').length,
-      deprecated: data.filter(s => s.service_health === 'deprecated').length,
-      needsWork: data.filter(s => !s.checklist_compliant).length,
-      missingTests: data.filter(s => !s.has_tests).length
+      essential: data.filter((s: ServiceRecord) => s.service_health === 'essential').length,
+      active: data.filter((s: ServiceRecord) => s.service_health === 'active').length,
+      lowUsage: data.filter((s: ServiceRecord) => s.service_health === 'low-usage').length,
+      deprecated: data.filter((s: ServiceRecord) => s.service_health === 'deprecated').length,
+      needsWork: data.filter((s: ServiceRecord) => !s.checklist_compliant).length,
+      missingTests: data.filter((s: ServiceRecord) => !s.has_tests).length
     };
     
     console.log('\n📊 Service Health Summary:');
@@ -123,7 +132,7 @@ program
     
     console.log(`\nFound ${data.length} services:\n`);
     
-    data.forEach(service => {
+    data.forEach((service: ServiceRecord) => {
       console.log(`${service.service_name}`);
       console.log(`  Health: ${service.service_health}`);
       console.log(`  Usage: ${service.usage_count}`);
@@ -176,7 +185,7 @@ program
     
     if (data.compliance_issues?.length > 0) {
       console.log(`\n⚠️ Compliance Issues:`);
-      data.compliance_issues.forEach(issue => console.log(`  - ${issue}`));
+      data.compliance_issues.forEach((issue: string) => console.log(`  - ${issue}`));
     }
     
     if (data.overlaps_with?.length > 0) {
@@ -197,7 +206,7 @@ program
   .command('refactor <serviceName>')
   .description('Refactor a service to be compliant with standards')
   .option('--dry-run', 'Show what would be changed without making changes')
-  .action(async (serviceName, options) => {
+  .action(async (serviceName) => {
     console.log(`🔧 Refactoring ${serviceName}...`);
     // TODO: Implement refactoring logic
     console.log('Refactoring functionality coming soon!');
@@ -232,7 +241,7 @@ program
       console.log(`- Needing Attention: ${needsAttention.length}`);
       
       console.log('\n## Services Needing Immediate Attention');
-      needsAttention.forEach(service => {
+      needsAttention.forEach((service: any) => {
         console.log(`\n### ${service.service_name}`);
         console.log(`- Health: ${service.service_health}`);
         console.log(`- Usage: ${service.usage_count}`);

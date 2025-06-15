@@ -7,13 +7,12 @@
 
 import { BusinessService } from '../base-classes/BusinessService';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Logger } from '../../utils/logger';
+import { Logger } from '../base-classes/BaseService';
 import { Database } from '../../../../supabase/types';
 import {
   MediaTrackingOptions,
   PlaybackEventData,
   MediaSession,
-  PlaybackEvent,
   MediaBookmark,
   SessionStatistics
 } from './types';
@@ -43,6 +42,15 @@ export class MediaTrackingService extends BusinessService {
 
   constructor(supabaseClient: SupabaseClient<Database>, logger?: Logger) {
     super('MediaTrackingService', { supabaseClient }, logger);
+  }
+
+  /**
+   * Validate that all required dependencies are provided
+   */
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabaseClient) {
+      throw new Error('SupabaseClient is required');
+    }
   }
 
   protected async initialize(): Promise<void> {
@@ -96,12 +104,13 @@ export class MediaTrackingService extends BusinessService {
    * Start a new media session with validation
    */
   async startSession(options: MediaTrackingOptions): Promise<string | null> {
-    return this.validateInput({ options }, () => {
+    this.validateInput({ options }, () => {
       if (!options.mediaId || !options.mediaId.trim()) {
         throw new Error('Media ID is required');
       }
-    })
-    .then(() => this.withTransaction(async () => {
+    });
+
+    return this.withTransaction(async () => {
       // End any existing session
       if (this.currentSession) {
         await this.endSession();
@@ -144,8 +153,8 @@ export class MediaTrackingService extends BusinessService {
         
         this.logger?.info(`Started media session: ${data.id} for media: ${options.mediaId}`);
         return data.id;
-      }, { operationName: 'startSession' });
-    }));
+      });
+    });
   }
 
   /**
@@ -207,7 +216,7 @@ export class MediaTrackingService extends BusinessService {
 
         this.logger?.info(`Ended media session with ${completionPercentage}% completion`);
         return stats;
-      }, { operationName: 'endSession' });
+      });
     });
   }
 
@@ -224,15 +233,16 @@ export class MediaTrackingService extends BusinessService {
       return;
     }
 
-    return this.validateInput({ eventType, timestampSeconds }, () => {
+    this.validateInput({ eventType, timestampSeconds }, () => {
       if (!eventType || !eventType.trim()) {
         throw new Error('Event type is required');
       }
       if (timestampSeconds < 0) {
         throw new Error('Timestamp cannot be negative');
       }
-    })
-    .then(() => this.withRetry(async () => {
+    });
+    
+    return this.withRetry(async () => {
       const { data: { user } } = await this.dependencies.supabaseClient.auth.getUser();
       
       if (!user) {
@@ -264,9 +274,11 @@ export class MediaTrackingService extends BusinessService {
         user_id: user.id,
         event_type: eventType,
         timestamp_seconds: timestampSeconds,
-        playback_speed: eventData?.playbackSpeed,
-        volume: eventData?.volume,
-        event_data: eventData || {}
+        event_data: eventData ? {
+          ...eventData,
+          playbackSpeed: eventData.playbackSpeed,
+          volume: eventData.volume
+        } : {}
       };
 
       const { error } = await this.dependencies.supabaseClient
@@ -280,7 +292,6 @@ export class MediaTrackingService extends BusinessService {
         await this.updateSessionProgress();
       }
     }, { 
-      operationName: 'logPlaybackEvent',
       maxAttempts: 2 // Reduce retries for events to avoid flooding
     }));
   }
@@ -298,12 +309,13 @@ export class MediaTrackingService extends BusinessService {
       return null;
     }
 
-    return this.validateInput({ title }, () => {
+    this.validateInput({ title }, () => {
       if (!title || !title.trim()) {
         throw new Error('Bookmark title is required');
       }
-    })
-    .then(() => this.withTransaction(async () => {
+    });
+    
+    return this.withTransaction(async () => {
       return this.withRetry(async () => {
         const { data: { user } } = await this.dependencies.supabaseClient.auth.getUser();
         
@@ -326,9 +338,9 @@ export class MediaTrackingService extends BusinessService {
           user_id: user.id,
           media_id: session.media_id,
           timestamp_seconds: this.lastPosition,
-          title,
-          description,
-          category
+          note: `${title}${description ? `: ${description}` : ''}`,
+          bookmark_type: category,
+          tags: tags
         };
 
         const { data, error } = await this.dependencies.supabaseClient
@@ -341,7 +353,7 @@ export class MediaTrackingService extends BusinessService {
 
         this.logger?.info(`Created bookmark at ${this.lastPosition}s: ${title}`);
         return data as MediaBookmark;
-      }, { operationName: 'createBookmark' });
+      });
     }));
   }
 
@@ -349,12 +361,13 @@ export class MediaTrackingService extends BusinessService {
    * Get bookmarks for the current media
    */
   async getMediaBookmarks(mediaId: string): Promise<MediaBookmark[]> {
-    return this.validateInput({ mediaId }, () => {
+    this.validateInput({ mediaId }, () => {
       if (!mediaId || !mediaId.trim()) {
         throw new Error('Media ID is required');
       }
-    })
-    .then(() => this.withRetry(async () => {
+    });
+    
+    return this.withRetry(async () => {
       const { data: { user } } = await this.dependencies.supabaseClient.auth.getUser();
       
       if (!user) {
@@ -371,7 +384,7 @@ export class MediaTrackingService extends BusinessService {
       if (error) throw error;
 
       return (data as MediaBookmark[]) || [];
-    }, { operationName: 'getMediaBookmarks' }));
+    }));
   }
 
   /**
@@ -381,12 +394,13 @@ export class MediaTrackingService extends BusinessService {
     limit: number = 10,
     mediaId?: string
   ): Promise<MediaSession[]> {
-    return this.validateInput({ limit }, () => {
+    this.validateInput({ limit }, () => {
       if (limit <= 0) {
         throw new Error('Limit must be positive');
       }
-    })
-    .then(() => this.withRetry(async () => {
+    });
+    
+    return this.withRetry(async () => {
       const { data: { user } } = await this.dependencies.supabaseClient.auth.getUser();
       
       if (!user) {
@@ -409,7 +423,7 @@ export class MediaTrackingService extends BusinessService {
       if (error) throw error;
 
       return (data as MediaSession[]) || [];
-    }, { operationName: 'getRecentSessions' }));
+    }));
   }
 
   /**
@@ -421,12 +435,13 @@ export class MediaTrackingService extends BusinessService {
     averageCompletion: number;
     bookmarkCount: number;
   }> {
-    return this.validateInput({ mediaId }, () => {
+    this.validateInput({ mediaId }, () => {
       if (!mediaId || !mediaId.trim()) {
         throw new Error('Media ID is required');
       }
-    })
-    .then(() => this.withRetry(async () => {
+    });
+    
+    return this.withRetry(async () => {
       const { data: { user } } = await this.dependencies.supabaseClient.auth.getUser();
       
       if (!user) {
@@ -454,11 +469,11 @@ export class MediaTrackingService extends BusinessService {
       // Calculate statistics
       const totalSessions = sessions?.length || 0;
       const totalWatchTime = sessions?.reduce(
-        (sum, s) => sum + (s.active_duration_seconds || 0), 
+        (sum: number, s: any) => sum + (s.active_duration_seconds || 0), 
         0
       ) || 0;
       const averageCompletion = totalSessions > 0
-        ? sessions!.reduce((sum, s) => sum + (s.completion_percentage || 0), 0) / totalSessions
+        ? sessions!.reduce((sum: number, s: any) => sum + (s.completion_percentage || 0), 0) / totalSessions
         : 0;
 
       return {
@@ -467,7 +482,7 @@ export class MediaTrackingService extends BusinessService {
         averageCompletion: Math.round(averageCompletion),
         bookmarkCount: bookmarkCount || 0
       };
-    }, { operationName: 'getMediaStatistics' }));
+    }));
   }
 
   /**

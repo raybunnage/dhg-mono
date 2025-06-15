@@ -32,7 +32,7 @@ describe('AIProcessingService', () => {
     it('should initialize with claude service', async () => {
       await service.initialize();
       
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
       expect(mockClaudeService.initialize).toHaveBeenCalled();
     });
   });

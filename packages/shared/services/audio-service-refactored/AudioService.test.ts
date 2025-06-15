@@ -33,7 +33,7 @@ describe('AudioService', () => {
   describe('Initialization', () => {
     it('should initialize with supabase client', async () => {
       await service.ensureInitialized();
-      expect(service.isInitialized()).toBe(true);
+      expect(service.getMetadata().initialized).toBe(true);
     });
 
     it('should throw error if supabase client not provided', () => {
