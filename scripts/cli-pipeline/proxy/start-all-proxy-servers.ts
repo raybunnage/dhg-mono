@@ -106,16 +106,9 @@ const PROXY_SERVERS: ProxyServer[] = [
     healthEndpoint: '/health'
   },
   {
-    name: 'CLI Test Runner',
+    name: 'Test Execution',
     port: 9890,
-    scriptPath: 'start-cli-test-runner-proxy.ts',
-    status: 'stopped',
-    healthEndpoint: '/health'
-  },
-  {
-    name: 'Test Runner',
-    port: 9891,
-    scriptPath: 'start-test-runner-proxy.ts',
+    scriptPath: 'start-test-execution-proxy.ts',
     status: 'stopped',
     healthEndpoint: '/health'
   }

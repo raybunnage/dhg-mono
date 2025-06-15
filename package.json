@@ -25,7 +25,7 @@
     "proxy:docs-archive": "ts-node scripts/cli-pipeline/proxy/start-docs-archive-proxy.ts",
     "proxy:worktree": "ts-node scripts/cli-pipeline/proxy/start-worktree-switcher-proxy.ts",
     "proxy:html-browser": "ts-node scripts/cli-pipeline/proxy/start-html-file-browser-proxy.ts",
-    "proxy:test-runner": "ts-node scripts/cli-pipeline/proxy/start-test-runner-proxy.ts",
+    "proxy:test-execution": "ts-node scripts/cli-pipeline/proxy/start-test-execution-proxy.ts",
     "servers": "ts-node scripts/cli-pipeline/proxy/start-all-proxy-servers.ts",
     "// App Shortcuts": "Quick access to specific app development",
     "hub": "pnpm --filter dhg-hub dev",

@@ -1,7 +1,8 @@
 #!/usr/bin/env ts-node
 
 /**
- * Test Runner Proxy Server
+ * Consolidated Test Execution Proxy Server
+ * Combines functionality from cli-test-runner-proxy and test-runner-proxy
  * Provides HTTP endpoints for running tests and streaming results to UI apps
  */
 
@@ -11,9 +12,10 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { EventEmitter } from 'events';
+import type { Request, Response } from 'express';
 
 const app = express();
-const PORT = 9891; // New port for test runner proxy
+const PORT = 9890; // Using the cli-test-runner-proxy port
 
 // Enable CORS for UI apps
 app.use(cors());
@@ -294,17 +296,66 @@ async function runAllTests(executionId: string) {
 // API Routes
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ 
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
     status: 'ok',
-    service: 'test-runner-proxy',
+    service: 'Test Execution Proxy (Consolidated)',
     port: PORT,
-    activeExecutions: activeExecutions.size
+    activeExecutions: activeExecutions.size,
+    capabilities: ['cli-tests', 'refactored-services'],
+    timestamp: new Date().toISOString()
   });
 });
 
+// Basic info endpoint
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    name: 'Test Execution Proxy',
+    description: 'Consolidated test runner for CLI pipelines and refactored services',
+    port: PORT,
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      cliTests: ['/cli-tests/status-alpha', '/cli-tests/status-beta', '/cli-tests/status-gamma'],
+      refactoredServices: ['/tests/run-all', '/tests/run-service', '/tests/status/:id', '/tests/stream/:id', '/tests/services']
+    }
+  });
+});
+
+// === CLI Test Runner Endpoints (from cli-test-runner-proxy) ===
+
+// Test status endpoints for ALPHA/BETA/GAMMA groups
+app.get('/cli-tests/status-alpha', (_req: Request, res: Response) => {
+  res.json({
+    group: 'alpha',
+    status: 'ready',
+    tests: [],
+    message: 'Alpha group test status endpoint'
+  });
+});
+
+app.get('/cli-tests/status-beta', (_req: Request, res: Response) => {
+  res.json({
+    group: 'beta', 
+    status: 'ready',
+    tests: [],
+    message: 'Beta group test status endpoint'
+  });
+});
+
+app.get('/cli-tests/status-gamma', (_req: Request, res: Response) => {
+  res.json({
+    group: 'gamma',
+    status: 'ready', 
+    tests: [],
+    message: 'Gamma group test status endpoint'
+  });
+});
+
+// === Refactored Service Test Runner Endpoints (from test-runner-proxy) ===
+
 // Start test run
-app.post('/tests/run-all', async (req, res) => {
+app.post('/tests/run-all', async (_req: Request, res: Response) => {
   const executionId = Date.now().toString();
   const execution: TestExecution = {
     id: executionId,
@@ -331,7 +382,7 @@ app.post('/tests/run-all', async (req, res) => {
 });
 
 // Get test execution status
-app.get('/tests/status/:executionId', (req, res) => {
+app.get('/tests/status/:executionId', (req: Request, res: Response) => {
   const { executionId } = req.params;
   const execution = activeExecutions.get(executionId);
 
@@ -354,7 +405,7 @@ app.get('/tests/status/:executionId', (req, res) => {
 });
 
 // Stream test updates (Server-Sent Events)
-app.get('/tests/stream/:executionId', (req, res) => {
+app.get('/tests/stream/:executionId', (req: Request, res: Response) => {
   const { executionId } = req.params;
   const execution = activeExecutions.get(executionId);
 
@@ -421,7 +472,7 @@ app.get('/tests/stream/:executionId', (req, res) => {
 });
 
 // Test individual service
-app.post('/tests/run-service', async (req, res) => {
+app.post('/tests/run-service', async (req: Request, res: Response) => {
   const { serviceName } = req.body;
 
   if (!serviceName || !REFACTORED_SERVICES.includes(serviceName)) {
@@ -459,7 +510,7 @@ app.post('/tests/run-service', async (req, res) => {
 });
 
 // List available services
-app.get('/tests/services', (req, res) => {
+app.get('/tests/services', (_req: Request, res: Response) => {
   res.json({
     services: REFACTORED_SERVICES,
     count: REFACTORED_SERVICES.length
@@ -477,18 +528,32 @@ setInterval(() => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🧪 Test Runner Proxy Server running on http://localhost:${PORT}`);
-  console.log(`📍 Endpoints:`);
-  console.log(`   POST   /tests/run-all          - Run all refactored service tests`);
-  console.log(`   POST   /tests/run-service      - Run single service test`);
-  console.log(`   GET    /tests/status/:id       - Get test execution status`);
-  console.log(`   GET    /tests/stream/:id       - Stream test updates (SSE)`);
-  console.log(`   GET    /tests/services         - List available services`);
-  console.log(`   GET    /health                 - Health check`);
+  console.log(`🧪 Test Execution Proxy Server (Consolidated) running on http://localhost:${PORT}`);
+  console.log(`📍 This server combines functionality from:`);
+  console.log(`   - cli-test-runner-proxy (ALPHA/BETA/GAMMA status endpoints)`);
+  console.log(`   - test-runner-proxy (refactored services testing)`);
+  console.log(`\n📋 CLI Test Endpoints:`);
+  console.log(`   GET    /cli-tests/status-alpha    - Alpha group status`);
+  console.log(`   GET    /cli-tests/status-beta     - Beta group status`);
+  console.log(`   GET    /cli-tests/status-gamma    - Gamma group status`);
+  console.log(`\n🧪 Refactored Services Test Endpoints:`);
+  console.log(`   POST   /tests/run-all             - Run all refactored service tests`);
+  console.log(`   POST   /tests/run-service         - Run single service test`);
+  console.log(`   GET    /tests/status/:id          - Get test execution status`);
+  console.log(`   GET    /tests/stream/:id          - Stream test updates (SSE)`);
+  console.log(`   GET    /tests/services            - List available services`);
+  console.log(`\n🏥 General Endpoints:`);
+  console.log(`   GET    /health                    - Health check`);
+  console.log(`   GET    /                          - Server info and endpoints`);
 });
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\nShutting down Test Runner Proxy Server...');
+  console.log('\nShutting down Test Execution Proxy Server...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\nShutting down Test Execution Proxy Server...');
   process.exit(0);
 });

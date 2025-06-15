@@ -113,7 +113,7 @@ export function RefactoredServiceTestRunner() {
   useEffect(() => {
     const checkProxy = async () => {
       try {
-        const response = await fetch('http://localhost:9891/health');
+        const response = await fetch('http://localhost:9890/health'); // Updated to use consolidated test-execution-proxy
         if (response.ok) {
           setProxyStatus('online');
         } else {
@@ -147,7 +147,7 @@ pnpm proxy:test-runner`);
 
     try {
       // Start test execution
-      const response = await fetch('http://localhost:9891/tests/run-all', {
+      const response = await fetch('http://localhost:9890/tests/run-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -160,7 +160,7 @@ pnpm proxy:test-runner`);
       setExecutionId(execId);
 
       // Set up SSE for real-time updates
-      const eventSource = new EventSource(`http://localhost:9891/tests/stream/${execId}`);
+      const eventSource = new EventSource(`http://localhost:9890/tests/stream/${execId}`);
       eventSourceRef.current = eventSource;
 
       eventSource.onmessage = (event) => {
