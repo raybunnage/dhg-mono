@@ -8,11 +8,10 @@ async function runMigration(migrationFile: string) {
   const supabase = SupabaseClientService.getInstance().getClient();
   
   // Construct full path to migration file
-  const migrationPath = path.join(
-    process.cwd(),
-    'supabase/migrations',
-    migrationFile
-  );
+  // If the file already contains a path, use it as-is, otherwise add the migrations directory
+  const migrationPath = migrationFile.includes('/') 
+    ? path.join(process.cwd(), migrationFile)
+    : path.join(process.cwd(), 'supabase/migrations', migrationFile);
   
   if (!fs.existsSync(migrationPath)) {
     console.error(`Migration file not found: ${migrationPath}`);
@@ -60,7 +59,7 @@ async function runMigration(migrationFile: string) {
     // Regenerate types
     console.log('\n🔄 Regenerating TypeScript types...');
     const { exec } = require('child_process');
-    exec('pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts', (error, stdout, stderr) => {
+    exec('pnpm supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts', (error: any) => {
       if (error) {
         console.error('Failed to regenerate types:', error);
       } else {

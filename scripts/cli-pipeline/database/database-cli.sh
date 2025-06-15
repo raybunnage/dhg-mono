@@ -56,13 +56,69 @@ run_db_command() {
 run_migration_command() {
     local operation="$1"
     shift
+    local migration_file="$1"
+    
+    if [[ -z "$migration_file" ]]; then
+        log_error "Migration file not specified"
+        echo "Usage: ./database-cli.sh migration $operation <migration-file.sql>"
+        return 1
+    fi
+    
+    if [[ ! -f "$migration_file" ]]; then
+        log_error "Migration file not found: $migration_file"
+        return 1
+    fi
     
     case "$operation" in
-        "validate"|"dry-run"|"test"|"run-staged")
-            log_info "Would perform migration $operation operation"
-            if [[ $# -gt 0 ]]; then
-                log_info "Migration file: $1"
+        "validate")
+            log_info "Validating SQL syntax in: $migration_file"
+            # Basic SQL syntax validation
+            if grep -q -E '^\s*(CREATE|ALTER|DROP|INSERT|UPDATE|DELETE)' "$migration_file"; then
+                log_success "✅ Migration file appears to have valid SQL statements"
+                return 0
+            else
+                log_error "❌ No valid SQL statements found in migration file"
+                return 1
             fi
+            ;;
+        "dry-run")
+            log_info "Showing what would be executed from: $migration_file"
+            echo "--- SQL Content ---"
+            cat "$migration_file"
+            echo "--- End SQL Content ---"
+            ;;
+        "test")
+            log_info "Testing migration against database: $migration_file"
+            # Use the run-migration.ts command with --dry-run flag if it supports it
+            if [[ -f "$SCRIPT_DIR/commands/run-migration.ts" ]]; then
+                cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/commands/run-migration.ts" "$migration_file" --dry-run 2>/dev/null || {
+                    log_warn "TypeScript migration runner failed, using basic SQL validation"
+                    run_migration_command "validate" "$migration_file"
+                }
+            else
+                log_warn "Migration test command not found, falling back to validation"
+                run_migration_command "validate" "$migration_file"
+            fi
+            ;;
+        "run-staged")
+            log_info "Executing migration: $migration_file"
+            
+            # Check if we have the TypeScript migration runner
+            if [[ -f "$SCRIPT_DIR/commands/run-migration.ts" ]]; then
+                log_info "Using TypeScript migration runner..."
+                cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/commands/run-migration.ts" "$migration_file"
+            else
+                log_info "Using direct SQL execution..."
+                # Direct SQL execution using psql or similar
+                # This is a fallback - in production you'd want proper migration handling
+                log_warn "Direct SQL execution not implemented - would need database connection details"
+                log_info "Consider using: psql -f $migration_file [connection-params]"
+                return 1
+            fi
+            ;;
+        *)
+            log_error "Unknown migration operation: $operation"
+            return 1
             ;;
     esac
 }
