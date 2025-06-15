@@ -1,20 +1,42 @@
 #!/bin/bash
 
-# Test Proxy Servers
-# This script runs the proxy server test harness
+# Test script for proxy servers
+# This script runs the proxy server tests from the packages/proxy-servers directory
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+set -e
 
-echo "🧪 Running Proxy Server Test Harness"
-echo "===================================="
-echo
+echo "🧪 Testing Proxy Servers..."
+echo "=========================="
 
-# Check if specific servers were requested
-if [ $# -gt 0 ]; then
-    echo "Testing specific servers: $@"
-    npx ts-node "$PROJECT_ROOT/packages/proxy-servers/tests/proxy-server-test-harness.ts" "$@"
-else
-    echo "Testing all proxy servers..."
-    npx ts-node "$PROJECT_ROOT/packages/proxy-servers/tests/proxy-server-test-harness.ts"
+# Navigate to proxy-servers package
+cd packages/proxy-servers
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing dependencies..."
+    pnpm install
 fi
+
+# Run tests
+echo ""
+echo "🏃 Running proxy server tests..."
+echo ""
+
+# Run health check tests first (quick validation)
+echo "1️⃣ Running health check tests..."
+pnpm vitest run tests/proxy-server-health.test.ts --reporter=verbose
+
+# Run endpoint tests (more comprehensive)
+echo ""
+echo "2️⃣ Running endpoint tests..."
+pnpm vitest run tests/proxy-server-endpoints.test.ts --reporter=verbose
+
+# Run all tests with coverage if both pass
+echo ""
+echo "3️⃣ Running all tests with coverage..."
+pnpm vitest run --coverage
+
+echo ""
+echo "✅ All proxy server tests completed!"
+echo ""
+echo "📊 Coverage report generated in packages/proxy-servers/coverage/"

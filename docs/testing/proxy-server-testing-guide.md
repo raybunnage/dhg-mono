@@ -2,210 +2,126 @@
 
 ## Overview
 
-This guide covers the testing infrastructure for proxy servers in the DHG monorepo. We have two testing approaches:
+This guide documents the testing approach for the proxy servers in the dhg-mono-improve-suite. All proxy servers provide HTTP APIs for various system functions and must be tested for reliability and correctness.
 
-1. **Test Harness** - Quick functional testing of all proxy servers
-2. **Jest Unit Tests** - Comprehensive testing of individual proxy servers
+## Test Structure
 
-## Service Import Verification ✅
+### 1. Health Check Tests (`proxy-server-health.test.ts`)
+- **Purpose**: Verify all proxy servers can start and respond to health checks
+- **Coverage**: All 12 active proxy servers
+- **Timeout**: 60 seconds per server (to allow for startup time)
+- **What it tests**:
+  - Server starts on correct port
+  - Health endpoint returns 200 status
+  - Response includes service name and port
 
-All proxy servers have been verified to use the correct service patterns:
+### 2. Endpoint Tests (`proxy-server-endpoints.test.ts`)
+- **Purpose**: Test specific functionality of key proxy servers
+- **Coverage**: Git Operations, Vite Fix, CLI Test Runner
+- **What it tests**:
+  - Git Operations: status, branches, worktrees
+  - Vite Fix: app listing, fix functionality
+  - CLI Test Runner: test groups, test status
 
-### Using Singleton Pattern (getInstance())
-- AudioStreamingProxy → `GoogleDriveAudioService.getInstance()`
-- ContinuousDocsProxy → `ContinuousDocsMonitoringService.getInstance()`
-- ContinuousMonitoringProxy → `ContinuousMonitoringService.getInstance()`
-- DocsArchiveProxy → `DocsArchiveService.getInstance()`
-- FileBrowserProxy → `FileBrowserService.getInstance()`
-- GitOperationsProxy → `GitOperationsService.getInstance()`
-- HtmlFileBrowserProxy → `HtmlFileBrowserService.getInstance()`
-- MarkdownViewerProxy → `MarkdownViewerService.getInstance()`
-- ScriptViewerProxy → `ScriptViewerService.getInstance()`
-- WorktreeSwitcherProxy → `WorktreeSwitcherService.getInstance()`
+## Running Tests
 
-### Using Local Services (Direct Instantiation)
-- ViteFixProxy → `new ViteFixService()` (local service)
-- ProxyManagerProxy → `new ProxyManager()` (local class)
-
-**Result**: 100% of shared services use singleton patterns correctly! ✅
-
-## Test Harness
-
-The test harness provides quick functional testing of all proxy servers.
-
-### Running the Test Harness
-
+### Quick Test
 ```bash
-# Test all proxy servers
+# From repository root
 ./scripts/cli-pipeline/proxy/test-proxy-servers.sh
-
-# Test specific servers
-./scripts/cli-pipeline/proxy/test-proxy-servers.sh "Vite Fix Proxy" "Git Operations"
-
-# Or use npm script
-cd packages/proxy-servers
-pnpm test:harness
 ```
 
-### What It Tests
-
-For each proxy server:
-1. **Startup** - Can the server start successfully?
-2. **Health Check** - Does the `/health` endpoint respond?
-3. **Basic Endpoints** - Do the main endpoints return expected status codes?
-
-### Test Results
-
-The harness displays results in a table format:
-```
-Server                   Port      Status    Startup   Health    Endpoints
---------------------------------------------------------------------------------
-Vite Fix Proxy          9876      ✅        ✅        ✅        1/1
-Git Operations          9879      ✅        ✅        ✅        2/2
-File Browser            9880      ❌        ✅        ❌        0/1
-```
-
-## Vitest Unit Tests
-
-For comprehensive testing, we use Vitest with TypeScript.
-
-### Running Tests
-
+### Manual Testing
 ```bash
-# Run all tests
+# Navigate to proxy-servers package
 cd packages/proxy-servers
-pnpm test
 
-# Run tests once
-pnpm test:run
+# Run specific test file
+pnpm vitest run tests/proxy-server-health.test.ts
 
-# UI mode
-pnpm test:ui
+# Run with watch mode for development
+pnpm vitest watch
 
-# Coverage report
-pnpm test:coverage
+# Run with coverage
+pnpm vitest run --coverage
 ```
 
-### Test Structure
+## Test Implementation Details
 
-Each proxy server test file follows this pattern:
-
+### Server Startup Pattern
 ```typescript
-describe('ProxyName', () => {
-  // Start server before tests
-  beforeAll(async () => { /* start server */ });
-  
-  // Stop server after tests
-  afterAll(async () => { /* stop server */ });
-  
-  describe('Health Check', () => {
-    it('should return 200 from health endpoint', async () => {
-      // Test health endpoint
-    });
-  });
-  
-  describe('Feature Endpoints', () => {
-    it('should handle specific functionality', async () => {
-      // Test specific endpoints
-    });
-  });
+const proc = spawn('ts-node', ['--esm', scriptPath], {
+  stdio: ['ignore', 'pipe', 'pipe'],
+  env: { ...process.env, NODE_ENV: 'test' }
+});
+
+// Wait for server to be ready
+const isReady = await waitForServer(port);
+```
+
+### Health Check Pattern
+```typescript
+const response = await axios.get(`http://localhost:${port}/health`);
+expect(response.status).toBe(200);
+expect(response.data).toMatchObject({
+  status: 'ok',
+  service: name,
+  port: port
 });
 ```
 
-### Example Tests
-
-We've created example tests for:
-- `vite-fix-proxy.test.ts` - Tests app listing and fix commands
-- `git-operations-proxy.test.ts` - Tests git status and worktree operations
-
-## Coverage Goals
-
-### Basic Coverage (Test Harness)
-- ✅ Server starts without errors
-- ✅ Health endpoint responds
-- ✅ Main endpoints return expected status codes
-
-### Comprehensive Coverage (Vitest)
-- Health check endpoint
-- All API endpoints
-- Error handling
-- CORS configuration
-- Request validation
-- Response format
-
-## Adding Tests for New Proxy Servers
-
-1. **Add to Test Harness**:
-   ```typescript
-   // In proxy-server-test-harness.ts
-   {
-     name: 'Your Proxy Name',
-     port: 9xxx,
-     startupScript: 'start-your-proxy.ts',
-     healthEndpoint: '/health',
-     additionalEndpoints: [
-       { path: '/api/endpoint', method: 'GET', expectedStatus: 200 }
-     ]
-   }
-   ```
-
-2. **Create Vitest Test**:
-   ```bash
-   # Create test file
-   touch packages/proxy-servers/tests/your-proxy.test.ts
-   ```
-
-3. **Write Tests**:
-   - Copy structure from existing test files
-   - Test all endpoints
-   - Test error cases
-   - Test edge cases
-
-## CI/CD Integration
-
-Future improvements:
-- Run test harness in CI pipeline
-- Fail builds if proxy servers don't start
-- Generate coverage reports
-- Performance benchmarking
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Port Already in Use**
-   - Stop any running proxy servers
-   - Check with `lsof -i :PORT`
-
-2. **Server Doesn't Start**
-   - Check service dependencies
-   - Verify environment variables
-   - Check logs for startup errors
-
-3. **Tests Timeout**
-   - Increase Vitest timeout in config
-   - Check if server needs more startup time
-   - Verify network connectivity
-
-### Debug Mode
-
-Run with verbose logging:
-```bash
-DEBUG=* pnpm test:harness
+### Cleanup Pattern
+```typescript
+afterAll(async () => {
+  // Clean up all spawned processes
+  for (const [name, proc] of processes) {
+    proc.kill('SIGTERM');
+  }
+  await new Promise(resolve => setTimeout(resolve, 2000));
+});
 ```
 
-## Best Practices
+## Adding New Proxy Server Tests
 
-1. **Test Isolation** - Each test should be independent
-2. **Cleanup** - Always stop servers after tests
-3. **Timeouts** - Use appropriate timeouts for server startup
-4. **Error Messages** - Provide clear error descriptions
-5. **Mock External Services** - Don't depend on external APIs in tests
+When adding a new proxy server:
 
-## Next Steps
+1. Add server configuration to `PROXY_SERVERS` array in health test
+2. Ensure server implements `/health` endpoint returning:
+   ```json
+   {
+     "status": "ok",
+     "service": "server-name",
+     "port": 9999
+   }
+   ```
+3. Add specific endpoint tests if server has unique functionality
+4. Update this guide with any special considerations
 
-1. Add tests for remaining proxy servers
-2. Implement mock services for external dependencies
-3. Add performance benchmarks
-4. Create integration tests for proxy interactions
-5. Add load testing for high-traffic proxies
+## Common Issues and Solutions
+
+### Port Already in Use
+- **Problem**: Test fails because port is already occupied
+- **Solution**: Kill existing process or use different port in test environment
+
+### Server Startup Timeout
+- **Problem**: Server takes too long to start
+- **Solution**: Increase `waitForServer` maxAttempts or optimize server startup
+
+### TypeScript/ES Module Issues
+- **Problem**: Import errors or module resolution failures
+- **Solution**: Ensure `--esm` flag is used with ts-node and imports use .js extensions
+
+## CI/CD Considerations
+
+- Tests spawn real server processes (not mocked)
+- Requires available ports 9876-9890
+- Total test time ~2-3 minutes for all servers
+- Consider running in parallel jobs if test time becomes an issue
+
+## Future Improvements
+
+1. **Mock Mode**: Add ability to test without spawning real processes
+2. **Load Testing**: Add performance benchmarks for critical endpoints
+3. **Error Scenarios**: Test server behavior under error conditions
+4. **Integration Tests**: Test proxy servers working together
+5. **WebSocket Testing**: Add tests for any WebSocket endpoints
