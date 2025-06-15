@@ -3,114 +3,224 @@
 # Continuous Documentation CLI Pipeline
 # Automates documentation monitoring and updates
 
+set -e
+
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 
-# Source the tracking functions if available
-TRACKING_FILE="../../../scripts/cli-pipeline/all_pipelines/tracking-functions.sh"
-if [ -f "$TRACKING_FILE" ]; then
-    source "$TRACKING_FILE"
-else
-    # Fallback if tracking not available
-    track_command() {
-        echo "Note: Command tracking not available"
-    }
-fi
+# Source the ServiceCLIPipeline base class
+source "$SCRIPT_DIR/../base-classes/ServiceCLIPipeline.sh"
 
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Define service-specific variables
+PIPELINE_NAME="continuous_docs"
+PIPELINE_DESCRIPTION="Continuous Documentation CLI Pipeline - Automated monitoring and updates"
+SERVICE_NAME="continuous-docs-service"
+SERVICE_CHECK_COMMAND="health-check"
 
-# Function to run TypeScript files
+# Continuous docs-specific commands array
+declare -a CONTINUOUS_DOCS_COMMANDS=(
+    "check-updates:Check for documentation that needs updating"
+    "process-updates:Process and update documentation"
+    "sync-status:Sync monitoring status with database"
+    "schedule-checks:Set up scheduled monitoring"
+    "list-monitored:List all monitored documentation"
+    "add-monitor:Add documentation to monitoring"
+    "remove-monitor:Remove documentation from monitoring"
+    "generate-report:Generate monitoring report"
+    "health-check:Check pipeline health"
+)
+
+# Initialize the pipeline
+init_service_pipeline "$PIPELINE_NAME" "$PIPELINE_DESCRIPTION"
+
+# Helper function to run TypeScript files
 run_ts() {
-    ts-node --transpile-only "$@"
+    npx ts-node --transpile-only "$@"
 }
 
-# Display help
+# Command implementations
+command_check_updates() {
+    print_info "Checking for documentation updates..."
+    
+    if [ -f "$SCRIPT_DIR/commands/check-updates.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/check-updates.ts" "$@"
+    else
+        print_error "check-updates.ts not found"
+        return 1
+    fi
+}
+
+command_process_updates() {
+    print_info "Processing documentation updates..."
+    
+    if [ -f "$SCRIPT_DIR/commands/process-updates.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/process-updates.ts" "$@"
+    else
+        print_error "process-updates.ts not found"
+        return 1
+    fi
+}
+
+command_sync_status() {
+    print_info "Syncing monitoring status with database..."
+    
+    if [ -f "$SCRIPT_DIR/commands/sync-status.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/sync-status.ts" "$@"
+    else
+        print_error "sync-status.ts not found"
+        return 1
+    fi
+}
+
+command_schedule_checks() {
+    print_info "Setting up scheduled monitoring..."
+    
+    if [ -f "$SCRIPT_DIR/commands/schedule-checks.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/schedule-checks.ts" "$@"
+    else
+        print_error "schedule-checks.ts not found"
+        return 1
+    fi
+}
+
+command_list_monitored() {
+    print_info "Listing monitored documentation..."
+    
+    if [ -f "$SCRIPT_DIR/commands/list-monitored.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/list-monitored.ts" "$@"
+    else
+        print_error "list-monitored.ts not found"
+        return 1
+    fi
+}
+
+command_add_monitor() {
+    print_info "Adding documentation to monitoring..."
+    
+    if [ -f "$SCRIPT_DIR/commands/add-monitor.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/add-monitor.ts" "$@"
+    else
+        print_error "add-monitor.ts not found"
+        return 1
+    fi
+}
+
+command_remove_monitor() {
+    print_info "Removing documentation from monitoring..."
+    
+    if [ -f "$SCRIPT_DIR/commands/remove-monitor.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/remove-monitor.ts" "$@"
+    else
+        print_error "remove-monitor.ts not found"
+        return 1
+    fi
+}
+
+command_generate_report() {
+    print_info "Generating monitoring report..."
+    
+    if [ -f "$SCRIPT_DIR/commands/generate-report.ts" ]; then
+        run_ts "$SCRIPT_DIR/commands/generate-report.ts" "$@"
+    else
+        print_error "generate-report.ts not found"
+        return 1
+    fi
+}
+
+command_health_check() {
+    print_info "Checking pipeline health..."
+    
+    if [ -f "$SCRIPT_DIR/utilities/health-check.ts" ]; then
+        run_ts "$SCRIPT_DIR/utilities/health-check.ts"
+    else
+        print_warning "health-check.ts not found, running basic check"
+        health_check
+    fi
+}
+
+# Override show_help to add continuous docs-specific information
 show_help() {
-    echo "Continuous Documentation CLI Pipeline"
-    echo "======================================"
+    echo "$PIPELINE_DESCRIPTION"
     echo ""
-    echo "Usage: $0 <command> [options]"
+    echo "Usage: $0 [command] [options]"
     echo ""
     echo "Commands:"
-    echo "  check-updates       Check for documentation that needs updating"
-    echo "  process-updates     Process and update documentation"
-    echo "  sync-status        Sync monitoring status with database"
-    echo "  schedule-checks    Set up scheduled monitoring"
-    echo "  list-monitored     List all monitored documentation"
-    echo "  add-monitor        Add documentation to monitoring"
-    echo "  remove-monitor     Remove documentation from monitoring"
-    echo "  generate-report    Generate monitoring report"
-    echo "  health-check       Check pipeline health"
-    echo "  help              Show this help message"
+    for cmd_desc in "${CONTINUOUS_DOCS_COMMANDS[@]}"; do
+        IFS=':' read -r cmd desc <<< "$cmd_desc"
+        printf "  %-20s %s\n" "$cmd" "$desc"
+    done
+    
+    # Add service commands
     echo ""
+    echo "Service Commands:"
+    printf "  %-20s %s\n" "service-status" "Check service health status"
+    printf "  %-20s %s\n" "service-restart" "Restart the service"
+    printf "  %-20s %s\n" "service-logs" "View service logs"
+    
+    echo ""
+    echo "Examples:"
+    echo "  $0 check-updates"
+    echo "  $0 add-monitor --path docs/living-docs/example.md"
+    echo "  $0 generate-report --format html"
 }
 
-case "$1" in
+# Main command routing
+case "${1:-help}" in
     check-updates)
-        track_command "continuous_docs" "check-updates"
-        echo -e "${GREEN}Checking for documentation updates...${NC}"
-        run_ts commands/check-updates.ts "${@:2}"
+        shift
+        track_and_execute "check-updates" command_check_updates "$@"
         ;;
-        
     process-updates)
-        track_command "continuous_docs" "process-updates"
-        echo -e "${GREEN}Processing documentation updates...${NC}"
-        run_ts commands/process-updates.ts "${@:2}"
+        shift
+        track_and_execute "process-updates" command_process_updates "$@"
         ;;
-        
     sync-status)
-        track_command "continuous_docs" "sync-status"
-        echo -e "${GREEN}Syncing monitoring status with database...${NC}"
-        run_ts commands/sync-status.ts "${@:2}"
+        shift
+        track_and_execute "sync-status" command_sync_status "$@"
         ;;
-        
     schedule-checks)
-        track_command "continuous_docs" "schedule-checks"
-        echo -e "${GREEN}Setting up scheduled monitoring...${NC}"
-        run_ts commands/schedule-checks.ts "${@:2}"
+        shift
+        track_and_execute "schedule-checks" command_schedule_checks "$@"
         ;;
-        
     list-monitored)
-        track_command "continuous_docs" "list-monitored"
-        echo -e "${GREEN}Listing monitored documentation...${NC}"
-        run_ts commands/list-monitored.ts "${@:2}"
+        shift
+        track_and_execute "list-monitored" command_list_monitored "$@"
         ;;
-        
     add-monitor)
-        track_command "continuous_docs" "add-monitor"
-        echo -e "${GREEN}Adding documentation to monitoring...${NC}"
-        run_ts commands/add-monitor.ts "${@:2}"
+        shift
+        track_and_execute "add-monitor" command_add_monitor "$@"
         ;;
-        
     remove-monitor)
-        track_command "continuous_docs" "remove-monitor"
-        echo -e "${GREEN}Removing documentation from monitoring...${NC}"
-        run_ts commands/remove-monitor.ts "${@:2}"
+        shift
+        track_and_execute "remove-monitor" command_remove_monitor "$@"
         ;;
-        
     generate-report)
-        track_command "continuous_docs" "generate-report"
-        echo -e "${GREEN}Generating monitoring report...${NC}"
-        run_ts commands/generate-report.ts "${@:2}"
+        shift
+        track_and_execute "generate-report" command_generate_report "$@"
         ;;
-        
     health-check)
-        track_command "continuous_docs" "health-check"
-        echo -e "${GREEN}Checking pipeline health...${NC}"
-        run_ts utilities/health-check.ts
+        shift
+        track_and_execute "health-check" command_health_check "$@"
         ;;
-        
-    help|--help|-h|"")
+    # Service management commands
+    service-status)
+        shift
+        track_and_execute "service-status" health_check_service "${SERVICE_NAME:-$1}" "$@"
+        ;;
+    service-restart)
+        shift
+        track_and_execute "service-restart" restart_service "${SERVICE_NAME:-$1}" "$@"
+        ;;
+    service-logs)
+        shift
+        track_and_execute "service-logs" show_service_logs "${SERVICE_NAME:-$1}" "$@"
+        ;;
+    help|--help|-h)
         show_help
         ;;
-        
     *)
-        echo -e "${RED}Unknown command: $1${NC}"
+        print_error "Unknown command: $1"
         echo ""
         show_help
         exit 1

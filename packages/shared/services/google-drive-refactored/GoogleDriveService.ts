@@ -5,9 +5,9 @@
  */
 
 import { SingletonService } from '../base-classes/SingletonService';
-import { Logger } from '../logger-service/LoggerService';
+import { Logger } from '../base-classes/BaseService';
 import { SupabaseClient } from '@supabase/supabase-js';
-import GoogleAuthService, { GoogleAuthToken } from '../google-drive/google-auth-service';
+import { GoogleAuthService, GoogleAuthToken } from '../google-auth-refactored/GoogleAuthService';
 
 // File types from the sources_google table
 export interface GoogleDriveFile {
@@ -645,4 +645,3 @@ export class GoogleDriveService extends SingletonService {
 }
 
 // Export the service class and types
-export { GoogleDriveService };

@@ -19,7 +19,7 @@
  */
 
 import { SingletonService } from '../base-classes/SingletonService';
-import { Logger } from '../logger-service/LoggerService';
+import { Logger } from '../base-classes/BaseService';
 import { Credentials, GoogleAuth, JWT } from 'google-auth-library';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -312,6 +312,12 @@ route_command() {
         exit 1
     fi
     
+    # Handle help command specially
+    if [[ "$command" == "help" ]]; then
+        show_help
+        return 0
+    fi
+    
     # Check if command function exists
     local command_function="command_$command"
     if declare -f "$command_function" > /dev/null; then

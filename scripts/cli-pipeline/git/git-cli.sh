@@ -1,41 +1,160 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Git Management CLI
-# This script provides commands for managing git worktrees and merge operations
+# git-cli.sh - Migrated to CLI Pipeline Framework
+# Git Management CLI - worktrees and merge operations
 
+# Source the base class
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+source "$SCRIPT_DIR/../base-classes/ServiceCLIPipeline.sh"
 
-# Load environment variables
-ENV_DEV_FILE="${PROJECT_ROOT}/.env.development"
-if [ -f "$ENV_DEV_FILE" ]; then
-  echo "Loading environment variables from $ENV_DEV_FILE"
-  export $(grep -E "SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY" "$ENV_DEV_FILE" | xargs)
-fi
+# Pipeline configuration
+PIPELINE_NAME="git"
+PIPELINE_DESCRIPTION="Git Management CLI - worktrees and merge operations"
+PIPELINE_VERSION="2.0.0"
 
-# Function to track command usage
-track_command() {
-    local pipeline_name="git"
-    local command_name="$1"
-    shift
-    local full_command="$@"
-    
-    local TRACKER_TS="$PROJECT_ROOT/packages/shared/services/tracking-service/shell-command-tracker.ts"
-    if [ -f "$TRACKER_TS" ]; then
-        npx ts-node --project "$PROJECT_ROOT/tsconfig.node.json" "$TRACKER_TS" "$pipeline_name" "$command_name" "$full_command"
+# Initialize pipeline
+init_cli_pipeline "$PIPELINE_NAME" "$PIPELINE_DESCRIPTION" "$@"
+
+# Service setup
+setup_service_integrations() {
+    # Check for git operations service
+    if check_service_available "git-operations-service"; then
+        log_success "Git operations service available"
     else
-        echo "ℹ️ Tracking not available. Running command directly."
-        eval "$full_command"
+        log_warn "Git operations service not available - using direct git commands"
     fi
 }
 
-# Function to display help
+# Initialize services
+setup_service_integrations
+
+# Command: list-worktrees - List all git worktrees
+command_list_worktrees() {
+    local description="List all git worktrees"
+    
+    track_and_execute "list_worktrees" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/list-worktrees.ts" "$@"
+}
+
+# Command: create-worktree - Create a new worktree
+command_create_worktree() {
+    local description="Create a new worktree"
+    
+    track_and_execute "create_worktree" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/create-worktree.ts" "$@"
+}
+
+# Command: remove-worktree - Remove an existing worktree
+command_remove_worktree() {
+    local description="Remove an existing worktree"
+    
+    track_and_execute "remove_worktree" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/remove-worktree.ts" "$@"
+}
+
+# Command: worktree-status - Check status of all worktrees
+command_worktree_status() {
+    local description="Check status of all worktrees"
+    
+    track_and_execute "worktree_status" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/worktree-status.ts" "$@"
+}
+
+# Command: merge-queue-add - Add branch to merge queue
+command_merge_queue_add() {
+    local description="Add branch to merge queue"
+    
+    track_and_execute "merge_queue_add" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/merge-queue-add.ts" "$@"
+}
+
+# Command: merge-queue-list - List branches in merge queue
+command_merge_queue_list() {
+    local description="List branches in merge queue"
+    
+    track_and_execute "merge_queue_list" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/merge-queue-list.ts" "$@"
+}
+
+# Command: merge-queue-status - Check merge queue status
+command_merge_queue_status() {
+    local description="Check merge queue status"
+    
+    track_and_execute "merge_queue_status" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/merge-queue-status.ts" "$@"
+}
+
+# Command: run-merge-checks - Run checks for a merge
+command_run_merge_checks() {
+    local description="Run checks for a merge"
+    
+    track_and_execute "run_merge_checks" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/run-merge-checks.ts" "$@"
+}
+
+# Command: start-merge - Start merge process
+command_start_merge() {
+    local description="Start merge process"
+    
+    track_and_execute "start_merge" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/start-merge.ts" "$@"
+}
+
+# Command: update-from-source - Update branch from source
+command_update_from_source() {
+    local description="Update branch from source"
+    
+    track_and_execute "update_from_source" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/update-from-source.ts" "$@"
+}
+
+# Command: check-conflicts - Check for merge conflicts
+command_check_conflicts() {
+    local description="Check for merge conflicts"
+    
+    track_and_execute "check_conflicts" "$description" \
+        node --loader ts-node/esm "$SCRIPT_DIR/commands/check-conflicts.ts" "$@"
+}
+
+# Command: health-check - Run health check on git CLI
+command_health_check() {
+    local description="Run health check on git CLI"
+    
+    if [[ -f "$SCRIPT_DIR/health-check.sh" ]]; then
+        track_and_execute "health_check" "$description" \
+            "$SCRIPT_DIR/health-check.sh" "$@"
+    else
+        # Basic health check
+        log_info "🏥 Running health check for git pipeline..."
+        
+        # Check git availability
+        if command -v git &> /dev/null; then
+            log_success "Git command available"
+        else
+            log_error "Git command not found"
+            return 1
+        fi
+        
+        # Check if in git repository
+        if git rev-parse --git-dir &> /dev/null; then
+            log_success "In a git repository"
+        else
+            log_error "Not in a git repository"
+            return 1
+        fi
+        
+        log_success "✅ Git pipeline is healthy"
+    fi
+}
+
+# Override show_help to add command-specific details
 show_help() {
-    echo "Git Management CLI"
+    echo -e "${BLUE}Git Management CLI${NC}"
     echo ""
-    echo "Usage: $0 <command> [options]"
+    echo "USAGE:"
+    echo "  $0 <command> [options]"
     echo ""
-    echo "Commands:"
+    echo "COMMANDS:"
     echo "  list-worktrees                List all git worktrees"
     echo "  create-worktree              Create a new worktree"
     echo "  remove-worktree              Remove an existing worktree"
@@ -50,66 +169,68 @@ show_help() {
     echo "  health-check                 Run health check on git CLI"
     echo "  help                         Show this help message"
     echo ""
-    echo "Examples:"
+    echo "GLOBAL OPTIONS:"
+    echo "  --debug                      Enable debug mode"
+    echo "  --verbose                    Enable verbose output"
+    echo ""
+    echo "EXAMPLES:"
     echo "  $0 list-worktrees"
     echo "  $0 create-worktree --branch feature/new-feature"
     echo "  $0 merge-queue-add --branch feature/my-feature --priority 1"
-    echo ""
 }
 
-# Main command handling
+# Handle hyphenated commands
 case "$1" in
-    "list-worktrees")
-        track_command "list-worktrees" node --loader ts-node/esm "$SCRIPT_DIR/commands/list-worktrees.ts" "${@:2}"
+    list-worktrees)
+        shift
+        command_list_worktrees "$@"
         ;;
-    "create-worktree")
-        track_command "create-worktree" node --loader ts-node/esm "$SCRIPT_DIR/commands/create-worktree.ts" "${@:2}"
+    create-worktree)
+        shift
+        command_create_worktree "$@"
         ;;
-    "remove-worktree")
-        track_command "remove-worktree" node --loader ts-node/esm "$SCRIPT_DIR/commands/remove-worktree.ts" "${@:2}"
+    remove-worktree)
+        shift
+        command_remove_worktree "$@"
         ;;
-    "worktree-status")
-        track_command "worktree-status" node --loader ts-node/esm "$SCRIPT_DIR/commands/worktree-status.ts" "${@:2}"
+    worktree-status)
+        shift
+        command_worktree_status "$@"
         ;;
-    "merge-queue-add")
-        track_command "merge-queue-add" node --loader ts-node/esm "$SCRIPT_DIR/commands/merge-queue-add.ts" "${@:2}"
+    merge-queue-add)
+        shift
+        command_merge_queue_add "$@"
         ;;
-    "merge-queue-list")
-        track_command "merge-queue-list" node --loader ts-node/esm "$SCRIPT_DIR/commands/merge-queue-list.ts" "${@:2}"
+    merge-queue-list)
+        shift
+        command_merge_queue_list "$@"
         ;;
-    "merge-queue-status")
-        track_command "merge-queue-status" node --loader ts-node/esm "$SCRIPT_DIR/commands/merge-queue-status.ts" "${@:2}"
+    merge-queue-status)
+        shift
+        command_merge_queue_status "$@"
         ;;
-    "run-merge-checks")
-        track_command "run-merge-checks" node --loader ts-node/esm "$SCRIPT_DIR/commands/run-merge-checks.ts" "${@:2}"
+    run-merge-checks)
+        shift
+        command_run_merge_checks "$@"
         ;;
-    "start-merge")
-        track_command "start-merge" node --loader ts-node/esm "$SCRIPT_DIR/commands/start-merge.ts" "${@:2}"
+    start-merge)
+        shift
+        command_start_merge "$@"
         ;;
-    "update-from-source")
-        track_command "update-from-source" node --loader ts-node/esm "$SCRIPT_DIR/commands/update-from-source.ts" "${@:2}"
+    update-from-source)
+        shift
+        command_update_from_source "$@"
         ;;
-    "check-conflicts")
-        track_command "check-conflicts" node --loader ts-node/esm "$SCRIPT_DIR/commands/check-conflicts.ts" "${@:2}"
+    check-conflicts)
+        shift
+        command_check_conflicts "$@"
         ;;
-    "health-check")
-        track_command "health-check" "$SCRIPT_DIR/health-check.sh ${@:2}"
-        ;;
-    "help"|"--help"|"-h"|"")
-        show_help
+    health-check)
+        shift
+        command_health_check "$@"
         ;;
     *)
-        echo "Unknown command: $1"
-        echo ""
-        show_help
-        exit 1
+        # Let base class handle standard routing
+        route_command "$@"
         ;;
-  health-check)
-    echo "🏥 Running health check for git pipeline..."
-    if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-      echo "❌ Missing required environment variables"
-      exit 1
-    fi
-    echo "✅ git pipeline is healthy"
-    ;;
 esac
