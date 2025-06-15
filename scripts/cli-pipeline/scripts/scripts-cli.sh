@@ -188,4 +188,46 @@ show_help() {
 }
 
 # Main command routing
-route_command "$@"
+case "${1:-help}" in
+    sync)
+        shift
+        command_sync "$@"
+        ;;
+    classify)
+        shift
+        command_classify "$@"
+        ;;
+    list)
+        shift
+        command_list "$@"
+        ;;
+    search)
+        shift
+        command_search "$@"
+        ;;
+    archive)
+        shift
+        command_archive "$@"
+        ;;
+    register)
+        shift
+        command_register "$@"
+        ;;
+    stats)
+        shift
+        command_stats "$@"
+        ;;
+    health-check)
+        shift
+        command_health_check "$@"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        log_error "Unknown command: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
