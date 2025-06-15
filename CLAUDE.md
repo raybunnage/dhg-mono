@@ -581,7 +581,8 @@ This ensures migrations are properly tested before applying to the database.
    - docs-archive-proxy: 9886 (Document file management)
    - worktree-switcher-proxy: 9887 (Visual git worktree switcher)
    - html-file-browser-proxy: 8080 (Web-based file browser UI)
-   - [Reserved: 9888-9899 for future proxy servers]
+   - cli-test-runner-proxy: 9890 (CLI pipeline test runner for ALPHA/BETA/GAMMA groups)
+   - [Reserved: 9888-9889, 9891-9899 for future proxy servers]
    
    **Other Services:**
    - [Reserved: 8081-8099 for future services]

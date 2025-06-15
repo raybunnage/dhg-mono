@@ -28,9 +28,10 @@ import { TestAudioStreamingProxy } from './components/TestAudioStreamingProxy';
 import { TestHtmlFileBrowserProxy } from './components/TestHtmlFileBrowserProxy';
 import { ProxyServerDashboard } from './components/ProxyServerDashboard';
 import { CLIPipelineTestRunner } from './components/CLIPipelineTestRunner';
+import { ProxyServerStatus } from './components/ProxyServerStatus';
 
 function App() {
-  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard' | 'cli-tests'>('cli-tests');
+  const [view, setView] = useState<'welcome' | 'supabase' | 'logger' | 'status' | 'consolidation' | 'services' | 'claude' | 'env-fix' | 'git-proxy' | 'file-browser' | 'continuous-docs' | 'audio-streaming' | 'html-browser' | 'proxy-dashboard' | 'cli-tests' | 'proxy-status'>('proxy-status');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,6 +191,16 @@ function App() {
           >
             🧪 CLI Pipeline Tests
           </button>
+          <button
+            onClick={() => setView('proxy-status')}
+            className={`px-4 py-2 rounded ${
+              view === 'proxy-status' 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-indigo-200 text-indigo-700 hover:bg-indigo-300'
+            }`}
+          >
+            🔌 Proxy Server Status
+          </button>
           </div>
         </div>
       </div>
@@ -216,6 +227,7 @@ function App() {
         {view === 'html-browser' && <TestHtmlFileBrowserProxy />}
         {view === 'proxy-dashboard' && <ProxyServerDashboard />}
         {view === 'cli-tests' && <CLIPipelineTestRunner />}
+        {view === 'proxy-status' && <ProxyServerStatus />}
       </div>
     </div>
   );
