@@ -7,7 +7,7 @@
 
 import { BusinessService } from '../base-classes/BusinessService';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Logger } from '../../utils/logger';
+import { Logger } from '../base-classes/BaseService';
 import { 
   Batch, 
   BatchItem, 
@@ -32,16 +32,16 @@ export class BatchProcessingService extends BusinessService {
   private activeProcesses: Map<string, { cancel: () => void }> = new Map();
 
   constructor(supabaseClient: SupabaseClient, logger?: Logger) {
-    super('BatchProcessingService', { supabaseClient }
+    super('BatchProcessingService', { supabaseClient }, logger);
+  }
 
   /**
    * Validate that all required dependencies are provided
    */
   protected validateDependencies(): void {
-    if (!this.dependencies.supabase) {
+    if (!this.dependencies.supabaseClient) {
       throw new Error('SupabaseClient is required');
     }
-  }, logger);
   }
 
   protected async initialize(): Promise<void> {
@@ -96,12 +96,13 @@ export class BatchProcessingService extends BusinessService {
    * Create a new batch with validation and retry logic
    */
   async createBatch(options: BatchOptions): Promise<Batch> {
-    return this.validateInput({ options }, () => {
+    this.validateInput({ options }, () => {
       if (!options.name || !options.name.trim()) {
         throw new Error('Batch name is required');
       }
-    })
-    .then(() => this.withTransaction(async () => {
+    });
+
+    return this.withTransaction(async () => {
       return this.withRetry(async () => {
         const batch = {
           name: options.name,
@@ -128,20 +129,21 @@ export class BatchProcessingService extends BusinessService {
         
         this.logger?.info(`Created batch: ${data.id} - ${data.name}`);
         return data;
-      }, { operationName: 'createBatch' });
-    }));
+      });
+    });
   }
 
   /**
    * Get batch by ID with caching support
    */
   async getBatch(batchId: string): Promise<Batch | null> {
-    return this.validateInput({ batchId }, () => {
+    this.validateInput({ batchId }, () => {
       if (!batchId || !batchId.trim()) {
         throw new Error('Batch ID is required');
       }
-    })
-    .then(() => this.withRetry(async () => {
+    });
+
+    return this.withRetry(async () => {
       const { data, error } = await this.dependencies.supabaseClient
         .from('batches')
         .select('*')
@@ -153,7 +155,7 @@ export class BatchProcessingService extends BusinessService {
       }
 
       return data || null;
-    }, { operationName: 'getBatch' }));
+    });
   }
 
   /**
@@ -164,15 +166,16 @@ export class BatchProcessingService extends BusinessService {
     status: BatchStatus,
     metadata?: Record<string, any>
   ): Promise<Batch> {
-    return this.validateInput({ batchId, status }, () => {
+    this.validateInput({ batchId, status }, () => {
       if (!batchId || !batchId.trim()) {
         throw new Error('Batch ID is required');
       }
       if (!Object.values(BatchStatus).includes(status)) {
         throw new Error(`Invalid batch status: ${status}`);
       }
-    })
-    .then(() => this.withTransaction(async () => {
+    });
+
+    return this.withTransaction(async () => {
       return this.withRetry(async () => {
         const updates: any = {
           status,
@@ -198,8 +201,8 @@ export class BatchProcessingService extends BusinessService {
 
         this.logger?.info(`Updated batch ${batchId} status to ${status}`);
         return data;
-      }, { operationName: 'updateBatchStatus' });
-    }));
+      });
+    });
   }
 
   /**
@@ -223,7 +226,7 @@ export class BatchProcessingService extends BusinessService {
       retryAttempts = 3 
     } = options;
 
-    return this.validateInput({ batchId, items }, () => {
+    this.validateInput({ batchId, items }, () => {
       if (!batchId || !batchId.trim()) {
         throw new Error('Batch ID is required');
       }
@@ -233,8 +236,9 @@ export class BatchProcessingService extends BusinessService {
       if (typeof processor !== 'function') {
         throw new Error('Processor must be a function');
       }
-    })
-    .then(() => this.timeOperation('processBatchItems', async () => {
+    });
+
+    return this.timeOperation('processBatchItems', async () => {
       // Create batch items
       await this.createBatchItems(batchId, items);
 
@@ -275,8 +279,7 @@ export class BatchProcessingService extends BusinessService {
                   timeout
                 ),
                 { 
-                  maxAttempts: retryAttempts,
-                  operationName: `processItem_${itemIndex}` 
+                  maxAttempts: retryAttempts
                 }
               );
 
@@ -345,29 +348,27 @@ export class BatchProcessingService extends BusinessService {
       } finally {
         this.activeProcesses.delete(batchId);
       }
-    }));
+    });
   }
 
   /**
    * Cancel a running batch
    */
   async cancelBatch(batchId: string): Promise<void> {
-    return this.validateInput({ batchId }, () => {
+    this.validateInput({ batchId }, () => {
       if (!batchId || !batchId.trim()) {
         throw new Error('Batch ID is required');
       }
-    })
-    .then(() => {
-      const process = this.activeProcesses.get(batchId);
-      if (process) {
-        process.cancel();
-        this.activeProcesses.delete(batchId);
-      }
-
-      return this.updateBatchStatus(batchId, BatchStatus.CANCELLED).then(() => {
-        this.logger?.info(`Cancelled batch: ${batchId}`);
-      });
     });
+
+    const process = this.activeProcesses.get(batchId);
+    if (process) {
+      process.cancel();
+      this.activeProcesses.delete(batchId);
+    }
+
+    await this.updateBatchStatus(batchId, BatchStatus.CANCELLED);
+    this.logger?.info(`Cancelled batch: ${batchId}`);
   }
 
   /**
@@ -440,7 +441,7 @@ export class BatchProcessingService extends BusinessService {
       });
 
       return stats;
-    }, { operationName: 'getBatchStatistics' });
+    });
   }
 
   /**

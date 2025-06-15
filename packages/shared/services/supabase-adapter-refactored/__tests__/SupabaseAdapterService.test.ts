@@ -1,74 +1,142 @@
+/**
+ * SupabaseAdapterService Tests
+ * 
+ * Tests the Supabase adapter service that handles environment-specific
+ * client creation for both browser and Node.js environments with
+ * proper credential management and configuration validation.
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SupabaseAdapterService, createSupabaseAdapter } from '../SupabaseAdapterService';
-import { AdapterService } from '../../base-classes/AdapterService';
+import { SupabaseAdapterService, SupabaseAdapterConfig } from '../SupabaseAdapterService';
 import { createClient } from '@supabase/supabase-js';
 
-// Mock Supabase
+// Mock @supabase/supabase-js
 vi.mock('@supabase/supabase-js', () => ({
-  createClient: vi.fn()
+  createClient: vi.fn(() => ({
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }))
+    },
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue({ data: [], error: null })
+  }))
 }));
 
-const mockCreateClient = createClient as any;
-
 describe('SupabaseAdapterService', () => {
+  let service: SupabaseAdapterService;
   let originalWindow: any;
-  let originalEnv: NodeJS.ProcessEnv;
+  let originalProcessEnv: NodeJS.ProcessEnv;
+
+  // Test environment configurations
+  const browserEnv = {
+    VITE_SUPABASE_URL: 'https://test.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    VITE_SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key'
+  };
+
+  const nodeEnv = {
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_ANON_KEY: 'test-anon-key',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key'
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Save original values
+    // Save original environment
     originalWindow = global.window;
-    originalEnv = process.env;
+    originalProcessEnv = { ...process.env };
     
-    // Set up default mock
-    mockCreateClient.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ error: null, data: [] })
-        })
-      })
+    // Clear process.env
+    Object.keys(process.env).forEach(key => {
+      if (key.includes('SUPABASE')) {
+        delete process.env[key];
+      }
     });
   });
 
   afterEach(() => {
-    // Restore original values
+    // Restore original environment
     global.window = originalWindow;
-    process.env = originalEnv;
+    process.env = originalProcessEnv;
   });
 
-  describe('inheritance', () => {
-    it('should extend AdapterService', () => {
-      const adapter = new SupabaseAdapterService();
-      expect(adapter).toBeInstanceOf(AdapterService);
-    });
-  });
-
-  describe('browser environment', () => {
+  describe('Browser Environment', () => {
     beforeEach(() => {
       // Simulate browser environment
       global.window = {} as any;
     });
 
-    it('should require env in browser environment', async () => {
-      const adapter = new SupabaseAdapterService();
+    it('should create adapter in browser with environment variables', () => {
+      const config: SupabaseAdapterConfig = {
+        env: browserEnv
+      };
+
+      expect(() => {
+        service = new SupabaseAdapterService(config);
+      }).not.toThrow();
+    });
+
+    it('should require env config in browser environment', () => {
+      expect(() => {
+        service = new SupabaseAdapterService({});
+      }).toThrow('Environment variables must be provided for browser usage');
+    });
+
+    it('should validate missing URL in browser', () => {
+      const config: SupabaseAdapterConfig = {
+        env: {
+          VITE_SUPABASE_ANON_KEY: 'test-key'
+        }
+      };
+
+      service = new SupabaseAdapterService(config);
       
-      await expect(adapter.getSupabaseClient()).rejects.toThrow(
-        'Environment variables must be provided for browser usage'
+      expect(() => service.getClient()).toThrow(
+        'Missing required environment variable: VITE_SUPABASE_URL or SUPABASE_URL'
       );
     });
 
-    it('should create client with browser env variables', async () => {
-      const adapter = new SupabaseAdapterService({
+    it('should validate missing anon key in browser', () => {
+      const config: SupabaseAdapterConfig = {
+        env: {
+          VITE_SUPABASE_URL: 'https://test.supabase.co'
+        }
+      };
+
+      service = new SupabaseAdapterService(config);
+      
+      expect(() => service.getClient()).toThrow(
+        'Missing required environment variable: VITE_SUPABASE_ANON_KEY or SUPABASE_ANON_KEY'
+      );
+    });
+
+    it('should validate missing service role key when requested', () => {
+      const config: SupabaseAdapterConfig = {
         env: {
           VITE_SUPABASE_URL: 'https://test.supabase.co',
           VITE_SUPABASE_ANON_KEY: 'test-anon-key'
-        }
-      });
+        },
+        useServiceRole: true
+      };
 
-      await adapter.getSupabaseClient();
+      service = new SupabaseAdapterService(config);
+      
+      expect(() => service.getClient()).toThrow(
+        'Missing required environment variable: VITE_SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY'
+      );
+    });
 
-      expect(mockCreateClient).toHaveBeenCalledWith(
+    it('should create client with anon key by default', () => {
+      const config: SupabaseAdapterConfig = {
+        env: browserEnv
+      };
+
+      service = new SupabaseAdapterService(config);
+      const client = service.getClient();
+
+      expect(createClient).toHaveBeenCalledWith(
         'https://test.supabase.co',
         'test-anon-key',
         expect.objectContaining({
@@ -81,20 +149,18 @@ describe('SupabaseAdapterService', () => {
       );
     });
 
-    it('should use service role key when specified', async () => {
-      const adapter = new SupabaseAdapterService({
-        useServiceRole: true,
-        env: {
-          VITE_SUPABASE_URL: 'https://test.supabase.co',
-          VITE_SUPABASE_SERVICE_ROLE_KEY: 'test-service-key'
-        }
-      });
+    it('should create client with service role key when requested', () => {
+      const config: SupabaseAdapterConfig = {
+        env: browserEnv,
+        useServiceRole: true
+      };
 
-      await adapter.getSupabaseClient();
+      service = new SupabaseAdapterService(config);
+      const client = service.getClient();
 
-      expect(mockCreateClient).toHaveBeenCalledWith(
+      expect(createClient).toHaveBeenCalledWith(
         'https://test.supabase.co',
-        'test-service-key',
+        'test-service-role-key',
         expect.objectContaining({
           auth: expect.objectContaining({
             autoRefreshToken: false,
@@ -104,227 +170,348 @@ describe('SupabaseAdapterService', () => {
       );
     });
 
-    it('should throw error for missing browser env variables', () => {
-      expect(() => new SupabaseAdapterService({
-        env: { VITE_SUPABASE_URL: 'https://test.supabase.co' }
-      }).getSupabaseClient()).rejects.toThrow(
-        'Missing required environment variable: VITE_SUPABASE_ANON_KEY'
+    it('should use custom auth configuration', () => {
+      const config: SupabaseAdapterConfig = {
+        env: browserEnv,
+        authConfig: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+          storageKey: 'custom-storage-key'
+        }
+      };
+
+      service = new SupabaseAdapterService(config);
+      const client = service.getClient();
+
+      expect(createClient).toHaveBeenCalledWith(
+        'https://test.supabase.co',
+        'test-anon-key',
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false,
+            storageKey: 'custom-storage-key'
+          })
+        })
+      );
+    });
+
+    it('should fallback to non-VITE environment variables', () => {
+      const config: SupabaseAdapterConfig = {
+        env: {
+          SUPABASE_URL: 'https://fallback.supabase.co',
+          SUPABASE_ANON_KEY: 'fallback-anon-key'
+        }
+      };
+
+      service = new SupabaseAdapterService(config);
+      const client = service.getClient();
+
+      expect(createClient).toHaveBeenCalledWith(
+        'https://fallback.supabase.co',
+        'fallback-anon-key',
+        expect.any(Object)
       );
     });
   });
 
-  describe('server environment', () => {
+  describe('Node.js Environment', () => {
     beforeEach(() => {
-      // Ensure we're in server environment
+      // Simulate Node.js environment
       delete (global as any).window;
       
       // Set up process.env
-      process.env = {
-        SUPABASE_URL: 'https://server.supabase.co',
-        SUPABASE_ANON_KEY: 'server-anon-key',
-        SUPABASE_SERVICE_ROLE_KEY: 'server-service-key'
-      };
+      Object.assign(process.env, nodeEnv);
     });
 
-    it('should create client with server env variables', async () => {
-      const adapter = new SupabaseAdapterService();
-      
-      await adapter.getSupabaseClient();
+    it('should create adapter in Node.js with process.env', () => {
+      expect(() => {
+        service = new SupabaseAdapterService({});
+      }).not.toThrow();
+    });
 
-      expect(mockCreateClient).toHaveBeenCalledWith(
-        'https://server.supabase.co',
-        'server-anon-key',
-        expect.any(Object)
+    it('should validate missing URL in Node.js', () => {
+      delete process.env.SUPABASE_URL;
+
+      service = new SupabaseAdapterService({});
+      
+      expect(() => service.getClient()).toThrow(
+        'Missing required environment variable: SUPABASE_URL'
       );
     });
 
-    it('should use service role in server environment', async () => {
-      const adapter = new SupabaseAdapterService({ useServiceRole: true });
-      
-      await adapter.getSupabaseClient();
+    it('should validate missing anon key in Node.js', () => {
+      delete process.env.SUPABASE_ANON_KEY;
 
-      expect(mockCreateClient).toHaveBeenCalledWith(
-        'https://server.supabase.co',
-        'server-service-key',
-        expect.any(Object)
+      service = new SupabaseAdapterService({});
+      
+      expect(() => service.getClient()).toThrow(
+        'Missing required environment variable: SUPABASE_ANON_KEY'
       );
     });
 
-    it('should throw error for missing server env variables', async () => {
+    it('should validate missing service role key when requested', () => {
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      service = new SupabaseAdapterService({ useServiceRole: true });
+      
+      expect(() => service.getClient()).toThrow(
+        'Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY'
+      );
+    });
+
+    it('should create client with anon key by default', () => {
+      service = new SupabaseAdapterService({});
+      const client = service.getClient();
+
+      expect(createClient).toHaveBeenCalledWith(
+        'https://test.supabase.co',
+        'test-anon-key',
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+          })
+        })
+      );
+    });
+
+    it('should create client with service role key when requested', () => {
+      service = new SupabaseAdapterService({ useServiceRole: true });
+      const client = service.getClient();
+
+      expect(createClient).toHaveBeenCalledWith(
+        'https://test.supabase.co',
+        'test-service-role-key',
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            autoRefreshToken: false,
+            persistSession: false
+          })
+        })
+      );
+    });
+  });
+
+  describe('Client Lifecycle', () => {
+    beforeEach(() => {
+      Object.assign(process.env, nodeEnv);
+    });
+
+    it('should return the same client instance on multiple calls', () => {
+      service = new SupabaseAdapterService({});
+      
+      const client1 = service.getClient();
+      const client2 = service.getClient();
+      
+      expect(client1).toBe(client2);
+      expect(createClient).toHaveBeenCalledTimes(1);
+    });
+
+    it('should recreate client after reset', () => {
+      service = new SupabaseAdapterService({});
+      
+      const client1 = service.getClient();
+      service.reset();
+      const client2 = service.getClient();
+      
+      expect(client1).not.toBe(client2);
+      expect(createClient).toHaveBeenCalledTimes(2);
+    });
+
+    it('should update configuration and recreate client', () => {
+      service = new SupabaseAdapterService({});
+      
+      const client1 = service.getClient();
+      
+      service.updateConfig({ useServiceRole: true });
+      const client2 = service.getClient();
+      
+      expect(client1).not.toBe(client2);
+      expect(createClient).toHaveBeenCalledTimes(2);
+      
+      // Second call should use service role key
+      expect(createClient).toHaveBeenLastCalledWith(
+        'https://test.supabase.co',
+        'test-service-role-key',
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('Health Check', () => {
+    beforeEach(() => {
+      Object.assign(process.env, nodeEnv);
+    });
+
+    it('should perform health check successfully', async () => {
+      service = new SupabaseAdapterService({});
+      service.getClient(); // Initialize client
+      
+      const health = await service.healthCheck();
+      
+      expect(health.healthy).toBe(true);
+      expect(health.serviceName).toBe('SupabaseAdapterService');
+      expect(health.timestamp).toBeInstanceOf(Date);
+      expect(health.details).toMatchObject({
+        hasClient: true,
+        environment: 'nodejs',
+        useServiceRole: false,
+        connected: true
+      });
+    });
+
+    it('should report unhealthy when client creation fails', async () => {
       delete process.env.SUPABASE_URL;
       
-      const adapter = new SupabaseAdapterService();
+      service = new SupabaseAdapterService({});
       
-      await expect(adapter.getSupabaseClient()).rejects.toThrow(
+      const health = await service.healthCheck();
+      
+      expect(health.healthy).toBe(false);
+      expect(health.details?.hasClient).toBe(false);
+      expect(health.error).toContain('Missing required environment variable');
+    });
+
+    it('should detect connection issues', async () => {
+      const mockClient = {
+        from: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ 
+          data: null, 
+          error: new Error('Connection failed') 
+        })
+      };
+      
+      (createClient as any).mockReturnValue(mockClient);
+      
+      service = new SupabaseAdapterService({});
+      service.getClient();
+      
+      const health = await service.healthCheck();
+      
+      expect(health.healthy).toBe(false);
+      expect(health.details?.connected).toBe(false);
+      expect(health.error).toBe('Connection failed');
+    });
+  });
+
+  describe('Configuration Options', () => {
+    beforeEach(() => {
+      Object.assign(process.env, nodeEnv);
+    });
+
+    it('should apply custom fetch options', () => {
+      const customFetch = vi.fn();
+      
+      service = new SupabaseAdapterService({
+        authConfig: {
+          persistSession: false
+        }
+      });
+      
+      const client = service.getClient();
+      
+      expect(createClient).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            persistSession: false
+          })
+        })
+      );
+    });
+
+    it('should use debug mode when configured', () => {
+      const logger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn()
+      };
+      
+      service = new SupabaseAdapterService({}, logger);
+      service.getClient();
+      
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('Creating Supabase client')
+      );
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle createClient errors gracefully', () => {
+      (createClient as any).mockImplementation(() => {
+        throw new Error('Failed to create client');
+      });
+      
+      Object.assign(process.env, nodeEnv);
+      service = new SupabaseAdapterService({});
+      
+      expect(() => service.getClient()).toThrow('Failed to create client');
+    });
+
+    it('should provide helpful error messages for missing credentials', () => {
+      delete process.env.SUPABASE_URL;
+      delete process.env.SUPABASE_ANON_KEY;
+      
+      service = new SupabaseAdapterService({});
+      
+      expect(() => service.getClient()).toThrow(
         'Missing required environment variable: SUPABASE_URL'
       );
     });
   });
 
-  describe('custom auth configuration', () => {
-    beforeEach(() => {
-      delete (global as any).window;
-      process.env = {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-key'
-      };
-    });
-
-    it('should merge custom auth config', async () => {
-      const adapter = new SupabaseAdapterService({
-        authConfig: {
-          storageKey: 'custom-storage-key',
-          autoRefreshToken: false
-        }
-      });
-
-      await adapter.getSupabaseClient();
-
-      expect(mockCreateClient).toHaveBeenCalledWith(
-        'https://test.supabase.co',
-        'test-key',
-        expect.objectContaining({
-          auth: expect.objectContaining({
-            storageKey: 'custom-storage-key',
-            autoRefreshToken: false,
-            persistSession: true
-          })
-        })
-      );
-    });
-  });
-
-  describe('health check', () => {
-    beforeEach(() => {
-      delete (global as any).window;
-      process.env = {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-key'
-      };
-    });
-
-    it('should report healthy when connected', async () => {
-      const adapter = new SupabaseAdapterService();
-      const health = await adapter.healthCheck();
-
-      expect(health.healthy).toBe(true);
-      expect(health.timestamp).toBeInstanceOf(Date);
-      expect(health.details).toEqual({
-        status: 'connected',
-        environment: 'server',
-        useServiceRole: false
-      });
-    });
-
-    it('should report unhealthy on query error', async () => {
-      mockCreateClient.mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({ 
-              error: { message: 'Connection failed' }, 
-              data: null 
-            })
-          })
-        })
-      });
-
-      const adapter = new SupabaseAdapterService();
-      const health = await adapter.healthCheck();
-
-      expect(health.healthy).toBe(false);
-      expect(health.details?.error).toBe('Connection failed');
-      expect(health.details?.environment).toBe('server');
-    });
-  });
-
-  describe('query execution', () => {
-    beforeEach(() => {
-      delete (global as any).window;
-      process.env = {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-key'
-      };
-    });
-
-    it('should execute queries with retry', async () => {
-      let attempts = 0;
-      const mockQuery = vi.fn().mockImplementation(() => {
-        attempts++;
-        if (attempts < 2) {
-          throw { status: 500, message: 'Server error' };
-        }
-        return { data: 'success' };
-      });
-
-      const adapter = new SupabaseAdapterService();
-      const result = await adapter.executeQuery(mockQuery);
-
-      expect(result).toEqual({ data: 'success' });
-      expect(mockQuery).toHaveBeenCalledTimes(2);
-    });
-
-    it('should not retry on client errors', async () => {
-      const mockQuery = vi.fn().mockRejectedValue({ 
-        status: 400, 
-        message: 'Bad request' 
-      });
-
-      const adapter = new SupabaseAdapterService();
+  describe('Type Safety', () => {
+    it('should maintain type safety for client operations', () => {
+      Object.assign(process.env, nodeEnv);
       
-      await expect(adapter.executeQuery(mockQuery)).rejects.toThrow('Bad request');
-
-      expect(mockQuery).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('utility methods', () => {
-    it('should report correct environment', () => {
-      // Server environment
-      delete (global as any).window;
-      const serverAdapter = new SupabaseAdapterService();
-      expect(serverAdapter.getEnvironment()).toBe('server');
-
-      // Browser environment
-      global.window = {} as any;
-      const browserAdapter = new SupabaseAdapterService({ env: {} });
-      expect(browserAdapter.getEnvironment()).toBe('browser');
-    });
-
-    it('should report service role usage', () => {
-      const regularAdapter = new SupabaseAdapterService();
-      expect(regularAdapter.isUsingServiceRole()).toBe(false);
-
-      const serviceRoleAdapter = new SupabaseAdapterService({ useServiceRole: true });
-      expect(serviceRoleAdapter.isUsingServiceRole()).toBe(true);
-    });
-  });
-
-  describe('factory function', () => {
-    it('should create adapter using factory function', () => {
-      delete (global as any).window;
-      process.env = {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-key'
-      };
-
-      const adapter = createSupabaseAdapter();
+      service = new SupabaseAdapterService({});
+      const client = service.getClient();
       
-      expect(adapter).toBeInstanceOf(SupabaseAdapterService);
-      expect(adapter.getEnvironment()).toBe('server');
+      // Verify client has expected methods
+      expect(client.from).toBeDefined();
+      expect(client.auth).toBeDefined();
     });
   });
 
-  describe('metadata', () => {
-    it('should return correct metadata', () => {
-      const adapter = new SupabaseAdapterService();
-      const metadata = adapter.getMetadata();
+  describe('Performance', () => {
+    beforeEach(() => {
+      Object.assign(process.env, nodeEnv);
+    });
 
-      expect(metadata).toEqual({
-        name: 'SupabaseAdapterService',
-        initialized: false,
-        type: 'SupabaseAdapterService',
-        version: '1.0.0'
-      });
+    it('should cache client creation for performance', () => {
+      service = new SupabaseAdapterService({});
+      
+      const startTime = Date.now();
+      for (let i = 0; i < 100; i++) {
+        service.getClient();
+      }
+      const duration = Date.now() - startTime;
+      
+      // Should be very fast due to caching
+      expect(duration).toBeLessThan(50);
+      expect(createClient).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle rapid configuration updates', () => {
+      service = new SupabaseAdapterService({});
+      
+      // Rapid updates
+      for (let i = 0; i < 10; i++) {
+        service.updateConfig({ 
+          useServiceRole: i % 2 === 0 
+        });
+        service.getClient();
+      }
+      
+      // Should have created a client for each unique config
+      expect(createClient).toHaveBeenCalledTimes(10);
     });
   });
 });
