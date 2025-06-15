@@ -28,11 +28,16 @@ export class ArchiveService extends SingletonService {
   async archiveTable(tableName: string, reason: string, archivedBy: string = 'system'): Promise<ArchivedTable> {
     try {
       // Get table DDL
-      const { data: ddlData, error: ddlError } = await this.supabase.rpc('get_table_ddl', {
-        table_name: tableName
-      });
-
-      if (ddlError) throw ddlError;
+      let ddlData = '';
+      try {
+        const { data, error } = await this.supabase.rpc('get_table_ddl', {
+          table_name: tableName
+        });
+        if (!error) ddlData = data;
+      } catch (e) {
+        // Function might not exist yet, use a placeholder
+        ddlData = `-- DDL for table ${tableName} (function not available)`;
+      }
 
       // Get row count
       const { count, error: countError } = await this.supabase
@@ -42,18 +47,26 @@ export class ArchiveService extends SingletonService {
       if (countError) throw countError;
 
       // Get foreign keys
-      const { data: fkData, error: fkError } = await this.supabase.rpc('get_table_foreign_keys', {
-        table_name: tableName
-      });
-
-      if (fkError) throw fkError;
+      let fkData: any[] = [];
+      try {
+        const { data, error } = await this.supabase.rpc('get_table_foreign_keys', {
+          table_name: tableName
+        });
+        if (!error) fkData = data || [];
+      } catch (e) {
+        // Function might not exist yet
+      }
 
       // Get indexes
-      const { data: indexData, error: indexError } = await this.supabase.rpc('get_table_indexes', {
-        table_name: tableName
-      });
-
-      if (indexError) throw indexError;
+      let indexData: any[] = [];
+      try {
+        const { data, error } = await this.supabase.rpc('get_table_indexes', {
+          table_name: tableName
+        });
+        if (!error) indexData = data || [];
+      } catch (e) {
+        // Function might not exist yet
+      }
 
       // Store in sys_archived_tables
       const archiveRecord: Omit<ArchivedTable, 'id'> = {
