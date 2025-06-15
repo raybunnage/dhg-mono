@@ -1,0 +1,9 @@
+{
+  "name": "@shared/services/deployment-service-refactored",
+  "version": "1.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  }
+}
