@@ -155,6 +155,15 @@ command_diagnose-vite-env() {
         ts-node "$SCRIPT_DIR/diagnose-vite-env.ts" "$@"
 }
 
+# Worktree Management
+command_sync-worktrees() {
+    log_info "Syncing all worktrees with integration/bug-fixes-tweaks"
+    log_info "This will update improve-cli-pipelines, improve-google, and improve-suite"
+    
+    track_and_execute "sync-worktrees" "Sync all worktrees with integration branch" \
+        "$SCRIPT_DIR/sync-all-worktrees.sh"
+}
+
 # System Health Check
 command_health-check() {
     log_info "Running utilities pipeline health check"
@@ -256,6 +265,9 @@ VITE UTILITIES:
     fix-vite-env <app>          Fix Vite environment issues for an app
     diagnose-vite-env           Diagnose Vite environment configuration
 
+WORKTREE MANAGEMENT:
+  * sync-worktrees              Sync all worktrees with latest integration/bug-fixes-tweaks
+
 SYSTEM:
     check-ports                 Check port registry configuration
     health-check                Check utilities pipeline health
@@ -280,6 +292,9 @@ EXAMPLES:
   
   # Scan app features
   $SCRIPT_NAME scan-app-features
+  
+  # Sync all worktrees with integration branch
+  $SCRIPT_NAME sync-worktrees
 
 DEBUG MODE:
   DEBUG=1 $SCRIPT_NAME <command>  # Enable debug output

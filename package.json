@@ -60,11 +60,13 @@
     "all": "./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh",
     "maintenance": "./scripts/cli-pipeline/maintenance-cli.sh",
     "service-deps": "./scripts/cli-pipeline/service_dependencies/service-dependencies-cli.sh",
+    "utilities": "./scripts/cli-pipeline/utilities/utilities-cli.sh",
     "// Utility Commands": "Helpful utilities",
     "tree": "node scripts/show-tree.js",
     "types": "supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts",
     "// Git & Promotion": "Use git-workflow-cli.sh for comprehensive git operations",
-    "git": "./scripts/cli-pipeline/git_workflow/git-workflow-cli.sh"
+    "git": "./scripts/cli-pipeline/git_workflow/git-workflow-cli.sh",
+    "sync-worktrees": "./scripts/cli-pipeline/utilities/sync-all-worktrees.sh"
   },
   "bin": {
     "dhg-tree": "./scripts/show-tree.js"
