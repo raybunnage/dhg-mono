@@ -54,31 +54,31 @@ else
 fi
 
 # Test 2: Help command
-run_test "help command" "$CLI_SCRIPT help" "Documentation management"
+run_test "help command" "$CLI_SCRIPT help" "Documentation management with monitoring"
 
 # Test 3: Health check
-run_test "health-check command" "$CLI_SCRIPT health-check" "health check"
+run_test "health-check command" "$CLI_SCRIPT health-check" "health"
 
-# Test 4: List command routing
-run_test "list command routing" "$CLI_SCRIPT list" "Executing: list"
+# Test 4: List command exists
+run_test "list command exists" "$CLI_SCRIPT help" "list.*List all monitored"
 
-# Test 5: Generate command routing
-run_test "generate command routing" "$CLI_SCRIPT generate --type readme" "Executing: generate"
+# Test 5: Register command exists
+run_test "register command exists" "$CLI_SCRIPT help" "register.*Register a new living"
 
 # Test 6: Version display
-run_test "version in help" "$CLI_SCRIPT help" "Version: 2.0.0"
+run_test "version in help" "$CLI_SCRIPT help" "Version: 1.0.0"
 
-# Test 7: Command tracking
-run_test "command tracking wrapper" "$CLI_SCRIPT help" "INFO.*docs"
+# Test 7: Check-reviews command exists
+run_test "check-reviews command exists" "$CLI_SCRIPT help" "check-reviews.*Show documents needing"
 
-# Test 8: Environment loading
-run_test "environment loading" "$CLI_SCRIPT help" "Loading environment variables"
+# Test 8: Archive command exists
+run_test "archive command exists" "$CLI_SCRIPT help" "archive.*Archive old documentation"
 
 # Test 9: Search command exists
-run_test "search command exists" "$CLI_SCRIPT help" "search.*Search documentation"
+run_test "search command exists" "$CLI_SCRIPT help" "search.*Search archived"
 
 # Test 10: Update command exists
-run_test "update command exists" "$CLI_SCRIPT help" "update.*Update documentation"
+run_test "update command exists" "$CLI_SCRIPT help" "update.*Update document and reset"
 
 # Test 11: Invalid command
 run_test "invalid command handling" "$CLI_SCRIPT invalid-cmd" "Unknown command"

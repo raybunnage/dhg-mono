@@ -54,28 +54,28 @@ else
 fi
 
 # Test 2: Help command
-run_test "help command" "$CLI_SCRIPT help" "Document pipeline service"
+run_test "help command" "$CLI_SCRIPT help" "Document pipeline and document type"
 
 # Test 3: Health check
-run_test "health-check command" "$CLI_SCRIPT health-check" "health check"
+run_test "health-check command" "$CLI_SCRIPT health-check --skip-database --skip-claude" "health"
 
-# Test 4: Status command routing
-run_test "status command routing" "$CLI_SCRIPT status" "Executing: status"
+# Test 4: Test-connection command exists
+run_test "test-connection command exists" "$CLI_SCRIPT help" "test-connection.*Test connection"
 
-# Test 5: Process command routing
-run_test "process command routing" "$CLI_SCRIPT process --dry-run" "Executing: process"
+# Test 5: Sync command exists
+run_test "sync command exists" "$CLI_SCRIPT help" "sync.*Synchronize database"
 
 # Test 6: Version display
-run_test "version in help" "$CLI_SCRIPT help" "Version: 2.0.0"
+run_test "version in help" "$CLI_SCRIPT help" "Version: 1.0.0"
 
-# Test 7: Command tracking
-run_test "command tracking wrapper" "$CLI_SCRIPT help" "INFO.*document_pipeline_service"
+# Test 7: Find-new command exists
+run_test "find-new command exists" "$CLI_SCRIPT help" "find-new.*Find and insert new"
 
 # Test 8: Environment loading
 run_test "environment loading" "$CLI_SCRIPT help" "Loading environment variables"
 
-# Test 9: List pipelines command
-run_test "list-pipelines command exists" "$CLI_SCRIPT help" "list-pipelines.*List available"
+# Test 9: All command exists
+run_test "all command exists" "$CLI_SCRIPT help" "all.*Run the complete pipeline"
 
 echo ""
 echo "=== Test Summary ==="

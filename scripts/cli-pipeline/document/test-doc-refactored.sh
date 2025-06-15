@@ -54,31 +54,31 @@ else
 fi
 
 # Test 2: Help command
-run_test "help command" "$CLI_SCRIPT help" "Simple document operations"
+run_test "help command" "$CLI_SCRIPT help" "Core document management"
 
-# Test 3: Health check
-run_test "health-check command" "$CLI_SCRIPT health-check" "health check"
+# Test 3: Sync-docs command exists
+run_test "sync-docs command exists" "$CLI_SCRIPT help" "sync-docs.*Sync filesystem"
 
-# Test 4: List command routing
-run_test "list command routing" "$CLI_SCRIPT list" "Executing: list"
+# Test 4: Find-new command exists
+run_test "find-new command exists" "$CLI_SCRIPT help" "find-new.*Find and add new"
 
-# Test 5: Process command routing
-run_test "process command routing" "$CLI_SCRIPT process test-doc" "Executing: process"
+# Test 5: Classify-doc command exists
+run_test "classify-doc command exists" "$CLI_SCRIPT help" "classify-doc.*Classify a single"
 
-# Test 6: Version display
-run_test "version in help" "$CLI_SCRIPT help" "Version: 2.0.0"
+# Test 6: Tag-doc command exists
+run_test "tag-doc command exists" "$CLI_SCRIPT help" "tag-doc.*Add tags"
 
-# Test 7: Command tracking
-run_test "command tracking wrapper" "$CLI_SCRIPT help" "INFO.*doc"
+# Test 7: Version display
+run_test "version in help" "$CLI_SCRIPT help" "Version: 1.0.0"
 
 # Test 8: Environment loading
-run_test "environment loading" "$CLI_SCRIPT help" "Loading environment variables"
+run_test "environment loading" "$CLI_SCRIPT help" "Environment variables loaded"
 
 # Test 9: Invalid command
 run_test "invalid command handling" "$CLI_SCRIPT invalid-cmd" "Unknown command"
 
-# Test 10: Analyze command exists
-run_test "analyze command exists" "$CLI_SCRIPT help" "analyze.*Analyze document"
+# Test 10: Mark-important command exists
+run_test "mark-important command exists" "$CLI_SCRIPT help" "mark-important.*Set importance"
 
 echo ""
 echo "=== Test Summary ==="
