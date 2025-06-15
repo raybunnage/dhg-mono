@@ -103,7 +103,7 @@ describe('UserProfileService', () => {
 
       const result = await service.getProfile(mockUserId);
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.profile).toEqual(mockProfile);
       expect(result.error).toBeUndefined();
 
@@ -126,7 +126,7 @@ describe('UserProfileService', () => {
 
       const result = await service.getProfile(mockUserId);
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.profile).toBeUndefined();
       expect(result.error).toBeUndefined();
 
@@ -149,8 +149,8 @@ describe('UserProfileService', () => {
 
       const result = await service.getProfile(mockUserId);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Database error');
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toBe('Database error');
 
       const metrics = service.getMetrics();
       expect(metrics.profileLookupsFailed).toBe(1);
@@ -189,7 +189,7 @@ describe('UserProfileService', () => {
 
       const result = await service.saveProfile(mockUserId, mockProfileData);
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.profile).toEqual(mockSavedProfile);
 
       const metrics = service.getMetrics();
@@ -211,8 +211,8 @@ describe('UserProfileService', () => {
 
       const result = await service.saveProfile(mockUserId, mockProfileData);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Constraint violation');
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toBe('Constraint violation');
 
       const metrics = service.getMetrics();
       expect(metrics.profileSavesFailed).toBe(1);
@@ -293,7 +293,7 @@ describe('UserProfileService', () => {
 
       const result = await service.updateProfile(mockUserId, updates);
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.profile).toEqual(mockUpdatedProfile);
 
       const metrics = service.getMetrics();
@@ -316,8 +316,8 @@ describe('UserProfileService', () => {
 
       const result = await service.updateProfile(mockUserId, { profession: 'Manager' });
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Update failed');
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toBe('Update failed');
 
       const metrics = service.getMetrics();
       expect(metrics.profileSavesFailed).toBe(1);
@@ -537,8 +537,8 @@ describe('UserProfileService', () => {
 
       const result = await service.getProfile(mockUserId);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Unexpected database error');
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toBe('Unexpected database error');
 
       const metrics = service.getMetrics();
       expect(metrics.errors).toBe(1);

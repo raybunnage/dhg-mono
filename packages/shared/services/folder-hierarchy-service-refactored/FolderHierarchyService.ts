@@ -127,7 +127,13 @@ export class FolderHierarchyService extends BusinessService {
   /**
    * Health check implementation
    */
-  public async healthCheck(): Promise<{ healthy: boolean; message?: string }> {
+  public async healthCheck(): Promise<{
+    healthy: boolean;
+    serviceName: string;
+    timestamp: Date;
+    details?: Record<string, any>;
+    error?: string;
+  }> {
     try {
       const { count, error } = await this.supabase
         .from('google_sources')
@@ -137,12 +143,22 @@ export class FolderHierarchyService extends BusinessService {
       
       return {
         healthy: !error,
-        message: error?.message || `Connected to google_sources table. ${count || 0} folders available.`
+        serviceName: this.serviceName,
+        timestamp: new Date(),
+        details: {
+          folderCount: count || 0,
+          cacheSize: this.hierarchyCache.size,
+          cacheEnabled: this.config.cacheEnabled,
+          maxTraversalDepth: this.config.maxTraversalDepth
+        },
+        error: error?.message
       };
     } catch (error) {
       return {
         healthy: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        serviceName: this.serviceName,
+        timestamp: new Date(),
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }

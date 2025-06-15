@@ -125,7 +125,7 @@ describe('AudioTranscriptionService', () => {
         model: 'base'
       });
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.text).toBe('Hello world');
       expect(result.processingMetadata?.model).toBe('base');
       expect(result.processingMetadata?.audioFile).toBe('/test/audio.mp3');
@@ -138,7 +138,7 @@ describe('AudioTranscriptionService', () => {
         model: 'base'
       });
 
-      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
       expect(result.error).toContain('File not found');
     });
 
@@ -148,7 +148,7 @@ describe('AudioTranscriptionService', () => {
         dryRun: true
       });
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.text).toContain('DRY-RUN');
       expect(spawn).not.toHaveBeenCalled();
     });
@@ -197,7 +197,7 @@ describe('AudioTranscriptionService', () => {
         model: 'large'
       });
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.text).toBe('Hello world');
       expect(result.summary).toBe('Brief greeting');
       expect(result.processingMetadata?.wordCount).toBe(2);
@@ -221,7 +221,7 @@ describe('AudioTranscriptionService', () => {
         model: 'base'
       });
 
-      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
       expect(result.error).toContain('Process exited with code 1');
       expect(result.error).toContain('Python error message');
     });
@@ -248,7 +248,7 @@ describe('AudioTranscriptionService', () => {
         outputDir: '/output'
       });
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
       expect(result.text).toBe('Transcript from file');
     });
   });

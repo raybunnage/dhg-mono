@@ -70,6 +70,55 @@ command_help() {
     show_help
 }
 
+# Health check for this CLI itself
+command_health-check() {
+    echo "🏥 Running health check for all-pipelines..."
+    
+    # Check basic requirements
+    local health_status=0
+    
+    # Check if ts-node is available
+    if command -v ts-node >/dev/null 2>&1; then
+        echo "✅ ts-node is available"
+    else
+        echo "❌ ts-node is not available"
+        health_status=1
+    fi
+    
+    # Check if Supabase environment is configured
+    if [[ -n "$SUPABASE_URL" ]] && [[ -n "$SUPABASE_SERVICE_ROLE_KEY" ]]; then
+        echo "✅ Supabase environment configured"
+    else
+        echo "⚠️  Supabase environment not configured"
+        health_status=1
+    fi
+    
+    # Check if node_modules exist
+    if [[ -d "$SCRIPT_DIR/../../../node_modules" ]]; then
+        echo "✅ Node modules installed"
+    else
+        echo "❌ Node modules not found"
+        health_status=1
+    fi
+    
+    # Check TypeScript files
+    if ls "$SCRIPT_DIR"/*.ts >/dev/null 2>&1; then
+        echo "✅ TypeScript files found"
+    else
+        echo "⚠️  No TypeScript files found"
+    fi
+    
+    if [[ $health_status -eq 0 ]]; then
+        echo ""
+        echo "✅ All pipelines CLI is healthy"
+    else
+        echo ""
+        echo "⚠️  Some health checks failed"
+    fi
+    
+    return $health_status
+}
+
 # MONITORING COMMANDS
 command_master-health-check() {
     log_info "Running health checks for all pipelines..."
@@ -198,6 +247,7 @@ show_help() {
     echo ""
     echo "MONITORING:"
     echo "  * master-health-check       Run health checks for all pipelines and report status (25 uses)"
+    echo "    health-check              Run health check for this CLI itself"
     echo ""
     echo "REPORTING:"
     echo "  * usage-report              Generate a markdown report of CLI command usage (6 uses)"
