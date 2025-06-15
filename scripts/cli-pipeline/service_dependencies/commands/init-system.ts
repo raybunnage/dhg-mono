@@ -80,7 +80,7 @@ class ServiceDependencyInitializer {
     const requiredTables = [
       'registry_services',
       'registry_apps', 
-      'registry_cli_pipelines',
+      'sys_cli_pipelines',
       'registry_cli_commands',
       'service_app_dependencies',
       'service_pipeline_dependencies',

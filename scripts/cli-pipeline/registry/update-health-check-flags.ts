@@ -23,7 +23,7 @@ async function updateHealthCheckFlags() {
   // Update has_health_check flag for all pipelines in master check
   for (const pipelineName of pipelinesInMasterCheck) {
     const { error } = await supabase
-      .from('registry_cli_pipelines')
+      .from('sys_cli_pipelines')
       .update({ has_health_check: true })
       .eq('name', pipelineName);
 
@@ -38,7 +38,7 @@ async function updateHealthCheckFlags() {
   console.log('\n🔍 Checking for additional pipelines with health-check commands...\n');
   
   const { data: allPipelines } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('name, script_path, has_health_check')
     .order('name');
 
@@ -49,7 +49,7 @@ async function updateHealthCheckFlags() {
         if (content.includes('health-check)') || content.includes('health_check)')) {
           if (!pipeline.has_health_check) {
             const { error } = await supabase
-              .from('registry_cli_pipelines')
+              .from('sys_cli_pipelines')
               .update({ has_health_check: true })
               .eq('name', pipeline.name);
 
@@ -66,7 +66,7 @@ async function updateHealthCheckFlags() {
 
   // Summary
   const { data: summary } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('has_health_check');
     
   const withHealthCheck = summary?.filter(p => p.has_health_check).length || 0;

@@ -24,14 +24,14 @@ export const getSupabaseClient = () => {
 // Type aliases for our tables
 export type RegistryService = Database['public']['Tables']['registry_services']['Row'];
 export type RegistryApp = Database['public']['Tables']['registry_apps']['Row'];
-export type RegistryPipeline = Database['public']['Tables']['registry_cli_pipelines']['Row'];
+export type RegistryPipeline = Database['public']['Tables']['sys_cli_pipelines']['Row'];
 export type ServiceDependency = Database['public']['Tables']['service_dependencies']['Row'];
 export type AnalysisRun = Database['public']['Tables']['service_dependency_analysis_runs']['Row'];
 
 // Insert types
 export type RegistryServiceInsert = Database['public']['Tables']['registry_services']['Insert'];
 export type RegistryAppInsert = Database['public']['Tables']['registry_apps']['Insert'];
-export type RegistryPipelineInsert = Database['public']['Tables']['registry_cli_pipelines']['Insert'];
+export type RegistryPipelineInsert = Database['public']['Tables']['sys_cli_pipelines']['Insert'];
 export type ServiceDependencyInsert = Database['public']['Tables']['service_dependencies']['Insert'];
 export type AnalysisRunInsert = Database['public']['Tables']['service_dependency_analysis_runs']['Insert'];
 
@@ -63,7 +63,7 @@ export async function upsertApp(app: RegistryAppInsert) {
 export async function upsertPipeline(pipeline: RegistryPipelineInsert) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .upsert(pipeline, { onConflict: 'pipeline_name' })
     .select()
     .single();
@@ -254,7 +254,7 @@ export async function getAppByName(appName: string): Promise<RegistryApp | null>
 export async function getPipelineByName(pipelineName: string): Promise<RegistryPipeline | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('*')
     .eq('pipeline_name', pipelineName)
     .single();

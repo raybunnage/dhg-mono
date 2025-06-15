@@ -5772,7 +5772,7 @@ export type Database = {
         }
         Relationships: []
       }
-      registry_cli_pipelines: {
+      sys_cli_pipelines: {
         Row: {
           command_count: number | null
           created_at: string | null

@@ -106,7 +106,7 @@ Following the simplification recommendations, we'll use a consolidated approach:
    - Includes app type, framework, and status
    - Maps to file system locations
 
-3. **registry_cli_pipelines**
+3. **sys_cli_pipelines**
    - Registry of all CLI pipelines
    - Tracks domain, main script, and status
    - Essential for understanding CLI coverage
@@ -428,7 +428,7 @@ Track which services were worked on in each session
 ### Phase 1 Success Criteria
 - [ ] All services cataloged in registry_services
 - [ ] All apps cataloged in registry_apps  
-- [ ] All CLI pipelines cataloged in registry_cli_pipelines
+- [ ] All CLI pipelines cataloged in sys_cli_pipelines
 - [ ] Initial scan completes in < 5 minutes
 
 ### Phase 2 Success Criteria

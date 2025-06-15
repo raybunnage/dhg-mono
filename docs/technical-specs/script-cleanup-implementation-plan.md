@@ -15,7 +15,7 @@ This document provides a comprehensive implementation plan for safely cleaning u
 ### Tracking Systems Available
 1. **sys_archived_cli_pipeline_files**: Table for tracking archived scripts
 2. **command_tracking**: Usage data for CLI commands
-3. **registry_cli_pipelines**: Pipeline registration and health check status
+3. **sys_cli_pipelines**: Pipeline registration and health check status
 4. **command_definitions**: Individual command definitions
 5. **scripts_registry**: Individual script file tracking
 

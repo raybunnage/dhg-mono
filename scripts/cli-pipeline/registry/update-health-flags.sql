@@ -1,10 +1,10 @@
 -- Update health check flags based on master health check script
 
 -- First, set all to false
-UPDATE registry_cli_pipelines SET has_health_check = false;
+UPDATE sys_cli_pipelines SET has_health_check = false;
 
 -- Then update the ones that are in the master health check
-UPDATE registry_cli_pipelines SET has_health_check = true WHERE name IN (
+UPDATE sys_cli_pipelines SET has_health_check = true WHERE name IN (
   'google_sync',
   'drive_filter',
   'document',
@@ -35,5 +35,5 @@ UPDATE registry_cli_pipelines SET has_health_check = true WHERE name IN (
 
 -- Show the results
 SELECT name, display_name, has_health_check, status 
-FROM registry_cli_pipelines 
+FROM sys_cli_pipelines 
 ORDER BY has_health_check DESC, name;

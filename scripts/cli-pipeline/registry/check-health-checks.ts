@@ -10,7 +10,7 @@ async function checkHealthChecks() {
 
   // Get all registered pipelines
   const { data: pipelines, error } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('*')
     .eq('status', 'active')
     .order('name');
@@ -93,7 +93,7 @@ async function checkHealthChecks() {
   console.log('\n📝 SQL TO UPDATE HEALTH CHECK FLAGS:');
   for (const name of healthCheckStatus.hasImplementation) {
     if (!healthCheckStatus.hasHealthCheck.includes(name)) {
-      console.log(`UPDATE registry_cli_pipelines SET has_health_check = true WHERE name = '${name}';`);
+      console.log(`UPDATE sys_cli_pipelines SET has_health_check = true WHERE name = '${name}';`);
     }
   }
 }

@@ -33,7 +33,7 @@ async function checkCoverage() {
     .select('*', { count: 'exact', head: true });
     
   const { count: totalPipelines } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('*', { count: 'exact', head: true });
 
   const { data: depTypes } = await supabase
@@ -57,7 +57,7 @@ async function checkCoverage() {
 
   // 3. List unanalyzed pipelines
   const { data: allPipelines } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('name, display_name, base_path, status');
     
   const analyzedPipelineNames = Array.from(analyzedByType?.pipeline || new Set());
@@ -78,7 +78,7 @@ async function checkCoverage() {
   console.log('---------------------------------------');
   console.log('1. registry_service_usage_summary_view - Shows which apps/pipelines use each service');
   console.log('2. service_dependencies - Tracks all analyzed import statements');
-  console.log('3. registry_apps & registry_cli_pipelines - Complete list of sources');
+  console.log('3. registry_apps & sys_cli_pipelines - Complete list of sources');
   console.log('4. command_tracking - Historical usage of commands');
   
   console.log('\n📊 COVERAGE ASSESSMENT:');
