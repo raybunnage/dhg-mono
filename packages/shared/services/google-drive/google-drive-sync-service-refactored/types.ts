@@ -31,6 +31,8 @@ export interface SyncStats {
 
 // Sync result
 export interface SyncResult {
+  success?: boolean;
+  error?: string;
   stats: SyncStats;
   files: any[];
   errors: any[];
@@ -67,12 +69,17 @@ export interface CleanupOptions {
   forceDelete?: boolean;
   markAsDeleted?: boolean;
   permanentDelete?: boolean;
+  permanentlyDelete?: boolean;
+  deletedBefore?: Date;
 }
 
 // Cleanup result
 export interface CleanupResult {
+  success?: boolean;
+  dryRun?: boolean;
   foldersCleaned: number;
   filesDeleted: number;
+  filesMarkedDeleted: number;
   filesMarkedAsDeleted: number;
   filesSkipped: number;
   errors: any[];
