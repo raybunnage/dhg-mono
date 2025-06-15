@@ -1,0 +1,8 @@
+[
+  {
+    "file": "test-migration.sql",
+    "appliedAt": "2025-06-15T23:32:07.145Z",
+    "executionTime": 195,
+    "success": true
+  }
+]

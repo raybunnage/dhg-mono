@@ -305,12 +305,17 @@ command_migration() {
             log_info "Executing migration with confirmation between sections..."
             run_migration_command "run-staged" "$@"
             ;;
+        "apply")
+            log_info "Applying migration using simple execute_sql approach..."
+            cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/commands/migration/apply.ts" "$@"
+            ;;
         "help"|"--help"|"-h"|"")
             echo "Migration Management Commands:"
             echo "  validate     Validate SQL migration file without executing"
             echo "  dry-run      Show what would be executed without running"
             echo "  test         Test migration sections against database"
             echo "  run-staged   Execute migration with confirmation between sections"
+            echo "  apply        Apply migration using simple execute_sql (reliable)"
             ;;
         *)
             log_error "Unknown migration command: $operation"
