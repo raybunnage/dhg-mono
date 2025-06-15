@@ -4,6 +4,7 @@
  * Comprehensive test suite for GitOperationsService functionality
  */
 
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GitOperationsService } from './GitOperationsService';
 import { 
   GitWorktree, 
@@ -12,23 +13,23 @@ import {
   GitOperationResult,
   GitOperationsServiceConfig 
 } from './types';
-import { Logger } from '../logger-service';
+import { Logger } from '../base-classes/BaseService';
 
 // Mock logger for testing
 const mockLogger: Logger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn()
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn()
 };
 
 // Mock child_process
-jest.mock('child_process', () => ({
-  exec: jest.fn()
+vi.mock('child_process', () => ({
+  exec: vi.fn()
 }));
 
 import { exec } from 'child_process';
-const mockExec = exec as jest.MockedFunction<typeof exec>;
+const mockExec = exec as any;
 
 describe('GitOperationsService', () => {
   let service: GitOperationsService;
@@ -47,7 +48,7 @@ describe('GitOperationsService', () => {
     (GitOperationsService as any).instance = null;
     service = GitOperationsService.getInstance(config, mockLogger);
     
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {

@@ -213,4 +213,3 @@ This ensures data consistency when deleting prompts with related data.
 ## Node.js Dependencies
 
 This service uses Node.js-specific modules (fs, path) for file operations. When using in browser environments, ensure these operations are only called in appropriate contexts or consider using environment-specific implementations.
->>>>>>> d52df674 (checkpoint: finalized - PromptManagementService migration complete with documentation and archival)

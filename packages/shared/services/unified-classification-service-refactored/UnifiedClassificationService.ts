@@ -119,20 +119,23 @@ export class UnifiedClassificationService extends BusinessService {
   }
 
   protected validateDependencies(): void {
-    if (!this.config.googleDriveService) {
+    if (!this.dependencies.googleDriveService) {
       throw new Error('UnifiedClassificationServiceConfig.googleDriveService is required');
     }
-    if (!this.config.promptService) {
+    if (!this.dependencies.promptService) {
       throw new Error('UnifiedClassificationServiceConfig.promptService is required');
     }
-    if (!this.config.claudeService) {
+    if (!this.dependencies.claudeService) {
       throw new Error('UnifiedClassificationServiceConfig.claudeService is required');
     }
-    if (!this.config.pdfProcessorService) {
+    if (!this.dependencies.pdfProcessorService) {
       throw new Error('UnifiedClassificationServiceConfig.pdfProcessorService is required');
     }
-    if (!this.config.filterService) {
+    if (!this.dependencies.filterService) {
       throw new Error('UnifiedClassificationServiceConfig.filterService is required');
+    }
+    if (!this.dependencies.supabase) {
+      throw new Error('SupabaseClient is required');
     }
   }
 

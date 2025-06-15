@@ -2,87 +2,91 @@
 
 # Continuous Improvement CLI - Phase 1
 # Keep it simple, measure what matters
+# Refactored to use SimpleCLIPipeline base class
 
-set -e
-
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-cd "$PROJECT_ROOT"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-show_help() {
-    echo "Continuous Improvement CLI - Phase 1"
-    echo ""
-    echo "Philosophy: Start simple, measure first, learn fast"
-    echo ""
-    echo "Usage: ./continuous-cli.sh <command>"
-    echo ""
-    echo "Commands:"
-    echo "  test            Run all tests (services, apps, CLIs)"
-    echo "  discover        Find all services, pipelines, tables"  
-    echo "  check           Check against basic standards"
-    echo "  report          Generate daily summary report"
-    echo "  trends          Show week-over-week changes"
-    echo "  daily           Run full daily check (test + discover + check)"
-    echo "  help            Show this help"
-    echo ""
-    echo "Examples:"
-    echo "  ./continuous-cli.sh test"
-    echo "  ./continuous-cli.sh daily"
-    echo ""
+# Source the base class
+source "$SCRIPT_DIR/../base-classes/SimpleCLIPipeline.sh" || {
+    echo "Error: Failed to source SimpleCLIPipeline.sh"
+    exit 1
 }
 
-run_tests() {
-    echo -e "${BLUE}🧪 Running Tests${NC}"
-    echo "Testing what exists, measuring what matters"
-    echo ""
-    ts-node "$SCRIPT_DIR/simple-test-runner.ts"
+# Initialize with pipeline name
+init_cli_pipeline "continuous" "Continuous Improvement CLI - Phase 1"
+
+# Define commands
+
+command_help() {
+    show_help
 }
 
-discover_inventory() {
-    echo -e "${BLUE}🔍 Discovering Inventory${NC}"
-    echo "Finding all services, pipelines, and tables"
+command_test() {
+    log_info "🧪 Running Tests"
+    log_info "Testing what exists, measuring what matters"
+    echo ""
+    
+    if [[ -f "$SCRIPT_DIR/simple-test-runner.ts" ]]; then
+        cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/simple-test-runner.ts"
+    else
+        log_warn "simple-test-runner.ts not found"
+        log_info "Fallback: Running basic test discovery"
+        local test_count=$(find "$PROJECT_ROOT/packages/shared/services" -name "*.test.ts" 2>/dev/null | wc -l)
+        log_info "Found $test_count test files in shared services"
+    fi
+}
+
+command_discover() {
+    log_info "🔍 Discovering Inventory"
+    log_info "Finding all services, pipelines, and tables"
     echo ""
     
     # Use existing discovery from shared-services
-    cd "$PROJECT_ROOT/scripts/cli-pipeline/shared-services"
-    ts-node discover-new-services.ts
+    local discover_script="$PROJECT_ROOT/scripts/cli-pipeline/shared-services/discover-new-services.ts"
+    if [[ -f "$discover_script" ]]; then
+        cd "$PROJECT_ROOT/scripts/cli-pipeline/shared-services" && npx ts-node discover-new-services.ts
+    else
+        log_warn "discover-new-services.ts not found"
+        # Fallback implementation
+        log_info "Fallback: Basic inventory count"
+        local service_count=$(find "$PROJECT_ROOT/packages/shared/services" -name "*.ts" | grep -v test | wc -l)
+        local pipeline_count=$(find "$PROJECT_ROOT/scripts/cli-pipeline" -name "*-cli.sh" | wc -l)
+        local app_count=$(find "$PROJECT_ROOT/apps" -name package.json | wc -l)
+        
+        log_success "Services: $service_count"
+        log_success "CLI Pipelines: $pipeline_count"
+        log_success "Apps: $app_count"
+    fi
 }
 
-check_standards() {
-    echo -e "${BLUE}📋 Checking Standards${NC}"
-    echo "Validating against .continuous/standards.yaml"
+command_check() {
+    log_info "📋 Checking Standards"
+    log_info "Validating against .continuous/standards.yaml"
     echo ""
-    echo "⚠️  Standards checking not yet implemented"
-    echo "Phase 1: Focus on test execution and discovery first"
+    log_warn "Standards checking not yet implemented"
+    log_info "Phase 1: Focus on test execution and discovery first"
 }
 
-generate_report() {
-    echo -e "${BLUE}📊 Daily Report${NC}"
+command_report() {
+    log_info "📊 Daily Report"
     echo "$(date '+%Y-%m-%d %H:%M')"
     echo ""
     
     # Check if we have test results
-    if [ -f ".continuous/test-results.json" ]; then
+    if [[ -f "$PROJECT_ROOT/.continuous/test-results.json" ]]; then
         echo "📈 Latest test results:"
-        # Show last result from JSON (simple jq alternative)
         echo "   (Results saved in .continuous/test-results.json)"
     else
-        echo "❌ No test results found. Run './continuous-cli.sh test' first"
+        log_warn "No test results found. Run './continuous-cli.sh test' first"
     fi
     
     echo ""
     echo "📦 Current inventory:"
-    echo "   Services: $(find packages/shared/services -name "*.ts" | grep -v test | wc -l)"
-    echo "   CLI Pipelines: $(find scripts/cli-pipeline -name "*-cli.sh" | wc -l)"
-    echo "   Apps: $(find apps -name package.json | wc -l)"
+    echo "   Services: $(find "$PROJECT_ROOT/packages/shared/services" -name "*.ts" | grep -v test | wc -l)"
+    echo "   CLI Pipelines: $(find "$PROJECT_ROOT/scripts/cli-pipeline" -name "*-cli.sh" | wc -l)"
+    echo "   Apps: $(find "$PROJECT_ROOT/apps" -name package.json | wc -l)"
     
     echo ""
     echo "💡 Next steps:"
@@ -91,34 +95,34 @@ generate_report() {
     echo "   - Review trends weekly"
 }
 
-show_trends() {
-    echo -e "${BLUE}📈 Trends${NC}"
+command_trends() {
+    log_info "📈 Trends"
     echo ""
     
-    if [ -f ".continuous/test-results.json" ]; then
+    if [[ -f "$PROJECT_ROOT/.continuous/test-results.json" ]]; then
         echo "Test results history (last 7 days):"
         echo "   Data: .continuous/test-results.json"
-        echo "   ⚠️  Trend analysis not yet implemented"
-        echo "   Phase 1: Focus on daily measurement first"
+        log_warn "Trend analysis not yet implemented"
+        log_info "Phase 1: Focus on daily measurement first"
     else
-        echo "❌ No historical data found"
+        log_error "No historical data found"
         echo "   Run tests for a few days to see trends"
     fi
 }
 
-run_daily() {
-    echo -e "${GREEN}🔄 Daily Continuous Improvement Check${NC}"
+command_daily() {
+    log_success "🔄 Daily Continuous Improvement Check"
     echo "Running: test + discover + basic checks"
     echo ""
     
-    run_tests
+    command_test
     echo ""
-    discover_inventory  
+    command_discover
     echo ""
-    generate_report
+    command_report
     
     echo ""
-    echo -e "${GREEN}✅ Daily check complete!${NC}"
+    log_success "✅ Daily check complete!"
     echo ""
     echo "📝 Summary:"
     echo "   - Tests executed and results saved"
@@ -128,33 +132,28 @@ run_daily() {
     echo "📅 Next: Review results and run again tomorrow"
 }
 
-# Main command handling
-case "${1:-help}" in
-    test)
-        run_tests
-        ;;
-    discover)
-        discover_inventory
-        ;;
-    check)
-        check_standards
-        ;;
-    report)
-        generate_report
-        ;;
-    trends)
-        show_trends
-        ;;
-    daily)
-        run_daily
-        ;;
-    help|--help|-h)
-        show_help
-        ;;
-    *)
-        echo -e "${RED}❌ Unknown command: $1${NC}"
-        echo ""
-        show_help
-        exit 1
-        ;;
-esac
+# Override help to add philosophy and examples
+show_help() {
+    echo "$PIPELINE_DESCRIPTION"
+    echo ""
+    echo "Philosophy: Start simple, measure first, learn fast"
+    echo ""
+    echo "USAGE:"
+    echo "  ./continuous-cli.sh <command>"
+    echo ""
+    echo "COMMANDS:"
+    echo "  test            Run all tests (services, apps, CLIs)"
+    echo "  discover        Find all services, pipelines, tables"  
+    echo "  check           Check against basic standards"
+    echo "  report          Generate daily summary report"
+    echo "  trends          Show week-over-week changes"
+    echo "  daily           Run full daily check (test + discover + check)"
+    echo "  help            Show this help"
+    echo ""
+    echo "EXAMPLES:"
+    echo "  ./continuous-cli.sh test"
+    echo "  ./continuous-cli.sh daily"
+}
+
+# Main execution
+route_command "$@"

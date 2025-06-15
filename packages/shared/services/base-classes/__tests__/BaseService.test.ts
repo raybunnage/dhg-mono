@@ -1,11 +1,12 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BaseService, HealthCheckResult, Logger } from '../BaseService';
 
 // Mock logger
 const mockLogger: Logger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  warn: jest.fn()
+  info: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn()
 };
 
 // Test implementation
@@ -45,7 +46,7 @@ class TestService extends BaseService {
 
 describe('BaseService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   
   describe('initialization', () => {
@@ -64,10 +65,10 @@ describe('BaseService', () => {
       const service = new TestService(mockLogger);
       
       await service.testEnsureInitialized();
-      const firstCallCount = (mockLogger.info as jest.Mock).mock.calls.length;
+      const firstCallCount = (mockLogger.info as any).mock.calls.length;
       
       await service.testEnsureInitialized();
-      const secondCallCount = (mockLogger.info as jest.Mock).mock.calls.length;
+      const secondCallCount = (mockLogger.info as any).mock.calls.length;
       
       expect(secondCallCount).toBe(firstCallCount); // No additional calls
     });

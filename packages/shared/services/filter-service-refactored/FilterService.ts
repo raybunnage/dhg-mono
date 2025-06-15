@@ -1,6 +1,6 @@
 import { BusinessService } from '../base-classes/BusinessService';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Logger } from '../logger-service/LoggerService';
+import { Logger } from '../base-classes/BaseService';
 
 /**
  * Represents a filter profile that can be applied to queries
@@ -68,7 +68,16 @@ export class FilterService extends BusinessService {
     private supabase: SupabaseClient<any>,
     logger?: Logger
   ) {
-    super('FilterService', logger);
+    super('FilterService', { supabase }, logger);
+  }
+
+  /**
+   * Validate that all required dependencies are provided
+   */
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabase) {
+      throw new Error('SupabaseClient is required');
+    }
   }
 
   /**
@@ -711,5 +720,4 @@ CREATE INDEX IF NOT EXISTS idx_filter_profile_drives_root_drive_id ON filter_use
   }
 }
 
-// Export the service class and types
-export { FilterService };
+// FilterService is already exported above as export class

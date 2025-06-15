@@ -2,47 +2,205 @@
 
 # Shared Services CLI - Manage shared services compliance, testing, and monitoring
 # This script provides comprehensive management for all shared services
-
-set -e
+# Refactored to use SimpleCLIPipeline base class
 
 # Get the directory of this script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
-
-# Load environment and tracking
-# Find .env.development from project root
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-if [ -f "$PROJECT_ROOT/.env.development" ]; then
-    set -a
-    source "$PROJECT_ROOT/.env.development"
-    set +a
-    echo "Loaded environment from $PROJECT_ROOT/.env.development"
-else
-    echo "ERROR: .env.development not found"
+
+# Source the base class
+source "$SCRIPT_DIR/../base-classes/SimpleCLIPipeline.sh" || {
+    echo "Error: Failed to source SimpleCLIPipeline.sh"
     exit 1
-fi
+}
 
-# Command tracking function
-track_command() {
-    local command_name="$1"
+# Initialize with pipeline name
+init_cli_pipeline "shared-services" "Shared Services CLI - Comprehensive service management"
+
+# Function to run TypeScript files with fallback
+run_ts_with_fallback() {
+    local script_name="$1"
     shift
-    echo "🔍 Tracking command: $command_name"
-    # For now, skip tracking until we implement it properly
-    # ../all_pipelines/all-pipelines-cli.sh track-command shared-services "$command_name" --app "shared-services" "$@"
+    
+    local script_path="$SCRIPT_DIR/$script_name"
+    if [[ -f "$script_path" ]]; then
+        cd "$SCRIPT_DIR" && npx ts-node "$script_name" "$@"
+    else
+        log_warn "$script_name not found"
+        log_info "Fallback: Basic ${script_name%.ts} operation"
+        case "$script_name" in
+            "discover-new-services.ts"|"smart-discovery.ts")
+                log_info "Would discover services in packages/shared/services"
+                find "$PROJECT_ROOT/packages/shared/services" -name "*.ts" -type f | head -10 | sed 's|.*/||g' | sed 's|\.ts$||g' | xargs -I {} echo "  - Found service: {}"
+                ;;
+            "analyze-and-rate-services.ts")
+                log_info "Would analyze service compliance and health"
+                ;;
+            "shared-services-cli.ts")
+                log_info "Would run advanced shared services operations"
+                ;;
+            "continuous-database-monitor.ts")
+                log_info "Would monitor database changes"
+                ;;
+            "database-standards-enforcer.ts")
+                log_info "Would check database standards"
+                ;;
+            "database-cleanup.ts")
+                log_info "Would detect orphaned database objects"
+                ;;
+            "archive-detection.ts")
+                log_info "Would detect old/unused code for archival"
+                ;;
+        esac
+    fi
 }
 
-# Function to run TypeScript files
-run_ts() {
-    ts-node "$@"
+# Define commands
+
+command_help() {
+    show_help
 }
 
-# Show help
+command_discover() {
+    log_info "🔍 Smart service discovery (analysis mode)..."
+    log_info "Note: Auto-registration disabled to prevent duplicates"
+    run_ts_with_fallback "smart-discovery.ts"
+}
+
+command_analyze() {
+    log_info "📊 Analyzing all services..."
+    run_ts_with_fallback "analyze-and-rate-services.ts"
+}
+
+command_monitor() {
+    log_info "👁️ Running continuous monitoring..."
+    echo ""
+    echo "Step 1: Discovering new services..."
+    run_ts_with_fallback "discover-new-services.ts"
+    echo ""
+    echo "Step 2: Analyzing all services..."
+    run_ts_with_fallback "analyze-and-rate-services.ts"
+    echo ""
+    log_success "✅ Monitoring complete!"
+}
+
+command_health-check() {
+    log_info "Running shared services health check..."
+    run_ts_with_fallback "shared-services-cli.ts" "health-check"
+}
+
+command_list() {
+    log_info "Listing services with filters..."
+    run_ts_with_fallback "shared-services-cli.ts" "list" "$@"
+}
+
+command_show() {
+    local service_name="$1"
+    
+    if [[ -z "$service_name" ]]; then
+        log_error "Please specify a service name"
+        echo "Usage: ./shared-services-cli.sh show <service-name>"
+        return 1
+    fi
+    
+    log_info "Showing details for service: $service_name"
+    run_ts_with_fallback "shared-services-cli.ts" "show" "$service_name"
+}
+
+command_report() {
+    log_info "Generating comprehensive report..."
+    run_ts_with_fallback "shared-services-cli.ts" "report" "$@"
+}
+
+command_refactor() {
+    local service_name="$1"
+    
+    if [[ -z "$service_name" ]]; then
+        log_error "Please specify a service name"
+        echo "Usage: ./shared-services-cli.sh refactor <service-name>"
+        return 1
+    fi
+    
+    log_info "🔧 Refactoring $service_name..."
+    log_warn "Refactoring functionality coming soon!"
+}
+
+command_test() {
+    local service_name="$1"
+    
+    if [[ -z "$service_name" ]]; then
+        log_error "Please specify a service name"
+        echo "Usage: ./shared-services-cli.sh test <service-name>"
+        return 1
+    fi
+    
+    log_info "🧪 Testing $service_name..."
+    log_warn "Testing functionality coming soon!"
+}
+
+command_validate() {
+    log_info "✅ Validating all services against checklist..."
+    run_ts_with_fallback "analyze-and-rate-services.ts"
+}
+
+command_continuous() {
+    log_info "🔄 Running continuous improvement scan..."
+    echo ""
+    # Run discovery
+    echo "Phase 1: Service Discovery..."
+    run_ts_with_fallback "discover-new-services.ts"
+    echo ""
+    # Run analysis
+    echo "Phase 2: Service Analysis..."
+    run_ts_with_fallback "analyze-and-rate-services.ts"
+    echo ""
+    # Run database monitoring
+    echo "Phase 3: Database Change Monitoring..."
+    run_ts_with_fallback "continuous-database-monitor.ts"
+    echo ""
+    # Run database standards check
+    echo "Phase 4: Database Standards Enforcement..."
+    run_ts_with_fallback "database-standards-enforcer.ts"
+    echo ""
+    # Run cleanup detection
+    echo "Phase 5: Orphaned Object Detection..."
+    run_ts_with_fallback "database-cleanup.ts"
+    echo ""
+    # Generate report
+    echo "Phase 6: Generating report..."
+    run_ts_with_fallback "shared-services-cli.ts" "report"
+    echo ""
+    log_success "✅ Continuous improvement scan complete!"
+}
+
+command_db-monitor() {
+    log_info "🗄️ Running database change monitoring..."
+    run_ts_with_fallback "continuous-database-monitor.ts"
+}
+
+command_db-standards() {
+    log_info "📋 Checking database standards compliance..."
+    run_ts_with_fallback "database-standards-enforcer.ts"
+}
+
+command_db-cleanup() {
+    log_info "🧹 Detecting orphaned database objects..."
+    run_ts_with_fallback "database-cleanup.ts"
+}
+
+command_archive-detect() {
+    log_info "🔍 Detecting old/unused code for archival..."
+    run_ts_with_fallback "archive-detection.ts"
+}
+
+# Override help to add comprehensive examples
 show_help() {
-    echo "Shared Services CLI - Comprehensive service management"
+    echo "$PIPELINE_DESCRIPTION"
     echo ""
-    echo "Usage: ./shared-services-cli.sh <command> [options]"
+    echo "USAGE:"
+    echo "  ./shared-services-cli.sh <command> [options]"
     echo ""
-    echo "Commands:"
+    echo "COMMANDS:"
     echo "  discover              Discover new services not yet registered"
     echo "  analyze               Analyze all services for compliance and health"
     echo "  monitor               Run continuous monitoring (discover + analyze)"
@@ -64,163 +222,14 @@ show_help() {
     echo "  archive-detect        Detect old/unused code for archival before continuous improvement"
     echo "  help                  Show this help message"
     echo ""
-    echo "Examples:"
+    echo "EXAMPLES:"
     echo "  ./shared-services-cli.sh discover"
     echo "  ./shared-services-cli.sh analyze"
     echo "  ./shared-services-cli.sh list --needs-work"
     echo "  ./shared-services-cli.sh show SupabaseClientService"
     echo "  ./shared-services-cli.sh monitor"
-    echo ""
+    echo "  ./shared-services-cli.sh continuous"
 }
 
-# Main command handling
-case "$1" in
-    discover)
-        track_command "discover"
-        echo "🔍 Smart service discovery (analysis mode)..."
-        echo "Note: Auto-registration disabled to prevent duplicates"
-        run_ts smart-discovery.ts
-        ;;
-        
-    analyze)
-        track_command "analyze"
-        echo "📊 Analyzing all services..."
-        run_ts analyze-and-rate-services.ts
-        ;;
-        
-    monitor)
-        track_command "monitor"
-        echo "👁️ Running continuous monitoring..."
-        echo ""
-        echo "Step 1: Discovering new services..."
-        run_ts discover-new-services.ts
-        echo ""
-        echo "Step 2: Analyzing all services..."
-        run_ts analyze-and-rate-services.ts
-        echo ""
-        echo "✅ Monitoring complete!"
-        ;;
-        
-    health-check)
-        track_command "health-check"
-        run_ts shared-services-cli.ts health-check
-        ;;
-        
-    list)
-        track_command "list" "$@"
-        shift
-        run_ts shared-services-cli.ts list "$@"
-        ;;
-        
-    show)
-        if [ -z "$2" ]; then
-            echo "❌ Error: Please specify a service name"
-            echo "Usage: ./shared-services-cli.sh show <service-name>"
-            exit 1
-        fi
-        track_command "show" "$2"
-        run_ts shared-services-cli.ts show "$2"
-        ;;
-        
-    report)
-        track_command "report" "$@"
-        shift
-        run_ts shared-services-cli.ts report "$@"
-        ;;
-        
-    refactor)
-        if [ -z "$2" ]; then
-            echo "❌ Error: Please specify a service name"
-            echo "Usage: ./shared-services-cli.sh refactor <service-name>"
-            exit 1
-        fi
-        track_command "refactor" "$2"
-        echo "🔧 Refactoring $2..."
-        # TODO: Implement refactoring
-        echo "Refactoring functionality coming soon!"
-        ;;
-        
-    test)
-        if [ -z "$2" ]; then
-            echo "❌ Error: Please specify a service name"
-            echo "Usage: ./shared-services-cli.sh test <service-name>"
-            exit 1
-        fi
-        track_command "test" "$2"
-        echo "🧪 Testing $2..."
-        # TODO: Implement testing
-        echo "Testing functionality coming soon!"
-        ;;
-        
-    validate)
-        track_command "validate"
-        echo "✅ Validating all services against checklist..."
-        run_ts analyze-and-rate-services.ts
-        ;;
-        
-    continuous)
-        track_command "continuous"
-        echo "🔄 Running continuous improvement scan..."
-        echo ""
-        # Run discovery
-        echo "Phase 1: Service Discovery..."
-        run_ts discover-new-services.ts
-        echo ""
-        # Run analysis
-        echo "Phase 2: Service Analysis..."
-        run_ts analyze-and-rate-services.ts
-        echo ""
-        # Run database monitoring
-        echo "Phase 3: Database Change Monitoring..."
-        run_ts continuous-database-monitor.ts
-        echo ""
-        # Run database standards check
-        echo "Phase 4: Database Standards Enforcement..."
-        run_ts database-standards-enforcer.ts
-        echo ""
-        # Run cleanup detection
-        echo "Phase 5: Orphaned Object Detection..."
-        run_ts database-cleanup.ts
-        echo ""
-        # Generate report
-        echo "Phase 6: Generating report..."
-        run_ts shared-services-cli.ts report
-        echo ""
-        echo "✅ Continuous improvement scan complete!"
-        ;;
-        
-    db-monitor)
-        track_command "db-monitor"
-        echo "🗄️ Running database change monitoring..."
-        run_ts continuous-database-monitor.ts
-        ;;
-        
-    db-standards)
-        track_command "db-standards"
-        echo "📋 Checking database standards compliance..."
-        run_ts database-standards-enforcer.ts
-        ;;
-        
-    db-cleanup)
-        track_command "db-cleanup"
-        echo "🧹 Detecting orphaned database objects..."
-        run_ts database-cleanup.ts
-        ;;
-        
-    archive-detect)
-        track_command "archive-detect"
-        echo "🔍 Detecting old/unused code for archival..."
-        run_ts archive-detection.ts
-        ;;
-        
-    help|--help|-h|"")
-        show_help
-        ;;
-        
-    *)
-        echo "❌ Unknown command: $1"
-        echo ""
-        show_help
-        exit 1
-        ;;
-esac
+# Main execution
+route_command "$@"
