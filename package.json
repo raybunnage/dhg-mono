@@ -12,7 +12,6 @@
     "// Server Utilities": "Development server management",
     "servers:old": "node scripts/start-all-servers.js",
     "kill-servers": "node scripts/kill-all-servers.js",
-    
     "// Proxy Servers": "Individual proxy server commands",
     "proxy:vite-fix": "ts-node scripts/cli-pipeline/proxy/start-vite-fix-proxy.ts",
     "proxy:monitoring": "ts-node scripts/cli-pipeline/proxy/start-continuous-monitoring-proxy.ts",
@@ -34,14 +33,12 @@
     "admin-suite": "pnpm --filter dhg-admin-suite dev",
     "admin-google": "pnpm --filter dhg-admin-google dev",
     "research": "pnpm --filter @dhg/research dev",
-    
     "// Audio-specific Commands": "Audio app development utilities",
     "audio:install": "cd apps/dhg-audio && npm install express googleapis google-auth-library",
     "audio:setup": "node apps/dhg-audio/setup-proxy.js",
     "audio:build": "pnpm --filter dhg-audio build",
     "audio:proxy": "cd apps/dhg-audio && node server.js",
     "audio:start": "pnpm run audio:setup && pnpm run audio:build && pnpm run audio:proxy",
-    
     "// CLI Pipeline Commands": "Quick access to CLI pipeline tools",
     "google": "./scripts/cli-pipeline/google_sync/google-sync-cli.sh",
     "doc": "./scripts/cli-pipeline/document/doc-cli.sh",
@@ -63,7 +60,6 @@
     "all": "./scripts/cli-pipeline/all_pipelines/all-pipelines-cli.sh",
     "maintenance": "./scripts/cli-pipeline/maintenance-cli.sh",
     "service-deps": "./scripts/cli-pipeline/service_dependencies/service-dependencies-cli.sh",
-    
     "// Utility Commands": "Helpful utilities",
     "tree": "node scripts/show-tree.js",
     "types": "supabase gen types typescript --project-id jdksnfkupzywjdfefkyj > supabase/types.ts",
@@ -75,10 +71,12 @@
   },
   "devDependencies": {
     "@anthropic-ai/claude-code": "^1.0.1",
+    "@vitest/ui": "^3.2.3",
     "gray-matter": "^4.0.3",
     "netlify-cli": "18.0.4",
     "supabase": "2.12.1",
-    "turbo": "^1.12.4"
+    "turbo": "^1.12.4",
+    "vitest": "^3.2.3"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

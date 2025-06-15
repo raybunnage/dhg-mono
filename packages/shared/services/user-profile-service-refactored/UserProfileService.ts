@@ -45,7 +45,7 @@ export class UserProfileService extends BusinessService {
   }
 
   protected validateDependencies(): void {
-    if (!this.supabase) {
+    if (!this.dependencies.supabase) {
       throw new Error('UserProfileService requires a SupabaseClient');
     }
   }

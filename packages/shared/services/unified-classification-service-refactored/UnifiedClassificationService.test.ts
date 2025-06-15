@@ -21,17 +21,17 @@ const mockSupabase = {
 const mockGoogleDriveService = {
   downloadFile: vi.fn(),
   exportFile: vi.fn(),
-  getHealthStatus: vi.fn().mockResolvedValue({ healthy: true, details: {} }),
+  healthCheck: vi.fn().mockResolvedValue({ healthy: true, details: {} }),
 };
 
 const mockPromptService = {
   loadPrompt: vi.fn().mockResolvedValue({ success: true }),
   usePromptWithClaude: vi.fn(),
-  getHealthStatus: vi.fn().mockResolvedValue({ healthy: true, details: {} }),
+  healthCheck: vi.fn().mockResolvedValue({ healthy: true, details: {} }),
 };
 
 const mockClaudeService = {
-  getHealthStatus: vi.fn().mockResolvedValue({ healthy: true, details: {} }),
+  healthCheck: vi.fn().mockResolvedValue({ healthy: true, details: {} }),
 };
 
 const mockPdfProcessorService = {
@@ -47,6 +47,25 @@ const mockLogger = {
   warn: vi.fn(),
   error: vi.fn(),
   debug: vi.fn(),
+};
+
+// Global mock source file for tests
+const mockSourceFile: SourceFile = {
+  id: 'test-id',
+  drive_id: 'drive-123',
+  name: 'test-document.pdf',
+  mime_type: 'application/pdf',
+  size: 1000,
+  created_at: '2025-01-01T00:00:00Z',
+  updated_at: '2025-01-01T00:00:00Z',
+  content: 'Test content for classification',
+  expert_document_id: null,
+  document_type_id: null,
+  is_classified: false,
+  is_downloaded: true,
+  is_processed: false,
+  path: '/path/to/document.pdf',
+  parent_id: 'parent-123'
 };
 
 const defaultConfig: UnifiedClassificationServiceConfig = {
@@ -103,7 +122,7 @@ describe('UnifiedClassificationService', () => {
         }),
       });
 
-      const health = await service.getHealthStatus();
+      const health = await service.healthCheck();
       expect(health.healthy).toBe(true);
       expect(health.details.databaseConnected).toBe(true);
       expect(health.details.googleDriveService).toBe(true);
@@ -118,7 +137,7 @@ describe('UnifiedClassificationService', () => {
         }),
       });
 
-      const health = await service.getHealthStatus();
+      const health = await service.healthCheck();
       expect(health.healthy).toBe(false);
       expect(health.details.databaseConnected).toBe(false);
     });
@@ -143,7 +162,7 @@ describe('UnifiedClassificationService', () => {
         }),
       });
 
-      const health = await serviceWithoutHealthChecks.getHealthStatus();
+      const health = await serviceWithoutHealthChecks.healthCheck();
       expect(health.healthy).toBe(false); // Services without health checks considered unhealthy
     });
   });
@@ -186,18 +205,6 @@ describe('UnifiedClassificationService', () => {
   });
 
   describe('File Processing', () => {
-    const mockSourceFile: SourceFile = {
-      id: 'test-id',
-      drive_id: 'drive-123',
-      name: 'test-document.pdf',
-      mime_type: 'application/pdf',
-      size: 1000,
-      path: '/test/path',
-      web_view_link: 'https://drive.google.com/test',
-      document_type_id: undefined,
-      is_deleted: false,
-      pipeline_status: 'pending',
-    };
 
     beforeEach(() => {
       // Setup default successful database response

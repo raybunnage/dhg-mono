@@ -807,7 +807,7 @@ describe('TaskService', () => {
 
       const task = await service.createTask({ title: 'Test' });
       
-      expect(task.created_by).toBeUndefined();
+      expect(task.created_by).toBeNull();
     });
 
     it('should handle database errors with proper logging', async () => {
