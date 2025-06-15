@@ -1,10 +1,10 @@
--- Add has_health_check column to registry_cli_pipelines table
+-- Add has_health_check column to sys_cli_pipelines table
 
-ALTER TABLE registry_cli_pipelines 
+ALTER TABLE sys_cli_pipelines 
 ADD COLUMN IF NOT EXISTS has_health_check boolean DEFAULT false;
 
 -- Update the column for pipelines that are in the master health check
-UPDATE registry_cli_pipelines SET has_health_check = true WHERE pipeline_name IN (
+UPDATE sys_cli_pipelines SET has_health_check = true WHERE pipeline_name IN (
   'google_sync',
   'drive_filter',
   'document',
@@ -35,5 +35,5 @@ UPDATE registry_cli_pipelines SET has_health_check = true WHERE pipeline_name IN
 
 -- Show the results
 SELECT pipeline_name, display_name, has_health_check, status 
-FROM registry_cli_pipelines 
+FROM sys_cli_pipelines 
 ORDER BY has_health_check DESC, pipeline_name;

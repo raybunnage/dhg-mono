@@ -14,7 +14,7 @@ Successfully added definitions for tables that were missing from `sys_table_defi
 - `registry_scripts` - Registry of all scripts in the codebase
 - `registry_services` - Registry of shared services across the monorepo
 - `registry_apps` - Registry of applications in the monorepo
-- `registry_cli_pipelines` - Registry of CLI pipeline scripts
+- `sys_cli_pipelines` - Registry of CLI pipeline scripts
 
 #### Service Dependency Tables (4)
 - `service_dependencies` - Service dependency relationships

@@ -37,7 +37,7 @@ async function analyzeCompleteness() {
     .select('*', { count: 'exact', head: true });
     
   const { count: totalPipelines } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('*', { count: 'exact', head: true });
 
   // Get analyzed counts
@@ -83,7 +83,7 @@ async function analyzeCompleteness() {
   console.log('-------------------------');
   
   const { data: allPipelines } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('name, display_name, base_path, status');
     
   const analyzed = Array.from(uniquePipelines);

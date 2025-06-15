@@ -332,7 +332,7 @@ async function analyzeDependencies(options: AnalyzeOptions): Promise<void> {
       
       // Analyze all pipelines
       const { data: pipelines } = await supabase
-        .from('registry_cli_pipelines')
+        .from('sys_cli_pipelines')
         .select('pipeline_name')
         .eq('status', 'active');
       
