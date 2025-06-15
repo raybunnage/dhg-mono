@@ -21,7 +21,7 @@ async function checkPipelineRegistration() {
 
   // Get registered pipelines from database
   const { data: registeredPipelines, error } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('*')
     .order('name');
 

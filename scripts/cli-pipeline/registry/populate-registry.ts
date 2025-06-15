@@ -32,7 +32,7 @@ async function clearRegistryData(): Promise<void> {
     await supabase.from('registry_apps').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     
     console.log('   Clearing pipelines registry...');
-    await supabase.from('registry_cli_pipelines').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('sys_cli_pipelines').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     
     console.log('✅ Registry data cleared\n');
   } catch (error) {
@@ -96,7 +96,7 @@ async function populateRegistry(options: PopulateOptions): Promise<void> {
     const [services, apps, pipelines] = await Promise.all([
       supabase.from('registry_services').select('id', { count: 'exact', head: true }),
       supabase.from('registry_apps').select('id', { count: 'exact', head: true }),
-      supabase.from('registry_cli_pipelines').select('id', { count: 'exact', head: true })
+      supabase.from('sys_cli_pipelines').select('id', { count: 'exact', head: true })
     ]);
     
     console.log('═══════════════════════════════════════════════');

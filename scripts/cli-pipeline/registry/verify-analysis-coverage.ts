@@ -39,7 +39,7 @@ async function verifyAnalysisCoverage() {
     .select('*', { count: 'exact', head: true });
     
   const { count: pipelineCount } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('*', { count: 'exact', head: true });
     
   console.log(`Total apps in registry: ${appCount}`);
@@ -47,7 +47,7 @@ async function verifyAnalysisCoverage() {
   
   // 3. Check if all pipelines were analyzed
   const { data: allPipelines } = await supabase
-    .from('registry_cli_pipelines')
+    .from('sys_cli_pipelines')
     .select('pipeline_name')
     .order('pipeline_name');
     

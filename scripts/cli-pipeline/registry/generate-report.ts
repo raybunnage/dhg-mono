@@ -148,7 +148,7 @@ async function generateFullReport(options: ReportOptions): Promise<ServiceReport
   ] = await Promise.all([
     supabase.from('registry_services').select('*', { count: 'exact', head: true }),
     supabase.from('registry_apps').select('*', { count: 'exact', head: true }),
-    supabase.from('registry_cli_pipelines').select('*', { count: 'exact', head: true }),
+    supabase.from('sys_cli_pipelines').select('*', { count: 'exact', head: true }),
     supabase.from('service_dependencies').select('*', { count: 'exact', head: true })
   ]);
   

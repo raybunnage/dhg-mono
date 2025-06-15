@@ -2,17 +2,17 @@
 -- Mark pipelines as having health checks and whether they're currently working
 
 -- First, mark all pipelines as having health checks (we added them)
-UPDATE registry_cli_pipelines 
+UPDATE sys_cli_pipelines 
 SET has_health_check = true
 WHERE script_path LIKE '%/scripts/cli-pipeline/%';
 
 -- Now add a new column to track if the health check is currently working
-ALTER TABLE registry_cli_pipelines 
+ALTER TABLE sys_cli_pipelines 
 ADD COLUMN IF NOT EXISTS health_check_working boolean DEFAULT false;
 
 -- Update the working status based on our test results
 -- Healthy pipelines:
-UPDATE registry_cli_pipelines SET health_check_working = true
+UPDATE sys_cli_pipelines SET health_check_working = true
 WHERE name IN (
   'ai-cli.sh',
   'auth-cli.sh',
@@ -33,7 +33,7 @@ WHERE name IN (
 );
 
 -- Unhealthy pipelines:
-UPDATE registry_cli_pipelines SET health_check_working = false
+UPDATE sys_cli_pipelines SET health_check_working = false
 WHERE name IN (
   'classification-cli.sh',
   'deprecation-cli.sh',
@@ -53,6 +53,6 @@ SELECT
   SUM(CASE WHEN has_health_check THEN 1 ELSE 0 END) as with_health_check,
   SUM(CASE WHEN health_check_working THEN 1 ELSE 0 END) as working_health_checks,
   ROUND(100.0 * SUM(CASE WHEN health_check_working THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate
-FROM registry_cli_pipelines
+FROM sys_cli_pipelines
 WHERE script_path LIKE '%/scripts/cli-pipeline/%';
 EOF < /dev/null

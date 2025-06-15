@@ -39,7 +39,16 @@ export class SourcesGoogleUpdateService extends BusinessService {
     private googleDriveService: GoogleDriveService,
     logger?: Logger
   ) {
-    super('SourcesGoogleUpdateService', { supabaseClient }, logger);
+    super('SourcesGoogleUpdateService', { supabaseClient, googleDriveService }, logger);
+  }
+
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabaseClient) {
+      throw new Error('Supabase client is required');
+    }
+    if (!this.dependencies.googleDriveService) {
+      throw new Error('Google Drive service is required');
+    }
   }
 
   protected async initialize(): Promise<void> {
@@ -164,15 +173,17 @@ export class SourcesGoogleUpdateService extends BusinessService {
     updates: Record<string, any>,
     options: UpdateOptions = {}
   ): Promise<boolean> {
-    return this.validateInput({ fileId, updates }, () => {
-      if (!fileId || !fileId.trim()) {
+    this.validateInput({ fileId, updates }, (data) => {
+      if (!data.fileId || !data.fileId.trim()) {
         throw new Error('File ID is required');
       }
-      if (!updates || Object.keys(updates).length === 0) {
+      if (!data.updates || Object.keys(data.updates).length === 0) {
         throw new Error('Updates object cannot be empty');
       }
-    })
-    .then(() => this.withTransaction(async () => {
+      return data;
+    });
+    
+    return this.withTransaction(async () => {
       const { dryRun = false, conflictResolution = 'merge' } = options;
 
       if (dryRun) {
@@ -205,7 +216,7 @@ export class SourcesGoogleUpdateService extends BusinessService {
         this.logger?.debug(`Updated metadata for file ${fileId}`);
         return true;
       }, { operationName: 'updateFileMetadata' });
-    }));
+    });
   }
 
   /**
@@ -216,12 +227,12 @@ export class SourcesGoogleUpdateService extends BusinessService {
     updates: Record<string, any> | ((file: any) => Record<string, any>),
     options: BatchUpdateOptions = {}
   ): Promise<UpdateResult> {
-    return this.validateInput({ fileIds }, () => {
-      if (!Array.isArray(fileIds) || fileIds.length === 0) {
-        throw new Error('File IDs array cannot be empty');
-      }
-    })
-    .then(() => this.timeOperation('batchUpdateMetadata', async () => {
+    // Validate input
+    if (!Array.isArray(fileIds) || fileIds.length === 0) {
+      throw new Error('File IDs array cannot be empty');
+    }
+    
+    return this.timeOperation('batchUpdateMetadata', async () => {
       const {
         batchSize = 50,
         dryRun = false,
@@ -287,7 +298,7 @@ export class SourcesGoogleUpdateService extends BusinessService {
       );
       
       return result;
-    }));
+    });
   }
 
   /**
@@ -584,5 +595,53 @@ export class SourcesGoogleUpdateService extends BusinessService {
     }
 
     return merged;
+  }
+
+  /**
+   * Update a single source record (wrapper for test compatibility)
+   */
+  async updateSource(
+    fileId: string,
+    options: UpdateOptions = {}
+  ): Promise<UpdateResult> {
+    const result: UpdateResult = {
+      success: false,
+      fileId,
+      filesUpdated: 0,
+      filesInserted: 0,
+      filesSkipped: 0,
+      errors: [],
+      totalProcessed: 1
+    };
+
+    try {
+      // Get metadata from Google Drive if fields specified
+      const metadata = await this.dependencies.googleDriveService.getFileMetadata(fileId);
+      
+      // Update the file metadata
+      const updated = await this.updateFileMetadata(fileId, metadata, options);
+      
+      if (updated) {
+        result.filesUpdated = 1;
+        result.success = true;
+      } else {
+        result.filesSkipped = 1;
+        result.success = true;
+      }
+    } catch (error: any) {
+      result.errors.push({ fileId, error: error.message });
+    }
+
+    return result;
+  }
+
+  /**
+   * Batch update wrapper for test compatibility
+   */
+  async batchUpdate(
+    updates: Array<{ fileId: string; data: Record<string, any> }>,
+    options: BatchUpdateOptions = {}
+  ): Promise<UpdateResult> {
+    return this.batchUpdateMetadata(updates, options);
   }
 }

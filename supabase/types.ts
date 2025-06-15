@@ -6380,6 +6380,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sys_archived_tables: {
+        Row: {
+          archived_at: string
+          archived_by: string
+          create_statement: string
+          created_at: string | null
+          foreign_keys: Json | null
+          id: string
+          indexes: Json | null
+          metadata: Json | null
+          reason: string
+          row_count: number
+          table_name: string
+          table_schema: string
+          triggers: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          archived_at?: string
+          archived_by?: string
+          create_statement: string
+          created_at?: string | null
+          foreign_keys?: Json | null
+          id?: string
+          indexes?: Json | null
+          metadata?: Json | null
+          reason: string
+          row_count?: number
+          table_name: string
+          table_schema?: string
+          triggers?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          archived_at?: string
+          archived_by?: string
+          create_statement?: string
+          created_at?: string | null
+          foreign_keys?: Json | null
+          id?: string
+          indexes?: Json | null
+          metadata?: Json | null
+          reason?: string
+          row_count?: number
+          table_name?: string
+          table_schema?: string
+          triggers?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sys_cli_pipelines: {
         Row: {
           commands: Json | null
@@ -6388,8 +6439,15 @@ export type Database = {
           id: string
           pipeline_name: string
           pipeline_path: string
+          refactoring_checkpoint: string | null
+          refactoring_completed_at: string | null
+          refactoring_group: string | null
+          refactoring_notes: string | null
+          refactoring_status: string | null
           shell_script: string | null
           status: string | null
+          test_count: number | null
+          tests_passing: number | null
           updated_at: string | null
         }
         Insert: {
@@ -6399,8 +6457,15 @@ export type Database = {
           id?: string
           pipeline_name: string
           pipeline_path: string
+          refactoring_checkpoint?: string | null
+          refactoring_completed_at?: string | null
+          refactoring_group?: string | null
+          refactoring_notes?: string | null
+          refactoring_status?: string | null
           shell_script?: string | null
           status?: string | null
+          test_count?: number | null
+          tests_passing?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -6410,8 +6475,15 @@ export type Database = {
           id?: string
           pipeline_name?: string
           pipeline_path?: string
+          refactoring_checkpoint?: string | null
+          refactoring_completed_at?: string | null
+          refactoring_group?: string | null
+          refactoring_notes?: string | null
+          refactoring_status?: string | null
           shell_script?: string | null
           status?: string | null
+          test_count?: number | null
+          tests_passing?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -7035,6 +7107,7 @@ export type Database = {
           id: string
           initialization_dependencies: string[] | null
           instantiation_pattern: string | null
+          is_refactored: boolean | null
           is_singleton: boolean | null
           last_test_run: string | null
           last_usage_scan: string | null
@@ -7048,7 +7121,10 @@ export type Database = {
           overlaps_with: string[] | null
           performance_after: Json | null
           performance_baseline: Json | null
+          refactored_date: string | null
           refactoring_notes: string | null
+          refactoring_validated: boolean | null
+          refactoring_validation_date: string | null
           requires_initialization: boolean | null
           resource_management: Json | null
           scan_frequency: string | null
@@ -7061,6 +7137,8 @@ export type Database = {
           service_type: string | null
           status: string | null
           test_coverage_percent: number | null
+          test_file_path: string | null
+          tests_passing: boolean | null
           updated_at: string | null
           usage_count: number | null
           usage_history: Json | null
@@ -7094,6 +7172,7 @@ export type Database = {
           id?: string
           initialization_dependencies?: string[] | null
           instantiation_pattern?: string | null
+          is_refactored?: boolean | null
           is_singleton?: boolean | null
           last_test_run?: string | null
           last_usage_scan?: string | null
@@ -7107,7 +7186,10 @@ export type Database = {
           overlaps_with?: string[] | null
           performance_after?: Json | null
           performance_baseline?: Json | null
+          refactored_date?: string | null
           refactoring_notes?: string | null
+          refactoring_validated?: boolean | null
+          refactoring_validation_date?: string | null
           requires_initialization?: boolean | null
           resource_management?: Json | null
           scan_frequency?: string | null
@@ -7120,6 +7202,8 @@ export type Database = {
           service_type?: string | null
           status?: string | null
           test_coverage_percent?: number | null
+          test_file_path?: string | null
+          tests_passing?: boolean | null
           updated_at?: string | null
           usage_count?: number | null
           usage_history?: Json | null
@@ -7153,6 +7237,7 @@ export type Database = {
           id?: string
           initialization_dependencies?: string[] | null
           instantiation_pattern?: string | null
+          is_refactored?: boolean | null
           is_singleton?: boolean | null
           last_test_run?: string | null
           last_usage_scan?: string | null
@@ -7166,7 +7251,10 @@ export type Database = {
           overlaps_with?: string[] | null
           performance_after?: Json | null
           performance_baseline?: Json | null
+          refactored_date?: string | null
           refactoring_notes?: string | null
+          refactoring_validated?: boolean | null
+          refactoring_validation_date?: string | null
           requires_initialization?: boolean | null
           resource_management?: Json | null
           scan_frequency?: string | null
@@ -7179,6 +7267,8 @@ export type Database = {
           service_type?: string | null
           status?: string | null
           test_coverage_percent?: number | null
+          test_file_path?: string | null
+          tests_passing?: boolean | null
           updated_at?: string | null
           usage_count?: number | null
           usage_history?: Json | null
@@ -9602,6 +9692,10 @@ export type Database = {
         Args: { p_pipeline_name: string; p_script_content: string }
         Returns: Json
       }
+      execute_ddl: {
+        Args: { ddl_statement: string }
+        Returns: undefined
+      }
       execute_sql: {
         Args: { sql_query: string }
         Returns: Json
@@ -10139,14 +10233,18 @@ export type Database = {
           foreign_column_names: string[]
         }[]
       }
+      get_table_ddl: {
+        Args: { table_name: string }
+        Returns: string
+      }
       get_table_definition: {
         Args: { p_table_name: string }
         Returns: string[]
       }
       get_table_foreign_keys: {
         Args:
-          | { p_table_name: string }
           | { schema_name: string; table_name: string }
+          | { table_name: string }
         Returns: {
           constraint_name: string
           column_name: string
@@ -10158,7 +10256,9 @@ export type Database = {
         }[]
       }
       get_table_indexes: {
-        Args: { schema_name: string; table_name: string }
+        Args:
+          | { schema_name: string; table_name: string }
+          | { table_name: string }
         Returns: {
           index_name: string
           is_unique: boolean

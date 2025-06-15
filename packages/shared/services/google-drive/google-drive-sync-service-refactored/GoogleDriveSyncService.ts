@@ -46,7 +46,16 @@ export class GoogleDriveSyncService extends BusinessService {
     private googleDriveService: GoogleDriveService,
     logger?: Logger
   ) {
-    super('GoogleDriveSyncService', { supabaseClient }, logger);
+    super('GoogleDriveSyncService', { supabaseClient, googleDriveService }, logger);
+  }
+
+  protected validateDependencies(): void {
+    if (!this.dependencies.supabaseClient) {
+      throw new Error('Supabase client is required');
+    }
+    if (!this.dependencies.googleDriveService) {
+      throw new Error('Google Drive service is required');
+    }
   }
 
   protected async initialize(): Promise<void> {
@@ -119,12 +128,14 @@ export class GoogleDriveSyncService extends BusinessService {
     folderId: string,
     options: SyncOptions = {}
   ): Promise<SyncResult> {
-    return this.validateInput({ folderId }, () => {
-      if (!folderId || !folderId.trim()) {
+    this.validateInput({ folderId }, (data) => {
+      if (!data.folderId || !data.folderId.trim()) {
         throw new Error('Folder ID is required');
       }
-    })
-    .then(() => this.timeOperation('syncFiles', async () => {
+      return data;
+    });
+    
+    return this.timeOperation('syncFiles', async () => {
       const {
         recursive = true,
         maxDepth = 10,
@@ -204,7 +215,7 @@ export class GoogleDriveSyncService extends BusinessService {
         this.activeSyncId = null;
         this.syncState = null;
       }
-    }));
+    });
   }
 
   /**
@@ -214,12 +225,14 @@ export class GoogleDriveSyncService extends BusinessService {
     folderId: string,
     options: CleanupOptions = {}
   ): Promise<CleanupResult> {
-    return this.validateInput({ folderId }, () => {
-      if (!folderId || !folderId.trim()) {
+    this.validateInput({ folderId }, (data) => {
+      if (!data.folderId || !data.folderId.trim()) {
         throw new Error('Folder ID is required');
       }
-    })
-    .then(() => this.timeOperation('cleanupDeletedFiles', async () => {
+      return data;
+    });
+    
+    return this.timeOperation('cleanupDeletedFiles', async () => {
       const {
         dryRun = false,
         batchSize = 100,
@@ -288,7 +301,7 @@ export class GoogleDriveSyncService extends BusinessService {
         result.errors.push({ message: error.message });
         throw error;
       }
-    }));
+    });
   }
 
   /**

@@ -140,7 +140,7 @@ class ScriptUsageAnalyzer {
     
     // Get registered pipelines
     const { data: pipelines } = await this.supabase
-      .from('registry_cli_pipelines')
+      .from('sys_cli_pipelines')
       .select('*');
     
     const pipelineMap = new Map(
