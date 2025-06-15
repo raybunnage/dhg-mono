@@ -1,0 +1,30 @@
+Archive Summary
+===============
+Date: 2025-06-15T13:13:36.127Z
+Phase: A
+Total Files: 20
+Total Size: 0.86 MB
+
+Files Archived:
+- pnpm-lock.yaml.backup
+- scripts/cli-pipeline/document_types/cli.ts.old
+- apps/dhg-hub/src/utils/filter-service-adapter.ts.backup
+- scripts/cli-pipeline/all_pipelines/check-deprecated-commands.ts
+- scripts/cli-pipeline/deprecation/commands/mark-deprecated.ts
+- scripts/cli-pipeline/auth/auth-cli.sh.old
+- scripts/cli-pipeline/all_pipelines/update-deprecated-to-archive.ts
+- prompts/document-classification-prompt-new_legacy copy.md
+- prompts/document-classification-prompt-new_legacy.md
+- scripts/cli-pipeline/scripts/scripts-cli.sh.old
+- packages/shared/services/claude-service/claude-service.ts.backup
+- scripts/cli-pipeline/git/git-cli.sh.old
+- prompts/scientific-document-analysis-prompt_legacy.md
+- scripts/cli-pipeline/deprecation/commands/archive-deprecated-root-scripts.ts
+- prompts/script-analysis-prompt_legacy.md
+- scripts/cli-pipeline/ai/ai-cli.sh.old
+- apps/dhg-audio/src/utils/google-drive-utils.ts.backup
+- prompts/final_video-summary-prompt_legacy.md
+- scripts/cli-pipeline/media-analytics/media-analytics-cli.sh.broken
+- scripts/cli-pipeline/git/test-git-cli.sh.old
+
+To restore files, see ARCHIVE_MANIFEST.json for instructions.
