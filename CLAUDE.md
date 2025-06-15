@@ -569,20 +569,16 @@ This ensures migrations are properly tested before applying to the database.
    - dhg-audio: 5194
    
    **Proxy Servers:**
-   - vite-fix-proxy: 9876 (Vite environment fix commands)
-   - continuous-monitoring-proxy: 9877 (System health monitoring)
-   - proxy-manager-proxy: 9878 (Start/stop/manage other proxies)
-   - git-operations-proxy: 9879 (Git operations and worktree management)
+   - system-management-proxy: 9878 (Vite fixes, monitoring, proxy control, git operations)
    - file-browser-proxy: 9880 (File system operations)
    - continuous-docs-proxy: 9882 (Documentation tracking)
    - audio-streaming-proxy: 9883 (Audio file streaming from Google Drive)
    - script-viewer-proxy: 9884 (View/archive/delete script files)
    - markdown-viewer-proxy: 9885 (View/archive/delete markdown files)
    - docs-archive-proxy: 9886 (Document file management)
-   - worktree-switcher-proxy: 9887 (Visual git worktree switcher)
    - html-file-browser-proxy: 8080 (Web-based file browser UI)
    - test-execution-proxy: 9890 (Consolidated test runner for CLI pipelines and refactored services)
-   - [Reserved: 9888-9889, 9892-9899 for future proxy servers]
+   - [Reserved: 9876-9877, 9879, 9887-9889, 9891-9899 for future proxy servers]
    
    **Other Services:**
    - [Reserved: 8081-8099 for future services]
