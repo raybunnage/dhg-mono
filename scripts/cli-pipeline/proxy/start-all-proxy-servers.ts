@@ -22,30 +22,9 @@ interface ProxyServer {
 
 const PROXY_SERVERS: ProxyServer[] = [
   {
-    name: 'Vite Fix Proxy',
-    port: 9876,
-    scriptPath: 'start-vite-fix-proxy.ts',
-    status: 'stopped',
-    healthEndpoint: '/health'
-  },
-  {
-    name: 'Continuous Monitoring',
-    port: 9877,
-    scriptPath: 'start-continuous-monitoring-proxy.ts',
-    status: 'stopped',
-    healthEndpoint: '/health'
-  },
-  {
-    name: 'Proxy Manager',
+    name: 'System Management',
     port: 9878,
-    scriptPath: 'start-proxy-manager-proxy.ts',
-    status: 'stopped',
-    healthEndpoint: '/health'
-  },
-  {
-    name: 'Git Operations',
-    port: 9879,
-    scriptPath: 'start-git-operations-proxy.ts',
+    scriptPath: 'start-system-management-proxy.ts',
     status: 'stopped',
     healthEndpoint: '/health'
   },
@@ -92,13 +71,6 @@ const PROXY_SERVERS: ProxyServer[] = [
     healthEndpoint: '/health'
   },
   {
-    name: 'Worktree Switcher',
-    port: 9887,
-    scriptPath: 'start-worktree-switcher-proxy.ts',
-    status: 'stopped',
-    healthEndpoint: '/health'
-  },
-  {
     name: 'HTML File Browser',
     port: 8080,
     scriptPath: 'start-html-file-browser-proxy.ts',
@@ -106,9 +78,9 @@ const PROXY_SERVERS: ProxyServer[] = [
     healthEndpoint: '/health'
   },
   {
-    name: 'CLI Test Runner',
+    name: 'Test Execution',
     port: 9890,
-    scriptPath: 'start-cli-test-runner-proxy.ts',
+    scriptPath: 'start-test-execution-proxy.ts',
     status: 'stopped',
     healthEndpoint: '/health'
   }

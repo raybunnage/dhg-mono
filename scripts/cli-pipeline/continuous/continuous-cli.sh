@@ -132,6 +132,104 @@ command_daily() {
     echo "📅 Next: Review results and run again tomorrow"
 }
 
+command_scenarios() {
+    log_info "📚 Available Continuous Improvement Scenarios"
+    echo ""
+    
+    # Run the scenario runner with list action
+    if [[ -f "$SCRIPT_DIR/run-scenario.ts" ]]; then
+        cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/run-scenario.ts" list
+    else
+        log_error "run-scenario.ts not found"
+        log_info "Available scenarios are documented in: docs/continuous-improvement/scenarios/"
+    fi
+}
+
+command_run_scenario() {
+    local scenario_id="$1"
+    shift
+    
+    if [[ -z "$scenario_id" ]]; then
+        log_error "Please specify a scenario ID"
+        echo ""
+        echo "Usage: ./continuous-cli.sh run-scenario <scenario-id> [args...]"
+        echo ""
+        echo "List available scenarios:"
+        echo "  ./continuous-cli.sh scenarios"
+        return 1
+    fi
+    
+    log_info "🚀 Running Scenario: $scenario_id"
+    echo ""
+    
+    # Run the scenario
+    if [[ -f "$SCRIPT_DIR/run-scenario.ts" ]]; then
+        cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/run-scenario.ts" run "$scenario_id" "$@"
+    else
+        log_error "run-scenario.ts not found"
+        return 1
+    fi
+}
+
+command_suggest() {
+    local description="$*"
+    
+    if [[ -z "$description" ]]; then
+        log_error "Please describe what you want to do"
+        echo ""
+        echo "Usage: ./continuous-cli.sh suggest <description>"
+        echo ""
+        echo "Examples:"
+        echo "  ./continuous-cli.sh suggest 'I need to add a new proxy server for testing'"
+        echo "  ./continuous-cli.sh suggest 'Adding a new database table for user preferences'"
+        echo "  ./continuous-cli.sh suggest 'Creating a shared service for email notifications'"
+        return 1
+    fi
+    
+    log_info "🤔 Analyzing your request..."
+    echo ""
+    
+    # Run the dependency analyzer
+    if [[ -f "$SCRIPT_DIR/scenario-dependencies.ts" ]]; then
+        cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/scenario-dependencies.ts" suggest "$description"
+    else
+        log_error "scenario-dependencies.ts not found"
+        return 1
+    fi
+}
+
+command_evaluate() {
+    local scenario_id="$1"
+    local object_type="$2"
+    local description="$*"
+    description="${description#$scenario_id }" # Remove scenario_id from description
+    description="${description#$object_type }" # Remove object_type from description
+    
+    if [[ -z "$scenario_id" ]] || [[ -z "$object_type" ]] || [[ -z "$description" ]]; then
+        log_error "Please provide scenario ID, object type, and description"
+        echo ""
+        echo "Usage: ./continuous-cli.sh evaluate <scenario-id> <object-type> <description>"
+        echo ""
+        echo "Object types: service, cli, database, ui, proxy, infra"
+        echo ""
+        echo "Examples:"
+        echo "  ./continuous-cli.sh evaluate new-file-proxy proxy 'Need a proxy for file uploads'"
+        echo "  ./continuous-cli.sh evaluate user-service service 'Service for user management'"
+        return 1
+    fi
+    
+    log_info "🔍 Critically evaluating scenario request..."
+    echo ""
+    
+    # Run the critical evaluator
+    if [[ -f "$SCRIPT_DIR/critical-evaluator.ts" ]]; then
+        cd "$PROJECT_ROOT" && npx ts-node "$SCRIPT_DIR/critical-evaluator.ts" evaluate "$scenario_id" "$object_type" "$description"
+    else
+        log_error "critical-evaluator.ts not found"
+        return 1
+    fi
+}
+
 # Override help to add philosophy and examples
 show_help() {
     echo "$PIPELINE_DESCRIPTION"
@@ -148,11 +246,21 @@ show_help() {
     echo "  report          Generate daily summary report"
     echo "  trends          Show week-over-week changes"
     echo "  daily           Run full daily check (test + discover + check)"
+    echo ""
+    echo "  scenarios       List available improvement scenarios"
+    echo "  run-scenario    Run a specific improvement scenario"
+    echo "  suggest         Analyze task and suggest relevant scenarios"
+    echo "  evaluate        Critically evaluate a scenario request before execution"
+    echo ""
     echo "  help            Show this help"
     echo ""
     echo "EXAMPLES:"
     echo "  ./continuous-cli.sh test"
     echo "  ./continuous-cli.sh daily"
+    echo "  ./continuous-cli.sh scenarios"
+    echo "  ./continuous-cli.sh suggest 'add a new admin interface for managing users'"
+    echo "  ./continuous-cli.sh evaluate new-file-proxy proxy 'Need a proxy for file uploads'"
+    echo "  ./continuous-cli.sh run-scenario add-new-proxy-server test-runner 9892"
 }
 
 # Main execution
