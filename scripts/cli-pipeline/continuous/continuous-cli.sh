@@ -1,274 +1,182 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Continuous Improvement CLI - Phase 1 Simplified Version
-# Provides simple commands for discovery, testing, and reporting
+# Simplified Continuous Development CLI
+# Purpose: Track manual execution of common development scenarios
+# Complexity removed: 2025-06-15 (see .archived/2025-06-15_continuous_complexity_removal/)
 
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Colors for output
+# Color codes for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Help function
+# Available scenarios (kept simple on purpose)
+SCENARIOS=(
+    "add-proxy-server"
+    "create-shared-service"
+    "add-database-table"
+    "remove-complexity"
+)
+
 show_help() {
-    echo "📊 Continuous Improvement CLI - Phase 1"
-    echo "======================================"
+    echo "Continuous Development CLI (Simplified)"
     echo ""
     echo "Usage: $0 <command> [options]"
     echo ""
-    echo "Discovery Commands:"
-    echo "  discover              Find all services, pipelines, tables, tests"
-    echo "  inventory             Show current inventory summary"
-    echo ""
-    echo "Testing Commands:"
-    echo "  test                  Run all tests and capture results"
-    echo "  test services         Run tests for shared services only"
-    echo "  test <name>          Run tests for specific service/pipeline"
-    echo ""
-    echo "Standards Commands:"
-    echo "  check                 Check code against standards (no auto-fix)"
-    echo "  issues                Show current issues"
-    echo "  issues resolve <id>   Mark an issue as resolved"
-    echo ""
-    echo "Reporting Commands:"
-    echo "  report                Generate daily summary report"
-    echo "  trends                Show week-over-week trends"
-    echo "  summary               Show quick summary stats"
+    echo "Commands:"
+    echo "  list                    List available scenarios"
+    echo "  run <scenario>          Start a scenario (opens documentation)"
+    echo "  done                    Mark scenario complete and log results"
+    echo "  help                    Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 discover"
-    echo "  $0 test services"
-    echo "  $0 report > daily-report.md"
-}
-
-# Track command execution
-track_command() {
-    local command=$1
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] Running: continuous $command${NC}"
-}
-
-# Run discovery
-run_discover() {
-    track_command "discover"
-    cd "$PROJECT_ROOT"
-    ts-node scripts/cli-pipeline/continuous/discover-inventory.ts
-}
-
-# Show inventory
-show_inventory() {
-    track_command "inventory"
-    cd "$PROJECT_ROOT"
-    
-    # Quick query to show inventory summary
-    ts-node -e "
-import { SupabaseClientService } from './packages/shared/services/supabase-client.js';
-
-async function showInventory() {
-  const supabase = SupabaseClientService.getInstance().getClient();
-  const { data, error } = await supabase
-    .from('continuous_summary_view')
-    .select('*')
-    .single();
-  
-  if (error) {
-    console.error('Error:', error);
-    return;
-  }
-  
-  console.log('📊 Current Inventory');
-  console.log('==================');
-  console.log(\`  Services: \${data.total_services}\`);
-  console.log(\`  Pipelines: \${data.total_pipelines}\`);
-  console.log(\`  Tables: \${data.total_tables}\`);
-  console.log(\`  Test Locations: \${data.total_tests}\`);
-  console.log(\`\\n⏰ Last Update: \${data.last_inventory_update ? new Date(data.last_inventory_update).toLocaleString() : 'Never'}\`);
-}
-
-showInventory();
-"
-}
-
-# Run tests
-run_tests() {
-    local target=${1:-"all"}
-    track_command "test $target"
-    cd "$PROJECT_ROOT"
-    
-    echo "🧪 Running tests for: $target"
+    echo "  $0 list"
+    echo "  $0 run add-proxy-server"
+    echo "  $0 done"
     echo ""
-    
-    case $target in
-        "services")
-            # Run tests for shared services
-            cd packages/shared/services
-            npm test -- --reporter=json > /tmp/test-results.json || true
-            
-            # Save results to database
-            cd "$PROJECT_ROOT"
-            ts-node scripts/cli-pipeline/continuous/save-test-results.ts services /tmp/test-results.json
-            ;;
-        "all")
-            # Run all tests
-            npm test -- --reporter=json > /tmp/test-results.json || true
-            ts-node scripts/cli-pipeline/continuous/save-test-results.ts all /tmp/test-results.json
-            ;;
-        *)
-            # Run tests for specific target
-            echo "Running tests for specific target: $target"
-            # Implementation depends on project structure
-            ;;
-    esac
+    echo "Philosophy: Start simple, track usage, add complexity only when proven needed."
 }
 
-# Check standards
-check_standards() {
-    track_command "check"
-    cd "$PROJECT_ROOT"
-    
-    # For Phase 1, we'll implement a simple checker
-    echo "🔍 Checking code against standards..."
-    echo "(Phase 1: Manual implementation - to be automated)"
+list_scenarios() {
+    echo -e "${GREEN}Available Development Scenarios:${NC}"
     echo ""
-    echo "Checking:"
-    echo "  ✓ Services have getInstance method"
-    echo "  ✓ No hardcoded secrets"
-    echo "  ✓ Tables have created_at field"
-    echo "  ✓ Tables have UUID primary key"
-    echo "  ✓ CLI commands have help text"
-}
-
-# Show issues
-show_issues() {
-    track_command "issues"
-    cd "$PROJECT_ROOT"
-    
-    ts-node -e "
-import { SupabaseClientService } from './packages/shared/services/supabase-client.js';
-
-async function showIssues() {
-  const supabase = SupabaseClientService.getInstance().getClient();
-  const { data, error } = await supabase
-    .from('continuous_issues')
-    .select('*')
-    .is('resolved_at', null)
-    .order('severity', { ascending: false })
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error:', error);
-    return;
-  }
-  
-  console.log('⚠️  Open Issues (' + data.length + ')');
-  console.log('================');
-  
-  if (data.length === 0) {
-    console.log('  No open issues! 🎉');
-  } else {
-    const bySeverity = data.reduce((acc: any, issue: any) => {
-      acc[issue.severity] = (acc[issue.severity] || 0) + 1;
-      return acc;
-    }, {});
-    
-    console.log('\\nBy Severity:');
-    Object.entries(bySeverity).forEach(([sev, count]) => {
-      console.log(\`  \${sev}: \${count}\`);
-    });
-    
-    console.log('\\nRecent Issues:');
-    data.slice(0, 5).forEach((issue: any) => {
-      console.log(\`  [\${issue.severity}] \${issue.item_name}: \${issue.description}\`);
-    });
-  }
-}
-
-showIssues();
-"
-}
-
-# Generate report
-generate_report() {
-    track_command "report"
-    cd "$PROJECT_ROOT"
-    
-    echo "📊 Daily Continuous Improvement Report"
-    echo "Date: $(date '+%Y-%m-%d')"
-    echo ""
-    
-    # Get summary data
-    show_inventory
-    echo ""
-    
-    # Get test results
-    echo "🧪 Test Results"
-    echo "=============="
-    ts-node -e "
-import { SupabaseClientService } from './packages/shared/services/supabase-client.js';
-
-async function showTestResults() {
-  const supabase = SupabaseClientService.getInstance().getClient();
-  const { data } = await supabase
-    .from('continuous_summary_view')
-    .select('*')
-    .single();
-  
-  if (data) {
-    console.log(\`  Tests Passed Today: \${data.tests_passed_today}\`);
-    console.log(\`  Tests Failed Today: \${data.tests_failed_today}\`);
-    if (data.tests_passed_today + data.tests_failed_today > 0) {
-      const passRate = (data.tests_passed_today / (data.tests_passed_today + data.tests_failed_today) * 100).toFixed(1);
-      console.log(\`  Pass Rate: \${passRate}%\`);
-    }
-    console.log(\`\\n  Last Test Run: \${data.last_test_run ? new Date(data.last_test_run).toLocaleString() : 'Never'}\`);
-  }
-}
-
-showTestResults();
-"
-    
-    echo ""
-    show_issues
-}
-
-# Main command handler
-case "$1" in
-    "discover")
-        run_discover
-        ;;
-    "inventory")
-        show_inventory
-        ;;
-    "test")
-        run_tests "$2"
-        ;;
-    "check")
-        check_standards
-        ;;
-    "issues")
-        if [[ "$2" == "resolve" && -n "$3" ]]; then
-            echo "Marking issue $3 as resolved..."
-            # TODO: Implement resolve
+    for i in "${!SCENARIOS[@]}"; do
+        echo "  $((i+1)). ${SCENARIOS[$i]}"
+        if [[ -f "$PROJECT_ROOT/docs/continuous-improvement/scenarios/${SCENARIOS[$i]}.md" ]]; then
+            echo "     ✓ Documentation available"
         else
-            show_issues
+            echo "     ⚠ Documentation missing"
         fi
-        ;;
-    "report")
-        generate_report
-        ;;
-    "trends")
-        echo "📈 Trends analysis coming soon..."
-        ;;
-    "summary")
-        show_inventory
+    done
+    echo ""
+    echo "For details on any scenario: $0 run <scenario-name>"
+}
+
+run_scenario() {
+    local scenario=$1
+    
+    if [[ -z "$scenario" ]]; then
+        echo -e "${RED}Error: Please specify a scenario${NC}"
+        echo "Usage: $0 run <scenario-name>"
+        list_scenarios
+        return 1
+    fi
+    
+    # Check if scenario exists
+    if [[ ! " ${SCENARIOS[@]} " =~ " ${scenario} " ]]; then
+        echo -e "${RED}Error: Unknown scenario '${scenario}'${NC}"
+        list_scenarios
+        return 1
+    fi
+    
+    local doc_path="$PROJECT_ROOT/docs/continuous-improvement/scenarios/${scenario}.md"
+    
+    echo -e "${GREEN}Starting scenario: ${scenario}${NC}"
+    echo ""
+    
+    if [[ -f "$doc_path" ]]; then
+        echo "📋 Documentation: $doc_path"
         echo ""
-        show_issues
+        echo "Steps to follow:"
+        echo "1. Open the documentation file above"
+        echo "2. Follow the checklist step-by-step"
+        echo "3. Track your time"
+        echo "4. Run '$0 done' when complete"
+        echo ""
+        echo -e "${YELLOW}⏱️  Timer started at: $(date '+%Y-%m-%d %H:%M:%S')${NC}"
+        
+        # Save start time for later
+        echo "$(date '+%s')" > "$SCRIPT_DIR/.scenario_start_time"
+        echo "$scenario" > "$SCRIPT_DIR/.scenario_name"
+    else
+        echo -e "${RED}Error: Documentation not found at $doc_path${NC}"
+        echo "This scenario needs documentation before it can be run."
+        return 1
+    fi
+}
+
+complete_scenario() {
+    if [[ ! -f "$SCRIPT_DIR/.scenario_start_time" ]]; then
+        echo -e "${RED}Error: No scenario in progress${NC}"
+        echo "Start a scenario first with: $0 run <scenario-name>"
+        return 1
+    fi
+    
+    local start_time=$(cat "$SCRIPT_DIR/.scenario_start_time")
+    local scenario_name=$(cat "$SCRIPT_DIR/.scenario_name" 2>/dev/null || echo "unknown")
+    local end_time=$(date '+%s')
+    local duration=$(( (end_time - start_time) / 60 ))
+    
+    echo -e "${GREEN}Completing scenario: ${scenario_name}${NC}"
+    echo ""
+    echo "Duration: ${duration} minutes"
+    echo ""
+    
+    # Simple success/failure tracking
+    echo -n "Was it successful? (y/n): "
+    read success
+    
+    echo -n "Any notes? (optional): "
+    read notes
+    
+    # Log to simple JSON file (no database complexity)
+    local log_file="$PROJECT_ROOT/.continuous/scenario-attempts.json"
+    mkdir -p "$PROJECT_ROOT/.continuous"
+    
+    # Create file if it doesn't exist
+    if [[ ! -f "$log_file" ]]; then
+        echo "[]" > "$log_file"
+    fi
+    
+    # Append new entry (simple bash JSON handling)
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local success_bool="false"
+    [[ "$success" == "y" ]] && success_bool="true"
+    
+    # Simple JSON append (good enough for our needs)
+    echo "{
+  \"scenario\": \"$scenario_name\",
+  \"timestamp\": \"$timestamp\",
+  \"duration_minutes\": $duration,
+  \"success\": $success_bool,
+  \"notes\": \"$notes\"
+}" >> "$log_file.tmp"
+    
+    echo -e "${GREEN}✓ Scenario logged${NC}"
+    
+    # Clean up
+    rm -f "$SCRIPT_DIR/.scenario_start_time"
+    rm -f "$SCRIPT_DIR/.scenario_name"
+    
+    # Show summary
+    echo ""
+    echo "Summary:"
+    echo "  Scenario: $scenario_name"
+    echo "  Duration: $duration minutes"
+    echo "  Success: $success"
+    [[ -n "$notes" ]] && echo "  Notes: $notes"
+}
+
+# Main command routing
+case "$1" in
+    "list")
+        list_scenarios
+        ;;
+    "run")
+        run_scenario "$2"
+        ;;
+    "done")
+        complete_scenario
+        ;;
+    "help"|"--help"|"-h"|"")
+        show_help
         ;;
     *)
+        echo -e "${RED}Error: Unknown command '$1'${NC}"
+        echo ""
         show_help
         exit 1
         ;;
