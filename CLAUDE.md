@@ -322,7 +322,26 @@ ORDER BY cpt.table_name;
    - Verify no hardcoded credentials exist in code
    - Ensure CLI commands are properly integrated into pipeline structure
 
-2. **Database Migration Workflow**:
+2. **Complexity Management** (Added 2025-06-15 after removing 2,500 lines of unused code):
+   
+   **The Complexity Principle**: Complexity is earned, not assumed.
+   
+   Before building any tracking, evaluation, or automation:
+   - ✅ Prove the manual process works first
+   - ✅ Get 10+ successful manual runs
+   - ✅ Identify specific pain points from real usage
+   - ✅ Build minimal automation for only those points
+   - ✅ Measure if the automation actually helps
+   
+   **The 30-Day Rule**: Code with 0 usage after 30 days should be archived.
+   
+   **Start Simple**:
+   - 1 table > 5 tables
+   - 100 lines > 1,000 lines  
+   - JSON file > Database table
+   - Console.log > Complex tracking system
+
+3. **Database Migration Workflow**:
    - ✅ **Types.ts is automatically regenerated after successful migrations**
    - The run-staged command now automatically regenerates types
    - This ensures TypeScript interfaces always match the updated database schema
