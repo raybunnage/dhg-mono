@@ -11,6 +11,9 @@ This index tracks all available continuous improvement scenarios. Each scenario 
 | modify-database-tables | Modify Database Tables | Add/modify tables following naming conventions and migration best practices | ✅ Complete | [View](./modify-database-tables.md) | - |
 | add-new-app-page | Add New App Page | Add pages to apps with proper routing, services, and UI patterns | ✅ Complete | [View](./add-new-app-page.md) | - |
 | add-new-tests | Add New Tests | Add comprehensive tests (unit/integration/e2e) to any component | ✅ Complete | [View](./add-new-tests.md) | - |
+| consolidate-proxy-servers | Consolidate Proxy Servers | Evaluate and consolidate proxy servers to reduce complexity | ✅ Complete | [View](./consolidate-proxy-servers.md) | - |
+| cleanup-root-directory | Cleanup Root Directory | Move/archive stray files from root to maintain organization | ✅ Complete | [View](./cleanup-root-directory.md) | [Run](../../../scripts/cli-pipeline/utilities/cleanup-root-strays.ts) |
+| simplify-continuous-improvement | Simplify Continuous Improvement | Radically simplify over-engineered system to 3 tables and basic features | ✅ Complete | [View](./simplify-continuous-improvement.md) | [Run](../../../scripts/cli-pipeline/continuous/continuous-cli.sh) |
 | add-new-ui-integration | Add New UI Integration | Steps to integrate a new UI feature across apps | 📝 Planned | - | - |
 | database-migration | Database Migration | Safe database migration process | 📝 Planned | - | - |
 | refactor-service | Refactor Service | Service refactoring with test preservation | 📝 Planned | - | - |
